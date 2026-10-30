@@ -1,5 +1,3 @@
-import type { AmbilightDiffusionMode } from './types'
-
 // 非高斯模式把颜色与不透明度保存在同一个预乘 RGBA 场中：
 // 固定视频区域为 alpha=1 的原始画面，外侧按方程求 alpha 与预乘颜色，
 // 输出时再除回非预乘颜色，避免透明淡出时颜色被一起压暗。
@@ -126,15 +124,16 @@ export class AmbilightDiffusionField {
 
   /**
    * 每帧更新场：内部视频区域固定，外侧方程热启动迭代。
+   * decayLengthPx 为 0 时退化为拉普拉斯方程，大于 0 时为屏蔽泊松方程。
    * source 为源画布的 RGBA 数据，长度必须为 width * height * 4。
    */
   public render(
     source: Uint8ClampedArray,
-    mode: Exclude<AmbilightDiffusionMode, 'gaussian'>,
     decayLengthPx: number,
     blend: number,
     force: boolean,
     iterations: number,
+    featherCells: number,
   ): ImageData {
     if (source.length < this.width * this.height * 4)
       throw new Error('Invalid diffusion source data')
@@ -145,9 +144,9 @@ export class AmbilightDiffusionField {
     else
       this.updateFixedPixels(source)
 
-    this.solve(mode, decayLengthPx, iterations)
-    // 方程解在外边界只保证 ghost 为 0，最外一圈仍可能残留少量 alpha；加两格羽化避免矩形边。
-    this.applyEdgeFeather()
+    this.solve(decayLengthPx, iterations)
+    // 方程解在外边界只保证 ghost 为 0，最外一圈仍可能残留少量 alpha；按设置羽化避免矩形边。
+    this.applyEdgeFeather(featherCells)
 
     this.clampField()
 
@@ -184,14 +183,13 @@ export class AmbilightDiffusionField {
   }
 
   private solve(
-    mode: Exclude<AmbilightDiffusionMode, 'gaussian'>,
     decayLengthPx: number,
     iterations: number,
   ): void {
     const wx = 1 / (this.cellWidth * this.cellWidth)
     const wy = 1 / (this.cellHeight * this.cellHeight)
-    const lambda2 = mode === 'screened-poisson'
-      ? 1 / (Math.max(1, decayLengthPx) * Math.max(1, decayLengthPx))
+    const lambda2 = decayLengthPx > 0
+      ? 1 / (decayLengthPx * decayLengthPx)
       : 0
     const denominator = 2 * wx + 2 * wy + lambda2
     const rowStride = this.width * 4
@@ -289,11 +287,15 @@ export class AmbilightDiffusionField {
     return color
   }
 
-  private applyEdgeFeather(): void {
+  private applyEdgeFeather(featherCells: number): void {
+    const cells = Math.max(0, Math.min(4, featherCells))
+    if (cells <= 0)
+      return
+
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const edge = Math.min(x, this.width - 1 - x, y, this.height - 1 - y)
-        const factor = smoothstep(Math.min(1, edge / 2))
+        const factor = smoothstep(Math.min(1, edge / cells))
         if (factor >= 1)
           continue
         const base = (y * this.width + x) * 4

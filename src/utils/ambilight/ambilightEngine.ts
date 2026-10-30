@@ -1,11 +1,17 @@
 import type { DiffusionFieldGeometry } from './diffusionField'
 import { AmbilightDiffusionField } from './diffusionField'
-import type { AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
+import type { AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDiffusionQuality, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
 
 const SAMPLE_WIDTH = 256
 const SAMPLE_HEIGHT = 144
-const MAX_DIFFUSION_WIDTH = 160
-const MAX_DIFFUSION_HEIGHT = 90
+// 求解精度只改变扩散场网格大小，默认 medium 与原有 160×90 完全一致。
+const DIFFUSION_QUALITY_RESOLUTIONS: Record<AmbilightDiffusionQuality, { width: number, height: number }> = {
+  'ultra-low': { width: 80, height: 45 },
+  'low': { width: 112, height: 63 },
+  'medium': { width: 160, height: 90 },
+  'high': { width: 224, height: 126 },
+  'ultra-high': { width: 320, height: 180 },
+}
 const MIN_DIFFUSION_SIZE = 24
 const DIFFUSION_ITERATIONS = 12
 const DIFFUSION_INITIAL_ITERATIONS = 32
@@ -96,13 +102,13 @@ function glowGeometry(
   mode: AmbilightDisplayMode = 'normal',
 ): GlowGeometry {
   const immersive = mode !== 'normal'
-  const effectiveBlur = immersive ? Math.max(100, blur * 1.4) : blur
+  const effectiveBlur = blur > 0 ? (immersive ? Math.max(100, blur * 1.4) : blur) : 0
   const x = immersive ? Math.max(240, (viewport.width - rect.width) / 2 + 130) : 100
   const y = immersive ? Math.max(180, Math.min(300, viewport.height * 0.23)) : 100
 
   // 30–100% 为局部光晕；100–400% 平滑扩展到一个固定的本地半径。
-  // 不再使用 rect.left/top，否则滚动会改变 margin，导致扩散场 every-frame 重建。
-  const bleed = Math.ceil(effectiveBlur * 3) + 2
+  // 泊松模式没有模糊，因此不额外预留 bleed。
+  const bleed = effectiveBlur > 0 ? Math.ceil(effectiveBlur * 3) + 2 : 0
   const local = Math.min(spread / 100, 1)
   const fill = Math.max(0, Math.min(1, (spread - 100) / 300))
   const reachX = Math.max(x, (viewport.width - rect.width) / 2 + bleed)
@@ -154,11 +160,11 @@ export class AmbilightEngine {
   private diffusionIterations = DIFFUSION_ITERATIONS
   private sourceCanvas: HTMLCanvasElement | null = null
   private sourceCtx: CanvasRenderingContext2D | null = null
-  private geometryBlur = 0
   private videoObjectFit = 'contain'
 
   constructor(options: AmbilightEngineOptions, backdropProbe: AmbilightBackdropProbe | null = null) {
     this.options = { ...options }
+    this.diffusionIterations = this.getConfiguredIterations()
     this.backdropProbe = backdropProbe
   }
 
@@ -263,16 +269,20 @@ export class AmbilightEngine {
 
   public updateOptions(options: Partial<AmbilightEngineOptions>) {
     const previousDiffusion = this.options.diffusion
+    const previousIterations = this.options.diffusionIterations
     this.options = { ...this.options, ...options }
     if (previousDiffusion !== this.options.diffusion) {
       this.diffusionFallback = false
-      this.diffusionIterations = DIFFUSION_ITERATIONS
+      this.diffusionIterations = this.getConfiguredIterations()
       this.resetDiffusionField()
+    }
+    else if (previousIterations !== this.options.diffusionIterations) {
+      this.diffusionIterations = this.getConfiguredIterations()
     }
     // strength/saturation 只影响样式，不参与本地布局签名。
     if (options.strength !== undefined || options.saturation !== undefined) {
       this.applyCanvasStyles(
-        this.usesDiffusion() ? this.layout?.visualBlur : this.geometryBlur,
+        this.usesDiffusion() ? 0 : (this.layout?.visualBlur || this.options.blur),
       )
     }
     this.invalidate(true)
@@ -287,7 +297,7 @@ export class AmbilightEngine {
     this.hasPainted = false
     this.layoutDirty = true
     this.diffusionFallback = false
-    this.diffusionIterations = DIFFUSION_ITERATIONS
+    this.diffusionIterations = this.getConfiguredIterations()
     this.resetDiffusionField()
     this.ensureDom()
     this.bindVideoEvents()
@@ -393,8 +403,8 @@ export class AmbilightEngine {
 
     const { blur, saturation, strength } = this.options
     const blurValue = effectiveBlur ?? blur
-    const minimumBlur = this.usesDiffusion() ? 4 : 10
-    this.canvas.style.filter = `blur(${Math.max(minimumBlur, blurValue)}px) saturate(${saturation}%) brightness(${Math.max(1, strength / 100)})`
+    const blurFilter = this.usesDiffusion() ? '' : `blur(${Math.max(10, blurValue)}px) `
+    this.canvas.style.filter = `${blurFilter}saturate(${saturation}%) brightness(${Math.max(1, strength / 100)})`
     this.canvas.style.opacity = `${Math.min(1, Math.max(0, strength / 100))}`
   }
 
@@ -520,14 +530,15 @@ export class AmbilightEngine {
     this.hostDocumentLeft = hostRect.left + window.scrollX
     this.hostDocumentTop = hostRect.top + window.scrollY
 
+    const glowBlur = this.usesDiffusion() ? 0 : this.options.blur
     const glow = glowGeometry(
       content,
       { width: window.innerWidth, height: window.innerHeight },
       this.options.spread,
-      this.options.blur,
+      glowBlur,
       this.mode,
     )
-    const visualBlur = this.usesDiffusion() ? this.getDiffusionVisualBlur() : glow.blur
+    const visualBlur = this.usesDiffusion() ? 0 : glow.blur
     const signature = [
       Math.round(r.width * 10),
       Math.round(r.height * 10),
@@ -536,8 +547,9 @@ export class AmbilightEngine {
       computedStyle.objectFit,
       this.mode,
       this.options.diffusion,
+      this.options.diffusionQuality,
       this.options.spread,
-      this.options.blur,
+      glowBlur,
       window.innerWidth,
       window.innerHeight,
       this.usesDiffusion() ? 1 : 0,
@@ -551,7 +563,6 @@ export class AmbilightEngine {
 
     const documentContentLeft = content.left + window.scrollX
     const documentContentTop = content.top + window.scrollY
-    this.geometryBlur = glow.blur
     this.layout = {
       signature,
       contentWidth: content.width,
@@ -686,8 +697,8 @@ export class AmbilightEngine {
     return this.options.diffusion !== 'gaussian' && !this.diffusionFallback
   }
 
-  private getDiffusionVisualBlur(): number {
-    return Math.max(4, Math.min(20, this.options.blur * 0.18))
+  private getConfiguredIterations(): number {
+    return Math.max(4, Math.min(32, Math.round(this.options.diffusionIterations)))
   }
 
   private resetDiffusionField(): void {
@@ -700,7 +711,9 @@ export class AmbilightEngine {
   private enableDiffusionFallback(): void {
     this.diffusionFallback = true
     this.resetDiffusionField()
-    this.applyCanvasStyles(this.geometryBlur)
+    this.applyCanvasStyles(this.options.blur)
+    // 下一帧按高斯专属参数重新计算布局和模糊。
+    this.invalidate(true)
   }
 
   private updateDiffusionLayout(): void {
@@ -721,9 +734,10 @@ export class AmbilightEngine {
     if (glowWidth <= 0 || glowHeight <= 0 || layout.contentWidth <= 0 || layout.contentHeight <= 0)
       return null
 
-    const scale = Math.min(MAX_DIFFUSION_WIDTH / glowWidth, MAX_DIFFUSION_HEIGHT / glowHeight)
-    const width = Math.max(MIN_DIFFUSION_SIZE, Math.min(MAX_DIFFUSION_WIDTH, Math.round(glowWidth * scale)))
-    const height = Math.max(MIN_DIFFUSION_SIZE, Math.min(MAX_DIFFUSION_HEIGHT, Math.round(glowHeight * scale)))
+    const target = DIFFUSION_QUALITY_RESOLUTIONS[this.options.diffusionQuality] ?? DIFFUSION_QUALITY_RESOLUTIONS.medium
+    const scale = Math.min(target.width / glowWidth, target.height / glowHeight)
+    const width = Math.max(MIN_DIFFUSION_SIZE, Math.min(target.width, Math.round(glowWidth * scale)))
+    const height = Math.max(MIN_DIFFUSION_SIZE, Math.min(target.height, Math.round(glowHeight * scale)))
     const clampX = (value: number) => Math.max(0, Math.min(width, value))
     const clampY = (value: number) => Math.max(0, Math.min(height, value))
     const innerLeft = clampX((layout.marginX / glowWidth) * width)
@@ -753,16 +767,21 @@ export class AmbilightEngine {
   }
 
   private getDiffusionDecayLength(geometry: DiffusionFieldGeometry): number {
+    const screening = Math.max(0, Math.min(100, this.options.diffusionScreening))
+    if (screening <= 0)
+      return 0
+
     const left = geometry.innerLeft * geometry.cellWidth
     const top = geometry.innerTop * geometry.cellHeight
     const right = (geometry.width - geometry.innerRight) * geometry.cellWidth
     const bottom = (geometry.height - geometry.innerBottom) * geometry.cellHeight
     const margin = Math.max(1, Math.min(left, top, right, bottom))
-    const blurFactor = Math.max(0, Math.min(1, this.options.blur / 140))
     // 至少保留约 4 个网格单元的衰减长度，避免边缘第一圈 alpha 骤降形成接缝；
-    // 远端由 applyEdgeFeather 平滑收尾。
+    // 远端由 applyEdgeFeather 平滑收尾。泊松模式不依赖高斯模糊。
     const minimumDecay = Math.min(geometry.cellWidth, geometry.cellHeight) * 4
-    return Math.max(12, minimumDecay, margin * (0.25 + 0.25 * blurFactor))
+    const base = Math.max(12, minimumDecay, margin * 0.5)
+    const strength = screening / 100
+    return base / (0.25 + 0.75 * strength)
   }
 
   private prepareDiffusionSource(geometry: DiffusionFieldGeometry): ImageData | null {
@@ -848,15 +867,18 @@ export class AmbilightEngine {
       this.diffusionNeedsReset = false
     }
 
-    const iterations = force || !field.hasSolution ? DIFFUSION_INITIAL_ITERATIONS : this.diffusionIterations
+    const configuredIterations = this.getConfiguredIterations()
+    const iterations = force || !field.hasSolution
+      ? Math.max(DIFFUSION_INITIAL_ITERATIONS, configuredIterations)
+      : this.diffusionIterations
     const started = performance.now()
     const imageData = field.render(
       source.data,
-      mode,
       this.getDiffusionDecayLength(layout.geometry),
       blend,
       force,
       iterations,
+      this.options.diffusionFeather,
     )
     const elapsed = performance.now() - started
     if (elapsed > 8 && this.diffusionIterations > DIFFUSION_MIN_ITERATIONS)
@@ -927,17 +949,22 @@ export class AmbilightEngine {
     const canvasRect = this.canvas.getBoundingClientRect()
     if (canvasRect.width <= 0 || canvasRect.height <= 0)
       return
+    const visualBlur = this.usesDiffusion()
+      ? 0
+      : (this.layout.visualBlur || this.options.blur)
     const glow = {
       left: canvasRect.left,
       top: canvasRect.top,
       width: canvasRect.width,
       height: canvasRect.height,
-      blur: this.usesDiffusion() ? this.layout.visualBlur : this.geometryBlur,
+      blur: visualBlur,
     }
     const samples: AmbilightBackdropSample[] = []
     for (const { region, x, y } of this.backdropProbe.getAnchors()) {
-      const coverage = blurredCoverage(x, glow.left, glow.left + glow.width, glow.blur)
+      const coverage = glow.blur > 0
+        ? blurredCoverage(x, glow.left, glow.left + glow.width, glow.blur)
         * blurredCoverage(y, glow.top, glow.top + glow.height, glow.blur)
+        : (x >= glow.left && x <= glow.left + glow.width && y >= glow.top && y <= glow.top + glow.height ? 1 : 0)
       const cellX = Math.round(Math.min(1, Math.max(0, (x - glow.left) / glow.width)) * (BACKDROP_SAMPLE_WIDTH - 1))
       const cellY = Math.round(Math.min(1, Math.max(0, (y - glow.top) / glow.height)) * (BACKDROP_SAMPLE_HEIGHT - 1))
 
