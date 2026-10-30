@@ -123,15 +123,25 @@ settings:
     strength: 光线强度
     spread: 扩散范围
     diffusion: 扩散方式
-    diffusion_desc: 选择光晕从画面边缘向外扩散的算法。拉普拉斯平滑插值边界颜色，屏蔽泊松在边缘附近自然衰减。
     diffusion_gaussian: 高斯柔化
-    diffusion_laplace: 拉普拉斯
-    diffusion_screened_poisson: 屏蔽泊松
+    diffusion_poisson: 泊松扩散
+    diffusion_screening: 衰减速度
+    diffusion_screening_desc: 数值越低，扩散越远。
+    diffusion_quality: 求解精度
+    diffusion_quality_desc: 精度越高，扩散细节越清晰，但会增加 CPU 开销。
+    diffusion_quality_ultra_low: 超低
+    diffusion_quality_low: 低
+    diffusion_quality_medium: 中
+    diffusion_quality_high: 高
+    diffusion_quality_ultra_high: 超高
+    diffusion_iterations: 求解迭代
+    diffusion_iterations_desc: 数值越高边界越精确，但会增加每帧 CPU 开销。
+    diffusion_feather: 边缘羽化
+    diffusion_feather_desc: 光晕最外圈的淡出格数；0 关闭，2 为默认。
     smoothing: 过渡平滑
     blur: 柔化程度
     saturation: 色彩饱和度
-    subgroup_effects: 光效调节
-    subgroup_effects_desc: 调整光线发光强度、扩散范围与色彩过渡质感。
+    subgroup_algorithm: 算法
     subgroup_performance: 渲染性能
     subgroup_performance_desc: 限制环境光采样与绘制刷新率，较低帧率可降低功耗与显卡占用。
     fps: 渲染帧率上限

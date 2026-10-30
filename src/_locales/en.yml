@@ -123,15 +123,25 @@ settings:
     strength: Light strength
     spread: Spread range
     diffusion: Diffusion method
-    diffusion_desc: Choose how light spreads from the picture edge. Laplace smoothly interpolates edge colors, and Screened Poisson fades naturally near the edge.
     diffusion_gaussian: Gaussian blur
-    diffusion_laplace: Laplace
-    diffusion_screened_poisson: Screened Poisson
+    diffusion_poisson: Poisson diffusion
+    diffusion_screening: Decay speed
+    diffusion_screening_desc: Lower values spread the glow farther.
+    diffusion_quality: Diffusion quality
+    diffusion_quality_desc: Higher quality preserves more diffusion detail at the cost of CPU.
+    diffusion_quality_ultra_low: Ultra low
+    diffusion_quality_low: Low
+    diffusion_quality_medium: Medium
+    diffusion_quality_high: High
+    diffusion_quality_ultra_high: Ultra high
+    diffusion_iterations: Solver iterations
+    diffusion_iterations_desc: Higher values improve boundary convergence at the cost of CPU per frame.
+    diffusion_feather: Edge feathering
+    diffusion_feather_desc: Number of outer grid cells faded out; 0 disables it, 2 is the default.
     smoothing: Transition smoothing
     blur: Blur intensity
     saturation: Saturation
-    subgroup_effects: Light Effects
-    subgroup_effects_desc: Fine-tune light brightness, spread radius, and smooth transition.
+    subgroup_algorithm: Algorithm
     subgroup_performance: Rendering Performance
     subgroup_performance_desc: Cap sampling and rendering frame rate to reduce GPU load and battery usage.
     fps: Maximum framerate
