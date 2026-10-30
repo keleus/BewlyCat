@@ -312,7 +312,7 @@ function getEngineOptions(): AmbilightEngineOptions {
     fps: settings.value.ambilightFps,
     diffusion: settings.value.ambilightDiffusion,
     diffusionQuality: settings.value.ambilightDiffusionQuality,
-    diffusionScreening: settings.value.ambilightDiffusionScreening,
+    diffusionDecay: settings.value.ambilightDiffusionDecay,
     diffusionIterations: settings.value.ambilightDiffusionIterations,
     diffusionFeather: settings.value.ambilightDiffusionFeather,
   }
@@ -505,7 +505,7 @@ export function initAmbilightControl() {
         settings.value.ambilightFps,
         settings.value.ambilightDiffusion,
         settings.value.ambilightDiffusionQuality,
-        settings.value.ambilightDiffusionScreening,
+        settings.value.ambilightDiffusionDecay,
         settings.value.ambilightDiffusionIterations,
         settings.value.ambilightDiffusionFeather,
       ],

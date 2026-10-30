@@ -98,7 +98,7 @@ function resetAmbilightSettings() {
     ambilightPreset: originalSettings.ambilightPreset,
     ambilightDiffusion: originalSettings.ambilightDiffusion,
     ambilightDiffusionQuality: originalSettings.ambilightDiffusionQuality,
-    ambilightDiffusionScreening: originalSettings.ambilightDiffusionScreening,
+    ambilightDiffusionDecay: originalSettings.ambilightDiffusionDecay,
     ambilightDiffusionIterations: originalSettings.ambilightDiffusionIterations,
     ambilightDiffusionFeather: originalSettings.ambilightDiffusionFeather,
     ambilightStrength: originalSettings.ambilightStrength,
@@ -115,7 +115,6 @@ function resetAmbilightSettings() {
   <SettingsItemGroup :title="t('settings.ambilight.title')">
     <template #action>
       <Button
-        v-if="settings.ambilightEnabled"
         size="small"
         type="secondary"
         @click="resetAmbilightSettings"
@@ -196,16 +195,16 @@ function resetAmbilightSettings() {
 
         <template v-else>
           <SettingsItem
-            :title="t('settings.ambilight.diffusion_screening')"
-            :desc="t('settings.ambilight.diffusion_screening_desc')"
+            :title="t('settings.ambilight.diffusion_decay')"
+            :desc="t('settings.ambilight.diffusion_decay_desc')"
           >
             <div class="slider-control">
               <Slider
-                v-model="settings.ambilightDiffusionScreening"
+                v-model="settings.ambilightDiffusionDecay"
                 :min="0"
                 :max="100"
                 :step="1"
-                :label="`${settings.ambilightDiffusionScreening}%`"
+                :label="`${settings.ambilightDiffusionDecay}%`"
               />
             </div>
           </SettingsItem>

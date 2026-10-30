@@ -240,7 +240,7 @@ export class AmbilightDiffusionField {
   }
 
   private fadeAlpha(cx: number, cy: number, distance: number): number {
-    // 以单元中心到画布单元中心边界计，最外一圈 alpha=0；配合 CSS blur 不出现矩形硬边。
+    // 以单元中心到画布单元中心边界计，最外一圈 alpha=0；不依赖 CSS 模糊。
     const dOut = Math.min(
       Math.max(0, cx - 0.5),
       Math.max(0, this.width - cx - 0.5),

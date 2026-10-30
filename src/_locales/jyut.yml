@@ -125,8 +125,8 @@ settings:
     diffusion: 擴散方式
     diffusion_gaussian: 高斯柔化
     diffusion_poisson: 泊松擴散
-    diffusion_screening: 衰減速度
-    diffusion_screening_desc: 數值越低，擴散越遠。
+    diffusion_decay: 衰減速度
+    diffusion_decay_desc: 數值越低，擴散越遠。
     diffusion_quality: 求解精度
     diffusion_quality_desc: 精度越高，擴散細節越清晰，但會增加 CPU 開銷。
     diffusion_quality_ultra_low: 超低

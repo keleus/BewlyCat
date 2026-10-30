@@ -12,7 +12,7 @@ export interface AmbilightEngineOptions {
   fps: number
   diffusion: AmbilightDiffusionMode
   diffusionQuality: AmbilightDiffusionQuality
-  diffusionScreening: number
+  diffusionDecay: number
   diffusionIterations: number
   diffusionFeather: number
 }

@@ -309,7 +309,7 @@ export interface Settings {
   ambilightPreset: AmbilightPreset
   ambilightDiffusion: AmbilightDiffusionMode
   ambilightDiffusionQuality: AmbilightDiffusionQuality
-  ambilightDiffusionScreening: number
+  ambilightDiffusionDecay: number
   ambilightDiffusionIterations: number
   ambilightDiffusionFeather: number
   ambilightStrength: number
@@ -690,7 +690,7 @@ export const originalSettings: Settings = {
   ambilightPreset: 'cinema',
   ambilightDiffusion: 'gaussian',
   ambilightDiffusionQuality: 'medium',
-  ambilightDiffusionScreening: 60,
+  ambilightDiffusionDecay: 60,
   ambilightDiffusionIterations: 12,
   ambilightDiffusionFeather: 2,
   ambilightStrength: 80,
@@ -1224,9 +1224,14 @@ export const settings = useSettingsStorage(originalSettings, {
     if (!validAmbilightPresets.includes(record.ambilightPreset))
       record.ambilightPreset = 'cinema'
 
+    // 旧字段名迁移；测试版本可能已保存过 ambilightDiffusionScreening。
+    if (typeof record.ambilightDiffusionDecay !== 'number' && typeof record.ambilightDiffusionScreening === 'number')
+      record.ambilightDiffusionDecay = record.ambilightDiffusionScreening
+    Reflect.deleteProperty(record, 'ambilightDiffusionScreening')
+
     // 旧版拉普拉斯/屏蔽泊松合并为泊松扩散：0 保留拉普拉斯，100 保留屏蔽泊松。
     if (record.ambilightDiffusion === 'laplace' || record.ambilightDiffusion === 'screened-poisson') {
-      record.ambilightDiffusionScreening = record.ambilightDiffusion === 'laplace' ? 0 : 100
+      record.ambilightDiffusionDecay = record.ambilightDiffusion === 'laplace' ? 0 : 100
       record.ambilightDiffusion = 'poisson'
     }
 
@@ -1239,7 +1244,7 @@ export const settings = useSettingsStorage(originalSettings, {
       record.ambilightDiffusionQuality = originalSettings.ambilightDiffusionQuality
 
     for (const [key, min, max, fallback] of [
-      ['ambilightDiffusionScreening', 0, 100, 60],
+      ['ambilightDiffusionDecay', 0, 100, 60],
       ['ambilightDiffusionIterations', 4, 32, 12],
       ['ambilightDiffusionFeather', 0, 4, 2],
       ['ambilightStrength', 0, 150, 80],

@@ -1,5 +1,7 @@
 import type { DiffusionFieldGeometry } from './diffusionField'
 import { AmbilightDiffusionField } from './diffusionField'
+import { contentRect, glowGeometry } from './geometry'
+import { blendAlpha, blurredCoverage } from './math'
 import type { AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDiffusionQuality, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
 
 const SAMPLE_WIDTH = 256
@@ -15,7 +17,6 @@ const DIFFUSION_QUALITY_RESOLUTIONS: Record<AmbilightDiffusionQuality, { width: 
 const MIN_DIFFUSION_SIZE = 24
 // 泊松模式固定铺满视口，扩散范围只对高斯模式生效。
 const POISSON_SPREAD = 400
-const DIFFUSION_ITERATIONS = 12
 const DIFFUSION_INITIAL_ITERATIONS = 32
 const DIFFUSION_MIN_ITERATIONS = 4
 // 亮度采样从已缩小的光晕画布再缩到 16×9 读回，读回量极小且只在 CPU 画布上进行。
@@ -25,22 +26,9 @@ const BACKDROP_SAMPLE_WIDTH = 16
 const BACKDROP_SAMPLE_HEIGHT = 9
 const BACKDROP_SAMPLE_INTERVAL = 500
 
-interface Rect {
-  left: number
-  top: number
-  width: number
-  height: number
-}
-
 interface DiffusionLayout {
   key: string
   geometry: DiffusionFieldGeometry
-}
-
-interface GlowGeometry extends Rect {
-  marginX: number
-  marginY: number
-  blur: number
 }
 
 // 本地布局：只包含视频尺寸/模式等不随滚动变化的信息。
@@ -61,72 +49,6 @@ interface EngineLayout {
   videoHeight: number
   documentContentLeft: number
   documentContentTop: number
-}
-
-function erf(x: number): number {
-  const sign = Math.sign(x)
-  const a = Math.abs(x)
-  const t = 1 / (1 + 0.3275911 * a)
-  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-a * a)
-  return sign * y
-}
-
-// CSS blur() 的参数即高斯标准差；画布矩形模糊后在某点的覆盖率为两个方向 erf 之差的乘积
-function blurredCoverage(position: number, start: number, end: number, sigma: number): number {
-  const scale = sigma * Math.SQRT2
-  return 0.5 * (erf((end - position) / scale) - erf((start - position) / scale))
-}
-
-// 优化时间常数：兼顾丝滑过度与明暗剧变时的快速追随（响应速度提升约 50%）
-function blendAlpha(dt: number, smoothing: number): number {
-  return smoothing === 0 ? 1 : 1 - Math.exp(-Math.max(0, dt) / (20 + smoothing * 4.2))
-}
-
-function contentRect(rect: Rect, vw: number, vh: number, fit: string = 'contain'): Rect {
-  if (!vw || !vh || fit === 'fill' || fit === 'cover')
-    return { ...rect }
-  const scale = Math.min(rect.width / vw, rect.height / vh)
-  const width = vw * scale
-  const height = vh * scale
-  return {
-    left: rect.left + (rect.width - width) / 2,
-    top: rect.top + (rect.height - height) / 2,
-    width,
-    height,
-  }
-}
-
-function glowGeometry(
-  rect: Rect,
-  viewport: { width: number, height: number },
-  spread: number,
-  blur: number,
-  mode: AmbilightDisplayMode = 'normal',
-): GlowGeometry {
-  const immersive = mode !== 'normal'
-  const effectiveBlur = blur > 0 ? (immersive ? Math.max(100, blur * 1.4) : blur) : 0
-  const x = immersive ? Math.max(240, (viewport.width - rect.width) / 2 + 130) : 100
-  const y = immersive ? Math.max(180, Math.min(300, viewport.height * 0.23)) : 100
-
-  // 30–100% 为局部光晕；100–400% 平滑扩展到一个固定的本地半径。
-  // 泊松模式没有模糊，因此不额外预留 bleed。
-  const bleed = effectiveBlur > 0 ? Math.ceil(effectiveBlur * 3) + 2 : 0
-  const local = Math.min(spread / 100, 1)
-  const fill = Math.max(0, Math.min(1, (spread - 100) / 300))
-  const reachX = Math.max(x, (viewport.width - rect.width) / 2 + bleed)
-  const reachY = Math.max(y, (viewport.height - rect.height) / 2 + bleed)
-  const marginX = x * local + (reachX - x) * fill
-  const marginY = y * local + (reachY - y) * fill
-
-  return {
-    left: rect.left - marginX,
-    top: rect.top - marginY,
-    width: rect.width + 2 * marginX,
-    height: rect.height + 2 * marginY,
-    marginX,
-    marginY,
-    blur: effectiveBlur,
-  }
 }
 
 export class AmbilightEngine {
@@ -159,7 +81,7 @@ export class AmbilightEngine {
   private diffusionKey = ''
   private diffusionFallback = false
   private diffusionNeedsReset = true
-  private diffusionIterations = DIFFUSION_ITERATIONS
+  private diffusionIterations = 0
   private sourceCanvas: HTMLCanvasElement | null = null
   private sourceCtx: CanvasRenderingContext2D | null = null
   private videoObjectFit = 'contain'
@@ -774,8 +696,8 @@ export class AmbilightEngine {
   }
 
   private getDiffusionDecayLength(geometry: DiffusionFieldGeometry): number {
-    const screening = Math.max(0, Math.min(100, this.options.diffusionScreening))
-    if (screening <= 0)
+    const decaySpeed = Math.max(0, Math.min(100, this.options.diffusionDecay))
+    if (decaySpeed <= 0)
       return 0
 
     const left = geometry.innerLeft * geometry.cellWidth
@@ -787,8 +709,8 @@ export class AmbilightEngine {
     // 远端由 applyEdgeFeather 平滑收尾。泊松模式不依赖高斯模糊。
     const minimumDecay = Math.min(geometry.cellWidth, geometry.cellHeight) * 4
     const base = Math.max(12, minimumDecay, margin * 0.5)
-    const strength = screening / 100
-    return base / (0.25 + 0.75 * strength)
+    const decayFactor = decaySpeed / 100
+    return base / (0.25 + 0.75 * decayFactor)
   }
 
   private prepareDiffusionSource(geometry: DiffusionFieldGeometry): ImageData | null {

@@ -125,8 +125,8 @@ settings:
     diffusion: Diffusion method
     diffusion_gaussian: Gaussian blur
     diffusion_poisson: Poisson diffusion
-    diffusion_screening: Decay speed
-    diffusion_screening_desc: Lower values spread the glow farther.
+    diffusion_decay: Decay speed
+    diffusion_decay_desc: Lower values spread the glow farther.
     diffusion_quality: Diffusion quality
     diffusion_quality_desc: Higher quality preserves more diffusion detail at the cost of CPU.
     diffusion_quality_ultra_low: Ultra low
