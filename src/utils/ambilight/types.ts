@@ -1,3 +1,5 @@
+export type AmbilightDiffusionMode = 'gaussian' | 'laplace' | 'screened-poisson'
+
 export interface AmbilightEngineOptions {
   enabled: boolean
   strength: number
@@ -6,6 +8,7 @@ export interface AmbilightEngineOptions {
   blur: number
   saturation: number
   fps: number
+  diffusion: AmbilightDiffusionMode
 }
 
 // 环境光只在默认与宽屏播放器下运行；全屏、网页全屏与 Bewly 宽屏由 ambilightControl 整体停用
