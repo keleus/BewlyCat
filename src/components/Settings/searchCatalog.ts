@@ -554,6 +554,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.ambilight.preset',
     'settings.ambilight.strength',
     'settings.ambilight.spread',
+    'settings.ambilight.diffusion',
     'settings.ambilight.smoothing',
     'settings.ambilight.blur',
     'settings.ambilight.saturation',
@@ -842,6 +843,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
 const fallbackTargetKeysByTitleKey: Record<string, string> = {
   'settings.always_show_dock_actions_when_auto_hide': 'settings.auto_hide_dock',
   'settings.ambilight.blur': 'settings.ambilight.title',
+  'settings.ambilight.diffusion': 'settings.ambilight.title',
   'settings.ambilight.fps': 'settings.ambilight.title',
   'settings.ambilight.preset': 'settings.ambilight.title',
   'settings.ambilight.saturation': 'settings.ambilight.title',

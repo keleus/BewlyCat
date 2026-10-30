@@ -310,6 +310,7 @@ function getEngineOptions(): AmbilightEngineOptions {
     blur: settings.value.ambilightBlur,
     saturation: settings.value.ambilightSaturation,
     fps: settings.value.ambilightFps,
+    diffusion: settings.value.ambilightDiffusion,
   }
 }
 
@@ -407,9 +408,10 @@ function attachEngineListeners() {
   document.addEventListener('visibilitychange', () => {
     engine?.setHidden(document.hidden)
   }, { signal })
-  // 滚动与尺寸变化由 invalidate 内部 RAF 合并调度
+  // 尺寸/播放器模式变化需要重算本地布局；滚动交给浏览器原生滚动，
+  // 这里只做视口可见性、sticky/fixed 兜底和文字背景采样。
   window.addEventListener('resize', updateLayout, { passive: true, signal })
-  window.addEventListener('scroll', updateLayout, { passive: true, signal })
+  window.addEventListener('scroll', () => engine?.handleScroll(), { passive: true, signal })
 }
 
 function teardownEngine() {
@@ -497,6 +499,7 @@ export function initAmbilightControl() {
         settings.value.ambilightBlur,
         settings.value.ambilightSaturation,
         settings.value.ambilightFps,
+        settings.value.ambilightDiffusion,
       ],
       () => {
         if (settings.value.ambilightEnabled)

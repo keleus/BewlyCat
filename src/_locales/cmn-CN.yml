@@ -122,6 +122,11 @@ settings:
     preset_vivid: 绚彩
     strength: 光线强度
     spread: 扩散范围
+    diffusion: 扩散方式
+    diffusion_desc: 选择光晕从画面边缘向外扩散的算法。拉普拉斯平滑插值边界颜色，屏蔽泊松在边缘附近自然衰减。
+    diffusion_gaussian: 高斯柔化
+    diffusion_laplace: 拉普拉斯
+    diffusion_screened_poisson: 屏蔽泊松
     smoothing: 过渡平滑
     blur: 柔化程度
     saturation: 色彩饱和度

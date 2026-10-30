@@ -7,6 +7,7 @@ import { DEFAULT_SEARCH_BAR_CHARACTER } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
+import type { AmbilightDiffusionMode } from '~/utils/ambilight/types'
 import {
   MOBILE_LIST_LAYOUT_BREAKPOINT,
   normalizeListLayoutBreakpoint,
@@ -306,6 +307,7 @@ export type AmbilightPreset = 'soft' | 'cinema' | 'vivid'
 export interface Settings {
   ambilightEnabled: boolean
   ambilightPreset: AmbilightPreset
+  ambilightDiffusion: AmbilightDiffusionMode
   ambilightStrength: number
   ambilightSpread: number
   ambilightSmoothing: number
@@ -682,6 +684,7 @@ export const originalLocalSettings: LocalSettings = {
 export const originalSettings: Settings = {
   ambilightEnabled: false,
   ambilightPreset: 'cinema',
+  ambilightDiffusion: 'gaussian',
   ambilightStrength: 80,
   ambilightSpread: 100,
   ambilightSmoothing: 65,
@@ -1212,6 +1215,10 @@ export const settings = useSettingsStorage(originalSettings, {
     const validAmbilightPresets: AmbilightPreset[] = ['soft', 'cinema', 'vivid']
     if (!validAmbilightPresets.includes(record.ambilightPreset))
       record.ambilightPreset = 'cinema'
+
+    const validAmbilightDiffusions: AmbilightDiffusionMode[] = ['gaussian', 'laplace', 'screened-poisson']
+    if (!validAmbilightDiffusions.includes(record.ambilightDiffusion))
+      record.ambilightDiffusion = originalSettings.ambilightDiffusion
 
     for (const [key, min, max, fallback] of [
       ['ambilightStrength', 0, 150, 80],

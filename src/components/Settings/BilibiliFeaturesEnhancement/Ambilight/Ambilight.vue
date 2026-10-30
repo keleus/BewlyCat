@@ -8,6 +8,7 @@ import Select from '~/components/Select.vue'
 import Slider from '~/components/Slider.vue'
 import { originalSettings, settings } from '~/logic'
 import type { AmbilightPreset } from '~/logic/storage'
+import type { AmbilightDiffusionMode } from '~/utils/ambilight/types'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -26,6 +27,12 @@ const fpsOptions = computed(() => [
   { label: t('settings.ambilight.fps_15'), value: 15 },
   { label: t('settings.ambilight.fps_24'), value: 24 },
   { label: t('settings.ambilight.fps_30'), value: 30 },
+])
+
+const diffusionOptions = computed<{ label: string, value: AmbilightDiffusionMode }[]>(() => [
+  { label: t('settings.ambilight.diffusion_gaussian'), value: 'gaussian' },
+  { label: t('settings.ambilight.diffusion_laplace'), value: 'laplace' },
+  { label: t('settings.ambilight.diffusion_screened_poisson'), value: 'screened-poisson' },
 ])
 
 const PRESET_CONFIGS: Record<AmbilightPreset, {
@@ -84,6 +91,7 @@ function resetAmbilightEffects() {
   settings.value = {
     ...settings.value,
     ambilightPreset: originalSettings.ambilightPreset,
+    ambilightDiffusion: originalSettings.ambilightDiffusion,
     ambilightStrength: originalSettings.ambilightStrength,
     ambilightSpread: originalSettings.ambilightSpread,
     ambilightSmoothing: originalSettings.ambilightSmoothing,
@@ -147,6 +155,14 @@ function resetAmbilightEffects() {
               :aria-label="t('settings.ambilight.spread')"
             />
           </div>
+        </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.ambilight.diffusion')"
+          :desc="t('settings.ambilight.diffusion_desc')"
+          right-width="auto"
+        >
+          <Select v-model="settings.ambilightDiffusion" :options="diffusionOptions" w="240px" />
         </SettingsItem>
 
         <SettingsItem :title="t('settings.ambilight.smoothing')">

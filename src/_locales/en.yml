@@ -122,6 +122,11 @@ settings:
     preset_vivid: Vivid
     strength: Light strength
     spread: Spread range
+    diffusion: Diffusion method
+    diffusion_desc: Choose how light spreads from the picture edge. Laplace smoothly interpolates edge colors, and Screened Poisson fades naturally near the edge.
+    diffusion_gaussian: Gaussian blur
+    diffusion_laplace: Laplace
+    diffusion_screened_poisson: Screened Poisson
     smoothing: Transition smoothing
     blur: Blur intensity
     saturation: Saturation
