@@ -155,19 +155,6 @@ function resetAmbilightSettings() {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="t('settings.ambilight.spread')">
-        <div class="slider-control">
-          <Slider
-            v-model="settings.ambilightSpread"
-            :min="30"
-            :max="400"
-            editable
-            unit="%"
-            :aria-label="t('settings.ambilight.spread')"
-          />
-        </div>
-      </SettingsItem>
-
       <SettingsItem :title="t('settings.ambilight.smoothing')">
         <div class="slider-control">
           <Slider v-model="settings.ambilightSmoothing" :min="0" :max="95" :label="`${settings.ambilightSmoothing}%`" />
@@ -186,6 +173,19 @@ function resetAmbilightSettings() {
           right-width="auto"
         >
           <Select v-model="settings.ambilightDiffusion" :options="diffusionOptions" w="240px" />
+        </SettingsItem>
+
+        <SettingsItem v-if="isGaussian" :title="t('settings.ambilight.spread')">
+          <div class="slider-control">
+            <Slider
+              v-model="settings.ambilightSpread"
+              :min="30"
+              :max="400"
+              editable
+              unit="%"
+              :aria-label="t('settings.ambilight.spread')"
+            />
+          </div>
         </SettingsItem>
 
         <SettingsItem v-if="isGaussian" :title="t('settings.ambilight.blur')">

@@ -13,6 +13,8 @@ const DIFFUSION_QUALITY_RESOLUTIONS: Record<AmbilightDiffusionQuality, { width: 
   'ultra-high': { width: 320, height: 180 },
 }
 const MIN_DIFFUSION_SIZE = 24
+// 泊松模式固定铺满视口，扩散范围只对高斯模式生效。
+const POISSON_SPREAD = 400
 const DIFFUSION_ITERATIONS = 12
 const DIFFUSION_INITIAL_ITERATIONS = 32
 const DIFFUSION_MIN_ITERATIONS = 4
@@ -531,10 +533,11 @@ export class AmbilightEngine {
     this.hostDocumentTop = hostRect.top + window.scrollY
 
     const glowBlur = this.usesDiffusion() ? 0 : this.options.blur
+    const effectiveSpread = this.getEffectiveSpread()
     const glow = glowGeometry(
       content,
       { width: window.innerWidth, height: window.innerHeight },
-      this.options.spread,
+      effectiveSpread,
       glowBlur,
       this.mode,
     )
@@ -548,7 +551,7 @@ export class AmbilightEngine {
       this.mode,
       this.options.diffusion,
       this.options.diffusionQuality,
-      this.options.spread,
+      effectiveSpread,
       glowBlur,
       window.innerWidth,
       window.innerHeight,
@@ -695,6 +698,10 @@ export class AmbilightEngine {
 
   private usesDiffusion(): boolean {
     return this.options.diffusion !== 'gaussian' && !this.diffusionFallback
+  }
+
+  private getEffectiveSpread(): number {
+    return this.usesDiffusion() ? POISSON_SPREAD : this.options.spread
   }
 
   private getConfiguredIterations(): number {
