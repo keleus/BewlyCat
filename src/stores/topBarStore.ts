@@ -832,8 +832,10 @@ export const useTopBarStore = defineStore('topBar', () => {
         csrf: getCSRF(),
       })
       if (res.code === 0 && isCurrentAccount(accountId)) {
-        markWatchLater({ aid }, false)
         const currentIndex = watchLaterList.findIndex(item => item.aid === aid)
+        // 带上 bvid/epid：首页添加的条目可能只记录了 bvid（aid 为 0），只按 aid 广播会清不掉对勾
+        const removedItem = currentIndex !== -1 ? watchLaterList[currentIndex] : undefined
+        markWatchLater({ aid, bvid: removedItem?.bvid, epid: removedItem?.bangumi?.ep_id }, false)
         if (currentIndex !== -1) {
           watchLaterList.splice(currentIndex, 1)
           watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
@@ -858,50 +860,6 @@ export const useTopBarStore = defineStore('topBar', () => {
       console.error(error)
     }
     return false
-  }
-
-  // 撤销删除：重新加入稍后再看，并把条目放回原位置，返回是否成功
-  async function restoreWatchLaterItem(item: VideoItem, index: number): Promise<boolean> {
-    const accountId = userInfo.mid
-    if (!isCurrentAccount(accountId))
-      return false
-
-    try {
-      const res = await api.watchlater.saveToWatchLater({
-        aid: item.aid,
-        csrf: getCSRF(),
-      })
-      if (res.code !== 0) {
-        toast.error(res.message)
-        return false
-      }
-      if (!isCurrentAccount(accountId))
-        return false
-
-      markWatchLater({ aid: item.aid, bvid: item.bvid }, true)
-      if (!watchLaterList.some(video => video.aid === item.aid)) {
-        // 重新加入的条目落在服务器已加载前缀内，计数与游标同步加一以保持翻页对齐
-        watchLaterList.splice(Math.min(index, watchLaterList.length), 0, item)
-        watchLaterCount.value++
-        watchLaterCursor.value++
-        watchLaterEpoch++
-        watchLaterRefreshGeneration++
-        watchLaterLoadingGeneration++
-        isLoadingWatchLater.value = false
-      }
-
-      // 与删除相同，延迟同步避免接口短暂返回旧数量
-      window.setTimeout(() => {
-        void syncWatchLaterState(true).catch((error) => {
-          console.error('刷新顶栏稍后再看状态失败:', error)
-        })
-      }, 800)
-      return true
-    }
-    catch (error) {
-      console.error(error)
-      return false
-    }
   }
 
   function resetMomentsLastSeenState() {
@@ -1752,7 +1710,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     getAllWatchLaterList,
     loadMoreWatchLaterList,
     deleteWatchLaterItem,
-    restoreWatchLaterItem,
     addOpenTabVideosToWatchLater,
 
     privilegeInfo,

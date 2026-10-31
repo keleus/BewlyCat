@@ -497,48 +497,51 @@ onBeforeUnmount(deactivatePreview)
         @loaded="emit('imageLoaded')"
       />
 
-      <div
-        v-if="removed"
-        pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
-        bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-media-radius" z-2
-      >
-        <p mb-2 color-white text-lg>
-          {{ removedMessage || $t('video_card.video_removed') }}
-        </p>
-        <div v-if="removedConfirming" flex="~ gap-2 items-center">
+      <!-- 移除/确认遮罩：淡入淡出，避免确认层瞬间出现 -->
+      <Transition name="fade">
+        <div
+          v-if="removed"
+          pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
+          bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-media-radius" z-2
+        >
+          <p mb-2 color-white text-lg>
+            {{ removedMessage || $t('video_card.video_removed') }}
+          </p>
+          <div v-if="removedConfirming" flex="~ gap-2 items-center">
+            <Button
+              color="rgba(255,255,255,.35)" text-color="white" size="small"
+              :disabled="removedPending"
+              @click.prevent.stop="emit('confirmRemoved')"
+            >
+              <template #left>
+                <div i-mingcute-check-line text-lg />
+              </template>
+              {{ $t('common.operation.confirm') }}
+            </Button>
+            <Button
+              color="rgba(255,255,255,.35)" text-color="white" size="small"
+              :disabled="removedPending"
+              @click.prevent.stop="emit('cancelRemoved')"
+            >
+              <template #left>
+                <div i-mingcute-close-line text-lg />
+              </template>
+              {{ $t('common.operation.cancel') }}
+            </Button>
+          </div>
           <Button
+            v-else
             color="rgba(255,255,255,.35)" text-color="white" size="small"
             :disabled="removedPending"
-            @click.prevent.stop="emit('confirmRemoved')"
+            @click.prevent.stop="emit('undo')"
           >
             <template #left>
-              <div i-mingcute-check-line text-lg />
+              <div i-mingcute-back-line text-lg />
             </template>
-            {{ $t('common.operation.confirm') }}
-          </Button>
-          <Button
-            color="rgba(255,255,255,.35)" text-color="white" size="small"
-            :disabled="removedPending"
-            @click.prevent.stop="emit('cancelRemoved')"
-          >
-            <template #left>
-              <div i-mingcute-close-line text-lg />
-            </template>
-            {{ $t('common.operation.cancel') }}
+            {{ $t('common.undo') }}
           </Button>
         </div>
-        <Button
-          v-else
-          color="rgba(255,255,255,.35)" text-color="white" size="small"
-          :disabled="removedPending"
-          @click.prevent.stop="emit('undo')"
-        >
-          <template #left>
-            <div i-mingcute-back-line text-lg />
-          </template>
-          {{ $t('common.undo') }}
-        </Button>
-      </div>
+      </Transition>
 
       <!-- Video preview -->
       <Transition v-if="!removed && settings.enableVideoPreview" name="fade">

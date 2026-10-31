@@ -1611,7 +1611,6 @@ watch_later:
   play_video: 移除并进入视频页
   play_in_watch_later: 列表播放
   remove_from_watch_later: 移除
-  removed: 已移出稍后再看
   remove_confirm: 确定移出稍后再看？
   layout_list: 列表视图
   layout_grid: 网格视图

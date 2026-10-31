@@ -2,7 +2,6 @@
 import { useDateFormat } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
 
 import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
@@ -25,7 +24,6 @@ import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
 
 const { t } = useI18n()
-const toast = useToast()
 const { confirm: showConfirmDialog } = useConfirmDialog()
 const { openIframeDrawer, openVideoDialog, mainAppRef } = useBewlyApp()
 const topBarStore = useTopBarStore()
@@ -61,10 +59,10 @@ const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const pageSize = ref<number>(20)
 const pendingRemovals = new Set<number>()
 /**
- * 卡片删除遮罩状态：confirming 等待确认（尚未调用接口），removing 删除中，
- * removed 已删除但保留原位可还原，restoring 还原中
+ * 卡片删除遮罩状态：confirming 等待确认（尚未调用接口），removing 删除中；
+ * 确认删除后卡片直接移出列表，不保留占位
  */
-type RemoveStatus = 'confirming' | 'removing' | 'removed' | 'restoring'
+type RemoveStatus = 'confirming' | 'removing'
 const removeStatuses = reactive(new Map<number, RemoveStatus>())
 let consumedCount = 0
 let requestVersion = 0
@@ -185,8 +183,8 @@ async function getWatchLaterListByPage() {
   }
 }
 
-// keepCard：删除后卡片保留在原位并显示还原遮罩；返回是否删除成功
-async function deleteWatchLaterItem(aid: number, keepCard = false): Promise<boolean> {
+// 返回是否删除成功；删除后卡片移出列表，由离场过渡补位
+async function deleteWatchLaterItem(aid: number): Promise<boolean> {
   if (pendingRemovals.has(aid))
     return false
 
@@ -200,15 +198,14 @@ async function deleteWatchLaterItem(aid: number, keepCard = false): Promise<bool
       isLoading.value = false
       // 请求期间其他删除或刷新可能改变下标，按视频标识查找当前条目。
       const index = currentWatchLaterList.value.findIndex(video => video.aid === aid)
+      const removedItem = index !== -1 ? currentWatchLaterList.value[index] : undefined
       if (index !== -1) {
-        if (keepCard)
-          removeStatuses.set(aid, 'removed')
-        else
-          currentWatchLaterList.value.splice(index, 1)
+        currentWatchLaterList.value.splice(index, 1)
         watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
         consumedCount = Math.max(0, consumedCount - 1)
       }
-      markWatchLater({ aid }, false)
+      // 带上 bvid/epid：首页添加的条目可能只记录了 bvid（aid 为 0），只按 aid 广播会清不掉对勾
+      markWatchLater({ aid, bvid: removedItem?.bvid, epid: removedItem?.bangumi?.ep_id }, false)
       syncTopBarWatchLaterState()
       if (wasLoading)
         void getWatchLaterListByPage()
@@ -240,42 +237,9 @@ async function confirmRemoveWatchLater(aid: number) {
     return
 
   removeStatuses.set(aid, 'removing')
-  const success = await deleteWatchLaterItem(aid, true)
-  if (!success && removeStatuses.get(aid) === 'removing')
+  await deleteWatchLaterItem(aid)
+  if (removeStatuses.get(aid) === 'removing')
     removeStatuses.delete(aid)
-}
-
-async function restoreWatchLater(item: VideoItem) {
-  if (removeStatuses.get(item.aid) !== 'removed')
-    return
-
-  removeStatuses.set(item.aid, 'restoring')
-  const accountId = getUserID()
-  try {
-    const res = await api.watchlater.saveToWatchLater({ aid: item.aid, csrf: getCSRF() })
-    if (disposed || getUserID() !== accountId || removeStatuses.get(item.aid) !== 'restoring')
-      return
-    if (res.code !== 0) {
-      removeStatuses.set(item.aid, 'removed')
-      toast.error(res.message)
-      return
-    }
-
-    // 重新加入的条目位于服务器列表前部，游标保持不变，重叠页由 aid 去重
-    removeStatuses.delete(item.aid)
-    watchLaterCount.value++
-    markWatchLater({ aid: item.aid, bvid: item.bvid }, true)
-    syncTopBarWatchLaterState()
-  }
-  catch (error) {
-    console.error('重新加入稍后再看失败:', error)
-    if (removeStatuses.get(item.aid) === 'restoring')
-      removeStatuses.set(item.aid, 'removed')
-  }
-}
-
-function isRemoveConfirming(status: RemoveStatus | undefined) {
-  return status === 'confirming' || status === 'removing'
 }
 
 function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | undefined {
@@ -283,14 +247,12 @@ function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | und
   if (!status)
     return undefined
 
-  const confirming = isRemoveConfirming(status)
   return {
-    message: confirming ? t('watch_later.remove_confirm') : t('watch_later.removed'),
-    confirming,
-    pending: status === 'removing' || status === 'restoring',
+    message: t('watch_later.remove_confirm'),
+    confirming: true,
+    pending: status === 'removing',
     onConfirm: () => void confirmRemoveWatchLater(item.aid),
     onCancel: () => cancelRemoveWatchLater(item.aid),
-    onUndo: () => void restoreWatchLater(item),
   }
 }
 
@@ -518,13 +480,13 @@ function getItemKey(item: VideoItem) {
                 p-2 m-1
                 content-visibility-auto
               >
-                <!-- 删除遮罩：覆盖整行并拦截链接点击；确认前未调用接口，删除后可还原 -->
-                <div
-                  v-if="removeStatuses.has(item.aid)"
-                  class="watch-later-removed-mask"
-                  @click.prevent.stop
-                >
-                  <template v-if="isRemoveConfirming(removeStatuses.get(item.aid))">
+                <!-- 删除遮罩：覆盖整行并拦截链接点击；确认前未调用接口，确认后卡片直接移出 -->
+                <Transition name="fade">
+                  <div
+                    v-if="removeStatuses.has(item.aid)"
+                    class="watch-later-removed-mask"
+                    @click.prevent.stop
+                  >
                     <p color-white text-lg>
                       {{ t('watch_later.remove_confirm') }}
                     </p>
@@ -550,23 +512,8 @@ function getItemKey(item: VideoItem) {
                         {{ t('common.operation.cancel') }}
                       </Button>
                     </div>
-                  </template>
-                  <template v-else>
-                    <p color-white text-lg>
-                      {{ t('watch_later.removed') }}
-                    </p>
-                    <Button
-                      color="rgba(255,255,255,.35)" text-color="white" size="small"
-                      :disabled="removeStatuses.get(item.aid) === 'restoring'"
-                      @click.prevent.stop="restoreWatchLater(item)"
-                    >
-                      <template #left>
-                        <div i-mingcute-back-line text-lg />
-                      </template>
-                      {{ t('common.undo') }}
-                    </Button>
-                  </template>
-                </div>
+                  </div>
+                </Transition>
 
                 <!-- Cover -->
                 <div
