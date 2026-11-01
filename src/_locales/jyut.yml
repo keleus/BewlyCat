@@ -1588,6 +1588,8 @@ favorites:
   unfav_seasons_failed: '{count} 個合集取消收藏失敗'
   search_all_folders: 全部
   search_current_folder: 目前
+  search_scope: 搜尋範圍
+  clear_search: 清空搜尋
   search_placeholder: 搜尋目前收藏夾
 version_reminder:
   trigger: 新版本說明

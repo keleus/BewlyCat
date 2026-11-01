@@ -1551,6 +1551,8 @@ favorites:
     该操作无法撤销，你确定要取消收藏这些视频吗？
   search_current_folder: 当前
   search_all_folders: 全部
+  search_scope: 搜索范围
+  clear_search: 清空搜索
   search_placeholder: 搜索当前收藏夹
   global_search_placeholder: 搜索全部收藏夹
   global_search_hint: 请输入关键词以搜索全部收藏夹

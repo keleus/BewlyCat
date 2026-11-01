@@ -47,7 +47,7 @@ defineExpose({ focus })
     :style="{ height, padding }"
     focus-within:ring="2px $bew-theme-color"
     p="x-4"
-    rounded="$bew-interactive-radius" transition="border-color duration-300, background-color duration-300, box-shadow duration-300"
+    rounded="$bew-interactive-radius"
     bg="$bew-fill-1" flex="~ gap-2"
   >
     <div v-if="$slots.prefix" class="prefix">
@@ -81,6 +81,13 @@ defineExpose({ focus })
 </template>
 
 <style lang="scss" scoped>
+.b-input {
+  transition:
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
 .prefix,
 .suffix {
   --uno: "flex items-center";

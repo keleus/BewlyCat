@@ -155,6 +155,7 @@ function onMouseEnter() {
       class="select-trigger"
       :class="{ 'is-disabled': props.disabled }"
       :aria-disabled="props.disabled"
+      :aria-expanded="showOptions"
       p="x-4 y-2"
       bg="$bew-fill-1"
       rounded="$bew-interactive-radius"

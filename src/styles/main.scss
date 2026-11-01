@@ -401,35 +401,11 @@ html.dark.bewly-design {
   }
 }
 
-// 页面控件只在自身范围内采样背景；不再依赖工具栏背后的一整块底板。
-.bew-toolbar-controls .b-input,
-.bew-toolbar-controls .select-trigger,
-.bew-toolbar-controls .bew-toolbar-note {
-  color: var(--bew-text-1);
-  background: var(--bew-control-surface-background);
-  box-shadow: var(--bew-control-surface-edge);
-  backdrop-filter: var(--bew-control-surface-filter);
-  -webkit-backdrop-filter: var(--bew-control-surface-filter);
-}
-
-.bew-toolbar-controls .b-input:hover,
-.bew-toolbar-controls .select-trigger:hover:not(.is-disabled) {
-  background: var(--bew-control-surface-hover);
-}
-
-.bew-toolbar-controls .b-input:focus-within {
-  outline: 2px solid var(--bew-theme-color);
-  outline-offset: var(--bew-space-0-5);
-}
-
-.bew-toolbar-controls .b-button.b-button--type-secondary,
-.bew-toolbar-controls .b-button.b-button--type-tertiary {
-  --b-button-color: var(--bew-control-surface-background);
-  --b-button-color-hover: var(--bew-control-surface-hover);
-  --b-button-shadow: var(--bew-control-surface-edge);
-
-  backdrop-filter: var(--bew-control-surface-filter);
-  -webkit-backdrop-filter: var(--bew-control-surface-filter);
+// 工具栏控件统一使用全站标准 fill 词汇：默认 fill-1、hover fill-2，聚焦沿用组件
+// 自带的 2px 主题色 ring（box-shadow，标准时长过渡，平滑且全站一致）。
+// 本契约只归一尺寸、排版与内边距，不再覆写背景、边缘与聚焦样式。
+.bew-toolbar-controls .b-input:hover {
+  background: var(--bew-fill-2);
 }
 
 // 同一行的输入框、选择器和按钮使用相同外框高度，边框和 padding 都计入其中。
@@ -457,6 +433,11 @@ html.dark.bewly-design {
   border: 0;
 }
 
+// 选择器与同行输入框、按钮保持相同的水平内边距。
+.bew-toolbar-controls .select-trigger {
+  padding-inline: var(--bew-space-3);
+}
+
 .bew-toolbar-controls .b-input input::placeholder {
   color: var(--bew-control-surface-muted);
   opacity: 1;
@@ -466,6 +447,37 @@ html.dark.bewly-design {
   display: inline-flex;
   align-items: center;
   padding-inline: var(--bew-space-3);
+  background: var(--bew-fill-1);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  white-space: nowrap;
+}
+
+// 工具栏搜索框 suffix 槽内的标准清除按钮（关注流与收藏页共用）。
+.bew-toolbar-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--bew-control-item-height);
+  height: var(--bew-control-item-height);
+  color: var(--bew-text-2);
+  font-size: var(--bew-icon-size-sm);
+  border-radius: var(--bew-interactive-radius);
+  cursor: pointer;
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    color: var(--bew-text-1);
+    background: var(--bew-fill-2);
+  }
+
+  &:active {
+    background: var(--bew-fill-3);
+  }
 }
 
 .bew-page-sidebar {
