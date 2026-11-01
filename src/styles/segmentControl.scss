@@ -26,25 +26,17 @@
   backdrop-filter: none;
 }
 
-// 与工具栏控件对齐的变体：容器底色与同行输入框、按钮一致（标准 fill-1）；
-// 选项的 hover/选中/glow 一律沿用标准 segment 状态词汇
-// （theme-20 底 + 主题色文字 + 柔光阴影），与全站其他切换器保持一致。
+// 与工具栏控件对齐的变体：只归一圆角与过渡，底色沿用标准 --surface 词汇
+// （elevated 白底 + 柔影），与全站其他切换器一致；选项 hover/选中/glow
+// 也沿用标准 segment 状态词汇（fill-1 hover、theme-20 选中 + 主题色文字 + 柔光）。
 .bew-segment-control--toolbar {
   --bew-control-item-radius: var(--bew-radius-sm);
   --bew-liquid-indicator-radius: var(--bew-radius-sm);
-  // 容器为实心 fill-1，标准 hover 的 fill-1 会不可见，改用全站 hover 惯例 fill-2。
-  --bew-segment-item-hover-bg: var(--bew-fill-2);
 
   border-radius: var(--bew-interactive-radius);
   transition:
     background-color var(--bew-duration-normal) var(--bew-ease-standard),
     box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
-}
-
-.bew-segment-control--toolbar.bew-segment-control--surface {
-  background: var(--bew-fill-1);
-  box-shadow: none;
-  backdrop-filter: none;
 }
 
 .bew-segment-control__item {
