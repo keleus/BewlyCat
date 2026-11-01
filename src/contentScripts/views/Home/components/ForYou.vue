@@ -14,6 +14,7 @@ import { appAuthTokens, noCookieForYouRecommendationState, settings } from '~/lo
 import type { AppForYouResult, Item as AppVideoItem } from '~/models/video/appForYou'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
+import type { VideoInfo } from '~/models/video/videoInfo'
 import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
@@ -717,10 +718,13 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   const bottomReason = item?.bottom_rcmd_reason?.trim()
   const followed = !!bottomReason && APP_FOLLOWED_REASONS.has(bottomReason)
 
-  // 预先计算 capsuleText，提取复杂逻辑
   // 单列接口的 desc 为「UP 主 · 发布时间」，联合投稿时 multiply_desc.extra 为「等N人联合创作 · 发布时间」
-  const descPart = (item.multiply_desc?.extra || item.desc)?.split('·')?.[1]?.trim()
-  const capsuleText = descPart || (followed ? bottomReason : undefined)
+  // 从最后一个分隔符取时间，避免 UP 主名称包含「·」时截到名称；关注状态不能作为时间兜底。
+  const description = decodeHtmlEntities(item.multiply_desc?.extra || item.desc)
+  const descPart = description.includes('·') ? description.split('·').pop()?.trim() : undefined
+  const capsuleText = descPart && /^(?:刚刚|剛剛|今天|昨天|前天|\d+\s*(?:[秒天周週年]|分钟|分鐘|小时|小時|个月|個月)前|\d{1,4}[-/.年]\d{1,2}|\d{1,2}月\d{1,2}日)/.test(descPart)
+    ? descPart
+    : undefined
 
   // HD 接口的推荐理由（如「1万点赞」）；竖屏已有类型图标，关注状态已由 followed 体现
   // 之后追加「我不想看」中的频道名（如「频道:二次元」），作为视频所属频道标签显示
@@ -755,6 +759,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     // App 推荐的 rname 为分区名，tname 为话题标签
     category: decodeHtmlEntities(item.args?.rname) || undefined,
     tag: tags.length > 0 ? tags : undefined,
+    publishedTimestamp: item.pubdate && Number.isFinite(item.pubdate) && item.pubdate > 0 ? item.pubdate : undefined,
     capsuleText: decodeHtmlEntities(capsuleText),
     bvid: item.bvid || '',
     viewStr: item.cover_left_text_1,
@@ -770,6 +775,101 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     threePointV2: item?.three_point_v2 || [],
   }
 }
+
+// 双列推荐不提供发布时间。只为已曝光且缺少时间的普通视频补取详情，避免阻塞推荐列表加载。
+const exposedAppVideoKeys = new Set(tabState.read<string[]>('appPublishTimeExposedKeys', []))
+tabState.capture('appPublishTimeExposedKeys', () => [...exposedAppVideoKeys])
+const pendingAppPublishTimes = new WeakSet<VideoCardDisplayData>()
+const appPublishTimeQueue: VideoCardDisplayData[] = []
+const appPublishTimeAbortController = new AbortController()
+const APP_PUBLISH_TIME_CONCURRENCY = 2
+let activeAppPublishTimeRequests = 0
+
+function canLoadAppPublishTime(): boolean {
+  return tabState.isCurrent()
+    && settings.value.recommendationMode === 'app'
+    && settings.value.showVideoCardPublishTime
+}
+
+function clearAppPublishTimeQueue() {
+  for (const video of appPublishTimeQueue)
+    pendingAppPublishTimes.delete(video)
+  appPublishTimeQueue.length = 0
+}
+
+function drainAppPublishTimeQueue() {
+  while (appPublishTimeQueue.length && activeAppPublishTimeRequests < APP_PUBLISH_TIME_CONCURRENCY) {
+    const video = appPublishTimeQueue.shift()!
+    if (!canLoadAppPublishTime() || !appVideoList.value.some(element => element.displayData === video)) {
+      pendingAppPublishTimes.delete(video)
+      continue
+    }
+    void loadAppPublishTime(video)
+  }
+}
+
+async function loadAppPublishTime(video: VideoCardDisplayData) {
+  activeAppPublishTimeRequests++
+  try {
+    const response: VideoInfo = await api.video.getVideoInfo(
+      video.bvid ? { bvid: video.bvid } : { aid: String(video.id) },
+      { signal: appPublishTimeAbortController.signal },
+    )
+    if (tabState.isCurrent() && response?.code === 0 && Number.isFinite(response.data?.pubdate) && response.data.pubdate > 0)
+      video.publishedTimestamp = response.data.pubdate
+  }
+  catch {
+    // 时间补取失败不影响推荐流，也不以关注状态替代时间。
+  }
+  finally {
+    pendingAppPublishTimes.delete(video)
+    activeAppPublishTimeRequests--
+    drainAppPublishTimeQueue()
+  }
+}
+
+function queueAppPublishTime(video?: VideoCardDisplayData) {
+  if (!canLoadAppPublishTime() || !video || video.goto !== 'av'
+    || video.publishedTimestamp || video.capsuleText || (!video.bvid && video.id <= 0)
+    || pendingAppPublishTimes.has(video)) {
+    return
+  }
+  pendingAppPublishTimes.add(video)
+  appPublishTimeQueue.push(video)
+  drainAppPublishTimeQueue()
+}
+
+function markRecommendationExposed(element: VideoElement | AppVideoElement) {
+  if (isWebRecommendationMode.value) {
+    markWebRecommendationExposed(element)
+    return
+  }
+  if (element.displayData) {
+    exposedAppVideoKeys.add(element.uniqueId)
+    queueAppPublishTime(element.displayData)
+  }
+}
+
+function loadExposedAppPublishTimes() {
+  for (const element of appVideoList.value) {
+    if (exposedAppVideoKeys.has(element.uniqueId))
+      queueAppPublishTime(element.displayData)
+  }
+}
+
+watch(() => settings.value.showVideoCardPublishTime, (enabled) => {
+  if (!enabled) {
+    clearAppPublishTimeQueue()
+    return
+  }
+  loadExposedAppPublishTimes()
+})
+
+onMounted(loadExposedAppPublishTimes)
+onScopeDispose(() => {
+  clearAppPublishTimeQueue()
+  appPublishTimeAbortController.abort()
+})
 
 function getWebVideoKey(item: VideoItem): string {
   const bvid = item.bvid?.trim()
@@ -1044,6 +1144,7 @@ watch(recommendationFeedKey, () => {
   if (!tabState.isCurrent())
     return
   requestVersion++
+  clearAppPublishTimeQueue()
   noMoreContent.value = false
   resetWebRiskRecoveryState()
   resetWebRecommendState()
@@ -1093,6 +1194,8 @@ async function initData() {
   if (!tabState.isCurrent())
     return
   requestVersion++
+  clearAppPublishTimeQueue()
+  exposedAppVideoKeys.clear()
   // 当前组件即将持有最新列表，旧的跨卸载快照不再有保留价值。
   forYouStore.resetState()
   // 用户主动刷新必须重新获得一次完整请求机会；成功后才重置递增冷却等级。
@@ -2068,7 +2171,7 @@ function getItemKey(item: VideoElement | AppVideoElement) {
       :transform-item="getItemDisplayData"
       :get-item-key="getItemKey"
       :video-type="isWebRecommendationMode ? 'rcmd' : 'appRcmd'"
-      :card-exposure-handler="markWebRecommendationExposed"
+      :card-exposure-handler="markRecommendationExposed"
       :card-click-observer="recordWebRecommendationClick"
       show-preview
       more-btn

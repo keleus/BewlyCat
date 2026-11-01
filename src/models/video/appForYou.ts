@@ -62,6 +62,8 @@ export interface Item {
   cover_left_text_1?: string
   cover_left_text_2?: string
   desc?: string
+  /** 部分推荐接口返回的投稿发布时间（Unix 秒）；缺省时从描述或视频详情获取。 */
+  pubdate?: number
   /** TV / iPad 接口为对象，HD 接口为字符串（如「已关注」） */
   rcmd_reason?: RcmdReason | string
   /** HD 接口的 UP 主名称按钮，番剧等卡片没有 args.up_name 时使用 */
