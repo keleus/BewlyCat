@@ -1317,7 +1317,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
         class="favorites-toolbar bew-toolbar-controls"
       >
         <Transition name="fade">
-          <div v-if="!isBatchManaging" class="toolbar-search-group">
+          <div v-if="!isBatchManaging" key="search" class="toolbar-search-group">
             <div
               class="search-scope-switch bew-segment-control bew-segment-control--surface bew-segment-control--toolbar bew-segment-control--static"
               :class="{ 'bew-segment-control--solid': !settings.enableFrostedGlass }"
@@ -1367,21 +1367,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               {{ t('common.search') }}
             </Button>
           </div>
-        </Transition>
-
-        <div v-if="canBatchManage" class="toolbar-action-group">
-          <Button
-            :type="isBatchManaging ? 'tertiary' : 'secondary'"
-            :disabled="isBatchOperating"
-            @click="toggleBatchManage"
-          >
-            <template #left>
-              <div :class="isBatchManaging ? 'i-tabler:x' : 'i-tabler:list-check'" />
-            </template>
-            {{ isBatchManaging ? t('common.operation.cancel') : t('favorites.batch_manage') }}
-          </Button>
-
-          <template v-if="isBatchManaging">
+          <div v-else key="batch" class="toolbar-batch-group">
             <Button
               type="secondary"
               :disabled="favoriteResources.length === 0 || isBatchOperating"
@@ -1425,7 +1411,20 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               </template>
               {{ t('favorites.batch_unfavorite') }}
             </Button>
-          </template>
+          </div>
+        </Transition>
+
+        <div v-if="canBatchManage" class="toolbar-action-group">
+          <Button
+            :type="isBatchManaging ? 'tertiary' : 'secondary'"
+            :disabled="isBatchOperating"
+            @click="toggleBatchManage"
+          >
+            <template #left>
+              <div :class="isBatchManaging ? 'i-tabler:x' : 'i-tabler:list-check'" />
+            </template>
+            {{ isBatchManaging ? t('common.operation.cancel') : t('favorites.batch_manage') }}
+          </Button>
         </div>
       </div>
 
@@ -2315,6 +2314,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
 }
 
 .favorites-toolbar {
+  position: relative;
   display: flex;
   gap: var(--bew-space-2);
   align-items: center;
@@ -2324,6 +2324,15 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   width: 100%;
   max-width: 100%;
   margin: var(--bew-space-3) 0;
+
+  // 搜索组与批量组在同一槽位交叉淡入淡出：离场一侧脱离文档流，
+  // 布局自第一帧起就由进场一侧决定，右侧开关按钮始终不移动，
+  // 避免批量操作先出现在右侧再跳回左侧的两段式闪现。
+  .fade-leave-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 
   // 整行控件与动态页筛选栏同款观感：标准 elevated 白底 + 柔影；
   // hover 用 fill-1（与白底分段切换器的 hover 惯例一致），
@@ -2354,6 +2363,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
 }
 
 .toolbar-search-group,
+.toolbar-batch-group,
 .toolbar-action-group {
   display: flex;
   flex-wrap: wrap;
