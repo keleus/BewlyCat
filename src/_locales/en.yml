@@ -1715,6 +1715,8 @@ favorites:
   unfav_seasons_failed: Failed to unfavorite {count} seasons
   search_all_folders: all
   search_current_folder: current
+  search_scope: Search scope
+  clear_search: Clear search
   search_placeholder: Search for current favorites
 version_reminder:
   trigger: What's new

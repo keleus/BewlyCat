@@ -1043,7 +1043,19 @@ function handleSearch() {
   loadSelectedContent()
 }
 
-function handleSearchScopeChange() {
+function handleSearchScopeSelect(value: 'current' | 'all') {
+  if (searchScope.value === value)
+    return
+
+  searchScope.value = value
+  handleSearch()
+}
+
+function clearSearchKeyword() {
+  if (!keyword.value)
+    return
+
+  keyword.value = ''
   handleSearch()
 }
 
@@ -1305,30 +1317,60 @@ function transformFavoriteArticle(item: FavoriteArticle) {
         v-if="favoriteView === 'video'"
         class="favorites-toolbar bew-toolbar-controls"
       >
-        <div v-if="!isBatchManaging" class="toolbar-search-group">
-          <Select v-model="searchScope" class="search-scope-select" :options="searchScopeOptions" @change="handleSearchScopeChange" />
-          <Input
-            v-model="keyword"
-            class="favorites-search-input"
-            :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
-            :aria-label="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
-            @enter="handleSearch"
-          />
-          <Button
-            type="secondary"
-            :disabled="searchScope === 'all' && !keyword.trim()"
-            :aria-label="$t('common.search')"
-            @click="handleSearch"
-          >
-            <template #left>
-              <div i-tabler:search />
-            </template>
-          </Button>
-        </div>
+        <Transition name="fade">
+          <div v-if="!isBatchManaging" class="toolbar-search-group">
+            <div
+              class="search-scope-switch bew-segment-control bew-segment-control--surface bew-segment-control--toolbar bew-segment-control--static"
+              role="group"
+              :aria-label="t('favorites.search_scope')"
+            >
+              <button
+                v-for="option in searchScopeOptions" :key="option.value"
+                type="button"
+                class="bew-segment-control__item"
+                data-segment-item
+                :data-active="searchScope === option.value ? 'true' : undefined"
+                :aria-pressed="searchScope === option.value"
+                @click="handleSearchScopeSelect(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+            <Input
+              v-model="keyword"
+              class="favorites-search-input"
+              :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+              :aria-label="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+              @enter="handleSearch"
+            >
+              <template #suffix>
+                <button
+                  v-if="keyword"
+                  type="button"
+                  class="bew-toolbar-search-clear"
+                  :aria-label="t('favorites.clear_search')"
+                  :title="t('favorites.clear_search')"
+                  @click="clearSearchKeyword"
+                >
+                  <span i-mingcute:close-line aria-hidden="true" />
+                </button>
+              </template>
+            </Input>
+            <Button
+              type="secondary"
+              :disabled="searchScope === 'all' && !keyword.trim()"
+              @click="handleSearch"
+            >
+              <template #left>
+                <div i-tabler:search />
+              </template>
+              {{ t('common.search') }}
+            </Button>
+          </div>
+        </Transition>
 
         <div v-if="canBatchManage" class="toolbar-action-group">
           <Button
-            v-if="canBatchManage"
             :type="isBatchManaging ? 'tertiary' : 'secondary'"
             :disabled="isBatchOperating"
             @click="toggleBatchManage"
@@ -1350,7 +1392,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               </template>
               {{ isAllCurrentPageSelected ? t('favorites.batch_unselect_all') : t('favorites.batch_select_all') }}
             </Button>
-            <span class="batch-selected-count bew-toolbar-note">
+            <span class="bew-toolbar-note">
               {{ t('favorites.batch_selected_count', { count: selectedCount }) }}
             </span>
             <Button
@@ -2301,19 +2343,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   flex: 0 0 auto;
 }
 
-.batch-selected-count {
-  color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
-  white-space: nowrap;
-}
-
-.search-scope-select {
-  flex: 0 0 120px;
-}
-
 .favorites-search-input {
-  width: min(250px, 100%);
+  flex: 0 1 320px;
+  min-width: 160px;
 }
 
 .article-favorites-content,
@@ -2499,10 +2531,6 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   .favorites-toolbar {
     flex-wrap: wrap;
     width: 100%;
-  }
-
-  .favorites-search-input {
-    flex: 1 1 200px;
   }
 }
 
