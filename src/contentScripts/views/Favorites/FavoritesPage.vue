@@ -1321,6 +1321,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           <div v-if="!isBatchManaging" class="toolbar-search-group">
             <div
               class="search-scope-switch bew-segment-control bew-segment-control--surface bew-segment-control--toolbar bew-segment-control--static"
+              :class="{ 'bew-segment-control--solid': !settings.enableFrostedGlass }"
               role="group"
               :aria-label="t('favorites.search_scope')"
             >
@@ -2324,6 +2325,33 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   width: 100%;
   max-width: 100%;
   margin: var(--bew-space-3) 0;
+
+  // 整行控件与动态页筛选栏同款观感：标准 elevated 白底 + 柔影；
+  // hover 用 fill-1（与白底分段切换器的 hover 惯例一致），
+  // 聚焦保留组件自带的 2px 主题色 ring，并叠加在柔影之上。
+  .b-input,
+  .b-button,
+  .bew-toolbar-note {
+    background: var(--bew-control-background);
+  }
+
+  .b-input,
+  .b-button,
+  .bew-toolbar-note {
+    box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
+  }
+
+  .b-input:hover,
+  .b-button:hover:not(:disabled) {
+    background: var(--bew-fill-1);
+  }
+
+  .b-input:focus-within {
+    box-shadow:
+      var(--bew-shadow-1),
+      var(--bew-shadow-edge-glow-1),
+      0 0 0 2px var(--bew-theme-color);
+  }
 }
 
 .toolbar-search-group,
