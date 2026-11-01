@@ -1468,6 +1468,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           :more-btn="favoriteView === 'video' && !isBatchManaging"
           :hide-author="favoriteView === 'season'"
           :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
+          :show-preview="favoriteView === 'video' && !isBatchManaging"
           :get-removed-state="favoriteView === 'video' ? getFavoriteRemovedState : undefined"
           :cover-top-left-always-visible="isBatchManaging"
           enable-row-padding
