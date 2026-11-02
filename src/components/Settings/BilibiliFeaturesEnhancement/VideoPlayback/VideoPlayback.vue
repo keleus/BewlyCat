@@ -6,6 +6,7 @@ import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
 import type { PlayerDefaultState, VideoPlayerModeContext, VideoPlayerScrollMode } from '~/logic/storage'
+import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -150,6 +151,15 @@ function saveWheelVolumeStep() {
   const value = wheelVolumeStep.value === '' ? Number.NaN : Number(wheelVolumeStep.value)
   settings.value.fullscreenWheelVolumeStep = normalizeWheelVolumeStep(value)
   wheelVolumeStep.value = settings.value.fullscreenWheelVolumeStep
+}
+
+const keyboardVolumeStep = ref<string | number>(settings.value.keyboardVolumeStep)
+watch(() => settings.value.keyboardVolumeStep, value => keyboardVolumeStep.value = value)
+
+function saveKeyboardVolumeStep() {
+  const value = keyboardVolumeStep.value === '' ? Number.NaN : Number(keyboardVolumeStep.value)
+  settings.value.keyboardVolumeStep = normalizeKeyboardVolumeStep(value)
+  keyboardVolumeStep.value = settings.value.keyboardVolumeStep
 }
 
 const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefaultState }[]>(() => [
@@ -318,6 +328,28 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
             v-model="wheelVolumeStep" type="number" :min="1" :max="50" :step="1"
             w="100px"
             :aria-label="t('settings.fullscreen_wheel_volume_step')" @blur="saveWheelVolumeStep" @enter="saveWheelVolumeStep"
+          />
+        </SettingsItem>
+      </SettingsItemSubgroup>
+
+      <SettingsItemSubgroup :title="t('settings.keyboard_volume')">
+        <SettingsItem
+          :title="t('settings.keyboard_volume')"
+          :desc="t('settings.keyboard_volume_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.customKeyboardVolume" />
+        </SettingsItem>
+        <SettingsItem
+          v-if="settings.customKeyboardVolume"
+          :title="t('settings.keyboard_volume_step')"
+          :desc="t('settings.keyboard_volume_step_desc')"
+          right-width="auto"
+        >
+          <Input
+            v-model="keyboardVolumeStep" type="number" :min="1" :max="50" :step="1"
+            w="100px"
+            :aria-label="t('settings.keyboard_volume_step')" @blur="saveKeyboardVolumeStep" @enter="saveKeyboardVolumeStep"
           />
         </SettingsItem>
       </SettingsItemSubgroup>

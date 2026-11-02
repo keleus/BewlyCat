@@ -617,6 +617,10 @@ settings:
   fullscreen_wheel_volume_desc: 全屏播放时用插件接管滚轮调音，每滚一格按固定幅度调节，替代 B 站原生不规律的调节幅度。
   fullscreen_wheel_volume_step: 滚轮音量调节幅度
   fullscreen_wheel_volume_step_desc: 每格增减 1–50；默认 5。
+  keyboard_volume: 方向键音量调节
+  keyboard_volume_desc: 播放器内按上下方向键时由插件接管，按下方幅度调节；关闭时沿用 B 站默认（每次 10）。
+  keyboard_volume_step: 方向键音量调节幅度
+  keyboard_volume_step_desc: 每按一次增减 1–50；B 站默认为 10。
   remember_video_quality: 记住清晰度
   remember_video_quality_desc: 启用后自动恢复上次选择的清晰度，不可用时沿用当前清晰度。
   remember_video_quality_confirm_title: 确认开启记住清晰度？
@@ -848,6 +852,8 @@ settings:
   dock_item_open_in_new_tab: 在新标签页打开
   dock_item_use_original_bili_web_page: 使用原版 Bilibili 网页
   disable_dock_glowing_effect: 关闭 Dock 栏发光效果
+  disable_dock_icon_animation: 关闭 Dock 图标悬停动画
+  disable_dock_icon_animation_desc: 关闭后 Dock 图标在悬停、聚焦时不再播放弹跳、旋转等动画；点击回弹与操作按钮脉冲不受影响。
   disable_light_dark_mode_switcher: 禁用亮/暗色模式切换按钮
   disable_back_to_top_button_on_dock: 禁用 Dock 栏回到顶部按钮
   back_to_top_and_refresh_buttons_are_separated: 分离回到顶部和刷新按钮

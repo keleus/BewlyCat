@@ -55,6 +55,7 @@ import { setupVideoWatchProgress } from './features/videoWatchProgress'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
 import { initFullscreenWheelVolume } from './fullscreenWheelVolume'
 import { initImmersiveFeedFrame } from './immersiveFeedFrame'
+import { initKeyboardVolumeStep } from './keyboardVolumeStep'
 import { initListenVideoFeature } from './listenVideoFeature'
 import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
@@ -1512,6 +1513,7 @@ else if (shouldInitializeContentScript) {
     runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)
     initTouchPlayerGestures()
     initFullscreenWheelVolume()
+    initKeyboardVolumeStep()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
     if (isVideoOrBangumiPage()) {
