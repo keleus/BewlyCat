@@ -1224,17 +1224,6 @@ export const settings = useSettingsStorage(originalSettings, {
     if (!validAmbilightPresets.includes(record.ambilightPreset))
       record.ambilightPreset = 'cinema'
 
-    // 旧字段名迁移；测试版本可能已保存过 ambilightDiffusionScreening。
-    if (typeof record.ambilightDiffusionDecay !== 'number' && typeof record.ambilightDiffusionScreening === 'number')
-      record.ambilightDiffusionDecay = record.ambilightDiffusionScreening
-    Reflect.deleteProperty(record, 'ambilightDiffusionScreening')
-
-    // 旧版拉普拉斯/屏蔽泊松合并为泊松扩散：0 保留拉普拉斯，100 保留屏蔽泊松。
-    if (record.ambilightDiffusion === 'laplace' || record.ambilightDiffusion === 'screened-poisson') {
-      record.ambilightDiffusionDecay = record.ambilightDiffusion === 'laplace' ? 0 : 100
-      record.ambilightDiffusion = 'poisson'
-    }
-
     const validAmbilightDiffusions: AmbilightDiffusionMode[] = ['gaussian', 'poisson']
     if (!validAmbilightDiffusions.includes(record.ambilightDiffusion))
       record.ambilightDiffusion = originalSettings.ambilightDiffusion

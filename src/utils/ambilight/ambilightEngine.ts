@@ -524,10 +524,11 @@ export class AmbilightEngine {
       return
 
     const width = document.documentElement.clientWidth || window.innerWidth
+    // 宿主自身也计入 scrollHeight，先收起再测量，否则文档内容变短后滚动区域无法回缩
+    host.style.height = '0px'
     const height = Math.max(document.documentElement.scrollHeight, window.innerHeight)
     host.style.width = `${width}px`
-    if (host.style.height !== `${height}px`)
-      host.style.height = `${height}px`
+    host.style.height = `${height}px`
   }
 
   // 设置画布的文档坐标；只有布局/尺寸变化或 sticky 等文档坐标变化时调用。
@@ -573,8 +574,9 @@ export class AmbilightEngine {
           this.hostElem?.classList.remove('is-pending')
           this.lastDrawTime = now
           this.sampleBackdrop(now, force)
-          return
         }
+        // 扩散场暂不可用时跳过本帧：画布此时没有模糊滤镜，不能直接画清晰视频
+        return
       }
       catch {
         // 画布被跨域视频污染或求解异常时，退回现有高斯路径，避免整块环境光消失
@@ -812,6 +814,9 @@ export class AmbilightEngine {
     const elapsed = performance.now() - started
     if (elapsed > 8 && this.diffusionIterations > DIFFUSION_MIN_ITERATIONS)
       this.diffusionIterations = Math.max(DIFFUSION_MIN_ITERATIONS, this.diffusionIterations - 2)
+    // 负载回落后逐步恢复到设置值，避免一次卡顿后永久降级
+    else if (elapsed < 4 && this.diffusionIterations < configuredIterations)
+      this.diffusionIterations++
 
     if (canvas.width !== field.width)
       canvas.width = field.width

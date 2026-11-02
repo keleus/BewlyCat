@@ -48,24 +48,28 @@ const PRESET_CONFIGS: Record<AmbilightPreset, {
   ambilightStrength: number
   ambilightSpread: number
   ambilightSmoothing: number
+  ambilightBlur: number
   ambilightSaturation: number
 }> = {
   soft: {
     ambilightStrength: 55,
     ambilightSpread: 75,
     ambilightSmoothing: 80,
+    ambilightBlur: 85,
     ambilightSaturation: 110,
   },
   cinema: {
     ambilightStrength: 80,
     ambilightSpread: 100,
     ambilightSmoothing: 65,
+    ambilightBlur: 72,
     ambilightSaturation: 130,
   },
   vivid: {
     ambilightStrength: 100,
     ambilightSpread: 310,
     ambilightSmoothing: 45,
+    ambilightBlur: 60,
     ambilightSaturation: 160,
   },
 }
