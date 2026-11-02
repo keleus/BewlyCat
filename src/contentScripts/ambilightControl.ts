@@ -52,10 +52,11 @@ const BACKDROP_REGIONS: readonly BackdropRegion[] = [
     // 标题与播放量、日期等信息行
     name: 'top',
     selector: '.video-info-container, #viewbox_report',
-    points: rect => [
-      [rect.left + rect.width * 0.25, rect.top + rect.height * 0.35],
-      [rect.left + rect.width * 0.25, rect.bottom - 14],
-    ],
+    // 光晕沿视频上缘的颜色横向变化（泊松扩散几乎不模糊），左右各取一列
+    points: rect => [0.25, 0.75].flatMap(fx => [
+      [rect.left + rect.width * fx, rect.top + rect.height * 0.35],
+      [rect.left + rect.width * fx, rect.bottom - 14],
+    ] as Array<[number, number]>),
   },
   {
     // UP 主信息、弹幕列表、合集与推荐列表
@@ -75,7 +76,8 @@ const BACKDROP_REGIONS: readonly BackdropRegion[] = [
     // 播放器下方的弹幕发送栏与三连工具栏
     name: 'bottom',
     selector: '.bpx-player-sending-area, #arc_toolbar_report, .video-toolbar-container, #playlistToolbar',
-    points: rect => [[rect.left + rect.width * 0.3, rect.top + rect.height / 2]],
+    // 紧贴视频下缘，光晕颜色随视频底边横向变化，沿宽度取三点
+    points: rect => [0.15, 0.5, 0.85].map(fx => [rect.left + rect.width * fx, rect.top + rect.height / 2] as [number, number]),
   },
 ]
 

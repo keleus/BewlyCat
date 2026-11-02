@@ -164,6 +164,38 @@ export class AmbilightDiffusionField {
     return this.imageData
   }
 
+  /**
+   * 按光晕矩形内的归一化坐标双线性采样当前显示的场，用于估算文字背景。
+   * 在预乘空间插值后再除回 alpha，返回非预乘颜色的 sRGB 编码亮度与 alpha。
+   */
+  public sample(u: number, v: number): { luma: number, alpha: number } {
+    const fx = clamp(u * this.width - 0.5, 0, this.width - 1)
+    const fy = clamp(v * this.height - 0.5, 0, this.height - 1)
+    const x0 = Math.floor(fx)
+    const y0 = Math.floor(fy)
+    const x1 = Math.min(this.width - 1, x0 + 1)
+    const y1 = Math.min(this.height - 1, y0 + 1)
+    const tx = fx - x0
+    const ty = fy - y0
+
+    let luma = 0
+    let alpha = 0
+    const accumulate = (x: number, y: number, weight: number) => {
+      const base = (y * this.width + x) * 4
+      luma += weight * (0.2126 * this.display[base] + 0.7152 * this.display[base + 1] + 0.0722 * this.display[base + 2])
+      alpha += weight * this.display[base + 3]
+    }
+    accumulate(x0, y0, (1 - tx) * (1 - ty))
+    accumulate(x1, y0, tx * (1 - ty))
+    accumulate(x0, y1, (1 - tx) * ty)
+    accumulate(x1, y1, tx * ty)
+
+    return {
+      luma: alpha > MIN_ALPHA_FOR_COLOR ? clamp(luma / alpha, 0, 1) : 0,
+      alpha: clamp(alpha, 0, 1),
+    }
+  }
+
   private updateFixedPixels(source: Uint8ClampedArray): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {

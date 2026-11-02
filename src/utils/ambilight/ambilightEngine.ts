@@ -2,7 +2,7 @@ import type { DiffusionFieldGeometry } from './diffusionField'
 import { AmbilightDiffusionField } from './diffusionField'
 import { contentRect, glowGeometry } from './geometry'
 import { blendAlpha, blurredCoverage } from './math'
-import type { AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDiffusionQuality, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
+import type { AmbilightBackdropAnchor, AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDiffusionQuality, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
 
 const SAMPLE_WIDTH = 256
 const SAMPLE_HEIGHT = 144
@@ -833,8 +833,7 @@ export class AmbilightEngine {
     }
   }
 
-  // 低频估算各文字位置下的光晕：覆盖率由画布模糊衰减求得，颜色取附近格子，
-  // 均按 CSS 合成所用的 sRGB 编码值给出；小窗时光晕已休眠，不采样
+  // 低频估算各文字位置下的光晕，均按 CSS 合成所用的 sRGB 编码值给出；小窗时光晕已休眠，不采样
   private sampleBackdrop(now: number, force: boolean) {
     if (!this.backdropProbe || !this.canvas || !this.layout || !this.hasPainted || !this.isAllowed()
       || this.mode === 'mini') {
@@ -852,24 +851,77 @@ export class AmbilightEngine {
     this.cancelBackdropSample()
     this.lastBackdropSampleTime = now
 
+    // 浏览器原生滚动后，用画布当前视口矩形估算文字背景位置。
+    const canvasRect = this.canvas.getBoundingClientRect()
+    if (canvasRect.width <= 0 || canvasRect.height <= 0)
+      return
+
+    const anchors = this.backdropProbe.getAnchors()
+    let samples: AmbilightBackdropSample[] | null
+    if (this.usesDiffusion()) {
+      const field = this.diffusionField
+      if (!field?.hasSolution)
+        return
+      samples = this.sampleDiffusionBackdrop(field, canvasRect, anchors)
+    }
+    else {
+      samples = this.sampleGaussianBackdrop(canvasRect, anchors)
+    }
+
+    if (samples?.length)
+      this.backdropProbe.onSample(samples)
+  }
+
+  // 与 applyCanvasStyles 一致：强度超过 100% 时以 brightness 提亮，否则以透明度减弱
+  private getStrengthFactors(): { brightness: number, opacity: number } {
+    const { strength } = this.options
+    return {
+      brightness: Math.max(1, strength / 100),
+      opacity: Math.min(1, Math.max(0, strength / 100)),
+    }
+  }
+
+  // 扩散场没有 CSS 模糊，显示的就是场本身：直接在文字位置插值取色，不经缩小读回。
+  // 场的光晕铺满视口、贴近视频边缘处变化最剧烈，缩到 16×9 再取邻域会把视频区与远处透明区平均进来
+  private sampleDiffusionBackdrop(
+    field: AmbilightDiffusionField,
+    canvasRect: DOMRect,
+    anchors: readonly AmbilightBackdropAnchor[],
+  ): AmbilightBackdropSample[] {
+    const { brightness, opacity } = this.getStrengthFactors()
+    return anchors.map(({ region, x, y }) => {
+      const u = (x - canvasRect.left) / canvasRect.width
+      const v = (y - canvasRect.top) / canvasRect.height
+      if (u < 0 || u > 1 || v < 0 || v > 1)
+        return { region, glow: 0, alpha: 0 }
+      const { luma, alpha } = field.sample(u, v)
+      return { region, glow: Math.min(1, brightness * luma), alpha: opacity * alpha }
+    })
+  }
+
+  // 高斯模式的画布内容是未模糊的视频缩略图，模糊由 CSS 完成：
+  // 覆盖率由画布模糊衰减求得，颜色取缩小读回后的附近格子
+  private sampleGaussianBackdrop(
+    canvasRect: DOMRect,
+    anchors: readonly AmbilightBackdropAnchor[],
+  ): AmbilightBackdropSample[] | null {
+    if (!this.canvas || !this.layout)
+      return null
+
     if (!this.backdropCtx) {
       const canvas = document.createElement('canvas')
       canvas.width = BACKDROP_SAMPLE_WIDTH
       canvas.height = BACKDROP_SAMPLE_HEIGHT
       this.backdropCtx = canvas.getContext('2d', { alpha: true, willReadFrequently: true })
       if (!this.backdropCtx)
-        return
+        return null
     }
 
     this.backdropCtx.clearRect(0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
     this.backdropCtx.drawImage(this.canvas, 0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
     const { data } = this.backdropCtx.getImageData(0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
 
-    // 与 applyCanvasStyles 一致：强度超过 100% 时以 brightness 提亮，否则以透明度减弱。
-    // 扩散模式的画布自带 alpha，透明区域不能按黑色参与文字背景估算。
-    const { strength } = this.options
-    const brightness = Math.max(1, strength / 100)
-    const opacity = Math.min(1, Math.max(0, strength / 100))
+    const { brightness, opacity } = this.getStrengthFactors()
     for (let i = 0; i < this.backdropLuma.length; i++) {
       const p = i * 4
       const alpha = data[p + 3] / 255
@@ -879,22 +931,15 @@ export class AmbilightEngine {
         : 0
     }
 
-    // 浏览器原生滚动后，用画布当前视口矩形估算文字背景位置。
-    const canvasRect = this.canvas.getBoundingClientRect()
-    if (canvasRect.width <= 0 || canvasRect.height <= 0)
-      return
-    const visualBlur = this.usesDiffusion()
-      ? 0
-      : (this.layout.visualBlur || this.options.blur)
     const glow = {
       left: canvasRect.left,
       top: canvasRect.top,
       width: canvasRect.width,
       height: canvasRect.height,
-      blur: visualBlur,
+      blur: this.layout.visualBlur || this.options.blur,
     }
     const samples: AmbilightBackdropSample[] = []
-    for (const { region, x, y } of this.backdropProbe.getAnchors()) {
+    for (const { region, x, y } of anchors) {
       const coverage = glow.blur > 0
         ? blurredCoverage(x, glow.left, glow.left + glow.width, glow.blur)
         * blurredCoverage(y, glow.top, glow.top + glow.height, glow.blur)
@@ -928,8 +973,7 @@ export class AmbilightEngine {
       })
     }
 
-    if (samples.length)
-      this.backdropProbe.onSample(samples)
+    return samples
   }
 
   public startLoop() {
