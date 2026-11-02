@@ -936,7 +936,7 @@ async function getFavoriteSeasonResources(
     pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  // 合集卡片隐藏作者信息，直接展示列表，不额外请求 UP 主头像。
+  // 合集视频按标准视频卡片展示；接口通常不返回 UP 主头像，缺失时由卡片回退占位，不额外请求。
   loadedSeasonMedias.value = merged.medias
   loadedSeasonComplete.value = !merged.hasMore
   noMoreContent.value = !merged.hasMore
@@ -1466,10 +1466,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           :loading="isLoading || isFullPageLoading"
           :no-more-content="noMoreContent"
           :empty-description="$t('common.no_more_content')"
-          :more-btn="favoriteView === 'video' && !isBatchManaging"
-          :hide-author="favoriteView === 'season'"
+          :more-btn="!isBatchManaging"
           :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
-          :show-preview="favoriteView === 'video' && !isBatchManaging"
+          :show-preview="!isBatchManaging"
           :get-removed-state="favoriteView === 'video' ? getFavoriteRemovedState : undefined"
           :cover-top-left-always-visible="isBatchManaging"
           enable-row-padding
