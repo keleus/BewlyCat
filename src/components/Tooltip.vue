@@ -11,19 +11,21 @@ const props = withDefaults(defineProps<{
   placement?: Placement
   type?: 'default' | 'dark' | 'white'
   /**
-   * 浮层模式：将提示传送至 shadow root 顶层并以 fixed 定位，
-   * 用于触发器处在 overflow:hidden 容器（如视频/动态封面）内的场景。
-   * 默认关闭，保持原位纯 CSS 浮层行为不变；找不到顶层容器时也自动回退原位模式。
+   * 浮层模式（默认开启）：将提示传送至 shadow root 顶层并以 fixed 定位，
+   * 触发器处在 overflow:hidden 容器（如视频/动态封面）内也不会被裁切，
+   * 并按实测尺寸翻转、夹紧到视口内。找不到顶层容器时自动回退原位 CSS 模式；
+   * 需要保持原位行为时显式传 :floating="false"。
    */
   floating?: boolean
-  /** 浮层模式下的层级；处于设置窗口等高层容器内时可上调，避免提示被容器背景遮挡。 */
-  floatingZIndex?: CSSProperties['zIndex']
 }>(), {
   placement: 'top',
   type: 'default',
-  floating: false,
-  floatingZIndex: 9999,
+  floating: true,
 })
+
+// 浮层层级：高 z-index 容器（设置窗口、Dialog 等）通过继承 --bew-tooltip-z
+// 声明本层提示的层级，显示时从触发元素读取；未声明则用默认 9999。
+const Z_FALLBACK = 9999
 
 // 通用组件不能假设一定挂在 Bewly App 树内（useBewlyApp 在 dev 下无 provider 会抛错），
 // 这里用安全 inject；仅 floating 模式需要它。
@@ -35,6 +37,7 @@ const anchorRef = ref<HTMLSpanElement>()
 const tipRef = ref<HTMLDivElement>()
 const visible = ref(false)
 const tipStyles = ref<CSSProperties>({})
+const tipZIndex = ref<CSSProperties['zIndex']>(Z_FALLBACK)
 
 const GAP = 8
 const INSET = 8
@@ -125,9 +128,20 @@ function unbindRepositionListeners() {
   listenersBound = false
 }
 
+/** 从触发元素读取高 z-index 容器继承下来的 --bew-tooltip-z；未声明则用默认层级。 */
+function resolveZIndex(): CSSProperties['zIndex'] {
+  const anchor = anchorRef.value
+  if (!anchor)
+    return Z_FALLBACK
+  const fromContext = getComputedStyle(anchor).getPropertyValue('--bew-tooltip-z').trim()
+  return fromContext || Z_FALLBACK
+}
+
 function showTip() {
-  if (floatingEnabled.value && props.content)
+  if (floatingEnabled.value && props.content) {
+    tipZIndex.value = resolveZIndex()
     visible.value = true
+  }
 }
 
 function hideTip() {
@@ -181,7 +195,7 @@ onBeforeUnmount(() => {
           class="b-tooltip-floating"
           :class="`b-tooltip-floating--type-${type}`"
           role="tooltip"
-          :style="[tipStyles, { zIndex: floatingZIndex }]"
+          :style="[tipStyles, { zIndex: tipZIndex }]"
         >
           {{ content }}
         </div>
@@ -205,8 +219,9 @@ onBeforeUnmount(() => {
   --uno: "flex items-center relative";
 
   .b-tooltip {
-    --uno: "absolute px-2 rounded-$bew-radius-half pointer-events-none opacity-0 duration-300 shadow-$bew-shadow-2 whitespace-nowrap z-9999";
+    --uno: "absolute px-2 rounded-$bew-radius-half pointer-events-none opacity-0 shadow-$bew-shadow-2 whitespace-nowrap z-9999";
 
+    transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
     padding-block: var(--bew-space-1);
     font-size: var(--bew-font-size-control);
     font-weight: var(--bew-font-weight-medium);
@@ -283,7 +298,7 @@ onBeforeUnmount(() => {
 
 .b-tooltip-fade-enter-active,
 .b-tooltip-fade-leave-active {
-  transition: opacity var(--bew-duration-fast, 150ms) ease;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .b-tooltip-fade-enter-from,
