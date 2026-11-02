@@ -596,7 +596,8 @@ function changeMenuItem(menuItem: MenuType) {
 </script>
 
 <template>
-  <div class="fixed w-full h-full top-0 left-0" data-layout-edit-control>
+  <!-- --bew-tooltip-z：设置窗口内的浮层提示（含搜索页、壁纸页）统一抬到设置提示层级 -->
+  <div class="fixed w-full h-full top-0 left-0" data-layout-edit-control style="--bew-tooltip-z: var(--bew-z-settings-tooltip);">
     <div
       class="fixed w-full h-full top-0 left-0"
       @click="handleClose"
@@ -802,8 +803,6 @@ function changeMenuItem(menuItem: MenuType) {
           class="settings-usage-guide"
           :content="$t('settings.usage_guide')"
           placement="left"
-          floating
-          floating-z-index="var(--bew-z-settings-tooltip)"
         >
           <a
             :href="USAGE_GUIDE_URL"

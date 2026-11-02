@@ -183,7 +183,7 @@ defineExpose({ close: handleClose })
       <div
         v-if="showDialog"
         class="dialog"
-        style="z-index: var(--bew-z-dialog);"
+        style="z-index: var(--bew-z-dialog); --bew-tooltip-z: calc(var(--bew-z-dialog) + 1);"
         pos="fixed top-0 left-0" w-full h-full
         pointer-events-auto
       >

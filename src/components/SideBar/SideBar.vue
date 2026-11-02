@@ -89,7 +89,9 @@ function toggleHideSidebar(hide: boolean) {
       pointer-events-auto
       duration-300
     >
-      <Tooltip :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" placement="left">
+      <!-- :floating="false"：侧栏容器悬停时以 transform 滑入，浮层模式的一次性定位不跟随该动画；
+           侧栏也不在裁切容器内，原位模式在这里无任何被截断风险 -->
+      <Tooltip :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" placement="left" :floating="false">
         <Button
           class="ctrl-btn"
           data-layout-edit-target="sidebar-theme"
@@ -116,7 +118,7 @@ function toggleHideSidebar(hide: boolean) {
           </Transition>
         </Button>
       </Tooltip>
-      <Tooltip :content="$t('dock.settings')" placement="left">
+      <Tooltip :content="$t('dock.settings')" placement="left" :floating="false">
         <Button
           class="ctrl-btn group"
           data-layout-edit-target="sidebar-settings"
@@ -139,6 +141,7 @@ function toggleHideSidebar(hide: boolean) {
         v-if="settings.showLayoutEditButton || isLayoutEditing"
         :content="$t(isLayoutEditing ? 'layout_editor.finish' : 'layout_editor.edit_sidebar')"
         placement="left"
+        :floating="false"
       >
         <Button
           class="ctrl-btn sidebar-edit-button"
