@@ -128,7 +128,9 @@ function measure() {
     if (focusedKey && !validPinnedChannelKeys.value.slice(0, count).includes(focusedKey))
       void nextTick(() => trigger.value?.focus())
     if (!overflow.value.length) {
-      const hadFocus = panel.value?.contains(root?.activeElement ?? null) || root?.activeElement === trigger.value
+      // 无溢出时 trigger 未渲染（null），activeElement 也可能为 null，必须先确认确有焦点。
+      const activeElement = root?.activeElement ?? null
+      const hadFocus = !!activeElement && (panel.value?.contains(activeElement) || activeElement === trigger.value)
       close()
       if (hadFocus)
         void nextTick(() => anchor.value?.querySelector<HTMLElement>('[data-channel-key]')?.focus())
