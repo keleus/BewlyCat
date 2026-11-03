@@ -1025,6 +1025,8 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__more-btn {
+  @include mixins.interactive-layer;
+
   display: grid;
   flex: 0 0 auto;
   width: 32px;
