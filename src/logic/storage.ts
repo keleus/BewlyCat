@@ -7,6 +7,7 @@ import { DEFAULT_SEARCH_BAR_CHARACTER } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
+import type { AmbilightDiffusionMode, AmbilightDiffusionQuality } from '~/utils/ambilight/types'
 import {
   MOBILE_LIST_LAYOUT_BREAKPOINT,
   normalizeListLayoutBreakpoint,
@@ -306,6 +307,11 @@ export type AmbilightPreset = 'soft' | 'cinema' | 'vivid'
 export interface Settings {
   ambilightEnabled: boolean
   ambilightPreset: AmbilightPreset
+  ambilightDiffusion: AmbilightDiffusionMode
+  ambilightDiffusionQuality: AmbilightDiffusionQuality
+  ambilightDiffusionDecay: number
+  ambilightDiffusionIterations: number
+  ambilightDiffusionFeather: number
   ambilightStrength: number
   ambilightSpread: number
   ambilightSmoothing: number
@@ -682,6 +688,11 @@ export const originalLocalSettings: LocalSettings = {
 export const originalSettings: Settings = {
   ambilightEnabled: false,
   ambilightPreset: 'cinema',
+  ambilightDiffusion: 'gaussian',
+  ambilightDiffusionQuality: 'medium',
+  ambilightDiffusionDecay: 60,
+  ambilightDiffusionIterations: 12,
+  ambilightDiffusionFeather: 2,
   ambilightStrength: 80,
   ambilightSpread: 100,
   ambilightSmoothing: 65,
@@ -1213,7 +1224,18 @@ export const settings = useSettingsStorage(originalSettings, {
     if (!validAmbilightPresets.includes(record.ambilightPreset))
       record.ambilightPreset = 'cinema'
 
+    const validAmbilightDiffusions: AmbilightDiffusionMode[] = ['gaussian', 'poisson']
+    if (!validAmbilightDiffusions.includes(record.ambilightDiffusion))
+      record.ambilightDiffusion = originalSettings.ambilightDiffusion
+
+    const validAmbilightDiffusionQualities: AmbilightDiffusionQuality[] = ['ultra-low', 'low', 'medium', 'high', 'ultra-high']
+    if (!validAmbilightDiffusionQualities.includes(record.ambilightDiffusionQuality))
+      record.ambilightDiffusionQuality = originalSettings.ambilightDiffusionQuality
+
     for (const [key, min, max, fallback] of [
+      ['ambilightDiffusionDecay', 0, 100, 60],
+      ['ambilightDiffusionIterations', 4, 32, 12],
+      ['ambilightDiffusionFeather', 0, 4, 2],
       ['ambilightStrength', 0, 150, 80],
       ['ambilightSpread', 30, 400, 100],
       ['ambilightSmoothing', 0, 95, 65],

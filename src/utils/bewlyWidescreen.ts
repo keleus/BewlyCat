@@ -3386,10 +3386,22 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   schedulePlayerResizeSync(currentState)
 }
 
+function isSidebarEditableElement(element: Element) {
+  if (!(element instanceof HTMLElement))
+    return false
+  if (element.isContentEditable || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement)
+    return true
+  return element instanceof HTMLInputElement
+    && !['button', 'checkbox', 'radio', 'range', 'submit', 'reset', 'image', 'file', 'color'].includes(element.type)
+}
+
 function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   const sidebar = currentState.sidebarEl
-  const playerFrame = currentState.playerFrame
+  const root = currentState.root
   const tablist = currentState.tabButtons.comment.parentElement
+  // 离开侧栏时若正在输入或按住按键，先记下待收起，等条件解除且指针仍在侧栏外时再收起。
+  let collapsePending = false
+  let focusOutTimer: number | undefined
 
   function isPointInRect({ clientX, clientY }: PointerEvent, rect: DOMRect) {
     return clientX >= rect.left
@@ -3398,11 +3410,40 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
       && clientY <= rect.bottom
   }
 
-  function isPointInVisibleVideoArea(e: PointerEvent) {
-    if (!isPointInRect(e, playerFrame.getBoundingClientRect()))
-      return false
+  function isPointInSidebar(event: PointerEvent) {
+    return (event.target instanceof Node && sidebar.contains(event.target))
+      || isPointInRect(event, sidebar.getBoundingClientRect())
+  }
 
-    return !isPointInRect(e, sidebar.getBoundingClientRect())
+  // 评论框位于多层 Shadow DOM 内，需沿 shadowRoot 的焦点元素向下查找。
+  function isEditingInSidebar() {
+    let active = document.activeElement
+    if (!active || !sidebar.contains(active))
+      return false
+    while (active) {
+      if (isSidebarEditableElement(active))
+        return true
+      active = active.shadowRoot?.activeElement ?? null
+    }
+    return false
+  }
+
+  // 右键菜单、原生下拉框和系统对话框也会让页面收到无 relatedTarget 的 pointerout，
+  // 仅当指针位于视口边缘附近或之外时才视为移出窗口（如移到标签栏或任务栏）。
+  function isLeavingWindow(event: PointerEvent) {
+    if (event.relatedTarget || event.pointerType !== 'mouse')
+      return false
+    const tolerance = 8
+    return event.clientX <= tolerance
+      || event.clientY <= tolerance
+      || event.clientX >= window.innerWidth - tolerance
+      || event.clientY >= window.innerHeight - tolerance
+  }
+
+  function canAutoCollapse() {
+    return !settings.value.enableBewlyWidescreenSidebarResize
+      && currentState.sidebarMode === 'fit'
+      && root.dataset.sidebarExpanded === 'true'
   }
 
   function isAtHiddenSidebarEdge(event: PointerEvent) {
@@ -3419,11 +3460,6 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
       : event.clientX >= rect.right - 2
   }
 
-  function expandAtWindowEdge(event: PointerEvent) {
-    if (isAtHiddenSidebarEdge(event))
-      expandSidebar()
-  }
-
   function expandSidebar(event?: PointerEvent) {
     if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
       return
@@ -3433,42 +3469,94 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     // 移入内容区仍可展开；点击 Tab 则先完成选中，再展开面板。
     if (event && tablist && isPointInRect(event, tablist.getBoundingClientRect()))
       return
+    collapsePending = false
     currentState.root.dataset.sidebarExpanded = 'true'
     updateSidebarLayoutState()
     schedulePlayerResizeSync(currentState)
   }
 
-  function collapseSidebar(e: PointerEvent) {
-    if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
+  function collapseSidebar() {
+    collapsePending = false
+    root.dataset.sidebarExpanded = 'false'
+    updateSidebarLayoutState()
+    schedulePlayerResizeSync(currentState)
+  }
+
+  function requestCollapse(event: PointerEvent) {
+    if (!canAutoCollapse()) {
+      collapsePending = false
       return
-    // 展开动画期间侧栏尚未移入视口，边缘事件仍可能落在播放器上。
-    if (isAtHiddenSidebarEdge(e))
-      return
-    if (isPointInVisibleVideoArea(e) && currentState.root.dataset.sidebarExpanded === 'true') {
-      currentState.root.dataset.sidebarExpanded = 'false'
-      updateSidebarLayoutState()
-      schedulePlayerResizeSync(currentState)
     }
+    // 输入评论或拖选文字时移出侧栏不立即收起，避免布局变化打断输入或拖动。
+    if (event.buttons !== 0 || isEditingInSidebar()) {
+      collapsePending = true
+      return
+    }
+    collapseSidebar()
+  }
+
+  function retryPendingCollapse() {
+    if (!collapsePending)
+      return
+    if (!canAutoCollapse()) {
+      collapsePending = false
+      return
+    }
+    if (!isEditingInSidebar())
+      collapseSidebar()
+  }
+
+  // 根层覆盖整个视口，指针位于侧栏以外的任意位置都收起；挂在 body 上的浮层（如用户卡片）不在根层内，不触发收起。
+  function onRootPointerMove(event: PointerEvent) {
+    // 展开动画期间侧栏尚未移入视口，边缘事件仍可能落在播放器上。
+    if (isAtHiddenSidebarEdge(event)) {
+      expandSidebar()
+      return
+    }
+    if (root.dataset.sidebarExpanded !== 'true')
+      return
+    if (isPointInSidebar(event)) {
+      collapsePending = false
+      return
+    }
+    requestCollapse(event)
+  }
+
+  function onDocumentPointerOut(event: PointerEvent) {
+    if (isLeavingWindow(event))
+      requestCollapse(event)
+  }
+
+  function onSidebarFocusOut() {
+    window.clearTimeout(focusOutTimer)
+    // 等焦点落到新元素后再判断；窗口失焦（切换应用）时保留展开，回到页面可继续输入。
+    focusOutTimer = window.setTimeout(() => {
+      if (document.hasFocus())
+        retryPendingCollapse()
+    })
   }
 
   const expandAfterTabClick = () => expandSidebar()
   sidebar.addEventListener('pointerenter', expandSidebar)
   sidebar.addEventListener('pointermove', expandSidebar)
+  sidebar.addEventListener('focusout', onSidebarFocusOut)
   tablist?.addEventListener('click', expandAfterTabClick)
-  playerFrame.addEventListener('pointerenter', collapseSidebar)
-  playerFrame.addEventListener('pointermove', collapseSidebar)
-  currentState.root.addEventListener('pointerenter', expandAtWindowEdge)
-  currentState.root.addEventListener('pointermove', expandAtWindowEdge)
+  root.addEventListener('pointerover', onRootPointerMove)
+  root.addEventListener('pointermove', onRootPointerMove)
+  document.addEventListener('pointerout', onDocumentPointerOut)
+  document.addEventListener('pointerup', retryPendingCollapse, true)
 
   currentState.sidebarInteractionCleanup = () => {
     sidebar.removeEventListener('pointerenter', expandSidebar)
     sidebar.removeEventListener('pointermove', expandSidebar)
+    sidebar.removeEventListener('focusout', onSidebarFocusOut)
     tablist?.removeEventListener('click', expandAfterTabClick)
-    playerFrame.removeEventListener('pointerenter', collapseSidebar)
-    playerFrame.removeEventListener('pointermove', collapseSidebar)
-    currentState.root.removeEventListener('pointerenter', expandAtWindowEdge)
-    currentState.root.removeEventListener('pointermove', expandAtWindowEdge)
-    delete currentState.root.dataset.sidebarExpanded
+    root.removeEventListener('pointerover', onRootPointerMove)
+    root.removeEventListener('pointermove', onRootPointerMove)
+    document.removeEventListener('pointerout', onDocumentPointerOut)
+    document.removeEventListener('pointerup', retryPendingCollapse, true)
+    window.clearTimeout(focusOutTimer)
+    delete root.dataset.sidebarExpanded
   }
 }
 

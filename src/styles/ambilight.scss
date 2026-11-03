@@ -1,13 +1,14 @@
 // BewlyCat 视频环境光（Ambilight）层级与穿透样式
 
 .bewly-ambilight-host {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
   pointer-events: none !important;
   z-index: -1;
   overflow: hidden;
-  contain: layout style;
-  transform: translate3d(0, 0, 0);
   opacity: 1;
   visibility: visible;
   transition:
@@ -22,8 +23,9 @@
 
   canvas {
     position: absolute;
+    left: 0;
+    top: 0;
     pointer-events: none;
-    transform-origin: center;
   }
 }
 
