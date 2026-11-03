@@ -1297,6 +1297,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
     title: item.content || '',
     cover: getFavoriteArticleCover(item),
     author: item.author?.name || '',
+    authorFace: item.author?.face,
     authorMid: mid != null && mid !== '' ? Number(mid) : undefined,
     view: item.stat?.view || undefined,
     like: item.stat?.like || undefined,

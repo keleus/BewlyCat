@@ -1,5 +1,10 @@
 <script lang="ts" setup>
 import ALink from '~/components/ALink.vue'
+import type { Author } from '~/components/VideoCard/types'
+import VideoCardAuthorAvatar from '~/components/VideoCard/VideoCardAuthor/components/VideoCardAuthorAvatar.vue'
+import VideoCardAuthorName from '~/components/VideoCard/VideoCardAuthor/components/VideoCardAuthorName.vue'
+import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
+import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
 interface ArticleCardProps {
   id: number | string
@@ -9,6 +14,8 @@ interface ArticleCardProps {
   cover?: string
   author: string
   authorMid?: number
+  /** 接口返回的 UP 主头像地址，缺失时不渲染头像 */
+  authorFace?: string
   /** 数字或接口已格式化文案（如 "20.4万"） */
   view?: number | string
   like?: number | string
@@ -21,6 +28,9 @@ interface ArticleCardProps {
 
 const props = defineProps<ArticleCardProps>()
 
+// 与视频卡片共用同一套字号设置（标题/作者/元信息随用户设置联动）
+const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } = useVideoCardSharedStyles()
+
 const articleUrl = computed(() => {
   if (props.url)
     return props.url
@@ -28,127 +38,101 @@ const articleUrl = computed(() => {
   const id = String(props.id)
   if (/^\d{15,}$/.test(id))
     return `https://www.bilibili.com/opus/${id}`
-  return `https://www.bilibili.com/read/${id.startsWith('cv') ? id : `cv${id}`}`
+  return `https://www.bilibili.com/read/cv${id.replace(/^cv/, '')}`
 })
 
-// 格式化数字：已是展示字符串则原样返回
-function formatNumber(num: number | string | undefined) {
-  if (num === undefined || num === null || num === '')
+const authorObject = computed<Author | undefined>(() => {
+  if (!props.author)
+    return undefined
+  return {
+    name: props.author,
+    mid: props.authorMid,
+    authorFace: props.authorFace ?? '',
+  }
+})
+
+// 数字走共享格式化（与视频卡片一致，支持 i18n 单位）；接口文案原样展示
+function formatDisplayNumber(value: number | string | undefined) {
+  if (value === undefined || value === null || value === '')
     return '0'
-  if (typeof num === 'string')
-    return num
-  if (num >= 10000)
-    return `${(num / 10000).toFixed(1)}万`
-  return num.toString()
+  return typeof value === 'string' ? value : numFormatter(value)
 }
 
-// 格式化日期：字符串直接展示；数字按 Unix 秒处理
-function formatDate(timestamp: number | string | undefined) {
-  if (timestamp === undefined || timestamp === null || timestamp === '')
+function formatDisplayTime(value: number | string | undefined) {
+  if (value === undefined || value === null || value === '')
     return ''
-  if (typeof timestamp === 'string')
-    return timestamp
-
-  const date = new Date(timestamp * 1000)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-  if (days === 0) {
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    if (hours === 0) {
-      const minutes = Math.floor(diff / (1000 * 60))
-      return minutes === 0 ? '刚刚' : `${minutes}分钟前`
-    }
-    return `${hours}小时前`
-  }
-  else if (days === 1) {
-    return '昨天'
-  }
-  else if (days < 30) {
-    return `${days}天前`
-  }
-  else if (days < 365) {
-    return `${Math.floor(days / 30)}个月前`
-  }
-  else {
-    return `${Math.floor(days / 365)}年前`
-  }
+  return typeof value === 'string' ? value : calcTimeSince(value)
 }
+
+const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
 </script>
 
 <template>
   <ALink
     :href="articleUrl"
     type="videoCard"
-    class="article-card"
-    flex gap-4 p-4
-    bg="$bew-elevated hover:$bew-elevated-hover"
+    class="article-card article-card--interactive"
+    flex="~ gap-4 items-start" p-4
     rounded="$bew-card-radius"
     cursor-pointer
   >
-    <!-- 左侧内容 -->
-    <div class="article-content" flex-1 min-w-0>
-      <!-- 标题 -->
+    <div class="article-content" flex="~ col gap-2" flex-1 min-w-0>
+      <!-- 标题：与视频卡片同款字号档位与两行截断 -->
       <h3
-        class="article-title"
-        text="base $bew-text-1"
-        font-medium
-        line-clamp-2
-        mb-2
+        class="keep-two-lines"
+        :class="titleFontSizeClass"
+        text="overflow-ellipsis $bew-text-1"
+        :style="titleStyle"
+        :title="title"
       >
         {{ title }}
       </h3>
 
-      <!-- 描述 -->
-      <p
-        v-if="desc"
-        class="article-desc"
-        text="sm $bew-text-2"
-        line-clamp-2
-        mb-2
-      >
+      <p v-if="desc" text="sm $bew-text-2" line-clamp-2>
         {{ desc }}
       </p>
 
-      <!-- 元信息 -->
-      <div class="article-meta" flex items-center gap-3 text="xs $bew-text-3">
-        <span class="author">{{ author }}</span>
-        <span v-if="categoryName">{{ categoryName }}</span>
-        <span v-if="publishTime">{{ formatDate(publishTime) }}</span>
+      <!-- 作者行：复用视频卡片头像与昵称组件（昵称悬停变主题色） -->
+      <div v-if="authorObject" flex="~ items-center" min-w-0 :class="authorFontSizeClass">
+        <VideoCardAuthorAvatar v-if="authorObject.authorFace" :author="authorObject" />
+        <VideoCardAuthorName :author="authorObject" />
       </div>
 
-      <!-- 统计信息 -->
-      <div
-        class="article-stats" flex items-center gap-3 text="xs $bew-text-3"
-        mt-2
-      >
-        <div v-if="view !== undefined" flex items-center gap-1>
+      <!-- 元信息：分区/时间为 fill-1 胶囊，统计为图标+文案，与视频卡片 meta 行一致 -->
+      <div class="article-meta" flex="~ items-center gap-2 wrap" :class="metaFontSizeClass">
+        <span
+          v-if="categoryName"
+          bg="$bew-fill-1" p="x-2" lh-6 rounded="$bew-radius" text="$bew-text-3"
+        >
+          {{ categoryName }}
+        </span>
+        <span
+          v-if="publishTimeText"
+          bg="$bew-fill-1" p="x-2" lh-6 rounded="$bew-radius" text="$bew-text-3"
+        >
+          {{ publishTimeText }}
+        </span>
+        <span v-if="view !== undefined" flex="~ items-center gap-1" text="$bew-text-3">
           <div i-tabler:eye />
-          <span>{{ formatNumber(view) }}</span>
-        </div>
-        <div v-if="like !== undefined" flex items-center gap-1>
+          <span>{{ formatDisplayNumber(view) }}</span>
+        </span>
+        <span v-if="like !== undefined" flex="~ items-center gap-1" text="$bew-text-3">
           <div i-tabler:thumb-up />
-          <span>{{ formatNumber(like) }}</span>
-        </div>
-        <div v-if="reply !== undefined" flex items-center gap-1>
+          <span>{{ formatDisplayNumber(like) }}</span>
+        </span>
+        <span v-if="reply !== undefined" flex="~ items-center gap-1" text="$bew-text-3">
           <div i-tabler:message />
-          <span>{{ formatNumber(reply) }}</span>
-        </div>
+          <span>{{ formatDisplayNumber(reply) }}</span>
+        </span>
       </div>
 
-      <!-- 标签 -->
-      <div
-        v-if="tags && tags.length > 0"
-        class="article-tags"
-        flex flex-wrap gap-2 mt-2
-      >
+      <div v-if="tags && tags.length > 0" flex="~ wrap gap-2">
         <span
           v-for="tag in tags.slice(0, 3)"
           :key="tag.name"
           text="xs $bew-text-3"
           bg="$bew-fill-1"
-          px-2 py-0.5
+          p="x-2 y-0.5"
           rounded-full
         >
           {{ tag.name }}
@@ -156,21 +140,16 @@ function formatDate(timestamp: number | string | undefined) {
       </div>
     </div>
 
-    <!-- 右侧图片 -->
+    <!-- 右侧封面：保留横向布局 -->
     <div
       v-if="cover"
       class="article-cover"
-      w-32 h-24
+      w-32 h-24 flex-shrink-0
       rounded="$bew-media-radius"
       overflow-hidden
-      flex-shrink-0
-      bg="$bew-fill-1"
+      bg="$bew-skeleton"
     >
-      <img
-        :src="cover"
-        :alt="title"
-        w-full h-full object-cover
-      >
+      <img :src="cover" :alt="title" w-full h-full object-cover>
     </div>
   </ALink>
 </template>
@@ -180,14 +159,27 @@ function formatDate(timestamp: number | string | undefined) {
   text-decoration: none;
   color: inherit;
   display: flex;
-  transition:
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
-    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
-    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
+}
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--bew-shadow-2);
+/* 与视频卡片一致的 hover 语言：常态透明底，悬停填充 fill-2 并向外扩展 6px 同色环，按下 fill-3 */
+.article-card--interactive {
+  background-color: transparent;
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* 只在支持 hover 的设备上启用（与视频卡片相同，避免触屏性能损失） */
+@media (hover: hover) and (pointer: fine) {
+  .article-card--interactive:hover {
+    background-color: var(--bew-fill-2);
+    box-shadow: 0 0 0 6px var(--bew-fill-2);
   }
+}
+
+.article-card--interactive:active {
+  background-color: var(--bew-fill-3);
+  box-shadow: 0 0 0 6px var(--bew-fill-3);
 }
 </style>
