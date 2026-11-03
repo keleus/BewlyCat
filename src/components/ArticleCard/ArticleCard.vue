@@ -161,25 +161,21 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
   display: flex;
 }
 
-/* 与视频卡片一致的 hover 语言：常态透明底，悬停填充 fill-2 并向外扩展 6px 同色环，按下 fill-3 */
+/* 图文卡片文字占比高、封面小，需要常态容器底（elevated）才能成组；
+   卡片本身已有底色，悬停只做背景加深（不向外扩环，避免色环与底色粘连），按下 fill-3 */
 .article-card--interactive {
-  background-color: transparent;
-  box-shadow: 0 0 0 0 transparent;
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
+  background-color: var(--bew-elevated);
+  transition: background-color 0.2s ease;
 }
 
 /* 只在支持 hover 的设备上启用（与视频卡片相同，避免触屏性能损失） */
 @media (hover: hover) and (pointer: fine) {
   .article-card--interactive:hover {
-    background-color: var(--bew-fill-2);
-    box-shadow: 0 0 0 6px var(--bew-fill-2);
+    background-color: var(--bew-elevated-hover);
   }
 }
 
 .article-card--interactive:active {
   background-color: var(--bew-fill-3);
-  box-shadow: 0 0 0 6px var(--bew-fill-3);
 }
 </style>
