@@ -194,6 +194,9 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       <SettingsItem :title="$t('settings.disable_back_to_top_button_on_dock')" right-width="auto">
         <Radio v-model="settings.disableBackToTopButtonOnDock" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.disable_refresh_button_on_dock')" right-width="auto">
+        <Radio v-model="settings.disableRefreshButtonOnDock" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')" right-width="auto">
         <Radio v-model="settings.backToTopAndRefreshButtonsAreSeparated" />
       </SettingsItem>

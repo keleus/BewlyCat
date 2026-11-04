@@ -707,6 +707,7 @@ settings:
   disable_dock_icon_animation_desc: 熄咗之後 Dock 圖示喺懸停、聚焦時唔會再彈跳、旋轉；撳落嘅回彈同操作按掣脈衝照舊保留。
   disable_light_dark_mode_switcher: 閂咗淺 / 深色主題切換粒掣去
   disable_back_to_top_button_on_dock: 閂咗 Dock 返到最頂粒掣
+  disable_refresh_button_on_dock: 閂咗 Dock 重新整理掣
   back_to_top_and_refresh_buttons_are_separated: 分離返到最篤同重新整理掣
   always_show_dock_actions_when_auto_hide: 自動收埋 Dock 時照顯示操作掣
   sidebar_position: 側邊欄位置

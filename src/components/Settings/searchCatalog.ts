@@ -506,6 +506,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.disable_dock_icon_animation',
     'settings.disable_light_dark_mode_switcher',
     'settings.disable_back_to_top_button_on_dock',
+    'settings.disable_refresh_button_on_dock',
     'settings.back_to_top_and_refresh_buttons_are_separated',
     'settings.enable_undo_refresh_button',
     'settings.group_sidebar',
