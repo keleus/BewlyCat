@@ -703,6 +703,8 @@ settings:
   dock_item_open_in_new_tab: 在新分頁度開啓
   dock_item_use_original_bili_web_page: 用返原本嘅 Bilibili 網頁
   disable_dock_glowing_effect: 熄咗 Dock 發光效果去
+  disable_dock_icon_animation: 熄咗 Dock 圖示懸停動畫
+  disable_dock_icon_animation_desc: 熄咗之後 Dock 圖示喺懸停、聚焦時唔會再彈跳、旋轉；撳落嘅回彈同操作按掣脈衝照舊保留。
   disable_light_dark_mode_switcher: 閂咗淺 / 深色主題切換粒掣去
   disable_back_to_top_button_on_dock: 閂咗 Dock 返到最頂粒掣
   back_to_top_and_refresh_buttons_are_separated: 分離返到最篤同重新整理掣
@@ -1030,6 +1032,10 @@ settings:
   fullscreen_wheel_volume_desc: 全螢幕播放嗰陣由擴充功能接管滾輪調音量，每碌一格按固定幅度調，取代 B 站原生唔規律嘅調整幅度。
   fullscreen_wheel_volume_step: 滾輪音量調整幅度
   fullscreen_wheel_volume_step_desc: 每格增減 1–50；預設 5。
+  keyboard_volume: 方向鍵音量調節
+  keyboard_volume_desc: 喺播放器入面撳上下方向鍵時由擴充功能接管，按下面嘅幅度調；熄咗就照 B 站預設（每次 10）。
+  keyboard_volume_step: 方向鍵音量調節幅度
+  keyboard_volume_step_desc: 每撳一次增減 1–50；B 站預設係 10。
   remember_video_quality: 記住畫質
   remember_video_quality_desc: 啟用後自動恢復上次揀嘅畫質，用唔到時沿用目前畫質。
   remember_video_quality_confirm_title: 確認開啟記住畫質？

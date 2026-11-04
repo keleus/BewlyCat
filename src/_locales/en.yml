@@ -743,6 +743,8 @@ settings:
   dock_item_open_in_new_tab: Open in new tab
   dock_item_use_original_bili_web_page: Use the original Bilibili web page
   disable_dock_glowing_effect: Disable the dock glowing effect
+  disable_dock_icon_animation: Disable dock icon hover animations
+  disable_dock_icon_animation_desc: Dock icons no longer bounce or rotate on hover and focus; click rebound and action button pulses stay on.
   disable_light_dark_mode_switcher: Disable light/dark mode switcher
   disable_back_to_top_button_on_dock: Disable back to top button on dock
   back_to_top_and_refresh_buttons_are_separated: Separate Back to Top and Refresh Buttons
@@ -1099,6 +1101,10 @@ settings:
   fullscreen_wheel_volume_desc: In fullscreen, BewlyCat handles the mouse wheel and changes the volume by a fixed step per notch, replacing bilibili's inconsistent native step.
   fullscreen_wheel_volume_step: Wheel volume step
   fullscreen_wheel_volume_step_desc: Change the volume by 1–50 per notch; the default is 5.
+  keyboard_volume: Arrow key volume
+  keyboard_volume_desc: BewlyCat takes over the up/down arrow keys inside the player and uses the step below; when disabled, bilibili's default (10) applies.
+  keyboard_volume_step: Arrow key volume step
+  keyboard_volume_step_desc: Change the volume by 1–50 per press; bilibili's default is 10.
   remember_video_quality: Remember video quality
   remember_video_quality_desc: Restore the last selected video quality; if it is unavailable, the current quality is kept.
   remember_video_quality_confirm_title: Enable Remember video quality?

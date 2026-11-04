@@ -181,6 +181,13 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       <SettingsItem :title="$t('settings.disable_dock_glowing_effect')" right-width="auto">
         <Radio v-model="settings.disableDockGlowingEffect" />
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.disable_dock_icon_animation')"
+        :desc="$t('settings.disable_dock_icon_animation_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.disableDockIconAnimation" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.disable_light_dark_mode_switcher')" right-width="auto">
         <Radio v-model="settings.disableLightDarkModeSwitcherOnDock" />
       </SettingsItem>

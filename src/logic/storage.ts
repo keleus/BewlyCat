@@ -12,6 +12,7 @@ import {
   MOBILE_LIST_LAYOUT_BREAKPOINT,
   normalizeListLayoutBreakpoint,
 } from '~/utils/gridLayout'
+import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
 import { normalizePlaybackRateStep } from '~/utils/playbackRate'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
@@ -489,6 +490,7 @@ export interface Settings {
   dockPosition: 'left' | 'right' | 'bottom'
   dockItemsConfig: { page: AppPage, visible: boolean, openInNewTab: boolean, useOriginalBiliPage: boolean }[]
   disableDockGlowingEffect: boolean
+  disableDockIconAnimation: boolean
   disableLightDarkModeSwitcherOnDock: boolean
   disableBackToTopButtonOnDock: boolean
   backToTopAndRefreshButtonsAreSeparated: boolean
@@ -659,6 +661,8 @@ export interface Settings {
   playbackRateStep: number // 倍速快捷键每次调节的幅度 (0.01-1)
   customFullscreenWheelVolume: boolean // 全屏时接管滚轮音量调节
   fullscreenWheelVolumeStep: number // 全屏滚轮每格调节的音量 (1-50)
+  customKeyboardVolume: boolean // 接管播放器上下方向键的音量调节
+  keyboardVolumeStep: number // 方向键每按一次调节的音量 (1-50)，B 站默认为 10
 
   // 清晰度记忆设置
   rememberVideoQuality: boolean
@@ -860,6 +864,7 @@ export const originalSettings: Settings = {
   dockPosition: 'right',
   dockItemsConfig: [],
   disableDockGlowingEffect: false,
+  disableDockIconAnimation: false,
   disableLightDarkModeSwitcherOnDock: false,
   disableBackToTopButtonOnDock: false,
   backToTopAndRefreshButtonsAreSeparated: true,
@@ -1063,6 +1068,8 @@ export const originalSettings: Settings = {
   playbackRateStep: 0.25,
   customFullscreenWheelVolume: false,
   fullscreenWheelVolumeStep: 5,
+  customKeyboardVolume: false,
+  keyboardVolumeStep: 10,
 
   // 清晰度记忆设置
   rememberVideoQuality: false,
@@ -1169,6 +1176,7 @@ export const settings = useSettingsStorage(originalSettings, {
     const record = value as Record<string, any>
     record.playbackRateStep = normalizePlaybackRateStep(record.playbackRateStep)
     record.fullscreenWheelVolumeStep = normalizeWheelVolumeStep(record.fullscreenWheelVolumeStep)
+    record.keyboardVolumeStep = normalizeKeyboardVolumeStep(record.keyboardVolumeStep)
 
     // 旧配置也补齐新入口，保持菜单按钮与各项的默认可见状态一致。
     const menuConfig = record.videoCardContextMenuConfig

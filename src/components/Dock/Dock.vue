@@ -820,6 +820,7 @@ onUnmounted(() => {
         'half-hide': settings.halfHideDock && !isLayoutEditing,
         'hover': dockContentHover,
         'ready': dockReady,
+        'disable-icon-animation': settings.disableDockIconAnimation,
       }"
       :style="dockTransformStyle"
       @mouseenter="handleDockAreaEnter"
@@ -1890,7 +1891,8 @@ onUnmounted(() => {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+// 悬停/聚焦时的图标动画：设置项与系统「减少动效」共用同一份开关列表
+@mixin dock-icon-hover-animation-off {
   .dock-item:hover .dock-item-icon,
   .dock-item:focus-visible .dock-item-icon,
   .dock-item:hover .dock-clock-hand,
@@ -1904,7 +1906,14 @@ onUnmounted(() => {
   .dock-item:hover .dock-favorites-sparkle,
   .dock-item:focus-visible .dock-favorites-sparkle,
   .dock-edit-button:hover .dock-edit-icon,
-  .dock-edit-button:focus-visible .dock-edit-icon,
+  .dock-edit-button:focus-visible .dock-edit-icon {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @include dock-icon-hover-animation-off;
+
   .back-to-top-or-refresh-btn.dock-action-pulse-refresh .dock-action-icon,
   .back-to-top-or-refresh-btn.dock-action-pulse-back-to-top .dock-action-icon,
   .back-to-top-or-refresh-btn.dock-action-pulse-history .dock-action-icon,
@@ -1913,5 +1922,10 @@ onUnmounted(() => {
   .dock-edit-button.dock-icon-click-rebound .dock-edit-icon {
     animation: none !important;
   }
+}
+
+// 设置项：只关闭悬停/聚焦动画，点击回弹与操作按钮脉冲保留
+.dock-content.disable-icon-animation {
+  @include dock-icon-hover-animation-off;
 }
 </style>
