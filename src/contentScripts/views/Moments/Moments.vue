@@ -5122,30 +5122,27 @@ watch(
 .moments-filter-header {
   position: relative;
   grid-area: header;
-  display: grid;
-  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
-  column-gap: var(--bew-space-4);
+  display: flex;
+  justify-content: flex-start;
   justify-self: start;
   align-items: center;
+  gap: var(--bew-space-3);
   width: 100%;
   min-width: 0;
 }
-// 居中时两侧等宽，标签栏保持在正中，过滤入口靠右
+// 过滤入口紧跟在类型标签栏右侧，居中时两者作为一组居中
 .moments-filter-header--center {
-  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) minmax(0, 1fr);
-
-  .moments-filter-panel {
-    grid-column: 2;
-  }
+  justify-content: center;
 }
 
 .moments-filter-panel {
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 100%;
 }
 
 .moments-filter-entry {
-  grid-column: -2;
-  justify-self: end;
+  flex-shrink: 0;
 }
 .moments-filter-scroll {
   height: 100%;
@@ -5168,11 +5165,6 @@ watch(
 @media (max-width: 1000px) {
   .moments-filter-panel {
     max-width: 100%;
-  }
-}
-@media (max-width: 600px) {
-  .moments-filter-header {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 .moments-grid {
