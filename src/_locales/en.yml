@@ -201,6 +201,8 @@ settings:
   category_group_pages: Pages
   category_group_components: Components
   category_group_behavior: Behavior
+  category_group_playback: Playback
+  category_group_site: Site features
   badge_performance_impact: Performance impact
   badge_advanced: Advanced
   badge_irreversible: Irreversible
@@ -230,8 +232,9 @@ settings:
   category_bilibili_listen_video_desc: Hide the video picture and keep only the audio, shown as a cover-and-title audio player.
   category_bilibili_volume_balance_desc: Level loudness across videos locally to reduce sudden volume changes.
   category_bilibili_ambilight_desc: Cast soft ambient light around the player that follows the picture.
-  category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
+  category_advanced_compatibility_desc: Block ads, clean links, and configure compatibility with original pages and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
+  category_data_desc: Turn on browser cloud sync, export a backup, import settings, or restore BewlyCat defaults.
   maintenance:
     title: Backup & Reset
     backup_title: Settings backup
@@ -255,7 +258,8 @@ settings:
   menu_plugin_components_and_pages: BewlyCat Interface
   menu_bilibili_features_enhancement: Bilibili Features
   menu_appearance: Appearance
-  menu_compatibility: Compatibility
+  menu_compatibility: Cleanup & Compatibility
+  menu_data: Data & Sync
   menu_about: About
   menu_changelog: Changelog
   experimental: Experimental

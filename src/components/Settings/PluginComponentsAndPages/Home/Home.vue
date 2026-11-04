@@ -6,6 +6,7 @@ import draggable from 'vuedraggable'
 import AppAuthorizationDialog from '~/components/AppAuthorizationDialog.vue'
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
 import type { RecommendationModeOption, Settings, TabsPosition } from '~/logic/storage'
@@ -22,7 +23,6 @@ import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
-import SearchPage from '../SearchPage/SearchPage.vue'
 import FilterByTitleTable from './components/FilterByTitleTable.vue'
 import FilterByUserTable from './components/FilterByUserTable.vue'
 
@@ -63,8 +63,13 @@ const homeTabsPositionOptions = computed<{ label: string, value: TabsPosition }[
   { label: t('common.position.center'), value: 'center' },
 ])
 
-const showSearchPageModeSharedSettings = ref<boolean>(false)
 const showQRCodeDialog = ref<boolean>(false)
+const { openSettings } = useBewlyApp()
+
+// 搜索页模式与搜索页共用同一组设置，跳到搜索页设置修改，不在这里再嵌一份。
+function openSearchPageSettings() {
+  openSettings({ menu: 'BewlyPages', secondaryPage: 'search', targetTitleKey: 'settings.plugin.search' })
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -390,26 +395,9 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
           <template #desc>
             <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
           </template>
-          <Button type="secondary" center @click="showSearchPageModeSharedSettings = true">
+          <Button type="secondary" center @click="openSearchPageSettings">
             {{ $t('settings.btn.open_settings') }}
           </Button>
-
-          <Dialog
-            v-if="showSearchPageModeSharedSettings"
-            width="80%"
-            max-width="900px"
-            content-height="64vh"
-            :show-footer="false"
-            :title="$t('settings.settings_shared_with_the_search_page')"
-            append-to-bewly-body
-            @close="showSearchPageModeSharedSettings = false"
-          >
-            <template #desc>
-              <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
-            </template>
-
-            <SearchPage />
-          </Dialog>
         </SettingsItem>
 
         <SettingsItem :title="$t('settings.search_page_mode_wallpaper_fixed')" right-width="auto">

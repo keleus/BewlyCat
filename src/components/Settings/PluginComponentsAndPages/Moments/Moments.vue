@@ -234,40 +234,6 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
-      <SettingsItem
-        :title="$t('settings.moments_visible_components')"
-        :desc="$t('settings.moments_visible_components_original_desc')"
-      >
-        <template #bottom>
-          <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
-            <SettingsToggleTag
-              v-for="option in originalComponentOptions"
-              :key="option.setting"
-              v-model="settings[option.setting]"
-              :label="option.label"
-              :icon="option.icon"
-              :data-settings-key="option.labelKey"
-            />
-          </div>
-        </template>
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.original_moments_show_fold_comments_button')"
-        :desc="$t('settings.original_moments_show_fold_comments_button_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.originalMomentsShowFoldCommentsButton" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.original_moments_click_blank_to_fold_comments')"
-        :desc="$t('settings.original_moments_click_blank_to_fold_comments_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.originalMomentsClickBlankToFoldComments" />
-      </SettingsItem>
-    </SettingsItemGroup>
-
     <SettingsItemGroup :title="$t('settings.group_moments_filters')">
       <SettingsItem
         :title="$t('settings.moments_show_filter_entry')"
@@ -349,6 +315,41 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         <template #bottom>
           <WantedUsersManager mode="pinned" />
         </template>
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <!-- 这一组只作用于 B 站原版动态页，放在最后，插件动态页的常用设置排在前面。 -->
+    <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
+      <SettingsItem
+        :title="$t('settings.moments_visible_components')"
+        :desc="$t('settings.moments_visible_components_original_desc')"
+      >
+        <template #bottom>
+          <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
+            <SettingsToggleTag
+              v-for="option in originalComponentOptions"
+              :key="option.setting"
+              v-model="settings[option.setting]"
+              :label="option.label"
+              :icon="option.icon"
+              :data-settings-key="option.labelKey"
+            />
+          </div>
+        </template>
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.original_moments_show_fold_comments_button')"
+        :desc="$t('settings.original_moments_show_fold_comments_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.originalMomentsShowFoldCommentsButton" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.original_moments_click_blank_to_fold_comments')"
+        :desc="$t('settings.original_moments_click_blank_to_fold_comments_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.originalMomentsClickBlankToFoldComments" />
       </SettingsItem>
     </SettingsItemGroup>
   </div>

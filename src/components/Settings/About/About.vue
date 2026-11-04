@@ -6,23 +6,15 @@ import browser from 'webextension-polyfill'
 import Button from '~/components/Button.vue'
 import Dialog from '~/components/Dialog.vue'
 import Radio from '~/components/Radio.vue'
-import { useSettingsCloudSyncPreference } from '~/composables/useSettingsCloudSyncPreference'
 import { settings } from '~/logic'
 import type { BrowserInfo } from '~/utils/browserInfo'
 import { GET_BROWSER_INFO_MESSAGE, getBrowserInfo } from '~/utils/browserInfo'
 import { sendMessage } from '~/utils/messaging'
-import type { SettingsCloudSyncEnableResponse, SettingsCloudSyncStatus } from '~/utils/settingsCloudSyncProtocol'
-import {
-  SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE,
-  SETTINGS_CLOUD_SYNC_STATUS_MESSAGE,
-} from '~/utils/settingsCloudSyncProtocol'
 
 import licenseText from '../../../../LICENSE?raw'
 import { version } from '../../../../package.json'
-import Maintenance from '../Advanced/Maintenance.vue'
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
-import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 interface ThirdPartyLicense {
   name: string
@@ -39,16 +31,8 @@ const hasNewVersion = ref<boolean>(false)
 const contributorsImageFailed = ref(false)
 const contributorsImageUsingCloud = ref(false)
 const contributorsImageSrc = ref(browser.runtime.getURL('/assets/contributors.svg'))
-const settingsCloudSyncPreference = useSettingsCloudSyncPreference()
 const browserInfo = ref<BrowserInfo>({ name: null, version: null })
 const isCopyingEnvironmentInfo = ref(false)
-const showSyncConflictDialog = ref(false)
-const isSyncToggling = ref(false)
-// The switch stays visually checked while the direction dialog is open because
-// the underlying preference has not been written yet. Bumping this key
-// remounts the switch so it snaps back off when enabling is cancelled.
-const syncSwitchRenderTick = ref(0)
-const pendingEnableChoice = ref(false)
 const showLicenseDialog = ref(false)
 const showThirdPartyLicenseDialog = ref(false)
 const thirdPartyLicenses = ref<ThirdPartyLicense[] | null>(null)
@@ -64,101 +48,6 @@ onMounted(async () => {
   browserInfo.value = await sendMessage<undefined, BrowserInfo>(GET_BROWSER_INFO_MESSAGE)
     .catch(() => getBrowserInfo())
 })
-
-function revertSyncSwitch() {
-  syncSwitchRenderTick.value++
-}
-
-function handleSyncToggle(value: boolean) {
-  if (!value) {
-    settingsCloudSyncPreference.value = false
-    return
-  }
-  void requestEnableSettingsCloudSync()
-}
-
-async function sendEnableSettingsCloudSyncRequest(mode: 'auto' | 'pull' | 'push') {
-  // The background runs the first coordination inline and reports the outcome;
-  // the switch state mirrors back through storage.onChanged only on success.
-  const response = await sendMessage<{ mode: 'auto' | 'pull' | 'push' }, SettingsCloudSyncEnableResponse>(
-    SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE,
-    { mode },
-  )
-  if (!response)
-    throw new Error('Missing settings cloud sync bootstrap response')
-  if (!response.ok && response.reason === 'initialization-failed')
-    throw new Error('Settings cloud sync bootstrap failed')
-  return response.ok
-}
-
-async function requestEnableSettingsCloudSync() {
-  if (isSyncToggling.value)
-    return
-
-  isSyncToggling.value = true
-  let failedPhase: 'status' | 'enable' = 'status'
-  try {
-    const status = await sendMessage<undefined, SettingsCloudSyncStatus>(SETTINGS_CLOUD_SYNC_STATUS_MESSAGE)
-    if (!status)
-      throw new Error('Missing cloud sync status response')
-
-    if (status.state === 'compatible') {
-      // Cloud already holds a snapshot: let the user pick which side takes
-      // precedence instead of silently overwriting one of them.
-      showSyncConflictDialog.value = true
-      return
-    }
-
-    if (status.state === 'incompatible') {
-      // The snapshot was written by a newer extension version; enabling here
-      // would corrupt it.
-      revertSyncSwitch()
-      toast.error(t('settings.sync_cloud_incompatible'))
-      return
-    }
-
-    failedPhase = 'enable'
-    if (!await sendEnableSettingsCloudSyncRequest('auto')) {
-      revertSyncSwitch()
-      toast.error(t('settings.sync_cloud_incompatible'))
-    }
-  }
-  catch (error) {
-    console.error(error)
-    revertSyncSwitch()
-    toast.error(t(failedPhase === 'status'
-      ? 'settings.sync_cloud_status_failed'
-      : 'settings.sync_cloud_enable_failed'))
-  }
-  finally {
-    isSyncToggling.value = false
-  }
-}
-
-async function enableSyncWithMode(mode: 'pull' | 'push') {
-  pendingEnableChoice.value = true
-  showSyncConflictDialog.value = false
-  try {
-    if (!await sendEnableSettingsCloudSyncRequest(mode)) {
-      revertSyncSwitch()
-      toast.error(t('settings.sync_cloud_incompatible'))
-    }
-  }
-  catch (error) {
-    console.error(error)
-    revertSyncSwitch()
-    toast.error(t('settings.sync_cloud_enable_failed'))
-  }
-  finally {
-    pendingEnableChoice.value = false
-  }
-}
-
-function handleSyncDialogClose() {
-  showSyncConflictDialog.value = false
-  if (!pendingEnableChoice.value && settingsCloudSyncPreference.value !== true)
-    revertSyncSwitch()
-}
 
 async function checkGitHubRelease() {
   const apiUrl = `https://api.github.com/repos/keleus/BewlyCat/releases/latest`
@@ -301,21 +190,6 @@ async function handleCopyEnvironmentInfo() {
           </SettingsItem>
         </SettingsItemGroup>
 
-        <SettingsItemGroup :title="$t('settings.group_settings_sync')">
-          <SettingsItem
-            :title="$t('settings.enable_settings_sync')"
-            :desc="$t('settings.enable_settings_sync_desc')"
-            right-width="auto"
-          >
-            <Radio
-              :key="syncSwitchRenderTick"
-              :model-value="settingsCloudSyncPreference === true"
-              :disabled="isSyncToggling"
-              @update:model-value="handleSyncToggle"
-            />
-          </SettingsItem>
-        </SettingsItemGroup>
-
         <SettingsItemGroup :title="$t('settings.group_version_reminder')">
           <SettingsItem
             :title="$t('settings.enable_version_reminder')"
@@ -325,14 +199,6 @@ async function handleCopyEnvironmentInfo() {
             <Radio v-model="settings.enableVersionReminder" />
           </SettingsItem>
         </SettingsItemGroup>
-
-        <SettingsSectionHeading
-          class="maintenance-heading"
-          :title="$t('settings.maintenance.title')"
-          :desc="$t('settings.category_advanced_maintenance_desc')"
-          icon="i-mingcute:save-2-fill"
-        />
-        <Maintenance />
       </section>
 
       <section
@@ -471,27 +337,6 @@ async function handleCopyEnvironmentInfo() {
         </details>
       </div>
     </Dialog>
-
-    <Dialog
-      v-if="showSyncConflictDialog"
-      :title="t('settings.sync_cloud_conflict_title')"
-      width="440px"
-      :show-footer="false"
-      append-to-bewly-body
-      @close="handleSyncDialogClose"
-    >
-      <div class="sync-conflict-body" flex="~ col gap-3">
-        <p text="$bew-text-2 sm">
-          {{ t('settings.sync_cloud_conflict_desc') }}
-        </p>
-        <Button type="primary" @click="enableSyncWithMode('pull')">
-          {{ t('settings.sync_cloud_use_cloud') }}
-        </Button>
-        <Button type="secondary" @click="enableSyncWithMode('push')">
-          {{ t('settings.sync_cloud_use_local') }}
-        </Button>
-      </div>
-    </Dialog>
   </div>
 </template>
 
@@ -531,10 +376,6 @@ async function handleCopyEnvironmentInfo() {
 
 .about-maintenance {
   margin-top: var(--bew-space-6);
-}
-
-.maintenance-heading {
-  margin-top: var(--bew-space-8);
 }
 
 .contributors-error {

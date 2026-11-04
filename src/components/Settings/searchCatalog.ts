@@ -174,6 +174,7 @@ const compatibilityRoute: SearchRoute = {
   storageKey: bilibiliStorageKey,
 }
 const shortcutsRoute: SearchRoute = { menu: MenuType.Shortcuts }
+const dataRoute: SearchRoute = { menu: MenuType.Data }
 const aboutRoute: SearchRoute = { menu: MenuType.About }
 
 const wallpaperTitleKeys = [
@@ -458,7 +459,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.group_search_bar',
     'settings.show_hot_search_in_top_bar',
-    'settings.show_search_recommendation',
   ]),
   ...createEntries(topBarRoute, [
     'settings.topbar_actions',
@@ -834,18 +834,23 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.group.official_bilibili',
   ]),
 
-  ...createEntries(aboutRoute, [
-    'settings.menu_about',
+  ...createEntries(dataRoute, [
+    'settings.menu_data',
     'settings.group_settings_sync',
     'settings.enable_settings_sync',
-    'settings.group_version_reminder',
-    'settings.enable_version_reminder',
-    'settings.maintenance.title',
     'settings.maintenance.backup_title',
     'settings.import_settings',
     'settings.export_settings',
     'settings.maintenance.reset_title',
     'settings.reset_settings',
+  ]),
+
+  ...createEntries(aboutRoute, [
+    'settings.menu_about',
+    'settings.group_environment_info',
+    'settings.copy_environment_info',
+    'settings.group_version_reminder',
+    'settings.enable_version_reminder',
     'settings.open_source_license',
     'settings.third_party_licenses',
   ]),

@@ -18,7 +18,7 @@ export enum DrawerType {
   NotificationsDrawer = 'notifications',
 }
 
-export type SettingsMenu = 'General' | 'BewlyPages' | 'BewlyComponents' | 'Bilibili' | 'Appearance' | 'Shortcuts' | 'About'
+export type SettingsMenu = 'General' | 'BewlyPages' | 'BewlyComponents' | 'Bilibili' | 'Appearance' | 'Shortcuts' | 'Data' | 'About'
 
 export interface SettingsNavigationTarget {
   menu: SettingsMenu

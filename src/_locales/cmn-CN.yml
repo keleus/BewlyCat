@@ -201,6 +201,8 @@ settings:
   category_group_pages: 页面
   category_group_components: 组件
   category_group_behavior: 行为
+  category_group_playback: 播放
+  category_group_site: 站内功能
   badge_performance_impact: 性能影响
   badge_advanced: 高级
   badge_irreversible: 不可撤销
@@ -230,8 +232,9 @@ settings:
   category_bilibili_listen_video_desc: 隐藏视频画面仅保留声音，以封面和标题组成音频播放界面。
   category_bilibili_volume_balance_desc: 在本地均衡不同视频的响度，减少音量忽大忽小。
   category_bilibili_ambilight_desc: 在播放器四周投射随画面变化的柔和环境光。
-  category_advanced_compatibility_desc: 配置原版页面、第三方扩展和其他页面的兼容行为。
+  category_advanced_compatibility_desc: 拦截广告、净化链接，并配置原版页面和其他页面的兼容行为。
   category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。
+  category_data_desc: 开启浏览器云同步，导出备份、导入设置或恢复 BewlyCat 默认配置。
   maintenance:
     title: 备份与重置
     backup_title: 设置备份
@@ -255,7 +258,8 @@ settings:
   menu_plugin_components_and_pages: BewlyCat界面
   menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 外观
-  menu_compatibility: 兼容性
+  menu_compatibility: 净化与兼容
+  menu_data: 数据与同步
   menu_about: 关于
   menu_changelog: 更新日志
   experimental: 实验性
