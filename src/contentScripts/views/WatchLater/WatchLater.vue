@@ -61,10 +61,10 @@ const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const pageSize = ref<number>(20)
 const pendingRemovals = new Set<number>()
 /**
- * 卡片删除遮罩状态：confirming 等待确认（尚未调用接口），removing 删除中，
- * removed 已删除但保留原位可还原，restoring 还原中
+ * 卡片删除遮罩状态：removing 删除中，removed 已删除但保留原位可还原，restoring 还原中。
+ * 点击移除即调用接口，不再二次确认；误删由遮罩上的撤销兜底。
  */
-type RemoveStatus = 'confirming' | 'removing' | 'removed' | 'restoring'
+type RemoveStatus = 'removing' | 'removed' | 'restoring'
 const removeStatuses = reactive(new Map<number, RemoveStatus>())
 let consumedCount = 0
 let requestVersion = 0
@@ -224,25 +224,15 @@ async function deleteWatchLaterItem(aid: number, keepCard = false): Promise<bool
   return false
 }
 
-// 删除先在卡片上二次确认，确认后才调用接口
-function handleRemoveWatchLater(item: VideoItem) {
-  if (!removeStatuses.has(item.aid))
-    removeStatuses.set(item.aid, 'confirming')
-}
-
-function cancelRemoveWatchLater(aid: number) {
-  if (removeStatuses.get(aid) === 'confirming')
-    removeStatuses.delete(aid)
-}
-
-async function confirmRemoveWatchLater(aid: number) {
-  if (removeStatuses.get(aid) !== 'confirming')
+// 点击即删除，卡片保留在原位并显示可撤销遮罩
+async function handleRemoveWatchLater(item: VideoItem) {
+  if (removeStatuses.has(item.aid))
     return
 
-  removeStatuses.set(aid, 'removing')
-  const success = await deleteWatchLaterItem(aid, true)
-  if (!success && removeStatuses.get(aid) === 'removing')
-    removeStatuses.delete(aid)
+  removeStatuses.set(item.aid, 'removing')
+  const success = await deleteWatchLaterItem(item.aid, true)
+  if (!success && removeStatuses.get(item.aid) === 'removing')
+    removeStatuses.delete(item.aid)
 }
 
 async function restoreWatchLater(item: VideoItem) {
@@ -274,22 +264,14 @@ async function restoreWatchLater(item: VideoItem) {
   }
 }
 
-function isRemoveConfirming(status: RemoveStatus | undefined) {
-  return status === 'confirming' || status === 'removing'
-}
-
 function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | undefined {
   const status = removeStatuses.get(item.aid)
   if (!status)
     return undefined
 
-  const confirming = isRemoveConfirming(status)
   return {
-    message: confirming ? t('watch_later.remove_confirm') : t('watch_later.removed'),
-    confirming,
-    pending: status === 'removing' || status === 'restoring',
-    onConfirm: () => void confirmRemoveWatchLater(item.aid),
-    onCancel: () => cancelRemoveWatchLater(item.aid),
+    message: t('watch_later.removed'),
+    pending: status !== 'removed',
     onUndo: () => void restoreWatchLater(item),
   }
 }
@@ -518,54 +500,25 @@ function getItemKey(item: VideoItem) {
                 p-2 m-1
                 content-visibility-auto
               >
-                <!-- 删除遮罩：覆盖整行并拦截链接点击；确认前未调用接口，删除后可还原 -->
+                <!-- 删除遮罩：覆盖整行并拦截链接点击，删除后可撤销 -->
                 <div
                   v-if="removeStatuses.has(item.aid)"
                   class="watch-later-removed-mask"
                   @click.prevent.stop
                 >
-                  <template v-if="isRemoveConfirming(removeStatuses.get(item.aid))">
-                    <p color-white text-lg>
-                      {{ t('watch_later.remove_confirm') }}
-                    </p>
-                    <div flex="~ gap-2 items-center">
-                      <Button
-                        color="rgba(255,255,255,.35)" text-color="white" size="small"
-                        :disabled="removeStatuses.get(item.aid) === 'removing'"
-                        @click.prevent.stop="confirmRemoveWatchLater(item.aid)"
-                      >
-                        <template #left>
-                          <div i-mingcute-check-line text-lg />
-                        </template>
-                        {{ t('common.operation.confirm') }}
-                      </Button>
-                      <Button
-                        color="rgba(255,255,255,.35)" text-color="white" size="small"
-                        :disabled="removeStatuses.get(item.aid) === 'removing'"
-                        @click.prevent.stop="cancelRemoveWatchLater(item.aid)"
-                      >
-                        <template #left>
-                          <div i-mingcute-close-line text-lg />
-                        </template>
-                        {{ t('common.operation.cancel') }}
-                      </Button>
-                    </div>
-                  </template>
-                  <template v-else>
-                    <p color-white text-lg>
-                      {{ t('watch_later.removed') }}
-                    </p>
-                    <Button
-                      color="rgba(255,255,255,.35)" text-color="white" size="small"
-                      :disabled="removeStatuses.get(item.aid) === 'restoring'"
-                      @click.prevent.stop="restoreWatchLater(item)"
-                    >
-                      <template #left>
-                        <div i-mingcute-back-line text-lg />
-                      </template>
-                      {{ t('common.undo') }}
-                    </Button>
-                  </template>
+                  <p color-white text-lg>
+                    {{ t('watch_later.removed') }}
+                  </p>
+                  <Button
+                    color="rgba(255,255,255,.35)" text-color="white" size="small"
+                    :disabled="removeStatuses.get(item.aid) !== 'removed'"
+                    @click.prevent.stop="restoreWatchLater(item)"
+                  >
+                    <template #left>
+                      <div i-mingcute-back-line text-lg />
+                    </template>
+                    {{ t('common.undo') }}
+                  </Button>
                 </div>
 
                 <!-- Cover -->

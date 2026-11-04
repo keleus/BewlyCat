@@ -1719,7 +1719,6 @@ watch_later:
   play_in_watch_later: Playlist
   remove_from_watch_later: Remove
   removed: Removed from Watch Later
-  remove_confirm: Remove from Watch Later?
   layout_list: List view
   layout_grid: Grid view
 search_bar:
