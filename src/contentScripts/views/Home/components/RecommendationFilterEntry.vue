@@ -139,7 +139,7 @@ useEventListener(window, 'resize', () => {
       <button
         ref="triggerRef"
         type="button"
-        class="filter-trigger bew-segment-control__item bew-segment-control__item--icon"
+        class="bew-segment-control__item bew-segment-control__item--icon"
         :data-active="open ? 'true' : undefined"
         :title="triggerLabel"
         :aria-label="triggerLabel"
@@ -152,7 +152,6 @@ useEventListener(window, 'resize', () => {
           :class="activeCount ? 'i-mingcute:filter-2-fill' : 'i-mingcute:filter-2-line'"
           aria-hidden="true"
         />
-        <span v-if="activeCount" class="filter-count" aria-hidden="true">{{ activeCount }}</span>
       </button>
     </div>
 
@@ -237,28 +236,6 @@ useEventListener(window, 'resize', () => {
 .recommendation-filter-entry {
   position: relative;
   flex-shrink: 0;
-}
-
-.filter-trigger {
-  position: relative;
-}
-
-.filter-count {
-  position: absolute;
-  top: calc(var(--bew-space-1) * -1);
-  right: calc(var(--bew-space-1) * -1);
-  min-width: 16px;
-  height: 16px;
-  padding: 0 var(--bew-space-1);
-  box-sizing: border-box;
-  border-radius: var(--bew-radius-full);
-  background: var(--bew-theme-color);
-  color: white;
-  font-size: var(--bew-font-size-caption);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: 16px;
-  text-align: center;
-  pointer-events: none;
 }
 
 .filter-panel {
