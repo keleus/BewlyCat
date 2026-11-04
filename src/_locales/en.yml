@@ -168,8 +168,11 @@ settings:
       unsupported: This audio source cannot be safely processed. Audio is unchanged.
   player_adjustment:
     title: Picture & sound adjustments
-    show_button: Show player picture & sound button
-    show_button_desc: Show a player control to rotate or mirror the picture, and adjust audio sync on hover; volume balance settings also appear here once it is enabled. Rotation, mirroring and audio sync apply only to the current video; hiding the button resets them but does not disable volume balance.
+    desc: Shows an adjustment button in the player controls that opens a panel on hover. The two items below can be turned off separately, and the volume balance item follows "Enable local volume balance" above; the button is hidden when all three are off.
+    show_picture: Rotate & mirror picture
+    show_picture_desc: Rotate or mirror the picture from the panel. Applies only to the current video; turning this off resets the current picture adjustment.
+    show_audio_delay: Audio sync
+    show_audio_delay_desc: Delay the audio from the panel. Applies only to the current video; turning this off stops processing the audio.
     picture: Picture
     rotate_left: Rotate left
     rotate_right: Rotate right

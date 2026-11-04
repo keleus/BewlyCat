@@ -14,10 +14,14 @@ function getVideoKey() {
   return `${location.pathname}?p=${new URLSearchParams(location.search).get('p') ?? ''}`
 }
 
-export function resetPlayerAdjustment() {
+export function resetPictureAdjustment() {
   playerAdjustment.rotation = 0
   playerAdjustment.flipX = false
   playerAdjustment.flipY = false
+}
+
+export function resetPlayerAdjustment() {
+  resetPictureAdjustment()
   playerAdjustment.audioDelay = 0
 }
 

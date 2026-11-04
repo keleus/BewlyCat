@@ -37,7 +37,7 @@ export function createLocalLoudnessController() {
   let lastStatus = 'off'
   let lastReport = 0
   const failed = new WeakSet<HTMLMediaElement>()
-  // 音画同步跟随画面与声音调整按钮，按钮关闭时不响应延迟请求，也不接管声音。
+  // 音画同步跟随设置页的音画同步开关，关闭时不响应延迟请求，也不接管声音。
   let delayEnabled = false
   let delayMs = 0
   let delayed: SourceRecord | undefined

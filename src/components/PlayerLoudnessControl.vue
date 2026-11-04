@@ -249,33 +249,36 @@ onBeforeUnmount(() => {
       id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group" popover="manual"
       :aria-label="t('settings.player_adjustment.title')"
     >
-      <div class="section-heading">
-        <span>{{ t('settings.player_adjustment.picture') }}</span>
-        <button v-if="pictureAdjusted" type="button" class="text-button" @click="resetPicture">
-          {{ t('settings.player_adjustment.reset') }}
-        </button>
+      <!-- 三项分别由设置页开关控制：画面、音画同步，以及跟随「启用局部音量均衡」的音量均衡 -->
+      <div v-if="settings.playerPictureAdjustmentEnabled" class="panel-section">
+        <div class="section-heading">
+          <span>{{ t('settings.player_adjustment.picture') }}</span>
+          <button v-if="pictureAdjusted" type="button" class="text-button" @click="resetPicture">
+            {{ t('settings.player_adjustment.reset') }}
+          </button>
+        </div>
+        <div class="picture-actions">
+          <button type="button" class="action-button" @click="rotate(-90)">
+            {{ t('settings.player_adjustment.rotate_left') }}
+          </button>
+          <button type="button" class="action-button" @click="rotate(90)">
+            {{ t('settings.player_adjustment.rotate_right') }}
+          </button>
+          <button
+            type="button" class="action-button" :aria-pressed="playerAdjustment.flipX"
+            @click="playerAdjustment.flipX = !playerAdjustment.flipX"
+          >
+            {{ t('settings.player_adjustment.flip_horizontal') }}
+          </button>
+          <button
+            type="button" class="action-button" :aria-pressed="playerAdjustment.flipY"
+            @click="playerAdjustment.flipY = !playerAdjustment.flipY"
+          >
+            {{ t('settings.player_adjustment.flip_vertical') }}
+          </button>
+        </div>
       </div>
-      <div class="picture-actions">
-        <button type="button" class="action-button" @click="rotate(-90)">
-          {{ t('settings.player_adjustment.rotate_left') }}
-        </button>
-        <button type="button" class="action-button" @click="rotate(90)">
-          {{ t('settings.player_adjustment.rotate_right') }}
-        </button>
-        <button
-          type="button" class="action-button" :aria-pressed="playerAdjustment.flipX"
-          @click="playerAdjustment.flipX = !playerAdjustment.flipX"
-        >
-          {{ t('settings.player_adjustment.flip_horizontal') }}
-        </button>
-        <button
-          type="button" class="action-button" :aria-pressed="playerAdjustment.flipY"
-          @click="playerAdjustment.flipY = !playerAdjustment.flipY"
-        >
-          {{ t('settings.player_adjustment.flip_vertical') }}
-        </button>
-      </div>
-      <div class="panel-section">
+      <div v-if="settings.playerAudioDelayEnabled" class="panel-section">
         <div class="section-heading">
           <span>{{ t('settings.player_adjustment.audio_sync') }}</span>
           <button v-if="playerAdjustment.audioDelay > 0" type="button" class="text-button" @click="playerAdjustment.audioDelay = 0">
@@ -295,7 +298,6 @@ onBeforeUnmount(() => {
           {{ delayNotice }}
         </div>
       </div>
-      <!-- 音量均衡在设置页开启后才在面板中显示 -->
       <div v-if="settings.localLoudnessEnabled" class="panel-section">
         <div class="section-heading">
           {{ t('settings.local_loudness.title') }}
@@ -437,7 +439,7 @@ onBeforeUnmount(() => {
   gap: 8px;
   margin-bottom: 12px;
 }
-.panel-section {
+.panel-section + .panel-section {
   border-top: 1px solid rgba(255, 255, 255, 0.2);
   margin-top: 16px;
   padding-top: 12px;

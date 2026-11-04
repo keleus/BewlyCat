@@ -168,8 +168,11 @@ settings:
       unsupported: 目前音源無法安全接入，保持原聲。
   player_adjustment:
     title: 畫面同聲音調整
-    show_button: 顯示播放器畫面同聲音調整按鈕
-    show_button_desc: 喺影片控制列顯示按鈕，滑鼠移上去可以旋轉、鏡像畫面，調整音畫同步；開咗音量均衡之後亦可以喺度調整均衡參數。旋轉、鏡像同音畫同步只對目前影片生效；隱藏按鈕會重設呢啲調整，但唔會關閉音量均衡。
+    desc: 喺影片控制列顯示調整按鈕，滑鼠移上去開面板。下面兩項可以分開關閉，音量均衡項跟上面「啟用局部音量均衡」顯示；三項都關閉嗰陣唔顯示按鈕。
+    show_picture: 畫面旋轉同鏡像
+    show_picture_desc: 喺面板度旋轉、鏡像畫面，只對目前影片生效；關閉之後會重設目前畫面調整。
+    show_audio_delay: 音畫同步
+    show_audio_delay_desc: 喺面板度調整聲音延後，只對目前影片生效；關閉之後唔再接管聲音。
     picture: 畫面
     rotate_left: 向左轉
     rotate_right: 向右轉

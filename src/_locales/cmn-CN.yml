@@ -168,8 +168,11 @@ settings:
       unsupported: 当前音源无法安全接入，保持原声。
   player_adjustment:
     title: 画面与声音调整
-    show_button: 显示播放器画面与声音调整按钮
-    show_button_desc: 在视频控制栏显示按钮，悬停可旋转、镜像画面，调整音画同步；开启音量均衡后也可在此调整均衡参数。旋转、镜像和音画同步只对当前视频生效；隐藏按钮会重置这些调整，但不会关闭音量均衡。
+    desc: 在视频控制栏显示调整按钮，悬停打开面板。以下两项可单独关闭，音量均衡项随上方「启用局部音量均衡」显示；三项都关闭时不显示按钮。
+    show_picture: 画面旋转与镜像
+    show_picture_desc: 在面板中旋转、镜像画面，仅对当前视频生效；关闭后会重置当前画面调整。
+    show_audio_delay: 音画同步
+    show_audio_delay_desc: 在面板中调整声音延后，仅对当前视频生效；关闭后不再接管声音。
     picture: 画面
     rotate_left: 向左旋转
     rotate_right: 向右旋转
