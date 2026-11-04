@@ -1759,6 +1759,8 @@ moments:
   vote_submit: 投票
   vote_submitted: 已投票
   vote_selected: 你選擇了此項
+  vote_expand_options: 展開其餘 {count} 個選項
+  vote_collapse_options: 收合選項
   vote_time_day: '{count}天'
   vote_time_hour: '{count}小時'
   vote_time_minute: '{count}分鐘'

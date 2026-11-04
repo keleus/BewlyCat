@@ -1744,6 +1744,8 @@ moments:
   vote_submit: 投票
   vote_submitted: 已投票
   vote_selected: 你选择了此项
+  vote_expand_options: 展开剩余 {count} 个选项
+  vote_collapse_options: 收起选项
   vote_time_day: '{count}天'
   vote_time_hour: '{count}小时'
   vote_time_minute: '{count}分钟'

@@ -1830,6 +1830,8 @@ moments:
   vote_submit: Vote
   vote_submitted: Voted
   vote_selected: You selected this option
+  vote_expand_options: Show {count} more options
+  vote_collapse_options: Show fewer options
   vote_time_day: '{count}d '
   vote_time_hour: '{count}h '
   vote_time_minute: '{count}m'
