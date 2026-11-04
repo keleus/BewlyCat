@@ -271,6 +271,8 @@ export const videoCardContextMenuKeys = [
   'viewOriginalCover',
   'followUser',
   'blockUser',
+  // 菜单末尾跳转到本菜单设置的入口；不算作卡片操作，见 hasVisibleVideoCardMenuAction
+  'customizeMenu',
 ] as const
 
 export type VideoCardContextMenuKey = typeof videoCardContextMenuKeys[number]
@@ -282,6 +284,11 @@ export interface VideoCardContextMenuConfigItem {
 
 export const defaultVideoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
   = videoCardContextMenuKeys.map(key => ({ key, visible: true }))
+
+/** 是否还有可见的卡片操作；只剩「自定义菜单」时不显示更多按钮 */
+export function hasVisibleVideoCardMenuAction(config: VideoCardContextMenuConfigItem[]) {
+  return config.some(item => item.visible && item.key !== 'customizeMenu')
+}
 
 export interface FavoriteOrganizerUp {
   mid: string
@@ -1197,6 +1204,8 @@ export const settings = useSettingsStorage(originalSettings, {
       const drawerIndex = menuConfig.findIndex(item => item.key === 'openInDrawer')
       menuConfig.splice(drawerIndex === -1 ? menuConfig.length : drawerIndex + 1, 0, { key: 'openInDialog', visible: true })
     }
+    if (Array.isArray(menuConfig) && !menuConfig.some(item => item.key === 'customizeMenu'))
+      menuConfig.push({ key: 'customizeMenu', visible: true })
 
     // 旧私信开关同时控制两类私信，拆分后保留原有选择。
     if (typeof record.showPrivateMessageUnreadCount === 'boolean') {

@@ -13,7 +13,7 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import type { WatchLaterLayout } from '~/logic'
-import { settings, watchLaterLayout } from '~/logic'
+import { hasVisibleVideoCardMenuAction, settings, watchLaterLayout } from '~/logic'
 import { ensureWatchLaterState, markWatchLater, markWatchLaterCleared } from '~/logic/watchLaterState'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -36,7 +36,7 @@ const moreMenuItem = ref<VideoItem | null>(null)
 const moreMenuTrigger = ref<HTMLButtonElement | null>(null)
 const moreMenuStyles = ref<CSSProperties>({})
 const showMoreButton = computed(() => settings.value.showVideoCardMoreButton
-  && settings.value.videoCardContextMenuConfig.some(item => item.visible))
+  && hasVisibleVideoCardMenuAction(settings.value.videoCardContextMenuConfig))
 
 function openMoreMenu(item: VideoItem, event: MouseEvent) {
   const trigger = event.currentTarget as HTMLButtonElement

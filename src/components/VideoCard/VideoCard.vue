@@ -4,7 +4,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
-import { settings } from '~/logic'
+import { hasVisibleVideoCardMenuAction, settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
@@ -51,7 +51,7 @@ const layout = computed((): VideoCardLayoutSetting => {
 const showMoreButton = computed(() =>
   props.moreBtn
   && settings.value.showVideoCardMoreButton
-  && settings.value.videoCardContextMenuConfig.some(item => item.visible),
+  && hasVisibleVideoCardMenuAction(settings.value.videoCardContextMenuConfig),
 )
 
 // 包括接口自带关注状态的卡片，保留同屏关注操作的共享结果。

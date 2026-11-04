@@ -86,7 +86,7 @@ const showFollowUserDialog = ref<boolean>(false)
 const showUnfollowUserDialog = ref<boolean>(false)
 const showPipWindow = ref<boolean>(false)
 const loadingWebDislike = ref<boolean>(false)
-const { openIframeDrawer, openVideoDialog } = useBewlyApp()
+const { openIframeDrawer, openVideoDialog, openSettings } = useBewlyApp()
 
 enum VideoOption {
   OpenInNewTab,
@@ -207,6 +207,11 @@ const commonOptions = computed((): OptionItem[][] => {
   return result.map(group => group.filter(option => isOptionVisible(option.key))).filter(group => group.length > 0)
 })
 
+// 菜单末尾的设置入口，打开设置并定位到本菜单的编辑区域；可在该编辑区域中隐藏。
+const customizeGroup = computed((): ContextMenuPanelItem[] => isOptionVisible('customizeMenu')
+  ? [{ key: 'customize-menu', name: t('video_card.operation.customize_menu'), icon: 'i-solar:settings-bold-duotone', select: openMenuSettings }]
+  : [])
+
 const menuGroups = computed((): ContextMenuPanelItem[][] => [
   recommendationGroup.value,
   ...commonOptions.value.map(group => group.map(option => ({
@@ -217,7 +222,17 @@ const menuGroups = computed((): ContextMenuPanelItem[][] => [
     select: () => handleCommonCommand(option.command),
   }))),
   ...props.extraGroups,
+  customizeGroup.value,
 ])
+
+function openMenuSettings() {
+  handleClose()
+  openSettings({
+    menu: 'BewlyComponents',
+    secondaryPage: 'video-card',
+    targetTitleKey: 'settings.group_video_card_context_menu',
+  })
+}
 
 function getAuthorMid() {
   if (!props.video.author)

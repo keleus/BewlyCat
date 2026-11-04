@@ -61,6 +61,13 @@ const groups = computed<MenuGroup[]>(() => [
       { key: 'blockUser', label: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone' },
     ],
   },
+  {
+    id: 'other',
+    label: t('settings.video_card_context_menu_region_other'),
+    elements: [
+      { key: 'customizeMenu', label: t('video_card.operation.customize_menu'), icon: 'i-solar:settings-bold-duotone' },
+    ],
+  },
 ])
 
 function isVisible(key: VideoCardContextMenuKey) {

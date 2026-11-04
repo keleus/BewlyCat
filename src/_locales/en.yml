@@ -301,6 +301,7 @@ settings:
   video_card_context_menu_region_opening: Open
   video_card_context_menu_region_copying: Copy
   video_card_context_menu_region_user: User
+  video_card_context_menu_region_other: Other
   video_card_context_menu_follow_user: Follow or Unfollow
   video_card_content_region_stats: Stats
   video_card_content_region_tags: Tags
@@ -1498,6 +1499,7 @@ video_card:
     follow_user: Follow User
     unfollow_user: Unfollow User
     block_user: Block User
+    customize_menu: Customize menu
     more_options: More options
     scroll_top: Scroll to top
     scroll_bottom: Scroll to bottom

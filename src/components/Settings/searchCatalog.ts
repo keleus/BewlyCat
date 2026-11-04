@@ -427,6 +427,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'video_card.operation.copy_av_number',
     'video_card.operation.view_the_original_cover',
     'video_card.operation.block_user',
+    'video_card.operation.customize_menu',
     'settings.video_card_shadow_curve',
     'settings.video_card_shadow_height',
   ]),

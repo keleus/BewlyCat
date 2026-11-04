@@ -301,6 +301,7 @@ settings:
   video_card_context_menu_region_opening: 打开
   video_card_context_menu_region_copying: 复制
   video_card_context_menu_region_user: 用户
+  video_card_context_menu_region_other: 其他
   video_card_context_menu_follow_user: 关注或取消关注
   video_card_content_region_stats: 数据
   video_card_content_region_tags: 标签
@@ -1417,6 +1418,7 @@ video_card:
     follow_user: 关注用户
     unfollow_user: 取消关注
     block_user: 拉黑用户
+    customize_menu: 自定义菜单
     more_options: 更多操作
     scroll_top: 滚动到顶部
     scroll_bottom: 滚动到底部
