@@ -276,6 +276,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.auto_switch_recommendation_mode',
     'settings.preserve_for_you_state',
     'settings.group_recommendation_filters',
+    'settings.show_recommendation_filter_entry',
     'settings.show_recommendation_filter_risk_warning',
     'settings.disable_filters_for_followed_users',
     'settings.filter_out_vertical_videos',

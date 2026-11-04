@@ -782,6 +782,8 @@ settings:
     key。
   authorize_app_more_info_access_key: 關於 access key
   scan_qrcode_desc: 使用 Bilibili 手機應用程式掃描這個行動條碼，以授權取得 access key。
+  show_recommendation_filter_entry: 顯示推薦過濾入口
+  show_recommendation_filter_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示過濾按鈕，可直接調整過濾條件；關閉面板後依新條件重新整理推薦。
   show_recommendation_filter_risk_warning: 顯示過濾風控警告
   show_recommendation_filter_risk_warning_desc: 過濾掉的推薦過多時，提示頻繁請求可能觸發風控。
   disable_filters_for_followed_users: 正在跟隨的使用者不受過濾條件限制
@@ -1478,6 +1480,15 @@ home:
   app_authorization_required: App 模式的 access token 已遺失或過期，請重新授權後繼續使用個人化推薦
   reauthorize_app: 重新授權
   recommendation_filter_risk_warning: 目前過濾條件在 {total} 條有效推薦中只保留了 {count} 條，容易頻繁請求並觸發介面風控，建議適度放寬過濾條件。
+  recommendation_filter:
+    entry: 推薦過濾
+    entry_active: 推薦過濾（已啟用 {count} 項）
+    title: 推薦過濾
+    more_settings: 更多設定
+    vertical_videos: 過濾直式影片
+    rule_count: '{count} 條規則'
+    manage: 管理
+    apply_hint: 關閉面板後依新條件重新整理推薦。
   tell_us_why: 為什麼這樣做...
   not_interested_desc: >
     你可以用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 來選擇原因，或者直接使用數字鍵來選擇原因，按 <kbd>Enter</kbd>

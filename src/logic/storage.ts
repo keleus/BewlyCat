@@ -561,6 +561,7 @@ export interface Settings {
   autoSwitchRecommendationMode: boolean
 
   // filter setting
+  showRecommendationFilterEntry: boolean // 首页个性推荐标签栏右侧显示推荐过滤入口
   showRecommendationFilterRiskWarning: boolean
   disableFilterForFollowedUser: boolean
   filterOutVerticalVideos: boolean
@@ -937,6 +938,7 @@ export const originalSettings: Settings = {
   autoSwitchRecommendationMode: true,
 
   // filter setting
+  showRecommendationFilterEntry: true,
   showRecommendationFilterRiskWarning: true,
   disableFilterForFollowedUser: false,
   filterOutVerticalVideos: false,

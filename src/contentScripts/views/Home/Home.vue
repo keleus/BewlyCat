@@ -18,6 +18,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import emitter from '~/utils/mitt'
 import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
+import RecommendationFilterEntry from './components/RecommendationFilterEntry.vue'
 import VersionReminder from './components/VersionReminder.vue'
 import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
@@ -81,9 +82,11 @@ const topBarVisibility = ref<boolean>(true)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
 const shouldShowRecommendationModeSwitcher = computed(() => settings.value.showRecommendationModeSwitcher && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowImmersiveModeEntry = computed(() => settings.value.showImmersiveModeEntry && activatedPage.value === HomeSubPage.ForYou)
+const shouldShowRecommendationFilterEntry = computed(() => settings.value.showRecommendationFilterEntry && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value
   || shouldShowRecommendationModeSwitcher.value
   || shouldShowImmersiveModeEntry.value
+  || shouldShowRecommendationFilterEntry.value
   || settings.value.enableGridLayoutSwitcher)
 const recommendationModeOptions = computed(() => filterRecommendationModeSwitcherOptions(createRecommendationModeOptions(t)))
 const activeRecommendationModeOption = computed(() => getRecommendationModeOption())
@@ -439,6 +442,13 @@ function toggleTabContentLoading(loading: boolean) {
               {{ option.label }}
             </button>
           </div>
+
+          <RecommendationFilterEntry
+            v-if="shouldShowRecommendationFilterEntry"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="home"
+            data-layout-settings-title-key="settings.show_recommendation_filter_entry"
+          />
 
           <div
             v-if="isLayoutEditing || settings.enableGridLayoutSwitcher"

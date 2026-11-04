@@ -423,6 +423,13 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
       :desc="$t('settings.group_recommendation_filters_desc')"
     >
       <SettingsItem
+        :title="$t('settings.show_recommendation_filter_entry')"
+        :desc="$t('settings.show_recommendation_filter_entry_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showRecommendationFilterEntry" />
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.show_recommendation_filter_risk_warning')"
         :desc="$t('settings.show_recommendation_filter_risk_warning_desc')"
         right-width="auto"

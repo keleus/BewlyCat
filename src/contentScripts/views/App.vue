@@ -1688,6 +1688,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   searchFocusOverlayActive,
   handleBackToTop,
   handlePageRefresh,
+  refreshCurrentPage: handleThrottledPageRefresh,
   canRefreshHomeSubPage,
   handleReachBottom,
   handleUndoRefresh,

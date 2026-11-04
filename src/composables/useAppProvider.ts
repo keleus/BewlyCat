@@ -40,6 +40,8 @@ export interface BewlyAppProvider {
   mainAppRef: Ref<HTMLElement>
   handleReachBottom: Ref<(() => void) | undefined>
   handlePageRefresh: Ref<(() => void) | undefined>
+  /** 与 Dock 刷新按钮相同：已滚动时先回到顶部再刷新当前页面 */
+  refreshCurrentPage: () => void
   canRefreshHomeSubPage: Ref<boolean>
   // 添加撤销刷新的处理函数
   handleUndoRefresh: Ref<(() => void) | undefined>
