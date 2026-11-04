@@ -428,6 +428,8 @@ settings:
   moments_visible_components: 顯示元件
   moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄同橫幅等元件係咪顯示。主題色代表顯示，灰色代表隱藏。
   moments_visible_components_plugin_desc: 控制 Bewly 動態頁側欄同頂部元件係咪顯示。主題色代表顯示，灰色代表隱藏。
+  moments_show_filter_entry: 顯示動態過濾入口
+  moments_show_filter_entry_desc: 喺 Bewly 動態頁分頁欄右邊顯示過濾按鈕，可以直接調整顯示嘅動態類型同屏蔽關鍵詞；閂咗面板之後會用新條件重新整理動態。
   moments_filtered_types: 過濾動態
   moments_filtered_types_desc: 控制各類動態係咪出現喺 Bewly 動態流，選中代表顯示。過濾得多嘅話可能要手動再載入。
   moments_enable_live_preview: 直播動態懸停預覽
@@ -1745,6 +1747,12 @@ search:
   match_upcoming: 未開始
   match_live: 進行中
 moments:
+  filter_panel:
+    entry: 動態過濾
+    entry_active: 動態過濾（已啟用 {count} 項）
+    more_settings: 更多設定
+    shown_types: 揀咗嘅類型會喺動態流顯示
+    apply_hint: 閂咗面板之後會用新條件重新整理動態。
   filter_all: 全部
   filter_video: 影片投稿
   filter_pgc: 追番追劇

@@ -60,6 +60,7 @@ import {
 } from '~/utils/videoDialog'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
+import MomentsFilterEntry from './MomentsFilterEntry.vue'
 import MomentsHotSearch from './MomentsHotSearch.vue'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
@@ -3804,6 +3805,13 @@ watch(
             </div>
           </div>
         </section>
+        <MomentsFilterEntry
+          v-if="settings.momentsShowFilterEntry"
+          class="moments-filter-entry"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="moments"
+          data-layout-settings-title-key="settings.moments_show_filter_entry"
+        />
       </header>
 
       <div class="moments-center" :style="momentsContentStyle">
@@ -5115,19 +5123,29 @@ watch(
   position: relative;
   grid-area: header;
   display: grid;
-  grid-template-columns: minmax(0, max-content);
-  justify-content: start;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  column-gap: var(--bew-space-4);
   justify-self: start;
   align-items: center;
   width: 100%;
   min-width: 0;
 }
+// 居中时两侧等宽，标签栏保持在正中，过滤入口靠右
 .moments-filter-header--center {
-  justify-content: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) minmax(0, 1fr);
+
+  .moments-filter-panel {
+    grid-column: 2;
+  }
 }
 
 .moments-filter-panel {
   max-width: 100%;
+}
+
+.moments-filter-entry {
+  grid-column: -2;
+  justify-self: end;
 }
 .moments-filter-scroll {
   height: 100%;

@@ -403,6 +403,8 @@ settings:
   moments_visible_components: Visible components
   moments_visible_components_original_desc: Control whether sidebar and banner components appear on the original Bilibili moments page. Theme-colored means shown; gray means hidden.
   moments_visible_components_plugin_desc: Control whether sidebar and top components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
+  moments_show_filter_entry: Show dynamic filter button
+  moments_show_filter_entry_desc: Show a filter button on the right of the Bewly dynamics tabs to adjust shown dynamic types and blocked keywords directly. Dynamics refresh with the new filters when the panel closes.
   moments_filtered_types: Filter dynamics
   moments_filtered_types_desc: Choose which dynamic types appear in the Bewly feed; selected types are shown. When many items are filtered, you may need to load more manually.
   moments_enable_live_preview: Preview live dynamics on hover
@@ -1816,6 +1818,12 @@ search:
   match_upcoming: Upcoming
   match_live: Live
 moments:
+  filter_panel:
+    entry: Dynamic filters
+    entry_active: Dynamic filters ({count} on)
+    more_settings: More settings
+    shown_types: Selected types are shown in the feed
+    apply_hint: Dynamics refresh with the new filters when this panel closes.
   filter_all: All
   filter_video: Videos
   filter_pgc: Anime & shows

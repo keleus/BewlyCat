@@ -340,6 +340,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_card_open_mode',
     'settings.moments_video_card_open_mode',
     'settings.group_moments_filters',
+    'settings.moments_show_filter_entry',
     'settings.moments_filter_video_dynamic',
     'settings.moments_filter_draw_dynamic',
     'settings.moments_filter_ugc_season_dynamic',

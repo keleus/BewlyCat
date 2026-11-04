@@ -5,6 +5,8 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
+import type { MomentTypeFilterSetting } from '~/constants/momentFilters'
+import { MOMENT_TYPE_FILTER_OPTIONS } from '~/constants/momentFilters'
 import { settings } from '~/logic'
 import type { MomentsGridColumns, TabsPosition } from '~/logic/storage'
 
@@ -28,17 +30,7 @@ type MomentToggleSetting
     | 'momentsSidebarShowLive'
     | 'momentsSidebarShowHotSearch'
     | 'momentsShowUpList'
-    | 'momentsFilterUpRecommendation'
-    | 'momentsHideChargeExclusive'
-    | 'momentsHideVideoReservation'
-    | 'momentsHideLiveReservation'
-    | 'momentsHideLiveDynamics'
-    | 'momentsHideVideoDynamics'
-    | 'momentsHideDrawDynamics'
-    | 'momentsHideUgcSeasonDynamics'
-    | 'momentsHideForwardDynamics'
-    | 'momentsHidePgcDynamics'
-    | 'momentsHideArticleDynamics'
+    | MomentTypeFilterSetting
 
 interface MomentTagOption {
   setting: MomentToggleSetting
@@ -63,19 +55,11 @@ const pluginComponentOptions = computed<MomentTagOption[]>(() => [
   { setting: 'momentsShowUpList', label: t('settings.moments_show_up_list'), icon: 'i-tabler-users' },
 ])
 
-const pluginFilterOptions = computed<MomentTagOption[]>(() => [
-  { setting: 'momentsHideVideoDynamics', label: t('settings.moments_filter_video_dynamic'), icon: 'i-tabler-player-play' },
-  { setting: 'momentsHideDrawDynamics', label: t('settings.moments_filter_draw_dynamic'), icon: 'i-tabler-photo' },
-  { setting: 'momentsHideUgcSeasonDynamics', label: t('settings.moments_filter_ugc_season_dynamic'), icon: 'i-tabler-stack' },
-  { setting: 'momentsHideForwardDynamics', label: t('settings.moments_filter_forward_dynamic'), icon: 'i-tabler-repeat' },
-  { setting: 'momentsHidePgcDynamics', label: t('settings.moments_filter_pgc_dynamic'), icon: 'i-tabler-device-tv' },
-  { setting: 'momentsHideArticleDynamics', label: t('settings.moments_filter_article_dynamic'), icon: 'i-tabler-news' },
-  { setting: 'momentsFilterUpRecommendation', label: t('settings.moments_filter_up_recommendation_short'), icon: 'i-tabler-sparkles' },
-  { setting: 'momentsHideChargeExclusive', label: t('settings.moments_filter_charge_dynamic'), icon: 'i-tabler-battery-charging' },
-  { setting: 'momentsHideVideoReservation', label: t('settings.moments_filter_video_reservation'), icon: 'i-tabler-calendar-time' },
-  { setting: 'momentsHideLiveReservation', label: t('settings.moments_filter_live_reservation'), icon: 'i-tabler-calendar-event' },
-  { setting: 'momentsHideLiveDynamics', label: t('settings.moments_filter_live_dynamic'), icon: 'i-tabler-broadcast' },
-])
+const pluginFilterOptions = computed<MomentTagOption[]>(() => MOMENT_TYPE_FILTER_OPTIONS.map(option => ({
+  setting: option.setting,
+  label: t(option.labelKey),
+  icon: option.icon,
+})))
 
 const openModeOptions = computed(() => [
   {
@@ -285,6 +269,13 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_moments_filters')">
+      <SettingsItem
+        :title="$t('settings.moments_show_filter_entry')"
+        :desc="$t('settings.moments_show_filter_entry_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.momentsShowFilterEntry" />
+      </SettingsItem>
       <SettingsItem
         :title="$t('settings.moments_filtered_types')"
         :desc="$t('settings.moments_filtered_types_desc')"

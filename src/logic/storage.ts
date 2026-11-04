@@ -462,6 +462,8 @@ export interface Settings {
   /** Bewly 动态页期望列数；窄屏会自动降列 */
   momentsGridColumns: MomentsGridColumns
   momentsEnableWantedFilter: boolean
+  /** Bewly 动态页标签栏右侧显示动态过滤入口 */
+  momentsShowFilterEntry: boolean
   momentsFilterUpRecommendation: boolean
   momentsHideChargeExclusive: boolean
   momentsHideVideoReservation: boolean
@@ -848,6 +850,7 @@ export const originalSettings: Settings = {
   momentsOnlyCoverVideoPreview: true,
   momentsGridColumns: '2',
   momentsEnableWantedFilter: true,
+  momentsShowFilterEntry: true,
   momentsFilterUpRecommendation: false,
   momentsHideChargeExclusive: false,
   momentsHideVideoReservation: false,
