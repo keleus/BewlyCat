@@ -58,8 +58,8 @@ function calculatePosition() {
     return
   const rect = containerRef.value.getBoundingClientRect()
   dropdownPosition.value = {
-    top: rect.bottom + window.scrollY,
-    left: rect.left + window.scrollX,
+    top: rect.bottom,
+    left: rect.left,
     width: rect.width,
   }
 }
@@ -122,7 +122,7 @@ async function refreshHandler() {
   if (!tabState.isCurrent() || isLoading.value)
     return
 
-  await initData()
+  await initData(activatedSeries.value?.number)
 }
 
 async function initData(preferredSeriesNumber?: number) {
@@ -251,7 +251,7 @@ function onMouseEnter() {
   window.removeEventListener('click', closeDropdown)
 }
 
-defineExpose({ initData })
+defineExpose({ initData: refreshHandler })
 
 function getItemDisplayData(item: VideoElement) {
   return item.displayData
@@ -310,7 +310,7 @@ function getItemKey(item: VideoElement) {
               width: `${dropdownPosition.width}px`,
               backdropFilter: 'var(--bew-filter-glass-1)',
             }"
-            pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2"
+            pos="fixed" bg="$bew-elevated" shadow="$bew-shadow-2"
             mt-2 rounded="$bew-radius" z="10004"
             max-h-400px of-hidden
             @mouseenter="onMouseEnter"
@@ -376,7 +376,7 @@ function getItemKey(item: VideoElement) {
         :transform-item="getItemDisplayData"
         :get-item-key="getItemKey"
         show-preview
-        @refresh="initData"
+        @refresh="refreshHandler"
         @load-more="() => {}"
       />
     </div>
