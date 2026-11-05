@@ -53,13 +53,14 @@ interface HomeTabCacheContext {
   activeKey: () => string
   restoreScroll: () => void
   keepContentInView: () => void
+  preserveScrollPosition: () => boolean
 }
 
 const homeTabCacheKey: InjectionKey<HomeTabCacheContext> = Symbol('home-tab-data-cache')
 
-export function provideHomeTabCache(activeKey: () => string, restoreScroll: () => void, keepContentInView: () => void) {
+export function provideHomeTabCache(activeKey: () => string, restoreScroll: () => void, keepContentInView: () => void, preserveScrollPosition: () => boolean) {
   const cache = createHomeTabCache()
-  provide(homeTabCacheKey, { cache, activeKey, restoreScroll, keepContentInView })
+  provide(homeTabCacheKey, { cache, activeKey, restoreScroll, keepContentInView, preserveScrollPosition })
   return cache
 }
 
@@ -71,6 +72,7 @@ export function useHomeTabState(options: { retainedFields?: readonly string[] } 
   // remain component-local and start fresh when the tab is mounted again.
   const retainedFields = options.retainedFields && new Set(options.retainedFields)
   const context = inject(homeTabCacheKey, undefined)
+  const preserveScrollOnEntry = context?.preserveScrollPosition() ?? false
   const ownerKey = context?.activeKey() ?? ''
   const generation = context?.cache.generation ?? 0
   let snapshot = context?.cache.take(ownerKey)
@@ -108,6 +110,7 @@ export function useHomeTabState(options: { retainedFields?: readonly string[] } 
 
   const state = {
     enabled: !!context,
+    preserveScrollOnEntry,
     restored: !!snapshot,
     read,
     take,
@@ -130,7 +133,7 @@ export function useHomeTabState(options: { retainedFields?: readonly string[] } 
         context?.restoreScroll()
     },
     keepContentInView() {
-      if (isCurrent())
+      if (isCurrent() && !preserveScrollOnEntry)
         context?.keepContentInView()
     },
   }

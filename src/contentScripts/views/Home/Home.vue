@@ -41,6 +41,8 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 const cachedScrollTop = ref(0)
 const tabScrollPositions = new Map<string, number>()
 let pendingTabScrollTop: number | null = null
+const switchingMinScrollTop = ref(0)
+const preserveSwitchPosition = ref(false)
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -74,7 +76,7 @@ const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage
     ? forYouCacheKey.value
     : activatedPage.value)
 const cacheRevision = ref(0)
-const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView)
+const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView, () => preserveSwitchPosition.value)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
@@ -138,7 +140,7 @@ function getInitialTabScrollTop(): number {
 // 切换栏目时旧内容已卸载、新列表还没撑开，滚动范围不足会把定位截断回顶部，
 // 因此搜索页模式下始终保留足够高度，让每个栏目都能落到搜索区域下方。
 const homeMainStyle = computed(() => {
-  const initialScrollTop = getInitialTabScrollTop()
+  const initialScrollTop = Math.max(getInitialTabScrollTop(), switchingMinScrollTop.value)
   return initialScrollTop ? { minHeight: `calc(100vh + ${initialScrollTop}px)` } : undefined
 })
 
@@ -167,6 +169,8 @@ function finishTabSwitch() {
   restoreTabScrollPosition()
   requestAnimationFrame(() => {
     isHomeTabSwitching.value = false
+    switchingMinScrollTop.value = 0
+    preserveSwitchPosition.value = false
   })
 }
 
@@ -178,11 +182,16 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
     tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getInitialTabScrollTop()))
-  // Only ForYou restores its list. Freshly fetched feeds must not inherit a
-  // scroll offset (or trigger pagination) from a different set of videos.
-  pendingTabScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
-    ? tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
-    : getInitialTabScrollTop()
+  // Keep the shared search/header position while tabs are near the top. Deep
+  // positions continue to use each destination tab's existing restoration.
+  if (pendingTabScrollTop === null)
+    preserveSwitchPosition.value = settings.value.useSearchPageModeOnHomePage && viewport.scrollTop <= getInitialTabScrollTop() + 1
+  pendingTabScrollTop = preserveSwitchPosition.value
+    ? pendingTabScrollTop ?? viewport.scrollTop
+    : newPage.startsWith(`${HomeSubPage.ForYou}:`)
+      ? tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
+      : getInitialTabScrollTop()
+  switchingMinScrollTop.value = preserveSwitchPosition.value ? pendingTabScrollTop : 0
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
 
@@ -387,6 +396,7 @@ function toggleTabContentLoading(loading: boolean) {
           'home-header--tabs-center': settings.homeTabsPosition === 'center',
           'home-header--recommendation-switcher': shouldShowRecommendationModeSwitcher,
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
+          'home-header-fixed--search': settings.fixedHomeTabsOnHomePage && settings.useSearchPageModeOnHomePage,
         }"
         w-full z-9
       >
@@ -651,6 +661,10 @@ function toggleTabContentLoading(loading: boolean) {
 
 .home-header-fixed {
   --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
+}
+
+.home-header-fixed--search {
+  top: calc(var(--bew-top-bar-height) + var(--bew-space-4));
 }
 
 @media (max-width: 1000px) {

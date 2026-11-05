@@ -544,7 +544,7 @@ onMounted(() => {
     forwardWebLoadMoreBrush.value = 1
 
     // 恢复滚动位置
-    if (savedState.scrollTop) {
+    if (savedState.scrollTop && !tabState.preserveScrollOnEntry) {
       nextTick(() => {
         const viewport = scrollViewportRef.value
         if (tabState.isCurrent() && viewport)
