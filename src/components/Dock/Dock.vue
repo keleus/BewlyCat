@@ -343,7 +343,7 @@ const canRefreshCurrentPage = computed((): boolean => {
   if (props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults)
     return false
 
-  return props.activatedPage !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
+  return props.activatedPage !== AppPage.Home || homeActivatedPage.value !== HomeSubPage.Following || canRefreshHomeSubPage.value
 })
 
 // 刷新按钮可单独隐藏；快捷键刷新仍按 canRefreshCurrentPage 判断，不受按钮显隐影响

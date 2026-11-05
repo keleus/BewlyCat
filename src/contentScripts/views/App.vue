@@ -1020,7 +1020,7 @@ const canRefreshHomeSubPage = ref<boolean>(false)
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const canRefreshCurrentPage = computed((): boolean => {
-  return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
+  return activatedPage.value !== AppPage.Home || homeActivatedPage.value !== HomeSubPage.Following || canRefreshHomeSubPage.value
 })
 let refreshScrollTimer: ReturnType<typeof setTimeout> | undefined
 
