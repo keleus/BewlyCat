@@ -243,6 +243,7 @@ settings:
     import_failed: The settings file could not be read. Make sure it is a valid JSON backup.
     import_no_matches: No recognized settings were found in this backup.
     import_success: 'Import complete: applied {imported} settings and ignored {ignored} unknown settings.'
+    import_wallpaper_failed: Settings were imported, but the wallpaper could not be restored. The backup may be invalid or storage may be full. Your current wallpaper was kept.
     migrate_legacy_title: Migrate settings
     migrate_legacy_action: Migrate all
     migrate_legacy_item: '· {name}'
@@ -1059,7 +1060,7 @@ settings:
   export_settings: Export Settings
   export_settings_desc: >-
     Some sensitive content, such as access key, will not be exported and may
-    need to be reacquired again.
+    need to be reacquired again. Locally uploaded wallpapers are included.
   reset_settings: Reset Settings
   reset_settings_confirm: >-
     Reset settings?

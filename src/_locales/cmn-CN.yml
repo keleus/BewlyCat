@@ -243,6 +243,7 @@ settings:
     import_failed: 设置文件无法读取，请确认它是有效的 JSON 备份。
     import_no_matches: 备份中没有可导入的设置项。
     import_success: 导入成功：已应用 {imported} 项，忽略 {ignored} 项未知设置。
+    import_wallpaper_failed: 设置已导入，但背景图片未能恢复，可能是备份内容无效或存储空间不足。当前背景图片不变。
     migrate_legacy_title: 设置迁移
     migrate_legacy_action: 一键迁移
     migrate_legacy_item: '· {name}'
@@ -1125,7 +1126,7 @@ settings:
   links: 链接
   import_settings: 导入设置
   export_settings: 导出设置
-  export_settings_desc: 一些敏感的数据，例如 access key，可能需要重新获取。
+  export_settings_desc: 一些敏感的数据，例如 access key，可能需要重新获取。本地上传的背景图片会一并导出。
   reset_settings: 重置设置
   reset_settings_confirm: |-
     重置设置？

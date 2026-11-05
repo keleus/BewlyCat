@@ -243,6 +243,7 @@ settings:
     import_failed: 無法讀取設定檔，請確認它是有效的 JSON 備份。
     import_no_matches: 備份中沒有可匯入的設定項目。
     import_success: 匯入成功：已套用 {imported} 項，忽略 {ignored} 項未知設定。
+    import_wallpaper_failed: 設定已匯入，但背景圖片未能還原，可能是備份內容無效或儲存空間不足。目前的背景圖片不變。
     migrate_legacy_title: 設定遷移
     migrate_legacy_action: 一鍵遷移
     migrate_legacy_item: '· {name}'
@@ -961,7 +962,7 @@ settings:
   links: 連結
   import_settings: 匯入設定
   export_settings: 匯出設定
-  export_settings_desc: 一些敏感性資訊，例如 access key，可能需要重新取得。
+  export_settings_desc: 一些敏感性資訊，例如 access key，可能需要重新取得。本機上傳的背景圖片會一併匯出。
   reset_settings: 重設設定
   reset_settings_confirm: |-
     重設設定？

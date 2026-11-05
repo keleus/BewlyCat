@@ -6,7 +6,8 @@ import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
-import { normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
+import { localSettings, localSettingsReady, normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
+import { extractWallpaperId, getLocalWallpaperData, hasLocalWallpaper, LOCAL_WALLPAPER_BACKUP_KEY, localWallpapersLoaded, restoreLocalWallpaper } from '~/utils/localWallpaper'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -198,6 +199,29 @@ function handleImportSettings() {
   importSettingsRef.value?.click()
 }
 
+/** 恢复备份中的本地壁纸，返回是否成功。失败时保留当前壁纸，避免设置指向不存在的数据。 */
+async function restoreBackupWallpaper(backup: unknown, recognizedSettings: Record<string, unknown>) {
+  try {
+    await localSettingsReady
+    const wallpaper = await restoreLocalWallpaper(backup)
+    localSettings.value.locallyUploadedWallpaper = {
+      ...wallpaper,
+      url: `local-wallpaper:${wallpaper.id}`,
+    }
+    return true
+  }
+  catch (error) {
+    console.error('Failed to restore local wallpaper:', error)
+    for (const key of ['wallpaper', 'searchPageWallpaper']) {
+      const value = recognizedSettings[key]
+      const id = typeof value === 'string' ? extractWallpaperId(value) : null
+      if (id && !hasLocalWallpaper(id))
+        Reflect.deleteProperty(recognizedSettings, key)
+    }
+    return false
+  }
+}
+
 function handleImportFile(event: Event) {
   const input = event.target as HTMLInputElement
   const selectedFile = input.files?.[0]
@@ -240,9 +264,11 @@ function handleImportFile(event: Event) {
 
       const currentSettings = originalSettings as unknown as Record<string, unknown>
       const recognizedSettings: Record<string, unknown> = {}
-      let importedCount = 0
       let ignoredCount = 0
       Object.entries(importedSettings).forEach(([key, value]) => {
+        if (key === LOCAL_WALLPAPER_BACKUP_KEY)
+          return
+
         if (!Object.prototype.hasOwnProperty.call(currentSettings, key)) {
           ignoredCount++
           return
@@ -255,20 +281,26 @@ function handleImportFile(event: Event) {
         }
 
         recognizedSettings[key] = result.value
-        importedCount++
       })
 
-      if (importedCount === 0) {
+      if (Object.keys(recognizedSettings).length === 0) {
         toast.warning(t('settings.maintenance.import_no_matches'))
         return
       }
 
+      // 先写入壁纸数据，设置生效时才能解析到其中的本地壁纸引用。
+      const wallpaperBackup = importedSettings[LOCAL_WALLPAPER_BACKUP_KEY]
+      const wallpaperRestored = wallpaperBackup == null
+        || await restoreBackupWallpaper(wallpaperBackup, recognizedSettings)
+
       await importSettingsStorage(recognizedSettings)
 
       toast.success(t('settings.maintenance.import_success', {
-        imported: importedCount,
+        imported: Object.keys(recognizedSettings).length,
         ignored: ignoredCount,
       }))
+      if (!wallpaperRestored)
+        toast.warning(t('settings.maintenance.import_wallpaper_failed'))
     }
     catch {
       toast.error(t('settings.maintenance.import_failed'))
@@ -277,8 +309,16 @@ function handleImportFile(event: Event) {
   reader.readAsText(selectedFile)
 }
 
-function handleExportSettings() {
-  const jsonStr = JSON.stringify(settings.value, null, 2)
+async function handleExportSettings() {
+  await Promise.all([localSettingsReady, localWallpapersLoaded])
+
+  // 本地壁纸不进入设置存储和云同步，只在导出文件中附带完整数据。
+  const uploadedWallpaperId = localSettings.value.locallyUploadedWallpaper?.id
+  const uploadedWallpaper = uploadedWallpaperId ? getLocalWallpaperData(uploadedWallpaperId) : null
+  const jsonStr = JSON.stringify({
+    ...settings.value,
+    ...(uploadedWallpaper ? { [LOCAL_WALLPAPER_BACKUP_KEY]: uploadedWallpaper } : {}),
+  }, null, 2)
   const blob = new Blob([jsonStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
