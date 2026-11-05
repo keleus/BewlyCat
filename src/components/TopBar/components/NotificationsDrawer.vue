@@ -414,7 +414,7 @@ function handleFocusDrawer(e?: Event) {
               <!-- ESC Hint -->
               <Transition name="fade">
                 <div
-                  v-if="showEscHint"
+                  v-if="showEscHint && !settings.hideDrawerEscHint"
                   pointer-events-auto
                   bg="$bew-theme-color" text="white sm" px-3 py-2 rounded="$bew-interactive-radius"
                   flex="~ items-center gap-2"
@@ -453,6 +453,7 @@ function handleFocusDrawer(e?: Event) {
                 </template>
                 {{ $t('iframe_drawer.close') }}
                 <kbd
+                  v-if="!settings.hideDrawerEscHint"
                   ml-1 px-2 py-0.5 rounded="$bew-radius-sm" text-xs
                   bg="$bew-fill-2" text="$bew-text-2"
                 >Esc</kbd>
@@ -468,6 +469,7 @@ function handleFocusDrawer(e?: Event) {
                 </template>
                 {{ $t('iframe_drawer.press_esc_again_to_close') }}
                 <kbd
+                  v-if="!settings.hideDrawerEscHint"
                   ml-1 px-2 py-0.5 rounded="$bew-radius-sm" text-xs
                   bg="red-700" text="white"
                 >Esc</kbd>

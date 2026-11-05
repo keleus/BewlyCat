@@ -149,6 +149,14 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
     >
       <Radio v-model="settings.hideCommentImageScrollbar" />
     </SettingsItem>
+
+    <SettingsItem
+      :title="$t('settings.image_viewer_close_at_bottom')"
+      :desc="$t('settings.image_viewer_close_at_bottom_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.imageViewerCloseAtBottom" />
+    </SettingsItem>
   </SettingsItemGroup>
 </template>
 

@@ -784,6 +784,16 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close {
   font-size: 28px !important;
   line-height: 1 !important;
 }
+/* 关闭按钮置于底部工具栏上方，并为其预留图片区域 */
+html.momentsPage.drawer.bewly-opus-layout.bewly-image-viewer-close-bottom .bewly-opus-viewer__close {
+  top: auto !important;
+  left: 50% !important;
+  bottom: 84px !important;
+  transform: translateX(-50%) !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-image-viewer-close-bottom .bewly-opus-viewer__stage {
+  padding-bottom: 140px !important;
+}
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
   position: absolute !important;
   top: 50% !important;

@@ -4249,6 +4249,7 @@ watch(
       <div
         ref="detailImageViewerRef"
         class="moment-image-viewer"
+        :class="{ 'is-close-bottom': settings.imageViewerCloseAtBottom }"
         role="dialog"
         aria-modal="true"
         :aria-label="t('moments.image_viewer')"
@@ -5469,6 +5470,16 @@ watch(
   height: 44px;
   border-radius: 50%;
   font-size: var(--bew-icon-size-lg);
+}
+// 关闭按钮置于底部工具栏上方，并为其预留图片区域
+.moment-image-viewer.is-close-bottom .moment-image-viewer__close {
+  top: auto;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+}
+.moment-image-viewer.is-close-bottom .moment-image-viewer__stage {
+  padding-bottom: 140px;
 }
 .moment-image-viewer__nav {
   position: absolute;

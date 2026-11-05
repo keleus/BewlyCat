@@ -39,6 +39,7 @@ const isEscPressed = ref<boolean>(false)
 const escPressedTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const disableEscPress = ref<boolean>(false)
 const isClosing = ref(false)
+const isIframePhotoViewerOpen = ref(false)
 let stopIframePushStateListener: (() => void) | null = null
 let stopIframePopStateListener: (() => void) | null = null
 let stopIframeDOMContentLoadedListener: (() => void) | null = null
@@ -58,7 +59,9 @@ const iframeContainerClasses = computed(() => {
     const topPosition = headerShow.value ? 'top-$bew-top-bar-height' : 'top-0'
     // 修正高度：使用 calc(100% - top位置) 确保容器不会超出可视区域
     const height = headerShow.value ? 'h-[calc(100%-var(--bew-top-bar-height))]' : 'h-full'
-    return `iframe-drawer-panel pos-absolute ${topPosition} left-0 bg-$bew-bg w-full ${height}`
+    // 查看大图时不裁剪圆角，否则 iframe 内全屏的图片查看器顶部两角会被切掉
+    const panelClass = isIframePhotoViewerOpen.value ? '' : 'iframe-drawer-panel'
+    return `${panelClass} pos-absolute ${topPosition} left-0 bg-$bew-bg w-full ${height}`
   }
 })
 
@@ -226,6 +229,8 @@ function handleIframeLoad() {
   }
 
   cleanupIframeWindowListeners()
+  // iframe 内跳转后旧页面不会再上报查看器关闭
+  isIframePhotoViewerOpen.value = false
   injectStyleClass()
   stopIframePushStateListener = useEventListener(iframeWindow, 'pushstate', updateCurrentUrl)
   stopIframePopStateListener = useEventListener(iframeWindow, 'popstate', updateCurrentUrl)
@@ -344,6 +349,7 @@ async function releaseIframeResources() {
   clearDrawerTimers()
   cleanupIframeWindowListeners()
   showIframe.value = false
+  isIframePhotoViewerOpen.value = false
   removeTopBarClassInjected.value = false
 
   const iframe = iframeRef.value
@@ -459,6 +465,9 @@ function handleWindowMessage({ data, source }: MessageEvent) {
     case 'BEWLY_DRAWER_ESCAPE_HANDLED':
       resetEscPressedState()
       break
+    case 'IFRAME_PHOTO_VIEWER_STATE':
+      isIframePhotoViewerOpen.value = data.isOpen === true
+      break
     case 'BEWLY_DRAWER_CLOSE_REQUEST':
       // 来自 iframe 的关闭请求
       if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
@@ -538,7 +547,7 @@ if (!isInIframe()) {
             <i i-mingcute:close-line />
           </template>
           {{ $t('iframe_drawer.close') }}
-          <kbd>Esc</kbd>
+          <kbd v-if="!settings.hideDrawerEscHint">Esc</kbd>
         </Button>
         <Button
           v-else
@@ -549,7 +558,7 @@ if (!isInIframe()) {
             <i i-mingcute:close-line />
           </template>
           {{ $t('iframe_drawer.press_esc_again_to_close') }}
-          <kbd>Esc</kbd>
+          <kbd v-if="!settings.hideDrawerEscHint">Esc</kbd>
         </Button>
       </div>
     </Transition>

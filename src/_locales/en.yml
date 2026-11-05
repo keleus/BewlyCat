@@ -537,6 +537,8 @@ settings:
   video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. In narrow windows, the dialog option opens a new tab instead.
   search_bar_link_opening_behavior: Search bar link opening behavior
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
+  hide_drawer_esc_hint: Hide the drawer's Esc shortcut hint
+  hide_drawer_esc_hint_desc: Hide the key badge on the drawer close button and the key hint in the notifications drawer. The Esc shortcut still works
   block_ads: Block ads
   block_top_search_page_ads: Block Bilibili top search page ads
   block_top_search_page_ads_desc: >
@@ -1323,6 +1325,8 @@ settings:
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   hide_comment_image_scrollbar: Hide page scrollbar in comment image preview
   hide_comment_image_scrollbar_desc: Hide the page scrollbar when opening a comment image preview so it does not appear beside the overlay
+  image_viewer_close_at_bottom: Move the image viewer close button to the bottom center
+  image_viewer_close_at_bottom_desc: Move the close button of the comment and moments image viewers from the top to the bottom center
   video_player_scroll: Scroll after adjusting the display mode
   video_player_scroll_desc: Automatically scroll to the selected position after adjusting the display mode.
   video_player_scroll_mode:

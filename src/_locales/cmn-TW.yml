@@ -522,6 +522,8 @@ settings:
   video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置。視窗較窄時彈窗會改用新索引標籤開啟。
   search_bar_link_opening_behavior: 搜尋列連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
+  hide_drawer_esc_hint: 隱藏抽屜的 Esc 快速鍵提示
+  hide_drawer_esc_hint_desc: 隱藏抽屜關閉按鈕上的按鍵標示和通知抽屜的按鍵提示，Esc 快速鍵仍可使用
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搜尋頁上方的廣告
 
@@ -1205,6 +1207,8 @@ settings:
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   hide_comment_image_scrollbar: 評論圖片預覽時隱藏頁面滾動條
   hide_comment_image_scrollbar_desc: 開啟評論區圖片預覽時隱藏頁面右側滾動條，避免滾動條顯示在遮罩右側
+  image_viewer_close_at_bottom: 圖片檢視器關閉按鈕置於底部居中
+  image_viewer_close_at_bottom_desc: 將評論區和動態圖片檢視器的關閉按鈕從頂部移到底部居中
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，調整顯示模式時會自動捲動到所選位置。
   video_player_scroll_mode:

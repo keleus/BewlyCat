@@ -524,6 +524,8 @@ settings:
   video_card_link_opening_behavior_desc: 控制点击视频卡片和番剧卡片后的打开位置。窗口较窄时弹窗会改为新标签页打开。
   search_bar_link_opening_behavior: 搜索栏链接打开行为
   close_drawer_without_pressing_esc_again: 关闭抽屉时不用再次按 <kbd>Esc</kbd> 关闭
+  hide_drawer_esc_hint: 隐藏抽屉的 Esc 快捷键提示
+  hide_drawer_esc_hint_desc: 隐藏抽屉关闭按钮上的按键标识和通知抽屉的按键提示，Esc 快捷键仍可使用
   block_ads: 屏蔽广告
   block_top_search_page_ads: 屏蔽 Bilibili 搜索页上方的广告
   block_top_search_page_ads_desc: |
@@ -1283,6 +1285,8 @@ settings:
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
   hide_comment_image_scrollbar: 评论图片预览时隐藏页面滚动条
   hide_comment_image_scrollbar_desc: 打开评论区图片预览时隐藏页面右侧滚动条，避免滚动条显示在遮罩右侧
+  image_viewer_close_at_bottom: 图片查看器关闭按钮置于底部居中
+  image_viewer_close_at_bottom_desc: 将评论区和动态图片查看器的关闭按钮从顶部移到底部居中
   group_fonts: 字体
   group_visual_effects: 视觉效果
 auth:

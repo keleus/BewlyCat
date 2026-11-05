@@ -241,6 +241,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_horizontal_scrolling',
     'settings.group_drawer_behavior',
     'settings.close_drawer_without_pressing_esc_again',
+    'settings.hide_drawer_esc_hint',
   ]),
   ...createEntries(generalRoute, [
     'settings.group_link_opening_behavior',
@@ -761,6 +762,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.comment_reply_pagination_mode.title',
     'settings.adjust_comment_image_height',
     'settings.hide_comment_image_scrollbar',
+    'settings.image_viewer_close_at_bottom',
   ], {
     keywordKeysByTitleKey: {
       'settings.comment_reply_tree_mode.title': [
