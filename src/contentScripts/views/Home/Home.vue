@@ -41,8 +41,7 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 const cachedScrollTop = ref(0)
 const tabScrollPositions = new Map<string, number>()
 let pendingTabScrollTop: number | null = null
-const switchingMinScrollTop = ref(0)
-const preserveSwitchPosition = ref(false)
+let preserveSwitchPosition = false
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -76,7 +75,7 @@ const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage
     ? forYouCacheKey.value
     : activatedPage.value)
 const cacheRevision = ref(0)
-const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView, () => preserveSwitchPosition.value)
+const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView, () => preserveSwitchPosition)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
@@ -140,7 +139,7 @@ function getInitialTabScrollTop(): number {
 // 切换栏目时旧内容已卸载、新列表还没撑开，滚动范围不足会把定位截断回顶部，
 // 因此搜索页模式下始终保留足够高度，让每个栏目都能落到搜索区域下方。
 const homeMainStyle = computed(() => {
-  const initialScrollTop = Math.max(getInitialTabScrollTop(), switchingMinScrollTop.value)
+  const initialScrollTop = getInitialTabScrollTop()
   return initialScrollTop ? { minHeight: `calc(100vh + ${initialScrollTop}px)` } : undefined
 })
 
@@ -169,8 +168,7 @@ function finishTabSwitch() {
   restoreTabScrollPosition()
   requestAnimationFrame(() => {
     isHomeTabSwitching.value = false
-    switchingMinScrollTop.value = 0
-    preserveSwitchPosition.value = false
+    preserveSwitchPosition = false
   })
 }
 
@@ -182,16 +180,19 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
     tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getInitialTabScrollTop()))
-  // Keep the shared search/header position while tabs are near the top. Deep
-  // positions continue to use each destination tab's existing restoration.
-  if (pendingTabScrollTop === null)
-    preserveSwitchPosition.value = settings.value.useSearchPageModeOnHomePage && viewport.scrollTop <= getInitialTabScrollTop() + 1
-  pendingTabScrollTop = preserveSwitchPosition.value
-    ? pendingTabScrollTop ?? viewport.scrollTop
-    : newPage.startsWith(`${HomeSubPage.ForYou}:`)
-      ? tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
-      : getInitialTabScrollTop()
-  switchingMinScrollTop.value = preserveSwitchPosition.value ? pendingTabScrollTop : 0
+  // Only ForYou restores its list. Freshly fetched feeds must not inherit a
+  // scroll offset (or trigger pagination) from a different set of videos.
+  const initialScrollTop = getInitialTabScrollTop()
+  const destinationScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
+    ? tabScrollPositions.get(newPage) ?? initialScrollTop
+    : initialScrollTop
+  // 搜索页模式下栏目栏仍在视野内时保持当前位置；当前已滚动较深，或目标栏目
+  // 有较深的浏览位置时，仍按目标栏目的原状态恢复。快速连切时滚动容器尚未
+  // 被改写，每次都按最新目标重新判断。
+  preserveSwitchPosition = settings.value.useSearchPageModeOnHomePage
+    && viewport.scrollTop <= initialScrollTop + 1
+    && destinationScrollTop <= initialScrollTop + 1
+  pendingTabScrollTop = preserveSwitchPosition ? viewport.scrollTop : destinationScrollTop
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
 
