@@ -74,7 +74,7 @@ const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage
     ? forYouCacheKey.value
     : activatedPage.value)
 const cacheRevision = ref(0)
-const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition)
+const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
@@ -135,6 +135,13 @@ function getInitialTabScrollTop(): number {
   return settings.value.useSearchPageModeOnHomePage ? 510 : 0
 }
 
+// 切换栏目时旧内容已卸载、新列表还没撑开，滚动范围不足会把定位截断回顶部，
+// 因此搜索页模式下始终保留足够高度，让每个栏目都能落到搜索区域下方。
+const homeMainStyle = computed(() => {
+  const initialScrollTop = getInitialTabScrollTop()
+  return initialScrollTop ? { minHeight: `calc(100vh + ${initialScrollTop}px)` } : undefined
+})
+
 function restoreTabScrollPosition() {
   if (pendingTabScrollTop === null)
     return
@@ -144,6 +151,15 @@ function restoreTabScrollPosition() {
     viewport.scrollTop = pendingTabScrollTop
 
   pendingTabScrollTop = null
+}
+
+// 列表快照的锚点记录的是离开时的视口偏移。若离开时还停在搜索区，
+// 按锚点还原会回到页面顶部，因此还原后再保证栏目内容在视口内。
+function keepTabContentInView() {
+  const viewport = scrollViewportRef.value
+  const minScrollTop = getInitialTabScrollTop()
+  if (viewport && viewport.scrollTop < minScrollTop)
+    viewport.scrollTop = minScrollTop
 }
 
 function finishTabSwitch() {
@@ -161,7 +177,7 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
 
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
-    tabScrollPositions.set(oldPage, viewport.scrollTop)
+    tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getInitialTabScrollTop()))
   // Only ForYou restores its list. Freshly fetched feeds must not inherit a
   // scroll offset (or trigger pagination) from a different set of videos.
   pendingTabScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
@@ -338,7 +354,7 @@ function toggleTabContentLoading(loading: boolean) {
       </div>
     </Transition>
 
-    <main>
+    <main :style="homeMainStyle">
       <!-- Home search page mode content -->
       <Transition name="content">
         <div

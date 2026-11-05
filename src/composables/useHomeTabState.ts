@@ -52,13 +52,14 @@ interface HomeTabCacheContext {
   cache: ReturnType<typeof createHomeTabCache>
   activeKey: () => string
   restoreScroll: () => void
+  keepContentInView: () => void
 }
 
 const homeTabCacheKey: InjectionKey<HomeTabCacheContext> = Symbol('home-tab-data-cache')
 
-export function provideHomeTabCache(activeKey: () => string, restoreScroll: () => void) {
+export function provideHomeTabCache(activeKey: () => string, restoreScroll: () => void, keepContentInView: () => void) {
   const cache = createHomeTabCache()
-  provide(homeTabCacheKey, { cache, activeKey, restoreScroll })
+  provide(homeTabCacheKey, { cache, activeKey, restoreScroll, keepContentInView })
   return cache
 }
 
@@ -127,6 +128,10 @@ export function useHomeTabState(options: { retainedFields?: readonly string[] } 
     restoreScroll() {
       if (isCurrent())
         context?.restoreScroll()
+    },
+    keepContentInView() {
+      if (isCurrent())
+        context?.keepContentInView()
     },
   }
   provide(homeTabStateKey, state)

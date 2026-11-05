@@ -1138,6 +1138,7 @@ const cardWindow = useCardWindow({
   canRelease: key => mountedCards.get(key)?.canRecycle !== false,
   snapshot: restoredGrid?.window,
   restoreScroll: tabState?.restoreScroll,
+  afterAnchorRestore: tabState?.keepContentInView,
 })
 detachGridSnapshot = tabState?.capture(gridStateKey, (): GridSnapshot => ({
   window: cardWindow.captureSnapshot(),
