@@ -129,6 +129,25 @@ export function hexToHSL(hex: string, alpha: number | null = null): string {
 
 const pendingSmoothScrolls = new WeakMap<HTMLElement, () => void>()
 
+// A slight adjustment to Material's standard curve: cubic-bezier(0.4, 0, 0.23, 1).
+function standardScrollEasing(progress: number): number {
+  if (progress <= 0 || progress >= 1)
+    return progress
+
+  let low = 0
+  let high = 1
+  for (let i = 0; i < 20; i++) {
+    const t = (low + high) / 2
+    const x = 1.2 * t * (1 - t) ** 2 + 0.69 * t ** 2 * (1 - t) + t ** 3
+    if (x < progress)
+      low = t
+    else
+      high = t
+  }
+  const t = (low + high) / 2
+  return t * t * (3 - 2 * t)
+}
+
 export function isProgrammaticScrollActive(element: HTMLElement): boolean {
   return pendingSmoothScrolls.has(element)
 }
@@ -144,9 +163,15 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
     return
 
   const doc = element.ownerDocument
+  const startScrollTop = element.scrollTop
+  const distance = Math.abs(startScrollTop - targetScrollTop)
+  const useCustomAnimation = distance > 1200 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  let animationFrame: number | undefined
   let timeout: ReturnType<typeof setTimeout>
   const finish = () => {
     clearTimeout(timeout)
+    if (animationFrame !== undefined)
+      cancelAnimationFrame(animationFrame)
     element.removeEventListener('scrollend', finish)
     element.removeEventListener('wheel', finish)
     element.removeEventListener('touchstart', finish)
@@ -157,16 +182,31 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
   // Also release the guard when scrolling is interrupted, or scrollend is unavailable.
   timeout = setTimeout(finish, 3000)
   pendingSmoothScrolls.set(element, finish)
-  element.addEventListener('scrollend', finish, { passive: true })
+  if (!useCustomAnimation)
+    element.addEventListener('scrollend', finish, { passive: true })
   element.addEventListener('wheel', finish, { passive: true })
   element.addEventListener('touchstart', finish, { passive: true })
   doc.addEventListener('pointerdown', finish, true)
   doc.addEventListener('keydown', finish, true)
 
-  element.scrollTo({
-    top: targetScrollTop,
-    behavior: 'smooth',
-  })
+  if (useCustomAnimation) {
+    const duration = Math.min(650, 350 + Math.sqrt(distance) * 4)
+    let startTime: number | undefined
+    const animate = (time: number) => {
+      startTime ??= time
+      const progress = Math.min(1, (time - startTime) / duration)
+      const eased = standardScrollEasing(progress)
+      element.scrollTo({ top: startScrollTop + (targetScrollTop - startScrollTop) * eased, behavior: 'instant' })
+      if (progress < 1)
+        animationFrame = requestAnimationFrame(animate)
+      else
+        finish()
+    }
+    animationFrame = requestAnimationFrame(animate)
+  }
+  else {
+    element.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+  }
 }
 
 export function injectCSS(css: string, element: HTMLElement | ShadowRoot = document.documentElement): HTMLStyleElement {
