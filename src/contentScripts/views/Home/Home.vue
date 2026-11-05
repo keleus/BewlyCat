@@ -15,6 +15,7 @@ import { useForYouStore } from '~/stores/forYouStore'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { cancelProgrammaticScroll } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
@@ -176,6 +177,9 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   const viewport = scrollViewportRef.value
   if (!viewport)
     return
+
+  // 切换栏目不带滚动动画：先停下未完成的回顶，避免记录中途位置或跳过锚点恢复。
+  cancelProgrammaticScroll(viewport)
 
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))

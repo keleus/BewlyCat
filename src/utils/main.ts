@@ -134,6 +134,14 @@ export function isProgrammaticScrollActive(element: HTMLElement): boolean {
 }
 
 /**
+ * 切换功能块前结束未完成的平滑滚动。点击已释放守卫时原生动画仍在继续，因此总是停止滚动。
+ */
+export function cancelProgrammaticScroll(element: HTMLElement): void {
+  pendingSmoothScrolls.get(element)?.()
+  element.scrollTo({ top: element.scrollTop, behavior: 'instant' })
+}
+
+/**
  * Smooth scroll to the top of the html element.
  * Card virtualization must not restore an anchor during this navigation.
  */
