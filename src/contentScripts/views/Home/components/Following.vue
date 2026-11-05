@@ -63,9 +63,10 @@ import { calcTimeSince, parseStatNumber } from '~/utils/dataFormatter'
 import type { FollowingGroup, FollowingGroupsResult, FollowingRelationUser } from '~/utils/followingGroups'
 import { getFollowingGroupIds, groupFollowingUploaders } from '~/utils/followingGroups'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
-import { cancelProgrammaticScroll } from '~/utils/main'
+import { jumpScrollTo } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
+import { getHomeContentScrollTop, isWithinHomeContentStart } from '../homeScroll'
 import FollowingGroupMenu from './FollowingGroupMenu.vue'
 import FollowingUploaderMenu from './FollowingUploaderMenu.vue'
 
@@ -166,22 +167,17 @@ function syncRefreshAvailability() {
   canRefreshHomeSubPage.value = isRefreshContextActive.value && selectedUploader.value === null
 }
 
-function getFeedStartScrollTop() {
-  return settings.value.useSearchPageModeOnHomePage ? 510 : 0
-}
-
 function pinFeedScrollToStart() {
   const viewport = scrollViewportRef.value
   if (!viewport)
     return
-  cancelProgrammaticScroll(viewport)
   const token = selectionToken.value
   if (token === preservedEntryToken)
     return
-  const scrollTarget = getFeedStartScrollTop()
+  const scrollTarget = getHomeContentScrollTop()
   const pinScroll = () => {
     if (tabState.isCurrent() && token === selectionToken.value && scrollViewportRef.value === viewport)
-      viewport.scrollTop = scrollTarget
+      jumpScrollTo(viewport, scrollTarget)
   }
   pinScroll()
   void nextTick(() => {
@@ -193,7 +189,7 @@ function pinFeedScrollToStart() {
 function handleFeedScroll(scrollTop: number) {
   if (!tabState.isCurrent() || isLoading.value)
     return
-  if (scrollTop > getFeedStartScrollTop() + 1)
+  if (!isWithinHomeContentStart(scrollTop))
     suppressUploaderAutoLoadMore.value = false
 }
 

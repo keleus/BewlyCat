@@ -14,6 +14,7 @@ import api from '~/utils/api'
 import { getListGridColumnCount } from '~/utils/gridLayout'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
+import { getHomeContentScrollTop } from '../homeScroll'
 import type { RankingType } from '../types'
 
 // 扩展 RankingVideoItem 以包含预处理的显示数据
@@ -32,7 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { handleBackToTop, handleReachBottom, handlePageRefresh } = useBewlyApp()
+const { handleScrollJump, handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 const rankingTypes = computed((): RankingType[] => {
   return [
@@ -148,7 +149,7 @@ watch(() => activatedRankingType.value.id, () => {
   if (!tabState.isCurrent())
     return
 
-  handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+  handleScrollJump(getHomeContentScrollTop())
 
   initData()
 })

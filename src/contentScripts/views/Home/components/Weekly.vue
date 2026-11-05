@@ -4,10 +4,11 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
-import { settings } from '~/logic'
 import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
+
+import { getHomeContentScrollTop } from '../homeScroll'
 
 interface VideoElement extends PopularSeriesVideoItem {
   displayData?: Video
@@ -23,7 +24,7 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-const { handleBackToTop, handleReachBottom, handlePageRefresh, mainAppRef } = useBewlyApp()
+const { handleScrollJump, handleReachBottom, handlePageRefresh, mainAppRef } = useBewlyApp()
 const tabState = useHomeTabState({ retainedFields: ['activatedSeriesNumber', 'searchQuery'] })
 
 const seriesList = tabState.ref<PopularSeriesItem[]>('seriesList', [])
@@ -234,7 +235,7 @@ function selectSeries(item: PopularSeriesItem) {
   activatedSeries.value = item
   showDropdown.value = false
   searchQuery.value = ''
-  handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+  handleScrollJump(getHomeContentScrollTop())
   void getSeriesOne()
 }
 

@@ -15,12 +15,13 @@ import { useForYouStore } from '~/stores/forYouStore'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { cancelProgrammaticScroll } from '~/utils/main'
+import { cancelProgrammaticScroll, jumpScrollTo } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
 import RecommendationFilterEntry from './components/RecommendationFilterEntry.vue'
 import VersionReminder from './components/VersionReminder.vue'
+import { getHomeContentScrollTop, isWithinHomeContentStart } from './homeScroll'
 import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
@@ -129,18 +130,14 @@ watch(() => topBarStore.isLogin
   tabCache.clear()
   forYouStore.resetState()
   tabScrollPositions.clear()
-  pendingTabScrollTop = getInitialTabScrollTop()
+  pendingTabScrollTop = getHomeContentScrollTop()
   cacheRevision.value++
 })
-
-function getInitialTabScrollTop(): number {
-  return settings.value.useSearchPageModeOnHomePage ? 510 : 0
-}
 
 // 切换栏目时旧内容已卸载、新列表还没撑开，滚动范围不足会把定位截断回顶部，
 // 因此搜索页模式下始终保留足够高度，让每个栏目都能落到搜索区域下方。
 const homeMainStyle = computed(() => {
-  const initialScrollTop = getInitialTabScrollTop()
+  const initialScrollTop = getHomeContentScrollTop()
   return initialScrollTop ? { minHeight: `calc(100vh + ${initialScrollTop}px)` } : undefined
 })
 
@@ -150,7 +147,7 @@ function restoreTabScrollPosition() {
 
   const viewport = scrollViewportRef.value
   if (viewport)
-    viewport.scrollTop = pendingTabScrollTop
+    jumpScrollTo(viewport, pendingTabScrollTop)
 
   pendingTabScrollTop = null
 }
@@ -159,9 +156,9 @@ function restoreTabScrollPosition() {
 // 按锚点还原会回到页面顶部，因此还原后再保证栏目内容在视口内。
 function keepTabContentInView() {
   const viewport = scrollViewportRef.value
-  const minScrollTop = getInitialTabScrollTop()
+  const minScrollTop = getHomeContentScrollTop()
   if (viewport && viewport.scrollTop < minScrollTop)
-    viewport.scrollTop = minScrollTop
+    jumpScrollTo(viewport, minScrollTop)
 }
 
 function finishTabSwitch() {
@@ -183,10 +180,10 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
 
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
-    tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getInitialTabScrollTop()))
+    tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getHomeContentScrollTop()))
   // Only ForYou restores its list. Freshly fetched feeds must not inherit a
   // scroll offset (or trigger pagination) from a different set of videos.
-  const initialScrollTop = getInitialTabScrollTop()
+  const initialScrollTop = getHomeContentScrollTop()
   const destinationScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
     ? tabScrollPositions.get(newPage) ?? initialScrollTop
     : initialScrollTop
@@ -194,8 +191,8 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   // 有较深的浏览位置时，仍按目标栏目的原状态恢复。快速连切时滚动容器尚未
   // 被改写，每次都按最新目标重新判断。
   preserveSwitchPosition = settings.value.useSearchPageModeOnHomePage
-    && viewport.scrollTop <= initialScrollTop + 1
-    && destinationScrollTop <= initialScrollTop + 1
+    && isWithinHomeContentStart(viewport.scrollTop)
+    && isWithinHomeContentStart(destinationScrollTop)
   pendingTabScrollTop = preserveSwitchPosition ? viewport.scrollTop : destinationScrollTop
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
@@ -288,7 +285,7 @@ function preserveInactiveForYouState() {
     isInitialized: !!snapshot.hasInitializedData || !!snapshot.videoList?.length || !!snapshot.appVideoList?.length,
     recommendationMode: mode,
     appRecommendationColumn: settings.value.appRecommendationColumn,
-    scrollTop: tabScrollPositions.get(key) ?? getInitialTabScrollTop(),
+    scrollTop: tabScrollPositions.get(key) ?? getHomeContentScrollTop(),
   })
 }
 
@@ -298,8 +295,9 @@ function handleChangeTab(tab: HomeTab) {
   if (activatedPage.value === tab.page) {
     const scrollTop = scrollViewportRef.value?.scrollTop ?? cachedScrollTop.value
 
-    if ((!settings.value.useSearchPageModeOnHomePage && scrollTop > 0) || (settings.value.useSearchPageModeOnHomePage && scrollTop > 510)) {
-      handleThrottledBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+    const contentScrollTop = getHomeContentScrollTop()
+    if (scrollTop > contentScrollTop) {
+      handleThrottledBackToTop(contentScrollTop)
     }
     else {
       if (tabContentLoading.value)

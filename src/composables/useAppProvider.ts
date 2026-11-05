@@ -49,6 +49,7 @@ export interface BewlyAppProvider {
   // 使用枚举状态统一管理撤销/前进按钮
   undoForwardState: Ref<UndoForwardState>
   handleBackToTop: (targetScrollTop?: number) => void
+  handleScrollJump: (targetScrollTop?: number) => void
   haveScrollbar: () => Promise<boolean>
   openIframeDrawer: (url: string) => void
   /** 以居中弹窗打开视频；不支持的地址或窄视口回退为新标签页 */

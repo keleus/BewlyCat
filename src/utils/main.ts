@@ -163,6 +163,14 @@ export function cancelProgrammaticScroll(element: HTMLElement): void {
 }
 
 /**
+ * 切换页面、栏目或列表时立即定位，不产生滚动动画；只有用户主动回顶才使用 scrollToTop。
+ */
+export function jumpScrollTo(element: HTMLElement, top: number): void {
+  cancelProgrammaticScroll(element)
+  element.scrollTo({ top, behavior: 'instant' })
+}
+
+/**
  * Smooth scroll to the top of the html element.
  * Card virtualization must not restore an anchor during this navigation.
  */
