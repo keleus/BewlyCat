@@ -104,7 +104,6 @@ function handleCoverLoad(event: Event, index: number) {
   object-fit: cover;
   object-position: center;
   user-select: none;
-  -webkit-user-drag: none;
 }
 
 .moment-image-grid__item:focus-visible {

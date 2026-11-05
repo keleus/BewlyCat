@@ -4275,7 +4275,7 @@ watch(
               'is-dragging': detailImageViewerDragging,
             }"
             :style="{ transform: detailImageViewerTransform }"
-            draggable="false"
+            :draggable="detailImageViewerScale <= 1"
             @dblclick.prevent.stop="handleDetailImageViewerDoubleClick"
             @pointerdown="handleDetailImageViewerPointerDown"
             @pointermove="handleDetailImageViewerPointerMove"
@@ -5430,7 +5430,6 @@ watch(
   transform-origin: center center;
   transition: transform 0.12s ease-out;
   user-select: none;
-  -webkit-user-drag: none;
   cursor: zoom-in;
 }
 .moment-image-viewer__image.is-zoomed {

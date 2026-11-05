@@ -494,7 +494,6 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   object-position: center center !important;
   border-radius: 0 !important;
   user-select: none !important;
-  -webkit-user-drag: none !important;
   pointer-events: auto !important;
   cursor: zoom-in !important;
   vertical-align: top !important;
@@ -744,7 +743,6 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__image {
   height: auto !important;
   object-fit: contain !important;
   user-select: none !important;
-  -webkit-user-drag: none !important;
   transform-origin: center center !important;
   transition: transform 0.12s ease-out !important;
   cursor: zoom-in !important;
@@ -1517,7 +1515,6 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     image.className = 'bewly-opus-gallery__image'
     image.alt = '动态图片'
     image.decoding = 'async'
-    image.draggable = false
     stage.appendChild(image)
     slide.appendChild(stage)
     track.appendChild(slide)
@@ -1560,7 +1557,6 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   const viewerImage = document.createElement('img')
   viewerImage.className = 'bewly-opus-viewer__image'
   viewerImage.alt = '动态图片大图'
-  viewerImage.draggable = false
   viewerImage.decoding = 'async'
   viewerStage.appendChild(viewerImage)
 
@@ -1885,6 +1881,8 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   const syncViewerTransform = () => {
     viewerImage.style.transform = `translate3d(${viewerPanX}px, ${viewerPanY}px, 0) scale(${viewerScale}) rotate(${viewerRotation}deg)`
     viewerImage.classList.toggle('is-zoomed', viewerScale > 1)
+    // 放大后拖动用于平移，原生拖拽会取消指针事件
+    viewerImage.draggable = viewerScale <= 1
     viewerZoom.value = `${Math.round(viewerScale * 100)}%`
   }
 
