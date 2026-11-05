@@ -63,6 +63,7 @@ import { calcTimeSince, parseStatNumber } from '~/utils/dataFormatter'
 import type { FollowingGroup, FollowingGroupsResult, FollowingRelationUser } from '~/utils/followingGroups'
 import { getFollowingGroupIds, groupFollowingUploaders } from '~/utils/followingGroups'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
+import { cancelProgrammaticScroll } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 import FollowingGroupMenu from './FollowingGroupMenu.vue'
@@ -171,6 +172,7 @@ function pinFeedScrollToStart() {
   const viewport = scrollViewportRef.value
   if (!viewport)
     return
+  cancelProgrammaticScroll(viewport)
   const token = selectionToken.value
   const scrollTarget = getFeedStartScrollTop()
   const pinScroll = () => {
