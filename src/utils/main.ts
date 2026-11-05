@@ -165,7 +165,7 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
   const doc = element.ownerDocument
   const startScrollTop = element.scrollTop
   const distance = Math.abs(startScrollTop - targetScrollTop)
-  const useCustomAnimation = distance > 1200 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const useCustomAnimation = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let animationFrame: number | undefined
   let timeout: ReturnType<typeof setTimeout>
   const finish = () => {
