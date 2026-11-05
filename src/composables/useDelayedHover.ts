@@ -171,7 +171,12 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   // 页面失焦（如点击打开新标签、切换到其它窗口）是交互生命周期边界：复位 hover 状态，
   // 避免 pending enter timer 在后台标签触发把弹窗重新打开，或已打开的弹窗残留到下次聚焦。
   // VueUse useEventListener 随组件 scope 自动清理，不会重复注册。
-  useEventListener(window, 'blur', reset)
+  // 焦点移入页面内的 iframe（如其它扩展注入的预览框）也会触发 window blur，此时页面仍在前台，
+  // 用户还在操作弹窗，不能当作交互结束：hasFocus() 在焦点位于子框架时仍为 true。
+  useEventListener(window, 'blur', () => {
+    if (!document.hasFocus())
+      reset()
+  })
 
   // 标记窗口正在恢复焦点：本帧内到达的 focusin 是浏览器自动恢复的焦点，
   // 不代表键盘驻留（见 restoringWindowFocus 注释）。渲染一帧后标记过期。
