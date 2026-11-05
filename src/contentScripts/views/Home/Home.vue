@@ -41,6 +41,7 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 const cachedScrollTop = ref(0)
 const tabScrollPositions = new Map<string, number>()
 let pendingTabScrollTop: number | null = null
+let preserveSwitchPosition = false
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -74,7 +75,7 @@ const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage
     ? forYouCacheKey.value
     : activatedPage.value)
 const cacheRevision = ref(0)
-const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView)
+const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView, () => preserveSwitchPosition)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
@@ -167,6 +168,7 @@ function finishTabSwitch() {
   restoreTabScrollPosition()
   requestAnimationFrame(() => {
     isHomeTabSwitching.value = false
+    preserveSwitchPosition = false
   })
 }
 
@@ -180,9 +182,17 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
     tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getInitialTabScrollTop()))
   // Only ForYou restores its list. Freshly fetched feeds must not inherit a
   // scroll offset (or trigger pagination) from a different set of videos.
-  pendingTabScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
-    ? tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
-    : getInitialTabScrollTop()
+  const initialScrollTop = getInitialTabScrollTop()
+  const destinationScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
+    ? tabScrollPositions.get(newPage) ?? initialScrollTop
+    : initialScrollTop
+  // 搜索页模式下栏目栏仍在视野内时保持当前位置；当前已滚动较深，或目标栏目
+  // 有较深的浏览位置时，仍按目标栏目的原状态恢复。快速连切时滚动容器尚未
+  // 被改写，每次都按最新目标重新判断。
+  preserveSwitchPosition = settings.value.useSearchPageModeOnHomePage
+    && viewport.scrollTop <= initialScrollTop + 1
+    && destinationScrollTop <= initialScrollTop + 1
+  pendingTabScrollTop = preserveSwitchPosition ? viewport.scrollTop : destinationScrollTop
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
 
@@ -387,6 +397,7 @@ function toggleTabContentLoading(loading: boolean) {
           'home-header--tabs-center': settings.homeTabsPosition === 'center',
           'home-header--recommendation-switcher': shouldShowRecommendationModeSwitcher,
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
+          'home-header-fixed--search': settings.fixedHomeTabsOnHomePage && settings.useSearchPageModeOnHomePage,
         }"
         w-full z-9
       >
@@ -651,6 +662,10 @@ function toggleTabContentLoading(loading: boolean) {
 
 .home-header-fixed {
   --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
+}
+
+.home-header-fixed--search {
+  top: calc(var(--bew-top-bar-height) + var(--bew-space-4));
 }
 
 @media (max-width: 1000px) {

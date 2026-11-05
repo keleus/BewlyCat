@@ -543,8 +543,9 @@ onMounted(() => {
     forwardWebRefreshBrush.value = 0
     forwardWebLoadMoreBrush.value = 1
 
-    // 恢复滚动位置
-    if (savedState.scrollTop) {
+    // 恢复滚动位置。搜索页模式下靠近顶部切回时保持当前位置，但重新挂载首页后
+    // 栏目位置表已清空，store 中保留的较深位置仍需恢复。
+    if (savedState.scrollTop && (!tabState.preserveScrollOnEntry || savedState.scrollTop > 511)) {
       nextTick(() => {
         const viewport = scrollViewportRef.value
         if (tabState.isCurrent() && viewport)
