@@ -309,13 +309,6 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
       >
         <Radio v-model="settings.showHotSearchInTopBar" />
       </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.show_search_recommendation')"
-        :desc="$t('settings.show_search_recommendation_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showSearchRecommendation" />
-      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup

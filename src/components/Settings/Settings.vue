@@ -53,6 +53,7 @@ const settingsMenu = {
   [MenuType.Bilibili]: defineAsyncComponent(() => import('./BilibiliFeaturesEnhancement/BilibiliFeaturesEnhancement.vue')),
   [MenuType.Appearance]: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
   [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
+  [MenuType.Data]: defineAsyncComponent(() => import('./Data/Data.vue')),
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
 }
 const settingsMenuStorageKey = 'bewly-settings-active-menu'
@@ -232,11 +233,17 @@ const settingsMenuItems: MenuItem[] = [
     sectionStart: true,
   },
   {
+    value: MenuType.Data,
+    icon: 'i-mingcute:save-2-line',
+    iconActivated: 'i-mingcute:save-2-fill',
+    titleKey: 'settings.menu_data',
+    sectionStart: true,
+  },
+  {
     value: MenuType.About,
     icon: 'i-mingcute:information-line',
     iconActivated: 'i-mingcute:information-fill',
     titleKey: 'settings.menu_about',
-    sectionStart: true,
   },
 ]
 

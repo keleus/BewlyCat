@@ -243,6 +243,10 @@ interface GridSnapshot {
   exposedKeys: (string | number)[]
 }
 const restoredGrid = tabState?.take<GridSnapshot | undefined>(gridStateKey, undefined)
+// Search page tab switches keep the current viewport instead of the old tab's anchor.
+const restoredWindow = restoredGrid?.window && tabState?.preserveScrollOnEntry
+  ? { ...restoredGrid.window, anchor: undefined }
+  : restoredGrid?.window
 let detachGridSnapshot: (() => void) | undefined
 onBeforeUnmount(() => detachGridSnapshot?.())
 
@@ -1136,8 +1140,9 @@ const cardWindow = useCardWindow({
   estimatedHeight: estimatedCardHeight,
   layout: cardLayoutKey,
   canRelease: key => mountedCards.get(key)?.canRecycle !== false,
-  snapshot: restoredGrid?.window,
+  snapshot: restoredWindow,
   restoreScroll: tabState?.restoreScroll,
+  afterAnchorRestore: tabState?.keepContentInView,
 })
 detachGridSnapshot = tabState?.capture(gridStateKey, (): GridSnapshot => ({
   window: cardWindow.captureSnapshot(),

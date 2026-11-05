@@ -29,7 +29,7 @@ import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
 import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
-import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
+import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, jumpScrollTo, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
@@ -1020,7 +1020,7 @@ const canRefreshHomeSubPage = ref<boolean>(false)
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const canRefreshCurrentPage = computed((): boolean => {
-  return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
+  return activatedPage.value !== AppPage.Home || homeActivatedPage.value !== HomeSubPage.Following || canRefreshHomeSubPage.value
 })
 let refreshScrollTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -1312,7 +1312,9 @@ watch(
       syncNavigationUrl()
     }
 
-    scrollViewportRef.value?.scrollTo({ top: 0 })
+    const viewport = scrollViewportRef.value
+    if (viewport)
+      jumpScrollTo(viewport, 0)
     focusScrollViewport()
     isFirstTimeActivatedPageChange.value = false
   },
@@ -1481,6 +1483,14 @@ function handleBackToTop(targetScrollTop = 0 as number) {
   }
 
   iframePageRef.value?.handleBackToTop()
+}
+
+function handleScrollJump(targetScrollTop = 0 as number) {
+  const viewport = scrollViewportRef.value
+  if (viewport) {
+    jumpScrollTo(viewport, targetScrollTop)
+    topBarRef.value?.toggleTopBarVisible(true)
+  }
 }
 
 // 添加滚动结束检测
@@ -1687,7 +1697,9 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   scrollTop,
   searchFocusOverlayActive,
   handleBackToTop,
+  handleScrollJump,
   handlePageRefresh,
+  refreshCurrentPage: handleThrottledPageRefresh,
   canRefreshHomeSubPage,
   handleReachBottom,
   handleUndoRefresh,

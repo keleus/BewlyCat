@@ -60,6 +60,8 @@ export function useCardWindow(options: {
   canRelease: (key: CardKey) => boolean
   snapshot?: CardWindowSnapshot
   restoreScroll?: () => void
+  /** 锚点恢复后调用：锚点按离开时的视口偏移还原，可能把页面带回不该停留的位置 */
+  afterAnchorRestore?: () => void
 }) {
   const ranges = shallowRef<CardRange[]>([])
   const loadingRange = shallowRef({ start: 0, end: 0 })
@@ -529,8 +531,10 @@ export function useCardWindow(options: {
       if (!active)
         return
       options.restoreScroll?.()
-      if (restoring)
+      if (restoring) {
         restoreAnchor(options.snapshot?.anchor)
+        options.afterAnchorRestore?.()
+      }
       restoring = false
       measureMounted()
       updateRanges()

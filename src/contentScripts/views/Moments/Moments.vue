@@ -60,6 +60,7 @@ import {
 } from '~/utils/videoDialog'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
+import MomentsFilterEntry from './MomentsFilterEntry.vue'
 import MomentsHotSearch from './MomentsHotSearch.vue'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
@@ -3804,6 +3805,13 @@ watch(
             </div>
           </div>
         </section>
+        <MomentsFilterEntry
+          v-if="settings.momentsShowFilterEntry"
+          class="moments-filter-entry"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="moments"
+          data-layout-settings-title-key="settings.moments_show_filter_entry"
+        />
       </header>
 
       <div class="moments-center" :style="momentsContentStyle">
@@ -4241,6 +4249,7 @@ watch(
       <div
         ref="detailImageViewerRef"
         class="moment-image-viewer"
+        :class="{ 'is-close-bottom': settings.imageViewerCloseAtBottom }"
         role="dialog"
         aria-modal="true"
         :aria-label="t('moments.image_viewer')"
@@ -4266,7 +4275,7 @@ watch(
               'is-dragging': detailImageViewerDragging,
             }"
             :style="{ transform: detailImageViewerTransform }"
-            draggable="false"
+            :draggable="detailImageViewerScale <= 1"
             @dblclick.prevent.stop="handleDetailImageViewerDoubleClick"
             @pointerdown="handleDetailImageViewerPointerDown"
             @pointermove="handleDetailImageViewerPointerMove"
@@ -5114,20 +5123,27 @@ watch(
 .moments-filter-header {
   position: relative;
   grid-area: header;
-  display: grid;
-  grid-template-columns: minmax(0, max-content);
-  justify-content: start;
+  display: flex;
+  justify-content: flex-start;
   justify-self: start;
   align-items: center;
+  gap: var(--bew-space-3);
   width: 100%;
   min-width: 0;
 }
+// 过滤入口紧跟在类型标签栏右侧，居中时两者作为一组居中
 .moments-filter-header--center {
   justify-content: center;
 }
 
 .moments-filter-panel {
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 100%;
+}
+
+.moments-filter-entry {
+  flex-shrink: 0;
 }
 .moments-filter-scroll {
   height: 100%;
@@ -5150,11 +5166,6 @@ watch(
 @media (max-width: 1000px) {
   .moments-filter-panel {
     max-width: 100%;
-  }
-}
-@media (max-width: 600px) {
-  .moments-filter-header {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 .moments-grid {
@@ -5419,7 +5430,6 @@ watch(
   transform-origin: center center;
   transition: transform 0.12s ease-out;
   user-select: none;
-  -webkit-user-drag: none;
   cursor: zoom-in;
 }
 .moment-image-viewer__image.is-zoomed {
@@ -5459,6 +5469,16 @@ watch(
   height: 44px;
   border-radius: 50%;
   font-size: var(--bew-icon-size-lg);
+}
+// 关闭按钮置于底部工具栏上方，并为其预留图片区域
+.moment-image-viewer.is-close-bottom .moment-image-viewer__close {
+  top: auto;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+}
+.moment-image-viewer.is-close-bottom .moment-image-viewer__stage {
+  padding-bottom: 140px;
 }
 .moment-image-viewer__nav {
   position: absolute;

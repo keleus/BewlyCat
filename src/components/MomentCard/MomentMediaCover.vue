@@ -66,7 +66,6 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
   >
     <a
       v-if="href"
-      draggable="false"
       class="moment-card__permalink"
       :href="href"
       tabindex="-1"

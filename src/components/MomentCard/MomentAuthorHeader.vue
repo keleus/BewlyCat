@@ -72,7 +72,9 @@ const authorSpaceUrl = computed(() => getAuthorSpaceUrl(author.mid))
         </a>
       </small>
     </span>
-    <slot name="actions" />
+    <div class="moment-card__header-actions">
+      <slot name="actions" />
+    </div>
   </header>
 </template>
 
@@ -101,6 +103,17 @@ const authorSpaceUrl = computed(() => getAuthorSpaceUrl(author.mid))
 .moment-card__author-name,
 .moment-card__text-link {
   @include mixins.interactive-layer;
+}
+
+// 头部留白同样由 permalink 覆盖层承接点击，操作插槽必须高于该层才收得到点击，
+// 否则「更多操作」等按钮的点击会被整卡跳转吃掉。
+.moment-card__header-actions {
+  @include mixins.interactive-layer;
+
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--bew-space-2);
 }
 
 .moment-card__text-link {

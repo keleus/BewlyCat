@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
@@ -42,7 +42,12 @@ const submittedVotes = ref<number[]>([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const loadError = ref('')
+const optionsExpanded = ref(false)
+const rootRef = ref<HTMLElement>()
 let loadSequence = 0
+
+// 选项过多（如 20 项）时默认只展示前几项，避免投票卡占满整列
+const COLLAPSED_OPTION_LIMIT = 6
 
 const choiceCount = computed(() => Math.max(1, voteInfo.value?.choiceCount || 1))
 const isImageVote = computed(() => Boolean(
@@ -58,6 +63,16 @@ const isVoted = computed(() => Boolean(
   submittedVotes.value.length || voteInfo.value?.selectedVotes.length,
 ))
 const showResults = computed(() => isEnded.value || isVoted.value)
+const isCollapsible = computed(() => (voteInfo.value?.options.length || 0) > COLLAPSED_OPTION_LIMIT)
+const hiddenOptionCount = computed(() => isCollapsible.value
+  ? (voteInfo.value?.options.length || 0) - COLLAPSED_OPTION_LIMIT
+  : 0)
+const visibleOptions = computed(() => {
+  const options = voteInfo.value?.options || []
+  return isCollapsible.value && !optionsExpanded.value
+    ? options.slice(0, COLLAPSED_OPTION_LIMIT)
+    : options
+})
 const resultTotal = computed(() => Math.max(0, voteInfo.value?.total || 0))
 const maxOptionCount = computed(() => Math.max(
   0,
@@ -187,6 +202,19 @@ function isMaxOption(option: VoteOption) {
   return showResults.value && maxOptionCount.value > 0 && option.count === maxOptionCount.value
 }
 
+function toggleOptionsExpanded() {
+  optionsExpanded.value = !optionsExpanded.value
+  if (optionsExpanded.value)
+    return
+
+  // 收起长列表后，投票卡顶部可能已滚出视口，拉回可见区域避免读者迷失位置
+  void nextTick(() => {
+    const root = rootRef.value
+    if (root && root.getBoundingClientRect().top < 0)
+      root.scrollIntoView({ block: 'nearest' })
+  })
+}
+
 async function submitVote() {
   if (!selectedVotes.value.length || isSubmitting.value || isEnded.value || isVoted.value)
     return
@@ -228,12 +256,13 @@ watch(() => props.voteId, () => {
   voteInfo.value = null
   selectedVotes.value = []
   submittedVotes.value = []
+  optionsExpanded.value = false
   void loadVote()
 }, { immediate: true })
 </script>
 
 <template>
-  <section class="moment-vote" @click.stop @keydown.stop>
+  <section ref="rootRef" class="moment-vote" @click.stop @keydown.stop>
     <header class="moment-vote__header">
       <strong>{{ voteInfo?.title || fallbackTitle }}</strong>
       <small v-if="!voteInfo && fallbackDesc">{{ fallbackDesc }}</small>
@@ -258,7 +287,7 @@ watch(() => props.voteId, () => {
         :role="choiceCount === 1 ? 'radiogroup' : 'group'"
       >
         <button
-          v-for="option in voteInfo.options"
+          v-for="option in visibleOptions"
           :key="option.index"
           type="button"
           class="moment-vote__option"
@@ -310,6 +339,19 @@ watch(() => props.voteId, () => {
           </span>
         </button>
       </div>
+      <button
+        v-if="isCollapsible"
+        type="button"
+        class="moment-vote__toggle"
+        :aria-expanded="optionsExpanded"
+        @click="toggleOptionsExpanded"
+      >
+        <span>{{ optionsExpanded ? t('moments.vote_collapse_options') : t('moments.vote_expand_options', { count: hiddenOptionCount }) }}</span>
+        <span
+          :class="optionsExpanded ? 'i-mingcute:up-line' : 'i-mingcute:down-line'"
+          aria-hidden="true"
+        />
+      </button>
       <footer class="moment-vote__meta">
         <span>
           {{ t('moments.vote_participants', { count: voteInfo.total }) }}
@@ -425,6 +467,7 @@ watch(() => props.voteId, () => {
 }
 
 .moment-vote__option:focus-visible,
+.moment-vote__toggle:focus-visible,
 .moment-vote__submit:focus-visible,
 .moment-vote__error button:focus-visible {
   outline: 2px solid var(--bew-theme-color);
@@ -539,6 +582,36 @@ watch(() => props.voteId, () => {
 
 .moment-vote__option.is-selected .moment-vote__option-check {
   border: 4px solid var(--bew-theme-color);
+}
+
+.moment-vote__toggle {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bew-space-1);
+  margin-top: calc(-1 * var(--bew-space-1));
+  padding: var(--bew-space-1) var(--bew-space-3);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  color: var(--bew-text-2);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.moment-vote__toggle:hover {
+  color: var(--bew-theme-color);
+  background: var(--bew-fill-2);
+}
+
+.moment-vote__toggle [class*="i-mingcute"] {
+  font-size: var(--bew-icon-size-sm);
 }
 
 .moment-vote__meta {

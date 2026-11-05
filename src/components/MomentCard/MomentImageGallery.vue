@@ -71,6 +71,9 @@ const DRAG_THRESHOLD_PX = 8
 const pointerDrag = {
   id: -1,
   startX: 0,
+  startY: 0,
+  lastX: 0,
+  lastY: 0,
   startScroll: 0,
   active: false,
 }
@@ -196,7 +199,8 @@ function handlePointerDown(event: PointerEvent) {
     return
 
   pointerDrag.id = event.pointerId
-  pointerDrag.startX = event.clientX
+  pointerDrag.startX = pointerDrag.lastX = event.clientX
+  pointerDrag.startY = pointerDrag.lastY = event.clientY
   pointerDrag.startScroll = track.scrollLeft
   pointerDrag.active = false
   suppressImageClick = false
@@ -209,6 +213,8 @@ function handlePointerMove(event: PointerEvent) {
   if (!track)
     return
 
+  pointerDrag.lastX = event.clientX
+  pointerDrag.lastY = event.clientY
   const dx = event.clientX - pointerDrag.startX
   if (!pointerDrag.active) {
     if (Math.abs(dx) < DRAG_THRESHOLD_PX)
@@ -237,6 +243,14 @@ function endPointerDrag(event: PointerEvent) {
       suppressImageClick = false
     }, 0)
   }
+}
+
+// 原生拖拽一旦开始就会取消指针事件：列表可滚动时横向手势留给翻页，其余方向才拖出图片。
+function handleImageDragStart(event: DragEvent) {
+  // 鼠标一步移出列表时收不到 pointermove，位移为 0，此时不算横向
+  const isHorizontal = Math.abs(pointerDrag.lastX - pointerDrag.startX) > Math.abs(pointerDrag.lastY - pointerDrag.startY)
+  if (isHorizontal && (canScrollLeft.value || canScrollRight.value))
+    event.preventDefault()
 }
 
 function handleTrackKeydown(event: KeyboardEvent) {
@@ -312,11 +326,11 @@ onBeforeUnmount(() => {
           :class="{ 'moment-image-gallery__image--long': isLongThumbnail(imageIndex) }"
           :src="getImageSrc(image, imageIndex)"
           :alt="`${altPrefix} ${imageIndex + 1}`"
-          draggable="false"
           loading="eager"
           :fetchpriority="imageIndex < 3 ? 'auto' : 'low'"
           decoding="async"
           @load="handleCoverLoad($event, imageIndex)"
+          @dragstart="handleImageDragStart"
         >
       </button>
     </div>
@@ -413,7 +427,6 @@ onBeforeUnmount(() => {
   object-fit: cover;
   object-position: center;
   user-select: none;
-  -webkit-user-drag: none;
 }
 
 .moment-image-gallery__image--long {

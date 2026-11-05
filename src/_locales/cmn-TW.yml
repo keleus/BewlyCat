@@ -168,8 +168,11 @@ settings:
       unsupported: 目前音源無法安全接入，保持原聲。
   player_adjustment:
     title: 畫面與聲音調整
-    show_button: 顯示播放器畫面與聲音調整按鈕
-    show_button_desc: 在影片控制列顯示按鈕，懸停可旋轉、鏡像畫面，調整音畫同步；開啟音量均衡後也可在此調整均衡參數。旋轉、鏡像和音畫同步只對目前影片生效；隱藏按鈕會重設這些調整，但不會關閉音量均衡。
+    desc: 在影片控制列顯示調整按鈕，懸停開啟面板。以下兩項可單獨關閉，音量均衡項隨上方「啟用局部音量均衡」顯示；三項都關閉時不顯示按鈕。
+    show_picture: 畫面旋轉與鏡像
+    show_picture_desc: 在面板中旋轉、鏡像畫面，只對目前影片生效；關閉後會重設目前畫面調整。
+    show_audio_delay: 音畫同步
+    show_audio_delay_desc: 在面板中調整聲音延後，只對目前影片生效；關閉後不再接管聲音。
     picture: 畫面
     rotate_left: 向左旋轉
     rotate_right: 向右旋轉
@@ -198,6 +201,8 @@ settings:
   category_group_pages: 頁面
   category_group_components: 元件
   category_group_behavior: 行為
+  category_group_playback: 播放
+  category_group_site: 站內功能
   badge_performance_impact: 效能影響
   badge_advanced: 進階
   badge_irreversible: 無法復原
@@ -227,8 +232,9 @@ settings:
   category_bilibili_listen_video_desc: 隱藏影片畫面僅保留聲音，以封面和標題組成音訊播放介面。
   category_bilibili_volume_balance_desc: 在本機平衡不同影片的響度，減少音量忽大忽小。
   category_bilibili_ambilight_desc: 在播放器四周投射隨畫面變化的柔和環境光。
-  category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能和其他頁面的相容行為。
+  category_advanced_compatibility_desc: 攔截廣告、淨化連結，並設定原版頁面和其他頁面的相容行為。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或還原 BewlyCat 預設配置。
+  category_data_desc: 開啟瀏覽器雲端同步，匯出備份、匯入設定或還原 BewlyCat 預設配置。
   maintenance:
     title: 備份與重設
     backup_title: 設定備份
@@ -252,7 +258,8 @@ settings:
   menu_plugin_components_and_pages: BewlyCat 介面
   menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 外觀
-  menu_compatibility: 相容性
+  menu_compatibility: 淨化與相容
+  menu_data: 資料與同步
   menu_about: 關於
   menu_changelog: 更新日誌
   experimental: 實驗性
@@ -298,6 +305,7 @@ settings:
   video_card_context_menu_region_opening: 開啟
   video_card_context_menu_region_copying: 複製
   video_card_context_menu_region_user: 使用者
+  video_card_context_menu_region_other: 其他
   video_card_context_menu_follow_user: 追蹤或取消追蹤
   video_card_content_region_stats: 數據
   video_card_content_region_tags: 標籤
@@ -396,6 +404,8 @@ settings:
   moments_visible_components: 顯示元件
   moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄與橫幅等元件是否顯示。主題色表示顯示，灰色表示隱藏。
   moments_visible_components_plugin_desc: 控制 Bewly 動態頁側欄與頂部元件是否顯示。主題色表示顯示，灰色表示隱藏。
+  moments_show_filter_entry: 顯示動態過濾入口
+  moments_show_filter_entry_desc: 在 Bewly 動態頁標籤列右側顯示過濾按鈕，可直接調整顯示的動態類型與封鎖關鍵詞；關閉面板後依新條件重新整理動態。
   moments_filtered_types: 過濾動態
   moments_filtered_types_desc: 控制各類動態是否出現在 Bewly 動態流中，選中表示顯示。過濾較多時可能需要手動載入更多。
   moments_enable_live_preview: 直播動態懸停預覽
@@ -512,6 +522,8 @@ settings:
   video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置。視窗較窄時彈窗會改用新索引標籤開啟。
   search_bar_link_opening_behavior: 搜尋列連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
+  hide_drawer_esc_hint: 隱藏抽屜的 Esc 快速鍵提示
+  hide_drawer_esc_hint_desc: 隱藏抽屜關閉按鈕上的按鍵標示和通知抽屜的按鍵提示，Esc 快速鍵仍可使用
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搜尋頁上方的廣告
 
@@ -678,8 +690,11 @@ settings:
   dock_item_open_in_new_tab: 在新索引標籤開啟
   dock_item_use_original_bili_web_page: 使用原版 Bilibili 網頁
   disable_dock_glowing_effect: 關閉 Dock 發光效果
+  disable_dock_icon_animation: 關閉 Dock 圖示懸停動畫
+  disable_dock_icon_animation_desc: 關閉後 Dock 圖示在懸停、聚焦時不再播放彈跳、旋轉等動畫；點擊回彈與操作按鈕脈衝不受影響。
   disable_light_dark_mode_switcher: 關閉淺/深色模式切換按鈕
   disable_back_to_top_button_on_dock: 關閉 Dock 回到頂部按鈕
+  disable_refresh_button_on_dock: 關閉 Dock 重新整理按鈕
   back_to_top_and_refresh_buttons_are_separated: 分離回到頂部列和重新整理按鈕
   always_show_dock_actions_when_auto_hide: 自動隱藏 Dock 時始終顯示操作按鈕
   sidebar_position: 側邊欄位置
@@ -776,6 +791,8 @@ settings:
     key。
   authorize_app_more_info_access_key: 關於 access key
   scan_qrcode_desc: 使用 Bilibili 手機應用程式掃描這個行動條碼，以授權取得 access key。
+  show_recommendation_filter_entry: 顯示推薦過濾入口
+  show_recommendation_filter_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示過濾按鈕，可直接調整過濾條件；關閉面板後依新條件重新整理推薦。
   show_recommendation_filter_risk_warning: 顯示過濾風控警告
   show_recommendation_filter_risk_warning_desc: 過濾掉的推薦過多時，提示頻繁請求可能觸發風控。
   disable_filters_for_followed_users: 正在跟隨的使用者不受過濾條件限制
@@ -986,6 +1003,10 @@ settings:
   fullscreen_wheel_volume_desc: 全螢幕播放時由擴充功能接管滾輪調整音量，每滾一格按固定幅度調整，取代 B 站原生不規律的調整幅度。
   fullscreen_wheel_volume_step: 滾輪音量調整幅度
   fullscreen_wheel_volume_step_desc: 每格增減 1–50；預設 5。
+  keyboard_volume: 方向鍵音量調整
+  keyboard_volume_desc: 在播放器內按上下方向鍵時由擴充功能接管，按下方幅度調整；關閉時沿用 B 站預設（每次 10）。
+  keyboard_volume_step: 方向鍵音量調整幅度
+  keyboard_volume_step_desc: 每按一次增減 1–50；B 站預設為 10。
   remember_video_quality: 記住畫質
   remember_video_quality_desc: 啟用後自動恢復上次選擇的畫質，無法使用時沿用目前畫質。
   remember_video_quality_confirm_title: 確認開啟記住畫質？
@@ -1186,6 +1207,8 @@ settings:
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   hide_comment_image_scrollbar: 評論圖片預覽時隱藏頁面滾動條
   hide_comment_image_scrollbar_desc: 開啟評論區圖片預覽時隱藏頁面右側滾動條，避免滾動條顯示在遮罩右側
+  image_viewer_close_at_bottom: 圖片檢視器關閉按鈕置於底部居中
+  image_viewer_close_at_bottom_desc: 將評論區和動態圖片檢視器的關閉按鈕從頂部移到底部居中
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，調整顯示模式時會自動捲動到所選位置。
   video_player_scroll_mode:
@@ -1418,6 +1441,7 @@ video_card:
     follow_user: 關注用戶
     unfollow_user: 取消關注
     block_user: 拉黑用戶
+    customize_menu: 自訂選單
     more_options: 更多操作
     scroll_top: 捲動到頂部
     scroll_bottom: 捲動到底部
@@ -1468,6 +1492,15 @@ home:
   app_authorization_required: App 模式的 access token 已遺失或過期，請重新授權後繼續使用個人化推薦
   reauthorize_app: 重新授權
   recommendation_filter_risk_warning: 目前過濾條件在 {total} 條有效推薦中只保留了 {count} 條，容易頻繁請求並觸發介面風控，建議適度放寬過濾條件。
+  recommendation_filter:
+    entry: 推薦過濾
+    entry_active: 推薦過濾（已啟用 {count} 項）
+    title: 推薦過濾
+    more_settings: 更多設定
+    vertical_videos: 過濾直式影片
+    rule_count: '{count} 條規則'
+    manage: 管理
+    apply_hint: 關閉面板後依新條件重新整理推薦。
   tell_us_why: 為什麼這樣做...
   not_interested_desc: >
     你可以用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 來選擇原因，或者直接使用數字鍵來選擇原因，按 <kbd>Enter</kbd>
@@ -1643,7 +1676,7 @@ watch_later:
   play_video: 移除並進入影片頁
   play_in_watch_later: 清單播放
   remove_from_watch_later: 移除
-  remove_confirm: 確定移出稍後再看？
+  removed: 已移出稍後再看
   layout_list: 清單檢視
   layout_grid: 網格檢視
 search_bar:
@@ -1726,6 +1759,12 @@ search:
   match_upcoming: 未開始
   match_live: 進行中
 moments:
+  filter_panel:
+    entry: 動態過濾
+    entry_active: 動態過濾（已啟用 {count} 項）
+    more_settings: 更多設定
+    shown_types: 選取的類型會顯示在動態流中
+    apply_hint: 關閉面板後依新條件重新整理動態。
   filter_all: 全部
   filter_video: 影片投稿
   filter_pgc: 追番追劇
@@ -1754,6 +1793,8 @@ moments:
   vote_submit: 投票
   vote_submitted: 已投票
   vote_selected: 你選擇了此項
+  vote_expand_options: 展開其餘 {count} 個選項
+  vote_collapse_options: 收合選項
   vote_time_day: '{count}天'
   vote_time_hour: '{count}小時'
   vote_time_minute: '{count}分鐘'

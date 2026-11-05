@@ -21,9 +21,10 @@ import { ensureFreshAppAccessToken, requestAppClient } from '~/utils/authProvide
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { av2bv } from '~/utils/bvid'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
-import { getCookie } from '~/utils/main'
+import { getCookie, jumpScrollTo } from '~/utils/main'
 import { isVerticalVideo } from '~/utils/uriParse'
 
+import { isWithinHomeContentStart } from '../homeScroll'
 import ImmersiveFeed from './ImmersiveFeed/ImmersiveFeed.vue'
 import type { ImmersiveFeedItem } from './ImmersiveFeed/types'
 
@@ -543,12 +544,13 @@ onMounted(() => {
     forwardWebRefreshBrush.value = 0
     forwardWebLoadMoreBrush.value = 1
 
-    // 恢复滚动位置
-    if (savedState.scrollTop) {
+    // 恢复滚动位置。搜索页模式下靠近顶部切回时保持当前位置，但重新挂载首页后
+    // 栏目位置表已清空，store 中保留的较深位置仍需恢复。
+    if (savedState.scrollTop && (!tabState.preserveScrollOnEntry || !isWithinHomeContentStart(savedState.scrollTop))) {
       nextTick(() => {
         const viewport = scrollViewportRef.value
         if (tabState.isCurrent() && viewport)
-          viewport.scrollTop = savedState.scrollTop || 0
+          jumpScrollTo(viewport, savedState.scrollTop || 0)
       })
     }
 

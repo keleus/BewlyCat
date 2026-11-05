@@ -12,6 +12,7 @@ import {
   MOBILE_LIST_LAYOUT_BREAKPOINT,
   normalizeListLayoutBreakpoint,
 } from '~/utils/gridLayout'
+import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
 import { normalizePlaybackRateStep } from '~/utils/playbackRate'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
@@ -270,6 +271,8 @@ export const videoCardContextMenuKeys = [
   'viewOriginalCover',
   'followUser',
   'blockUser',
+  // 菜单末尾跳转到本菜单设置的入口；不算作卡片操作，见 hasVisibleVideoCardMenuAction
+  'customizeMenu',
 ] as const
 
 export type VideoCardContextMenuKey = typeof videoCardContextMenuKeys[number]
@@ -281,6 +284,11 @@ export interface VideoCardContextMenuConfigItem {
 
 export const defaultVideoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
   = videoCardContextMenuKeys.map(key => ({ key, visible: true }))
+
+/** 是否还有可见的卡片操作；只剩「自定义菜单」时不显示更多按钮 */
+export function hasVisibleVideoCardMenuAction(config: VideoCardContextMenuConfigItem[]) {
+  return config.some(item => item.visible && item.key !== 'customizeMenu')
+}
 
 export interface FavoriteOrganizerUp {
   mid: string
@@ -318,7 +326,10 @@ export interface Settings {
   ambilightBlur: number
   ambilightSaturation: number
   ambilightFps: number
-  showPlayerAdjustmentButton: boolean
+  /** 画面与声音调整面板的画面项（旋转、镜像） */
+  playerPictureAdjustmentEnabled: boolean
+  /** 画面与声音调整面板的音画同步项；音量均衡项跟随 localLoudnessEnabled，三项均关闭时不显示按钮 */
+  playerAudioDelayEnabled: boolean
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
   localLoudnessStrength: number
@@ -337,6 +348,7 @@ export interface Settings {
   commentReplyTreeContainerHeight: number // 回复容器高度（px）
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   hideCommentImageScrollbar: boolean // 评论区图片预览时隐藏页面滚动条
+  imageViewerCloseAtBottom: boolean // 图片查看器的关闭按钮放在底部居中
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   enableSidebarCoverBlur: boolean // 页面侧栏封面高斯渐变背景
   externalWatchLaterButton: boolean // 稍后再看按钮外置
@@ -374,6 +386,7 @@ export interface Settings {
   topBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   searchBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   closeDrawerWithoutPressingEscAgain: boolean
+  hideDrawerEscHint: boolean
 
   blockAds: boolean
   blockTopSearchPageAds: boolean
@@ -458,6 +471,8 @@ export interface Settings {
   /** Bewly 动态页期望列数；窄屏会自动降列 */
   momentsGridColumns: MomentsGridColumns
   momentsEnableWantedFilter: boolean
+  /** Bewly 动态页标签栏右侧显示动态过滤入口 */
+  momentsShowFilterEntry: boolean
   momentsFilterUpRecommendation: boolean
   momentsHideChargeExclusive: boolean
   momentsHideVideoReservation: boolean
@@ -489,8 +504,10 @@ export interface Settings {
   dockPosition: 'left' | 'right' | 'bottom'
   dockItemsConfig: { page: AppPage, visible: boolean, openInNewTab: boolean, useOriginalBiliPage: boolean }[]
   disableDockGlowingEffect: boolean
+  disableDockIconAnimation: boolean
   disableLightDarkModeSwitcherOnDock: boolean
   disableBackToTopButtonOnDock: boolean
+  disableRefreshButtonOnDock: boolean
   backToTopAndRefreshButtonsAreSeparated: boolean
   alwaysShowDockActionsWhenAutoHide: boolean
   enableUndoRefreshButton: boolean // 添加撤销刷新按钮配置项
@@ -555,6 +572,7 @@ export interface Settings {
   autoSwitchRecommendationMode: boolean
 
   // filter setting
+  showRecommendationFilterEntry: boolean // 首页个性推荐标签栏右侧显示推荐过滤入口
   showRecommendationFilterRiskWarning: boolean
   disableFilterForFollowedUser: boolean
   filterOutVerticalVideos: boolean
@@ -659,6 +677,8 @@ export interface Settings {
   playbackRateStep: number // 倍速快捷键每次调节的幅度 (0.01-1)
   customFullscreenWheelVolume: boolean // 全屏时接管滚轮音量调节
   fullscreenWheelVolumeStep: number // 全屏滚轮每格调节的音量 (1-50)
+  customKeyboardVolume: boolean // 接管播放器上下方向键的音量调节
+  keyboardVolumeStep: number // 方向键每按一次调节的音量 (1-50)，B 站默认为 10
 
   // 清晰度记忆设置
   rememberVideoQuality: boolean
@@ -699,7 +719,8 @@ export const originalSettings: Settings = {
   ambilightBlur: 72,
   ambilightSaturation: 130,
   ambilightFps: 24,
-  showPlayerAdjustmentButton: true,
+  playerPictureAdjustmentEnabled: true,
+  playerAudioDelayEnabled: true,
   localLoudnessEnabled: false,
   localLoudnessTarget: -18,
   localLoudnessStrength: 75,
@@ -718,6 +739,7 @@ export const originalSettings: Settings = {
   commentReplyTreeContainerHeight: COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT, // 默认容器高度
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   hideCommentImageScrollbar: false, // 默认不隐藏评论图片预览时的页面滚动条
+  imageViewerCloseAtBottom: false, // 默认保留图片查看器顶部的关闭按钮
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   enableSidebarCoverBlur: true, // 默认启用页面侧栏封面高斯渐变背景
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
@@ -748,6 +770,7 @@ export const originalSettings: Settings = {
   topBarLinkOpenMode: 'currentTabIfNotHomepage',
   searchBarLinkOpenMode: 'currentTabIfNotHomepage',
   closeDrawerWithoutPressingEscAgain: false,
+  hideDrawerEscHint: false,
 
   blockAds: false,
   blockTopSearchPageAds: false,
@@ -838,6 +861,7 @@ export const originalSettings: Settings = {
   momentsOnlyCoverVideoPreview: true,
   momentsGridColumns: '2',
   momentsEnableWantedFilter: true,
+  momentsShowFilterEntry: true,
   momentsFilterUpRecommendation: false,
   momentsHideChargeExclusive: false,
   momentsHideVideoReservation: false,
@@ -860,8 +884,10 @@ export const originalSettings: Settings = {
   dockPosition: 'right',
   dockItemsConfig: [],
   disableDockGlowingEffect: false,
+  disableDockIconAnimation: false,
   disableLightDarkModeSwitcherOnDock: false,
   disableBackToTopButtonOnDock: false,
+  disableRefreshButtonOnDock: false,
   backToTopAndRefreshButtonsAreSeparated: true,
   alwaysShowDockActionsWhenAutoHide: false,
   enableUndoRefreshButton: true, // 默认开启撤销刷新按钮
@@ -926,6 +952,7 @@ export const originalSettings: Settings = {
   autoSwitchRecommendationMode: true,
 
   // filter setting
+  showRecommendationFilterEntry: true,
   showRecommendationFilterRiskWarning: true,
   disableFilterForFollowedUser: false,
   filterOutVerticalVideos: false,
@@ -1063,6 +1090,8 @@ export const originalSettings: Settings = {
   playbackRateStep: 0.25,
   customFullscreenWheelVolume: false,
   fullscreenWheelVolumeStep: 5,
+  customKeyboardVolume: false,
+  keyboardVolumeStep: 10,
 
   // 清晰度记忆设置
   rememberVideoQuality: false,
@@ -1169,6 +1198,7 @@ export const settings = useSettingsStorage(originalSettings, {
     const record = value as Record<string, any>
     record.playbackRateStep = normalizePlaybackRateStep(record.playbackRateStep)
     record.fullscreenWheelVolumeStep = normalizeWheelVolumeStep(record.fullscreenWheelVolumeStep)
+    record.keyboardVolumeStep = normalizeKeyboardVolumeStep(record.keyboardVolumeStep)
 
     // 旧配置也补齐新入口，保持菜单按钮与各项的默认可见状态一致。
     const menuConfig = record.videoCardContextMenuConfig
@@ -1178,6 +1208,8 @@ export const settings = useSettingsStorage(originalSettings, {
       const drawerIndex = menuConfig.findIndex(item => item.key === 'openInDrawer')
       menuConfig.splice(drawerIndex === -1 ? menuConfig.length : drawerIndex + 1, 0, { key: 'openInDialog', visible: true })
     }
+    if (Array.isArray(menuConfig) && !menuConfig.some(item => item.key === 'customizeMenu'))
+      menuConfig.push({ key: 'customizeMenu', visible: true })
 
     // 旧私信开关同时控制两类私信，拆分后保留原有选择。
     if (typeof record.showPrivateMessageUnreadCount === 'boolean') {
@@ -1250,8 +1282,18 @@ export const settings = useSettingsStorage(originalSettings, {
 
     // 音量均衡按钮已扩展为画面与声音调整按钮，旧显示开关不再沿用。
     Reflect.deleteProperty(record, 'showLocalLoudnessButton')
-    if (typeof record.showPlayerAdjustmentButton !== 'boolean')
-      record.showPlayerAdjustmentButton = true
+    // 整体显示开关拆分为画面与音画同步两项；旧版关闭了按钮的用户两项一并关闭。
+    if (typeof record.showPlayerAdjustmentButton === 'boolean') {
+      if (!record.showPlayerAdjustmentButton) {
+        record.playerPictureAdjustmentEnabled = false
+        record.playerAudioDelayEnabled = false
+      }
+      Reflect.deleteProperty(record, 'showPlayerAdjustmentButton')
+    }
+    for (const key of ['playerPictureAdjustmentEnabled', 'playerAudioDelayEnabled'] as const) {
+      if (typeof record[key] !== 'boolean')
+        record[key] = true
+    }
     if (typeof record.localLoudnessEnabled !== 'boolean')
       record.localLoudnessEnabled = false
     for (const [key, min, max, fallback] of [

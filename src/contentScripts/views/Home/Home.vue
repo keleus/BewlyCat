@@ -15,10 +15,13 @@ import { useForYouStore } from '~/stores/forYouStore'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { cancelProgrammaticScroll, jumpScrollTo } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
+import RecommendationFilterEntry from './components/RecommendationFilterEntry.vue'
 import VersionReminder from './components/VersionReminder.vue'
+import { getHomeContentScrollTop, isWithinHomeContentStart } from './homeScroll'
 import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
@@ -40,6 +43,7 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 const cachedScrollTop = ref(0)
 const tabScrollPositions = new Map<string, number>()
 let pendingTabScrollTop: number | null = null
+let preserveSwitchPosition = false
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -73,7 +77,7 @@ const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage
     ? forYouCacheKey.value
     : activatedPage.value)
 const cacheRevision = ref(0)
-const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition)
+const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition, keepTabContentInView, () => preserveSwitchPosition)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
@@ -81,9 +85,11 @@ const topBarVisibility = ref<boolean>(true)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
 const shouldShowRecommendationModeSwitcher = computed(() => settings.value.showRecommendationModeSwitcher && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowImmersiveModeEntry = computed(() => settings.value.showImmersiveModeEntry && activatedPage.value === HomeSubPage.ForYou)
+const shouldShowRecommendationFilterEntry = computed(() => settings.value.showRecommendationFilterEntry && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value
   || shouldShowRecommendationModeSwitcher.value
   || shouldShowImmersiveModeEntry.value
+  || shouldShowRecommendationFilterEntry.value
   || settings.value.enableGridLayoutSwitcher)
 const recommendationModeOptions = computed(() => filterRecommendationModeSwitcherOptions(createRecommendationModeOptions(t)))
 const activeRecommendationModeOption = computed(() => getRecommendationModeOption())
@@ -124,13 +130,16 @@ watch(() => topBarStore.isLogin
   tabCache.clear()
   forYouStore.resetState()
   tabScrollPositions.clear()
-  pendingTabScrollTop = getInitialTabScrollTop()
+  pendingTabScrollTop = getHomeContentScrollTop()
   cacheRevision.value++
 })
 
-function getInitialTabScrollTop(): number {
-  return settings.value.useSearchPageModeOnHomePage ? 510 : 0
-}
+// 切换栏目时旧内容已卸载、新列表还没撑开，滚动范围不足会把定位截断回顶部，
+// 因此搜索页模式下始终保留足够高度，让每个栏目都能落到搜索区域下方。
+const homeMainStyle = computed(() => {
+  const initialScrollTop = getHomeContentScrollTop()
+  return initialScrollTop ? { minHeight: `calc(100vh + ${initialScrollTop}px)` } : undefined
+})
 
 function restoreTabScrollPosition() {
   if (pendingTabScrollTop === null)
@@ -138,9 +147,18 @@ function restoreTabScrollPosition() {
 
   const viewport = scrollViewportRef.value
   if (viewport)
-    viewport.scrollTop = pendingTabScrollTop
+    jumpScrollTo(viewport, pendingTabScrollTop)
 
   pendingTabScrollTop = null
+}
+
+// 列表快照的锚点记录的是离开时的视口偏移。若离开时还停在搜索区，
+// 按锚点还原会回到页面顶部，因此还原后再保证栏目内容在视口内。
+function keepTabContentInView() {
+  const viewport = scrollViewportRef.value
+  const minScrollTop = getHomeContentScrollTop()
+  if (viewport && viewport.scrollTop < minScrollTop)
+    jumpScrollTo(viewport, minScrollTop)
 }
 
 function finishTabSwitch() {
@@ -148,6 +166,7 @@ function finishTabSwitch() {
   restoreTabScrollPosition()
   requestAnimationFrame(() => {
     isHomeTabSwitching.value = false
+    preserveSwitchPosition = false
   })
 }
 
@@ -156,14 +175,25 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   if (!viewport)
     return
 
+  // Release the animation and anchor guard before restoring the destination tab.
+  cancelProgrammaticScroll(viewport)
+
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
-    tabScrollPositions.set(oldPage, viewport.scrollTop)
+    tabScrollPositions.set(oldPage, Math.max(viewport.scrollTop, getHomeContentScrollTop()))
   // Only ForYou restores its list. Freshly fetched feeds must not inherit a
   // scroll offset (or trigger pagination) from a different set of videos.
-  pendingTabScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
-    ? tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
-    : getInitialTabScrollTop()
+  const initialScrollTop = getHomeContentScrollTop()
+  const destinationScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
+    ? tabScrollPositions.get(newPage) ?? initialScrollTop
+    : initialScrollTop
+  // 搜索页模式下栏目栏仍在视野内时保持当前位置；当前已滚动较深，或目标栏目
+  // 有较深的浏览位置时，仍按目标栏目的原状态恢复。快速连切时滚动容器尚未
+  // 被改写，每次都按最新目标重新判断。
+  preserveSwitchPosition = settings.value.useSearchPageModeOnHomePage
+    && isWithinHomeContentStart(viewport.scrollTop)
+    && isWithinHomeContentStart(destinationScrollTop)
+  pendingTabScrollTop = preserveSwitchPosition ? viewport.scrollTop : destinationScrollTop
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
 
@@ -255,7 +285,7 @@ function preserveInactiveForYouState() {
     isInitialized: !!snapshot.hasInitializedData || !!snapshot.videoList?.length || !!snapshot.appVideoList?.length,
     recommendationMode: mode,
     appRecommendationColumn: settings.value.appRecommendationColumn,
-    scrollTop: tabScrollPositions.get(key) ?? getInitialTabScrollTop(),
+    scrollTop: tabScrollPositions.get(key) ?? getHomeContentScrollTop(),
   })
 }
 
@@ -265,8 +295,9 @@ function handleChangeTab(tab: HomeTab) {
   if (activatedPage.value === tab.page) {
     const scrollTop = scrollViewportRef.value?.scrollTop ?? cachedScrollTop.value
 
-    if ((!settings.value.useSearchPageModeOnHomePage && scrollTop > 0) || (settings.value.useSearchPageModeOnHomePage && scrollTop > 510)) {
-      handleThrottledBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+    const contentScrollTop = getHomeContentScrollTop()
+    if (scrollTop > contentScrollTop) {
+      handleThrottledBackToTop(contentScrollTop)
     }
     else {
       if (tabContentLoading.value)
@@ -335,7 +366,7 @@ function toggleTabContentLoading(loading: boolean) {
       </div>
     </Transition>
 
-    <main>
+    <main :style="homeMainStyle">
       <!-- Home search page mode content -->
       <Transition name="content">
         <div
@@ -368,6 +399,7 @@ function toggleTabContentLoading(loading: boolean) {
           'home-header--tabs-center': settings.homeTabsPosition === 'center',
           'home-header--recommendation-switcher': shouldShowRecommendationModeSwitcher,
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
+          'home-header-fixed--search': settings.fixedHomeTabsOnHomePage && settings.useSearchPageModeOnHomePage,
         }"
         w-full z-9
       >
@@ -439,6 +471,13 @@ function toggleTabContentLoading(loading: boolean) {
               {{ option.label }}
             </button>
           </div>
+
+          <RecommendationFilterEntry
+            v-if="shouldShowRecommendationFilterEntry"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="home"
+            data-layout-settings-title-key="settings.show_recommendation_filter_entry"
+          />
 
           <div
             v-if="isLayoutEditing || settings.enableGridLayoutSwitcher"
@@ -625,6 +664,10 @@ function toggleTabContentLoading(loading: boolean) {
 
 .home-header-fixed {
   --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
+}
+
+.home-header-fixed--search {
+  top: calc(var(--bew-top-bar-height) + var(--bew-space-4));
 }
 
 @media (max-width: 1000px) {

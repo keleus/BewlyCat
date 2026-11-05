@@ -3,11 +3,18 @@ import { createApp, watch } from 'vue'
 import PlayerLoudnessControl from '~/components/PlayerLoudnessControl.vue'
 import { settings, settingsReady } from '~/logic'
 import { i18n } from '~/utils/i18n'
-import { resetPlayerAdjustment, syncPlayerAdjustmentVideo } from '~/utils/playerAdjustment'
+import { applyPictureAdjustment, playerAdjustment, resetPictureAdjustment, resetPlayerAdjustment, syncPlayerAdjustmentVideo } from '~/utils/playerAdjustment'
 
 import { schedulePlayerControlFit } from './playerControlFit'
 
 let initialized = false
+
+// 画面、音画同步、音量均衡任一项开启才显示按钮
+function isAdjustmentButtonVisible() {
+  return settings.value.playerPictureAdjustmentEnabled
+    || settings.value.playerAudioDelayEnabled
+    || settings.value.localLoudnessEnabled
+}
 
 export function initLocalLoudnessControl() {
   if (initialized || location.hostname === 'live.bilibili.com')
@@ -52,7 +59,7 @@ export function initLocalLoudnessControl() {
   }
 
   function discover() {
-    if (settings.value.showPlayerAdjustmentButton)
+    if (isAdjustmentButtonVisible())
       syncPlayerAdjustmentVideo()
     deadline = Date.now() + 15_000
     schedule()
@@ -60,10 +67,12 @@ export function initLocalLoudnessControl() {
 
   function sync() {
     cancelRetry()
-    if (!settings.value.showPlayerAdjustmentButton) {
-      clearControl()
-      // 隐藏按钮后无处还原，画面与音画调整随之重置；音量均衡是全局设置，不受影响。
+    if (!isAdjustmentButtonVisible()) {
+      // 隐藏按钮后无处还原，画面与音画调整随之重置；组件卸载前先把画面复原到视频上。
       resetPlayerAdjustment()
+      if (media)
+        applyPictureAdjustment(media)
+      clearControl()
       return
     }
     const bar = document.querySelector<HTMLElement>('.bpx-player-control-bottom-right')
@@ -117,7 +126,21 @@ export function initLocalLoudnessControl() {
   void settingsReady.then(() => {
     if (stopped)
       return
-    unwatch = watch(() => settings.value.showPlayerAdjustmentButton, discover, { immediate: true })
+    const stopVisibilityWatch = watch(isAdjustmentButtonVisible, discover, { immediate: true })
+    // 单项关闭后面板里不再有入口还原，对应调整随之重置。
+    const stopItemWatch = watch(() => [settings.value.playerPictureAdjustmentEnabled, settings.value.playerAudioDelayEnabled] as const, ([picture, audioDelay]) => {
+      if (!picture) {
+        resetPictureAdjustment()
+        if (media)
+          applyPictureAdjustment(media)
+      }
+      if (!audioDelay)
+        playerAdjustment.audioDelay = 0
+    }, { immediate: true })
+    unwatch = () => {
+      stopVisibilityWatch()
+      stopItemWatch()
+    }
     for (const name of ['pushstate', 'replacestate', 'popstate', 'hashchange'])
       window.addEventListener(name, discover, { signal: lifetime.signal })
     for (const name of ['play', 'loadedmetadata'])

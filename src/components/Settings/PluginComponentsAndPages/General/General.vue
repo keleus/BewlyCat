@@ -79,6 +79,9 @@ watch(() => settings.value.language, (newValue) => {
         </template>
         <Radio v-model="settings.closeDrawerWithoutPressingEscAgain" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.hide_drawer_esc_hint')" :desc="$t('settings.hide_drawer_esc_hint_desc')" right-width="auto">
+        <Radio v-model="settings.hideDrawerEscHint" />
+      </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>

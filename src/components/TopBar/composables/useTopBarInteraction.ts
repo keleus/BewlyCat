@@ -45,8 +45,6 @@ export function useTopBarInteraction() {
   const topBarItemElements: Partial<Record<TopBarPopupKey, Ref<HTMLElement | undefined> & { reset?: () => void }>> = {}
   const topBarTransformers = reactive<Partial<Record<TopBarPopupKey, Ref<any>>>>({})
 
-  const isMouseOverPopup = reactive<Record<string, boolean>>({})
-
   // 当前点击的顶栏项
   const currentClickedTopBarItem = ref<string | null>(null)
   const handledClickEvents = new WeakSet<MouseEvent>()
@@ -181,18 +179,14 @@ export function useTopBarInteraction() {
   function setupTopBarItemHoverEvent(key: TopBarPopupKey) {
     const element = useDelayedHover({
       enterDelay: 320,
-      leaveDelay: 320,
+      // 关闭只走可被再次移入取消的延时，鼠标在延时内进入弹窗时不会被收起。
+      leaveDelay: 520,
       beforeEnter: () => closeAllPopups(key),
       enter: () => {
         topBarStore.popupVisible[key] = true
       },
       leave: () => {
-        // 只有当鼠标不在弹窗上时才隐藏
-        setTimeout(() => {
-          if (!isMouseOverPopup[key]) {
-            topBarStore.popupVisible[key] = false
-          }
-        }, 200)
+        topBarStore.popupVisible[key] = false
       },
     })
 

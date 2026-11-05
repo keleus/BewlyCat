@@ -297,14 +297,15 @@ const clockHandMaskId = `dock-clock-hand-mask-${useId()}`
 const animeEyeMaskId = `dock-anime-eye-mask-${useId()}`
 
 const backToTopButtonEnabled = computed((): boolean => !settings.value.disableBackToTopButtonOnDock)
+const refreshButtonEnabled = computed((): boolean => !settings.value.disableRefreshButtonOnDock)
 
 const dockEditActions = computed(() => [
   {
     key: 'refresh' as const,
     label: t('common.operation.refresh'),
     icon: 'tabler:reload',
-    settingsTitleKey: 'settings.back_to_top_and_refresh_buttons_are_separated',
-    hidden: false,
+    settingsTitleKey: 'settings.disable_refresh_button_on_dock',
+    hidden: !refreshButtonEnabled.value,
   },
   {
     key: 'backToTop' as const,
@@ -342,11 +343,14 @@ const canRefreshCurrentPage = computed((): boolean => {
   if (props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults)
     return false
 
-  return props.activatedPage !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
+  return props.activatedPage !== AppPage.Home || homeActivatedPage.value !== HomeSubPage.Following || canRefreshHomeSubPage.value
 })
 
+// 刷新按钮可单独隐藏；快捷键刷新仍按 canRefreshCurrentPage 判断，不受按钮显隐影响
+const showRefreshButton = computed((): boolean => refreshButtonEnabled.value && canRefreshCurrentPage.value)
+
 const showBackToTopOrRefreshActions = computed((): boolean => {
-  return showBackToTopOrRefreshButton.value && (canRefreshCurrentPage.value || (backToTopButtonEnabled.value && !reachTop.value))
+  return showBackToTopOrRefreshButton.value && (showRefreshButton.value || (backToTopButtonEnabled.value && !reachTop.value))
 })
 
 /**
@@ -530,7 +534,7 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
     }
   }
   else {
-    if ((reachTop.value || !backToTopButtonEnabled.value) && canRefreshCurrentPage.value) {
+    if ((reachTop.value || !backToTopButtonEnabled.value) && showRefreshButton.value) {
       emit('refresh')
       pulseDockAction('refresh')
     }
@@ -629,14 +633,14 @@ const dockScale = computed((): number => {
   if (settings.value.dockPosition === 'bottom') {
     const maxButtonCount = isLayoutEditing.value
       ? 2
-      : (settings.value.backToTopAndRefreshButtonsAreSeparated && backToTopButtonEnabled.value ? 2 : 1)
+      : (settings.value.backToTopAndRefreshButtonsAreSeparated && backToTopButtonEnabled.value && refreshButtonEnabled.value ? 2 : 1)
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalWidth = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
   }
   else {
     const maxButtonCount = isLayoutEditing.value
       ? 2
-      : (settings.value.backToTopAndRefreshButtonsAreSeparated && backToTopButtonEnabled.value ? 2 : 1)
+      : (settings.value.backToTopAndRefreshButtonsAreSeparated && backToTopButtonEnabled.value && refreshButtonEnabled.value ? 2 : 1)
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalHeight = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
   }
@@ -820,6 +824,7 @@ onUnmounted(() => {
         'half-hide': settings.halfHideDock && !isLayoutEditing,
         'hover': dockContentHover,
         'ready': dockReady,
+        'disable-icon-animation': settings.disableDockIconAnimation,
       }"
       :style="dockTransformStyle"
       @mouseenter="handleDockAreaEnter"
@@ -1171,7 +1176,7 @@ onUnmounted(() => {
           <template v-for="key in 2" :key="key">
             <Transition name="fade">
               <button
-                v-if="(key === 1 && canRefreshCurrentPage) || (key === 2 && backToTopButtonEnabled && !reachTop)"
+                v-if="(key === 1 && showRefreshButton) || (key === 2 && backToTopButtonEnabled && !reachTop)"
                 class="back-to-top-or-refresh-btn"
                 :class="{
                   'inactive': hoveringDockItem.themeMode && isDark,
@@ -1198,7 +1203,7 @@ onUnmounted(() => {
         </template>
         <template v-else>
           <button
-            v-if="backToTopButtonEnabled || canRefreshCurrentPage"
+            v-if="backToTopButtonEnabled || showRefreshButton"
             class="back-to-top-or-refresh-btn"
             :class="{
               'inactive': hoveringDockItem.themeMode && isDark,
@@ -1209,7 +1214,7 @@ onUnmounted(() => {
           >
             <Transition name="fade">
               <Icon
-                v-if="(reachTop || !backToTopButtonEnabled) && canRefreshCurrentPage"
+                v-if="(reachTop || !backToTopButtonEnabled) && showRefreshButton"
                 icon="tabler:reload"
                 class="dock-action-icon"
                 shrink-0 absolute text="size-$bew-icon-size-lg"
@@ -1894,7 +1899,8 @@ onUnmounted(() => {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+// 悬停/聚焦时的图标动画：设置项与系统「减少动效」共用同一份开关列表
+@mixin dock-icon-hover-animation-off {
   .dock-item:hover .dock-item-icon,
   .dock-item:focus-visible .dock-item-icon,
   .dock-item:hover .dock-clock-hand,
@@ -1908,7 +1914,14 @@ onUnmounted(() => {
   .dock-item:hover .dock-favorites-sparkle,
   .dock-item:focus-visible .dock-favorites-sparkle,
   .dock-edit-button:hover .dock-edit-icon,
-  .dock-edit-button:focus-visible .dock-edit-icon,
+  .dock-edit-button:focus-visible .dock-edit-icon {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @include dock-icon-hover-animation-off;
+
   .back-to-top-or-refresh-btn.dock-action-pulse-refresh .dock-action-icon,
   .back-to-top-or-refresh-btn.dock-action-pulse-back-to-top .dock-action-icon,
   .back-to-top-or-refresh-btn.dock-action-pulse-history .dock-action-icon,
@@ -1917,5 +1930,10 @@ onUnmounted(() => {
   .dock-edit-button.dock-icon-click-rebound .dock-edit-icon {
     animation: none !important;
   }
+}
+
+// 设置项：只关闭悬停/聚焦动画，点击回弹与操作按钮脉冲保留
+.dock-content.disable-icon-animation {
+  @include dock-icon-hover-animation-off;
 }
 </style>

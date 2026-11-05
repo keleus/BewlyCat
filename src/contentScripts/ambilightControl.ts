@@ -7,7 +7,7 @@ import type { AmbilightBackdrop, AmbilightBaseValues } from '~/utils/ambilight/t
 import { DEFAULT_BASE_VALUES, getAmbilightTextColors, getBackdrop, parseBaseValue } from '~/utils/ambilight/textContrast'
 import type { AmbilightBackdropAnchor, AmbilightBackdropSample, AmbilightDisplayMode, AmbilightEngineOptions, AmbilightTone } from '~/utils/ambilight/types'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
-import { isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
+import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 import { getVideoElement } from '~/utils/player'
 
 let initialized = false
@@ -248,10 +248,11 @@ function resetTextContrast() {
   clearTextContrast()
 }
 
+// 稍后再看列表页（/watchlater/list）只是视频网格，页内广告等播放器会被误认作目标视频；
+// 稍后再看的实际播放走 /list/watchlater，已由 isVideoPlaybackPage 覆盖
 function isSupportedPage(): boolean {
   return isVideoPlaybackPage()
     || isVideoOrBangumiPage()
-    || isWatchLaterListPage(location.href)
 }
 
 // iframe 抽屉会把宿主页地址栏临时替换为视频 URL，宿主页本身不是播放页，

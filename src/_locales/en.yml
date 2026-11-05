@@ -168,8 +168,11 @@ settings:
       unsupported: This audio source cannot be safely processed. Audio is unchanged.
   player_adjustment:
     title: Picture & sound adjustments
-    show_button: Show player picture & sound button
-    show_button_desc: Show a player control to rotate or mirror the picture, and adjust audio sync on hover; volume balance settings also appear here once it is enabled. Rotation, mirroring and audio sync apply only to the current video; hiding the button resets them but does not disable volume balance.
+    desc: Shows an adjustment button in the player controls that opens a panel on hover. The two items below can be turned off separately, and the volume balance item follows "Enable local volume balance" above; the button is hidden when all three are off.
+    show_picture: Rotate & mirror picture
+    show_picture_desc: Rotate or mirror the picture from the panel. Applies only to the current video; turning this off resets the current picture adjustment.
+    show_audio_delay: Audio sync
+    show_audio_delay_desc: Delay the audio from the panel. Applies only to the current video; turning this off stops processing the audio.
     picture: Picture
     rotate_left: Rotate left
     rotate_right: Rotate right
@@ -198,6 +201,8 @@ settings:
   category_group_pages: Pages
   category_group_components: Components
   category_group_behavior: Behavior
+  category_group_playback: Playback
+  category_group_site: Site features
   badge_performance_impact: Performance impact
   badge_advanced: Advanced
   badge_irreversible: Irreversible
@@ -227,8 +232,9 @@ settings:
   category_bilibili_listen_video_desc: Hide the video picture and keep only the audio, shown as a cover-and-title audio player.
   category_bilibili_volume_balance_desc: Level loudness across videos locally to reduce sudden volume changes.
   category_bilibili_ambilight_desc: Cast soft ambient light around the player that follows the picture.
-  category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
+  category_advanced_compatibility_desc: Block ads, clean links, and configure compatibility with original pages and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
+  category_data_desc: Turn on browser cloud sync, export a backup, import settings, or restore BewlyCat defaults.
   maintenance:
     title: Backup & Reset
     backup_title: Settings backup
@@ -252,7 +258,8 @@ settings:
   menu_plugin_components_and_pages: BewlyCat Interface
   menu_bilibili_features_enhancement: Bilibili Features
   menu_appearance: Appearance
-  menu_compatibility: Compatibility
+  menu_compatibility: Cleanup & Compatibility
+  menu_data: Data & Sync
   menu_about: About
   menu_changelog: Changelog
   experimental: Experimental
@@ -298,6 +305,7 @@ settings:
   video_card_context_menu_region_opening: Open
   video_card_context_menu_region_copying: Copy
   video_card_context_menu_region_user: User
+  video_card_context_menu_region_other: Other
   video_card_context_menu_follow_user: Follow or Unfollow
   video_card_content_region_stats: Stats
   video_card_content_region_tags: Tags
@@ -400,6 +408,8 @@ settings:
   moments_visible_components: Visible components
   moments_visible_components_original_desc: Control whether sidebar and banner components appear on the original Bilibili moments page. Theme-colored means shown; gray means hidden.
   moments_visible_components_plugin_desc: Control whether sidebar and top components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
+  moments_show_filter_entry: Show dynamic filter button
+  moments_show_filter_entry_desc: Show a filter button on the right of the Bewly dynamics tabs to adjust shown dynamic types and blocked keywords directly. Dynamics refresh with the new filters when the panel closes.
   moments_filtered_types: Filter dynamics
   moments_filtered_types_desc: Choose which dynamic types appear in the Bewly feed; selected types are shown. When many items are filtered, you may need to load more manually.
   moments_enable_live_preview: Preview live dynamics on hover
@@ -527,6 +537,8 @@ settings:
   video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. In narrow windows, the dialog option opens a new tab instead.
   search_bar_link_opening_behavior: Search bar link opening behavior
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
+  hide_drawer_esc_hint: Hide the drawer's Esc shortcut hint
+  hide_drawer_esc_hint_desc: Hide the key badge on the drawer close button and the key hint in the notifications drawer. The Esc shortcut still works
   block_ads: Block ads
   block_top_search_page_ads: Block Bilibili top search page ads
   block_top_search_page_ads_desc: >
@@ -743,8 +755,11 @@ settings:
   dock_item_open_in_new_tab: Open in new tab
   dock_item_use_original_bili_web_page: Use the original Bilibili web page
   disable_dock_glowing_effect: Disable the dock glowing effect
+  disable_dock_icon_animation: Disable dock icon hover animations
+  disable_dock_icon_animation_desc: Dock icons no longer bounce or rotate on hover and focus; click rebound and action button pulses stay on.
   disable_light_dark_mode_switcher: Disable light/dark mode switcher
   disable_back_to_top_button_on_dock: Disable back to top button on dock
+  disable_refresh_button_on_dock: Disable refresh button on dock
   back_to_top_and_refresh_buttons_are_separated: Separate Back to Top and Refresh Buttons
   always_show_dock_actions_when_auto_hide: Always show action buttons when the dock auto-hides
   sidebar_position: Sidebar position
@@ -855,6 +870,8 @@ settings:
   scan_qrcode_desc: >-
     Use the Bilibili mobile app to scan this QR code in order to authorize the
     access key.
+  show_recommendation_filter_entry: Show recommendation filter button
+  show_recommendation_filter_entry_desc: When "For You" is selected on the home page, show a filter button on the right of the top tab bar to adjust filters directly. Recommendations refresh with the new filters when the panel closes.
   show_recommendation_filter_risk_warning: Show filter risk warnings
   show_recommendation_filter_risk_warning_desc: Warn when too many recommendations are filtered out, since repeated requests may trigger risk control.
   disable_filters_for_followed_users: Disable filters for followed users
@@ -1099,6 +1116,10 @@ settings:
   fullscreen_wheel_volume_desc: In fullscreen, BewlyCat handles the mouse wheel and changes the volume by a fixed step per notch, replacing bilibili's inconsistent native step.
   fullscreen_wheel_volume_step: Wheel volume step
   fullscreen_wheel_volume_step_desc: Change the volume by 1–50 per notch; the default is 5.
+  keyboard_volume: Arrow key volume
+  keyboard_volume_desc: BewlyCat takes over the up/down arrow keys inside the player and uses the step below; when disabled, bilibili's default (10) applies.
+  keyboard_volume_step: Arrow key volume step
+  keyboard_volume_step_desc: Change the volume by 1–50 per press; bilibili's default is 10.
   remember_video_quality: Remember video quality
   remember_video_quality_desc: Restore the last selected video quality; if it is unavailable, the current quality is kept.
   remember_video_quality_confirm_title: Enable Remember video quality?
@@ -1304,6 +1325,8 @@ settings:
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   hide_comment_image_scrollbar: Hide page scrollbar in comment image preview
   hide_comment_image_scrollbar_desc: Hide the page scrollbar when opening a comment image preview so it does not appear beside the overlay
+  image_viewer_close_at_bottom: Move the image viewer close button to the bottom center
+  image_viewer_close_at_bottom_desc: Move the close button of the comment and moments image viewers from the top to the bottom center
   video_player_scroll: Scroll after adjusting the display mode
   video_player_scroll_desc: Automatically scroll to the selected position after adjusting the display mode.
   video_player_scroll_mode:
@@ -1484,6 +1507,7 @@ video_card:
     follow_user: Follow User
     unfollow_user: Unfollow User
     block_user: Block User
+    customize_menu: Customize menu
     more_options: More options
     scroll_top: Scroll to top
     scroll_bottom: Scroll to bottom
@@ -1534,6 +1558,15 @@ home:
   app_authorization_required: The App mode access token is missing or expired. Re-authorize to continue using personalized recommendations.
   reauthorize_app: Re-authorize
   recommendation_filter_risk_warning: The current filters retained only {count} of {total} valid recommendations. This may cause frequent requests and trigger API risk control. Consider relaxing the filters.
+  recommendation_filter:
+    entry: Recommendation filters
+    entry_active: Recommendation filters ({count} on)
+    title: Recommendation filters
+    more_settings: More settings
+    vertical_videos: Filter out vertical videos
+    rule_count: 'Rules: {count}'
+    manage: Manage
+    apply_hint: Recommendations refresh with the new filters when this panel closes.
   tell_us_why: Choose a reason why
   not_interested_desc: >-
     You can use <kbd>↑</kbd> and <kbd>↓</kbd> to choose the reason, or using
@@ -1714,7 +1747,7 @@ watch_later:
   play_video: Remove and open video page
   play_in_watch_later: Playlist
   remove_from_watch_later: Remove
-  remove_confirm: Remove from Watch Later?
+  removed: Removed from Watch Later
   layout_list: List view
   layout_grid: Grid view
 search_bar:
@@ -1797,6 +1830,12 @@ search:
   match_upcoming: Upcoming
   match_live: Live
 moments:
+  filter_panel:
+    entry: Dynamic filters
+    entry_active: Dynamic filters ({count} on)
+    more_settings: More settings
+    shown_types: Selected types are shown in the feed
+    apply_hint: Dynamics refresh with the new filters when this panel closes.
   filter_all: All
   filter_video: Videos
   filter_pgc: Anime & shows
@@ -1825,6 +1864,8 @@ moments:
   vote_submit: Vote
   vote_submitted: Voted
   vote_selected: You selected this option
+  vote_expand_options: Show {count} more options
+  vote_collapse_options: Show fewer options
   vote_time_day: '{count}d '
   vote_time_hour: '{count}h '
   vote_time_minute: '{count}m'

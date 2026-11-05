@@ -478,6 +478,14 @@ export function setupNecessarySettingsWatchers() {
     { immediate: true },
   )
 
+  watch(
+    () => settings.value.imageViewerCloseAtBottom,
+    (enabled) => {
+      document.documentElement.classList.toggle('bewly-image-viewer-close-bottom', enabled)
+    },
+    { immediate: true },
+  )
+
   const refreshBewlyDesignOnRouteChange = () => {
     if (lastBewlyDesignHref === location.href)
       return

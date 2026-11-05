@@ -7,6 +7,7 @@ export enum MenuType {
   Bilibili = 'Bilibili',
   Appearance = 'Appearance',
   Shortcuts = 'Shortcuts',
+  Data = 'Data',
   About = 'About',
 }
 

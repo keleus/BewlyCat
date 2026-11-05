@@ -174,6 +174,7 @@ const compatibilityRoute: SearchRoute = {
   storageKey: bilibiliStorageKey,
 }
 const shortcutsRoute: SearchRoute = { menu: MenuType.Shortcuts }
+const dataRoute: SearchRoute = { menu: MenuType.Data }
 const aboutRoute: SearchRoute = { menu: MenuType.About }
 
 const wallpaperTitleKeys = [
@@ -240,6 +241,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_horizontal_scrolling',
     'settings.group_drawer_behavior',
     'settings.close_drawer_without_pressing_esc_again',
+    'settings.hide_drawer_esc_hint',
   ]),
   ...createEntries(generalRoute, [
     'settings.group_link_opening_behavior',
@@ -276,6 +278,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.auto_switch_recommendation_mode',
     'settings.preserve_for_you_state',
     'settings.group_recommendation_filters',
+    'settings.show_recommendation_filter_entry',
     'settings.show_recommendation_filter_risk_warning',
     'settings.disable_filters_for_followed_users',
     'settings.filter_out_vertical_videos',
@@ -339,6 +342,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_card_open_mode',
     'settings.moments_video_card_open_mode',
     'settings.group_moments_filters',
+    'settings.moments_show_filter_entry',
     'settings.moments_filter_video_dynamic',
     'settings.moments_filter_draw_dynamic',
     'settings.moments_filter_ugc_season_dynamic',
@@ -425,6 +429,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'video_card.operation.copy_av_number',
     'video_card.operation.view_the_original_cover',
     'video_card.operation.block_user',
+    'video_card.operation.customize_menu',
     'settings.video_card_shadow_curve',
     'settings.video_card_shadow_height',
   ]),
@@ -455,7 +460,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.group_search_bar',
     'settings.show_hot_search_in_top_bar',
-    'settings.show_search_recommendation',
   ]),
   ...createEntries(topBarRoute, [
     'settings.topbar_actions',
@@ -503,8 +507,10 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.half_hide_dock',
     'settings.dock_content_adjustment',
     'settings.disable_dock_glowing_effect',
+    'settings.disable_dock_icon_animation',
     'settings.disable_light_dark_mode_switcher',
     'settings.disable_back_to_top_button_on_dock',
+    'settings.disable_refresh_button_on_dock',
     'settings.back_to_top_and_refresh_buttons_are_separated',
     'settings.enable_undo_refresh_button',
     'settings.group_sidebar',
@@ -546,7 +552,8 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.local_loudness.target',
     'settings.local_loudness.strength',
     'settings.player_adjustment.title',
-    'settings.player_adjustment.show_button',
+    'settings.player_adjustment.show_picture',
+    'settings.player_adjustment.show_audio_delay',
   ]),
   ...createEntries(ambilightRoute, [
     'settings.ambilight.title',
@@ -584,6 +591,8 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.playback_rate_step',
     'settings.fullscreen_wheel_volume',
     'settings.fullscreen_wheel_volume_step',
+    'settings.keyboard_volume',
+    'settings.keyboard_volume_step',
     'settings.remember_playback_rate',
     'settings.remember_video_aspect_ratio',
     'settings.group_video_page_actions',
@@ -753,6 +762,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.comment_reply_pagination_mode.title',
     'settings.adjust_comment_image_height',
     'settings.hide_comment_image_scrollbar',
+    'settings.image_viewer_close_at_bottom',
   ], {
     keywordKeysByTitleKey: {
       'settings.comment_reply_tree_mode.title': [
@@ -826,18 +836,23 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.group.official_bilibili',
   ]),
 
-  ...createEntries(aboutRoute, [
-    'settings.menu_about',
+  ...createEntries(dataRoute, [
+    'settings.menu_data',
     'settings.group_settings_sync',
     'settings.enable_settings_sync',
-    'settings.group_version_reminder',
-    'settings.enable_version_reminder',
-    'settings.maintenance.title',
     'settings.maintenance.backup_title',
     'settings.import_settings',
     'settings.export_settings',
     'settings.maintenance.reset_title',
     'settings.reset_settings',
+  ]),
+
+  ...createEntries(aboutRoute, [
+    'settings.menu_about',
+    'settings.group_environment_info',
+    'settings.copy_environment_info',
+    'settings.group_version_reminder',
+    'settings.enable_version_reminder',
     'settings.open_source_license',
     'settings.third_party_licenses',
   ]),

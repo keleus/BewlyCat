@@ -18,7 +18,7 @@ export enum DrawerType {
   NotificationsDrawer = 'notifications',
 }
 
-export type SettingsMenu = 'General' | 'BewlyPages' | 'BewlyComponents' | 'Bilibili' | 'Appearance' | 'Shortcuts' | 'About'
+export type SettingsMenu = 'General' | 'BewlyPages' | 'BewlyComponents' | 'Bilibili' | 'Appearance' | 'Shortcuts' | 'Data' | 'About'
 
 export interface SettingsNavigationTarget {
   menu: SettingsMenu
@@ -40,6 +40,8 @@ export interface BewlyAppProvider {
   mainAppRef: Ref<HTMLElement>
   handleReachBottom: Ref<(() => void) | undefined>
   handlePageRefresh: Ref<(() => void) | undefined>
+  /** 与 Dock 刷新按钮相同：已滚动时先回到顶部再刷新当前页面 */
+  refreshCurrentPage: () => void
   canRefreshHomeSubPage: Ref<boolean>
   // 添加撤销刷新的处理函数
   handleUndoRefresh: Ref<(() => void) | undefined>
@@ -47,6 +49,7 @@ export interface BewlyAppProvider {
   // 使用枚举状态统一管理撤销/前进按钮
   undoForwardState: Ref<UndoForwardState>
   handleBackToTop: (targetScrollTop?: number) => void
+  handleScrollJump: (targetScrollTop?: number) => void
   haveScrollbar: () => Promise<boolean>
   openIframeDrawer: (url: string) => void
   /** 以居中弹窗打开视频；不支持的地址或窄视口回退为新标签页 */

@@ -1,3 +1,19 @@
+// B 站原生图片查看器（PhotoSwipe）的关闭按钮移到底部居中，位于底部分页圆点上方。
+// 不依赖「适配其他页样式」；顶栏撑满查看器后作为定位基准，其自身不接收点击。
+.bewly-image-viewer-close-bottom {
+  .pswp__top-bar {
+    height: 100%;
+  }
+
+  .pswp__button--close {
+    position: absolute;
+    bottom: 48px;
+    left: 50%;
+    margin: 0;
+    transform: translateX(-50%);
+  }
+}
+
 .bewly-design {
   // 普通加载与「展开全部」共用评论区背景，浅色和深色主题均需传入 Shadow DOM。
   --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bew-bg), transparent 15%);
