@@ -11,16 +11,16 @@ const props = withDefaults(defineProps<{
   placement?: Placement
   type?: 'default' | 'dark' | 'white'
   /**
-   * 浮层模式（默认开启）：将提示传送至 shadow root 顶层并以 fixed 定位，
-   * 触发器处在 overflow:hidden 容器（如视频/动态封面）内也不会被裁切，
-   * 并按实测尺寸翻转、夹紧到视口内。找不到顶层容器时自动回退原位 CSS 模式；
-   * 需要保持原位行为时显式传 :floating="false"。
+   * 浮层模式：将提示传送至 shadow root 顶层并以 fixed 定位，
+   * 用于触发器处在 overflow:hidden 容器（如视频/动态封面）内的场景。
+   * 默认关闭，保持原位纯 CSS 浮层行为不变；找不到顶层容器时也自动回退原位模式。
+   * 需要浮层行为的地方显式传 floating。
    */
   floating?: boolean
 }>(), {
   placement: 'top',
   type: 'default',
-  floating: true,
+  floating: false,
 })
 
 // 浮层层级：高 z-index 容器（设置窗口、Dialog 等）通过继承 --bew-tooltip-z

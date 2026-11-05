@@ -17,7 +17,7 @@ defineEmits<{ click: [] }>()
 </script>
 
 <template>
-  <Tooltip v-if="tooltip" :content="tooltip" :placement="tooltipPlacement">
+  <Tooltip v-if="tooltip" :content="tooltip" :placement="tooltipPlacement" floating>
     <button
       type="button"
       class="pop-cover-icon-btn"
