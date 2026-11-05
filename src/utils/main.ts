@@ -127,17 +127,38 @@ export function hexToHSL(hex: string, alpha: number | null = null): string {
   return `hsl(${h}, ${s}%, ${l}%)`
 }
 
-const pendingSmoothScrolls = new WeakMap<HTMLElement, () => void>()
+const pendingSmoothScrolls = new WeakMap<HTMLElement, { target: number, finish: () => void }>()
+
+// A slight adjustment to Material's standard curve: cubic-bezier(0.4, 0, 0.23, 1).
+function standardScrollEasing(progress: number): number {
+  if (progress <= 0 || progress >= 1)
+    return progress
+
+  let low = 0
+  let high = 1
+  for (let i = 0; i < 20; i++) {
+    const t = (low + high) / 2
+    const x = 1.2 * t * (1 - t) ** 2 + 0.69 * t ** 2 * (1 - t) + t ** 3
+    if (x < progress)
+      low = t
+    else
+      high = t
+  }
+  const t = (low + high) / 2
+  return t * t * (3 - 2 * t)
+}
 
 export function isProgrammaticScrollActive(element: HTMLElement): boolean {
   return pendingSmoothScrolls.has(element)
 }
 
-/**
- * 切换功能块前结束未完成的平滑滚动。点击已释放守卫时原生动画仍在继续，因此总是停止滚动。
- */
 export function cancelProgrammaticScroll(element: HTMLElement): void {
-  pendingSmoothScrolls.get(element)?.()
+  const pending = pendingSmoothScrolls.get(element)
+  if (!pending)
+    return
+
+  pending.finish()
+  // Stop native smooth scrolling too, before the next view restores its position.
   element.scrollTo({ top: element.scrollTop, behavior: 'instant' })
 }
 
@@ -146,35 +167,106 @@ export function cancelProgrammaticScroll(element: HTMLElement): void {
  * Card virtualization must not restore an anchor during this navigation.
  */
 export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number) {
-  pendingSmoothScrolls.get(element)?.()
+  const pending = pendingSmoothScrolls.get(element)
+  if (pending?.target === targetScrollTop)
+    return
+  pending?.finish()
   // cancel if already on top
   if (element.scrollTop === targetScrollTop)
     return
 
   const doc = element.ownerDocument
+  let startScrollTop = element.scrollTop
+  const distance = Math.abs(startScrollTop - targetScrollTop)
+  const useCustomAnimation = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  let animationFrame: number | undefined
   let timeout: ReturnType<typeof setTimeout>
   const finish = () => {
     clearTimeout(timeout)
+    if (animationFrame !== undefined)
+      cancelAnimationFrame(animationFrame)
     element.removeEventListener('scrollend', finish)
     element.removeEventListener('wheel', finish)
     element.removeEventListener('touchstart', finish)
-    doc.removeEventListener('pointerdown', finish, true)
-    doc.removeEventListener('keydown', finish, true)
+    doc.removeEventListener('pointerdown', handlePointerDown, true)
+    doc.removeEventListener('keydown', handleKeyDown, true)
+    doc.removeEventListener('visibilitychange', handleVisibilityChange)
     pendingSmoothScrolls.delete(element)
   }
+  const finishAtTarget = () => {
+    if (useCustomAnimation)
+      element.scrollTo({ top: targetScrollTop, behavior: 'instant' })
+    finish()
+  }
+  function handleVisibilityChange() {
+    if (doc.hidden && useCustomAnimation)
+      finishAtTarget()
+  }
+  function handlePointerDown(event: PointerEvent) {
+    const path = event.composedPath()
+    const rect = element.getBoundingClientRect()
+    const inBounds = event.clientX >= rect.left && event.clientX <= rect.right
+      && event.clientY >= rect.top && event.clientY <= rect.bottom
+    const onNativeScrollbar = path.includes(element) && inBounds
+      && (event.clientX >= rect.left + element.clientLeft + element.clientWidth
+        || event.clientY >= rect.top + element.clientTop + element.clientHeight)
+    const onOverlayScrollbar = path.some(node => node instanceof Element && node.matches('.os-scrollbar, .os-scrollbar *'))
+    if (onNativeScrollbar || onOverlayScrollbar)
+      finish()
+  }
+  function handleKeyDown(event: KeyboardEvent) {
+    if (!['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key))
+      return
+    const target = event.composedPath()[0]
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(?:INPUT|TEXTAREA|SELECT)$/.test(target.tagName)))
+      return
+    if (event.key === ' ' && target instanceof HTMLElement && target.closest('button'))
+      return
+    // App shortcuts can prevent the native scroll later in the same dispatch.
+    setTimeout(() => {
+      if (!event.defaultPrevented && pendingSmoothScrolls.get(element)?.finish === finish)
+        finish()
+    }, 0)
+  }
   // Also release the guard when scrolling is interrupted, or scrollend is unavailable.
-  timeout = setTimeout(finish, 3000)
-  pendingSmoothScrolls.set(element, finish)
-  element.addEventListener('scrollend', finish, { passive: true })
+  timeout = setTimeout(finishAtTarget, 3000)
+  pendingSmoothScrolls.set(element, { target: targetScrollTop, finish })
+  if (!useCustomAnimation)
+    element.addEventListener('scrollend', finish, { passive: true })
   element.addEventListener('wheel', finish, { passive: true })
   element.addEventListener('touchstart', finish, { passive: true })
-  doc.addEventListener('pointerdown', finish, true)
-  doc.addEventListener('keydown', finish, true)
+  doc.addEventListener('pointerdown', handlePointerDown, true)
+  doc.addEventListener('keydown', handleKeyDown, true)
+  doc.addEventListener('visibilitychange', handleVisibilityChange)
 
-  element.scrollTo({
-    top: targetScrollTop,
-    behavior: 'smooth',
-  })
+  if (useCustomAnimation) {
+    let duration = Math.min(650, 350 + Math.sqrt(distance) * 4)
+    let startTime: number | undefined
+    let lastPosition = startScrollTop
+    const animate = (time: number) => {
+      startTime ??= time
+      const actualPosition = element.scrollTop
+      // A shorter replacement list can clamp the viewport while animating.
+      // Continue from the clamped position instead of jumping back down.
+      if (Math.abs(actualPosition - targetScrollTop) + 2 < Math.abs(lastPosition - targetScrollTop)) {
+        duration = Math.max(1, duration - (time - startTime))
+        startTime = time
+        startScrollTop = actualPosition
+      }
+      const progress = Math.min(1, (time - startTime) / duration)
+      const eased = standardScrollEasing(progress)
+      lastPosition = startScrollTop + (targetScrollTop - startScrollTop) * eased
+      element.scrollTo({ top: lastPosition, behavior: 'instant' })
+      if (progress < 1)
+        animationFrame = requestAnimationFrame(animate)
+      else
+        finish()
+    }
+    animationFrame = requestAnimationFrame(animate)
+  }
+  else {
+    element.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+  }
 }
 
 export function injectCSS(css: string, element: HTMLElement | ShadowRoot = document.documentElement): HTMLStyleElement {

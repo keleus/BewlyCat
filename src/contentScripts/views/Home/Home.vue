@@ -178,7 +178,7 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   if (!viewport)
     return
 
-  // 切换栏目不带滚动动画：先停下未完成的回顶，避免记录中途位置或跳过锚点恢复。
+  // Release the animation and anchor guard before restoring the destination tab.
   cancelProgrammaticScroll(viewport)
 
   // During a rapid switch the viewport may still belong to the outgoing tab.

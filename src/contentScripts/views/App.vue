@@ -29,7 +29,7 @@ import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
 import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
-import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
+import { cancelProgrammaticScroll, isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
@@ -1312,7 +1312,12 @@ watch(
       syncNavigationUrl()
     }
 
-    scrollViewportRef.value?.scrollTo({ top: 0 })
+    const viewport = scrollViewportRef.value
+    if (viewport) {
+      // The viewport is shared: an unfinished back-to-top must not move the next page.
+      cancelProgrammaticScroll(viewport)
+      viewport.scrollTo({ top: 0 })
+    }
     focusScrollViewport()
     isFirstTimeActivatedPageChange.value = false
   },
