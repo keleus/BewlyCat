@@ -152,6 +152,16 @@ export function isProgrammaticScrollActive(element: HTMLElement): boolean {
   return pendingSmoothScrolls.has(element)
 }
 
+export function cancelProgrammaticScroll(element: HTMLElement): void {
+  const pending = pendingSmoothScrolls.get(element)
+  if (!pending)
+    return
+
+  pending.finish()
+  // Stop native smooth scrolling too, before the next view restores its position.
+  element.scrollTo({ top: element.scrollTop, behavior: 'instant' })
+}
+
 /**
  * Smooth scroll to the top of the html element.
  * Card virtualization must not restore an anchor during this navigation.
@@ -209,6 +219,8 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
       return
     const target = event.composedPath()[0]
     if (target instanceof HTMLElement && (target.isContentEditable || /^(?:INPUT|TEXTAREA|SELECT)$/.test(target.tagName)))
+      return
+    if (event.key === ' ' && target instanceof HTMLElement && target.closest('button'))
       return
     // App shortcuts can prevent the native scroll later in the same dispatch.
     setTimeout(() => {
