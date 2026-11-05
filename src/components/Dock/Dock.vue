@@ -834,9 +834,7 @@ onUnmounted(() => {
         class="dock-content-inner"
       >
         <template v-for="dockItem in currentDockItems" :key="dockItem.page">
-          <!-- :floating="false"：Dock 容器悬停时以 transform 滑入，浮层模式的一次性定位不跟随该动画；
-               Dock 也不在裁切容器内，原位模式在这里无任何被截断风险 -->
-          <Tooltip :content="$t(dockItem.i18nKey)" :placement="tooltipPlacement" :floating="false">
+          <Tooltip :content="$t(dockItem.i18nKey)" :placement="tooltipPlacement">
             <button
               class="dock-item group"
               :data-layout-edit-target="`dock-navigation-${dockItem.page}`"
@@ -1037,7 +1035,6 @@ onUnmounted(() => {
         >
           <Tooltip
             :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" :placement="tooltipPlacement"
-            :floating="false"
             class="group"
             pointer-events-none
           >
@@ -1085,7 +1082,7 @@ onUnmounted(() => {
           </Tooltip>
         </div>
 
-        <Tooltip :content="$t('dock.settings')" :placement="tooltipPlacement" :floating="false">
+        <Tooltip :content="$t('dock.settings')" :placement="tooltipPlacement">
           <button
             class="dock-item group"
             data-layout-edit-target="dock-settings"
@@ -1105,7 +1102,6 @@ onUnmounted(() => {
           v-if="settings.showLayoutEditButton || isLayoutEditing"
           :content="$t(isLayoutEditing ? 'layout_editor.finish' : 'layout_editor.edit_dock')"
           :placement="tooltipPlacement"
-          :floating="false"
         >
           <button
             class="dock-item dock-edit-button"

@@ -803,6 +803,7 @@ function changeMenuItem(menuItem: MenuType) {
           class="settings-usage-guide"
           :content="$t('settings.usage_guide')"
           placement="left"
+          floating
         >
           <a
             :href="USAGE_GUIDE_URL"
