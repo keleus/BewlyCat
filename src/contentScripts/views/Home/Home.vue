@@ -15,6 +15,7 @@ import { useForYouStore } from '~/stores/forYouStore'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { cancelProgrammaticScroll } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
@@ -174,6 +175,9 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
   const viewport = scrollViewportRef.value
   if (!viewport)
     return
+
+  // Release the animation and anchor guard before restoring the destination tab.
+  cancelProgrammaticScroll(viewport)
 
   // During a rapid switch the viewport may still belong to the outgoing tab.
   if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
