@@ -107,6 +107,8 @@
   --bew-z-confirm-dialog: 10011;
   --bew-z-image-viewer: 10012;
   --bew-z-toast: 10020;
+  // 高层容器（设置窗口、Dialog 等）可声明 --bew-tooltip-z，让内部浮层提示跟随其层级；
+  // 未声明时 Tooltip 回退到 9999。
   // #endregion
 
   // #region Compact controls

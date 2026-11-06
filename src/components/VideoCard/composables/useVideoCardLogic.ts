@@ -52,6 +52,8 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const mouseEnterTimeOut = ref<number | null>(null)
   const mouseLeaveTimeOut = ref<number | null>(null)
   const previewVideoUrl = ref<string>('')
+  // 收藏等接口不返回 cid，首次悬停查到后缓存，避免重复请求
+  const resolvedCid = ref<number>()
   const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
   const isDisposed = ref<boolean>(false) // 跟踪组件是否已卸载
@@ -173,6 +175,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
 
     if (identity !== previousIdentity) {
       clearPreviewVideoUrl()
+      resolvedCid.value = undefined
       videoCurrentTime.value = null
     }
 
@@ -221,7 +224,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       }
       // Handle video preview
       else if (props.value.video.aid || props.value.video.bvid) {
-        let cid = props.value.video.cid
+        let cid = props.value.video.cid || resolvedCid.value
         if (!cid) {
           try {
             const res: VideoInfo = await api.video.getVideoInfo({
@@ -230,8 +233,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             // 检查是否已卸载
             if (isStale())
               return
-            if (res.code === 0)
+            if (res.code === 0) {
               cid = res.data.cid
+              resolvedCid.value = cid
+            }
           }
           catch {
             // Ignore error

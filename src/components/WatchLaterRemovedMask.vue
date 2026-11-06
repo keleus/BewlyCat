@@ -16,7 +16,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="watch-later-removed-mask" @click.prevent.stop>
-    <MaskDismissButton :label="$t('watch_later.dismiss')" @dismiss="emit('dismiss')" />
+    <MaskDismissButton :label="$t('common.dismiss')" @dismiss="emit('dismiss')" />
     <p class="watch-later-removed-text">
       {{ message }}
     </p>

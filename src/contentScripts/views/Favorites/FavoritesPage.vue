@@ -2329,7 +2329,8 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   // 搜索组与批量组在同一槽位交叉淡入淡出：离场一侧脱离文档流，
   // 布局自第一帧起就由进场一侧决定，右侧开关按钮始终不移动，
   // 避免批量操作先出现在右侧再跳回左侧的两段式闪现。
-  .fade-leave-active {
+  .toolbar-search-group.fade-leave-active,
+  .toolbar-batch-group.fade-leave-active {
     position: absolute;
     top: 0;
     left: 0;
@@ -2342,11 +2343,6 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   .b-button,
   .bew-toolbar-note {
     background: var(--bew-control-background);
-  }
-
-  .b-input,
-  .b-button,
-  .bew-toolbar-note {
     box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
   }
 
