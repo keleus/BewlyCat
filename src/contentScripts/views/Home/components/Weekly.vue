@@ -6,6 +6,7 @@ import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
 import api from '~/utils/api'
+import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 import { getHomeContentScrollTop } from '../homeScroll'
@@ -33,6 +34,8 @@ const restoredSeriesNumber = tabState.take<number | undefined>('activatedSeriesN
 tabState.capture('activatedSeriesNumber', () => activatedSeries.value?.number ?? restoredSeriesNumber)
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 每周必看没有分页
+const requestFailed = tabState.ref<boolean>('requestFailed', false)
+const errorReportSource: ApiErrorReportSource = { scene: '每周必看', queries: ['getPopularSeriesList', 'getPopularSeriesOne'] }
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const isLoading = ref<boolean>(!tabState.restored || !hasLoaded.value)
 
@@ -136,6 +139,7 @@ async function initData(preferredSeriesNumber?: number) {
   videoList.value.length = 0
   seriesList.value.length = 0
   activatedSeries.value = null
+  requestFailed.value = false
   hasLoaded.value = false
 
   await loadInitialData(version, preferredSeriesNumber)
@@ -144,8 +148,12 @@ async function initData(preferredSeriesNumber?: number) {
 async function loadInitialData(version: number, preferredSeriesNumber?: number) {
   try {
     const res: PopularSeriesListResult = await api.ranking.getPopularSeriesList()
-    if (!isRequestCurrent(version) || res.code !== 0 || !res.data || !Array.isArray(res.data.list))
+    if (!isRequestCurrent(version))
       return
+    if (res.code !== 0 || !res.data || !Array.isArray(res.data.list)) {
+      requestFailed.value = true
+      return
+    }
 
     // sort by number desc (latest first) if available
     seriesList.value = [...res.data.list].sort((a, b) => (b.number || 0) - (a.number || 0))
@@ -162,11 +170,14 @@ async function loadInitialData(version: number, preferredSeriesNumber?: number) 
 
     const selectedNumber = activatedSeries.value.number
     const loaded = await fetchSeriesOne(version, selectedNumber)
-    if (isRequestCurrent(version, selectedNumber) && loaded)
-      hasLoaded.value = true
+    if (isRequestCurrent(version, selectedNumber)) {
+      requestFailed.value = !loaded
+      hasLoaded.value ||= loaded
+    }
   }
   catch {
-    // 忽略错误
+    if (isRequestCurrent(version))
+      requestFailed.value = true
   }
   finally {
     if (isRequestCurrent(version)) {
@@ -214,11 +225,14 @@ async function getSeriesOne() {
   emit('beforeLoading')
   isLoading.value = true
   hasLoaded.value = false
+  requestFailed.value = false
   videoList.value.length = 0
   try {
     const loaded = await fetchSeriesOne(version, selectedNumber)
-    if (isRequestCurrent(version, selectedNumber) && loaded)
-      hasLoaded.value = true
+    if (isRequestCurrent(version, selectedNumber)) {
+      requestFailed.value = !loaded
+      hasLoaded.value ||= loaded
+    }
   }
   finally {
     if (isRequestCurrent(version, selectedNumber)) {
@@ -374,6 +388,8 @@ function getItemKey(item: VideoElement) {
         :grid-layout="gridLayout"
         :loading="isLoading"
         :no-more-content="noMoreContent"
+        :request-failed="requestFailed"
+        :error-report-source="errorReportSource"
         :transform-item="getItemDisplayData"
         :get-item-key="getItemKey"
         show-preview

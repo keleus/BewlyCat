@@ -31,6 +31,16 @@ common:
   load_failed: 加载失败
   no_more_content: 没有更多内容了
   load_more: 加载更多
+  api_error:
+    request_failed: 请求失败，请稍后刷新重试
+    details: 查看错误详情
+    title: 错误详情
+    desc: 登录信息和签名已替换为 *，可复制后用于反馈问题
+    risk_hint: 检测到疑似风控响应。可以稍后再试、降低刷新频率，或检查下方诊断信息中的请求方式和过滤设置。
+    no_records: 没有捕获到失败的接口请求，可能是扩展刚刚更新或后台暂时不可用。
+    copy: 复制错误信息
+    copied: 错误信息已复制
+    copy_failed: 复制失败，请手动选择文本复制
   operation:
     add: 新增
     edit: 编辑
@@ -1464,6 +1474,7 @@ home:
   following_group_name: '分组 {id}'
   following_groups_load_failed: 分组加载失败，暂按更新时间展示
   following_groups_retry: 重试
+  following_list_load_failed: 关注列表加载失败
   following_move_group: 移动分组
   following_remove_special: 取消特别关注
   following_add_special: 设为特别关注

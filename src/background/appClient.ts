@@ -1,9 +1,13 @@
+import type Browser from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
 import type { AppClientEndpoint, AppClientRequest } from '~/constants/appClient'
 import { APP_CLIENT_REQUEST } from '~/constants/appClient'
 import { signAppParams } from '~/utils/appSign'
 import { onMessage } from '~/utils/messaging'
+
+import type { ApiRequestAttempt } from './apiDiagnostics'
+import { captureApiResponse, isApiResponseFailure, reportApiFailure } from './apiDiagnostics'
 
 // APP 接口（扫码授权、token 刷新、推荐流、不感兴趣）统一由后台按 PiliPlus 的请求构造发出：
 // 不带网页 Cookie，使用 PiliPlus 的 User-Agent 与 APP 请求头，避免把浏览器信息透传给 B 站。
@@ -172,7 +176,7 @@ async function syncAppClientHeaderRules() {
 
 const appClientHeaderRulesReady = syncAppClientHeaderRules()
 
-async function requestAppClient({ endpoint, params, mid }: AppClientRequest) {
+async function requestAppClient({ endpoint, params, mid }: AppClientRequest, sender?: Browser.Runtime.MessageSender) {
   const target = Object.hasOwn(APP_CLIENT_ENDPOINTS, endpoint) ? APP_CLIENT_ENDPOINTS[endpoint] : undefined
   if (!target)
     return { code: -400, message: `Unknown APP client endpoint: ${endpoint}` }
@@ -181,13 +185,22 @@ async function requestAppClient({ endpoint, params, mid }: AppClientRequest) {
   const timeout = setTimeout(() => {
     controller.abort(new DOMException('APP client request timed out', 'TimeoutError'))
   }, APP_CLIENT_REQUEST_TIMEOUT)
+  const startedAt = Date.now()
+  const attempt: ApiRequestAttempt = { url: target.url, method: target.method, credentials: 'omit' }
+  const reportFailure = (failure: { response?: unknown, error?: unknown }) => {
+    // 扫码轮询在用户确认前会持续返回非零状态，不属于接口故障。
+    if (!endpoint.startsWith('qrcode'))
+      void reportApiFailure(sender, 'app', endpoint, attempt, startedAt, failure)
+  }
 
   try {
     await appClientHeaderRulesReady
     const headers = await getRequestHeaders(target.profile, mid)
     // 每次请求在后台重新签名，保证 ts 有效
     const signedParams = new URLSearchParams(signAppParams(params ?? {}))
-    const response = await fetch(target.form ? target.url : `${target.url}?${signedParams}`, {
+    attempt.url = target.form ? target.url : `${target.url}?${signedParams}`
+    attempt.body = target.form ? signedParams : undefined
+    const response = await fetch(attempt.url, {
       method: target.method,
       credentials: 'omit',
       signal: controller.signal,
@@ -196,12 +209,20 @@ async function requestAppClient({ endpoint, params, mid }: AppClientRequest) {
         : headers,
       body: target.form ? signedParams : undefined,
     })
+    captureApiResponse(attempt, response)
 
-    if (!response.ok)
-      return { code: -response.status, message: `HTTP ${response.status}` }
-    return await response.json()
+    if (!response.ok) {
+      const failure = { code: -response.status, message: `HTTP ${response.status}` }
+      reportFailure({ response: failure })
+      return failure
+    }
+    const data = await response.json()
+    if (isApiResponseFailure(data))
+      reportFailure({ response: data })
+    return data
   }
   catch (error) {
+    reportFailure({ error })
     return { code: -1, message: error instanceof Error ? error.message : String(error) }
   }
   finally {

@@ -6,6 +6,7 @@ import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import api from '~/utils/api'
+import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 interface VideoElement {
@@ -29,6 +30,8 @@ const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const needToLoginFirst = tabState.ref<boolean>('needToLoginFirst', false)
 const page = tabState.ref<number>('page', 1)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
+const requestFailed = tabState.ref<boolean>('requestFailed', false)
+const errorReportSource: ApiErrorReportSource = { scene: '关注直播', queries: ['getFollowingLiveList'] }
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 // 刷新会作废仍在进行的加载更多，避免旧页拼进新列表后重复请求同一页、产生重复卡片。
@@ -56,6 +59,7 @@ async function initData() {
   page.value = 1
   videoList.value = []
   noMoreContent.value = false
+  requestFailed.value = false
   hasLoaded.value = false
 
   await getData(version)
@@ -106,8 +110,10 @@ async function getData(version = requestVersion) {
       if (!isRequestCurrent(version))
         return
     }
-    if (isRequestCurrent(version) && loaded)
-      hasLoaded.value = true
+    if (isRequestCurrent(version)) {
+      requestFailed.value = !loaded
+      hasLoaded.value ||= loaded
+    }
   }
   finally {
     if (isRequestCurrent(version)) {
@@ -192,8 +198,10 @@ async function handleLoadMore() {
   isLoading.value = true
   try {
     const loaded = await getLiveVideos(version)
-    if (isRequestCurrent(version) && loaded)
-      hasLoaded.value = true
+    if (isRequestCurrent(version)) {
+      requestFailed.value = !loaded
+      hasLoaded.value ||= loaded
+    }
   }
   finally {
     if (isRequestCurrent(version))
@@ -230,6 +238,8 @@ function getItemKey(item: VideoElement) {
     :loading="isLoading"
     :no-more-content="noMoreContent"
     :need-to-login-first="needToLoginFirst"
+    :request-failed="requestFailed"
+    :error-report-source="errorReportSource"
     :transform-item="getItemDisplayData"
     :get-item-key="getItemKey"
     :show-watcher-later="false"

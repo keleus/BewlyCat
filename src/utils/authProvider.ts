@@ -4,6 +4,7 @@ import type { AppAuthTokens } from '~/logic/appAuthStorage'
 import { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from '~/logic/appAuthStorage'
 
 import { waitWithSignal } from './abort'
+import { recordBackgroundUnavailable } from './apiDiagnostics'
 import { HDAppKey } from './appSign'
 import { sendMessage } from './messaging'
 
@@ -14,7 +15,10 @@ export function revokeAccessKey() {
 /** APP 接口交由后台按 PiliPlus 的请求方式签名并发出，参数无需在页面侧签名 */
 export function requestAppClient(endpoint: AppClientEndpoint, params: AppClientRequest['params']): Promise<any> {
   const request: AppClientRequest = { endpoint, params, mid: appAuthTokens.value.mid }
-  return sendMessage(APP_CLIENT_REQUEST, request)
+  return sendMessage(APP_CLIENT_REQUEST, request).catch((error) => {
+    recordBackgroundUnavailable(endpoint, params, error)
+    throw error
+  })
 }
 
 interface PollLoginTokenPayload {
