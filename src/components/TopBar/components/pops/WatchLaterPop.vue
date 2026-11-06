@@ -149,6 +149,11 @@ async function restoreWatchLaterItem(aid: number) {
     entry.status = 'removed'
 }
 
+// 收起已移除的占位卡片：条目已从服务器删除，这里仅移出展示集合，触发 removable-list 离场动画
+function dismissRemovedItem(aid: number) {
+  removeStatuses.delete(aid)
+}
+
 /** progress = -1 表示已看完，直接展示总时长；角标文案形如「12:34 / 45:00」。 */
 function getProgressText(item: WatchLaterItem): string {
   const played = item.progress === -1 ? item.duration : item.progress
@@ -338,12 +343,19 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
             </template>
           </PopMediaCard>
 
-          <!-- 删除遮罩：拦截链接点击，删除后可撤销 -->
+          <!-- 删除遮罩：拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
           <div
             v-if="removeStatuses.has(item.aid)"
             class="watch-later-removed-mask"
             @click.prevent.stop
           >
+            <button
+              class="watch-later-dismiss-btn"
+              :aria-label="$t('watch_later.dismiss')"
+              @click.prevent.stop="dismissRemovedItem(item.aid)"
+            >
+              <i i-tabler:x aria-hidden="true" />
+            </button>
             <span>{{ $t('watch_later.removed') }}</span>
             <Button
               color="rgba(255,255,255,.35)" text-color="white" size="small"
@@ -392,6 +404,33 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
   color: white;
   font-size: var(--bew-font-size-control);
   cursor: default;
+}
+
+.watch-later-dismiss-btn {
+  position: absolute;
+  top: var(--bew-space-2);
+  right: var(--bew-space-2);
+  display: grid;
+  place-items: center;
+  width: var(--bew-space-6);
+  height: var(--bew-space-6);
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-radius-full);
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-size: var(--bew-font-size-control);
+  cursor: pointer;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.32);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: var(--bew-space-0-5);
+  }
 }
 
 .watch-later-header-action {

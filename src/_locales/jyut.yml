@@ -1677,6 +1677,7 @@ watch_later:
   play_in_watch_later: 清單播
   remove_from_watch_later: 剷走
   removed: 已經剷走咗
+  dismiss: 收起
   layout_list: 清單檢視
   layout_grid: 格網檢視
 search_bar:
