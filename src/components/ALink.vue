@@ -16,6 +16,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  /** 每次点击都会触发，包括修饰键和由浏览器原生打开的情况。 */
+  (e: 'activate', value: MouseEvent): void
+  /** 仅在 customClickEvent 接管打开行为时触发。 */
   (e: 'click', value: MouseEvent): void
 }>()
 
@@ -68,6 +71,8 @@ function handleClick(event: MouseEvent) {
   if (props.stopPropagation) {
     event.stopPropagation()
   }
+
+  emit('activate', event)
 
   if (props.customClickEvent) {
     if (!props.customClickEventIncludesModifiers && (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey))

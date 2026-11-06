@@ -80,7 +80,7 @@ const playbackProgress = computed(() => {
   return watchState?.status === 'watched' ? watchState.percentage : undefined
 })
 
-const videoRef = defineModel<HTMLVideoElement | null>('videoElement', { default: null })
+const videoRef = ref<HTMLVideoElement | null>(null)
 const previewTime = defineModel<number | null>('previewTime', { default: null })
 const previewIdentity = computed(() => [props.video?.bvid, props.video?.aid, props.video?.cid, props.video?.epid].join(':'))
 let activePreviewIdentity = ''
