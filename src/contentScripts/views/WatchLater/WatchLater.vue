@@ -18,6 +18,7 @@ import { ensureWatchLaterState, markWatchLater, markWatchLaterCleared } from '~/
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
@@ -283,7 +284,7 @@ function handlePlayWatchLater(item: VideoItem) {
 function handleWatchLaterCardClick(item: VideoItem, event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
-  handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)
+  handleLinkClick(localizeBilibiliUrl(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`))
 }
 
 function transformWatchLaterItem(item: VideoItem): Video {
@@ -345,7 +346,7 @@ async function handleRemoveWatchedVideos() {
 }
 
 function handlePlayAll() {
-  openLinkToNewTab('https://www.bilibili.com/list/watchlater')
+  openLinkToNewTab(localizeBilibiliUrl('https://www.bilibili.com/list/watchlater'))
 }
 
 function handleLinkClick(url: string) {
@@ -371,7 +372,7 @@ function jumpToLoginPage() {
 }
 
 function handleVideoLinkClick(bvid: string) {
-  const videoUrl = `https://www.bilibili.com/video/${bvid}/`
+  const videoUrl = localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
   if (settings.value.videoCardLinkOpenMode === 'drawer') {
     openIframeDrawer(videoUrl) // 在抽屉打开
   }
@@ -486,7 +487,7 @@ function getItemKey(item: VideoItem) {
             <ALink
               v-for="item in currentWatchLaterList"
               :key="item.aid"
-              :href="`https://www.bilibili.com/video/${item.bvid}/`"
+              :href="localizeBilibiliUrl(`https://www.bilibili.com/video/${item.bvid}/`)"
               type="videoCard"
               class="group watch-later-list-item"
               flex cursor-pointer
@@ -646,7 +647,7 @@ function getItemKey(item: VideoItem) {
                         type="button"
                         p-2
                         duration-300
-                        @click.prevent.stop="handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)"
+                        @click.prevent.stop="handleLinkClick(localizeBilibiliUrl(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`))"
                       >
                         <div i-tabler:list-check />
                       </button>
@@ -786,7 +787,7 @@ function getItemKey(item: VideoItem) {
         :key="moreMenuItem.aid"
         :video="{
           ...transformWatchLaterItem(moreMenuItem),
-          url: `https://www.bilibili.com/video/${moreMenuItem.bvid}/`,
+          url: localizeBilibiliUrl(`https://www.bilibili.com/video/${moreMenuItem.bvid}/`),
         }"
         :context-menu-styles="moreMenuStyles"
         :trigger-element="moreMenuTrigger"

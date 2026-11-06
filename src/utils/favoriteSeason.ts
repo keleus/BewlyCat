@@ -11,6 +11,7 @@ import { Business } from '~/models/history/history'
 import type { FavoritesResult } from '~/models/video/favorite'
 import type { FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 
 /** 与 B 站 fav/season/list 默认 ps、以及收藏页「一屏约 40」展示一致 */
 export const FAVORITE_SEASON_PAGE_SIZE = 40
@@ -78,13 +79,13 @@ export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string, bvi
   const matchedVideoLink = link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
 
   if (matchedVideoLink)
-    return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
+    return localizeBilibiliUrl(`https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`)
 
   if (bvid)
-    return `https://www.bilibili.com/video/${bvid}/`
+    return localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
 
   // list/season/{id} 对 UGC 订阅合集常 404，仅作无 link/bvid 时的最后兜底
-  return `https://www.bilibili.com/list/season/${seasonId}`
+  return localizeBilibiliUrl(`https://www.bilibili.com/list/season/${seasonId}`)
 }
 
 /**
@@ -92,7 +93,7 @@ export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string, bvi
  * 实测 /list/season/{id}?bvid= 对订阅合集会 404
  */
 export function buildFavoriteSeasonVideoUrl(bvid: string): string {
-  return `https://www.bilibili.com/video/${bvid}/`
+  return localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
 }
 
 /**

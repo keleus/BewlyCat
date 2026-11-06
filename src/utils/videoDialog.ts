@@ -1,3 +1,5 @@
+import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
+
 /** 视口宽度不超过该值时，弹窗打开回退为新标签页。 */
 export const VIDEO_DIALOG_MIN_VIEWPORT_WIDTH = 860
 
@@ -18,7 +20,7 @@ export function canOpenInVideoDialog(url: string) {
     const { protocol, hostname, pathname } = new URL(url, location.href)
     return /^https?:$/.test(protocol)
       && (hostname === 'www.bilibili.com' || hostname === 'bilibili.com')
-      && /^\/(?:video|bangumi\/play|cheese\/play|list|festival)\//.test(pathname)
+      && /^\/(?:video|bangumi\/play|cheese\/play|list|festival)\//.test(stripBilibiliLocalePathname(pathname))
   }
   catch {
     return false

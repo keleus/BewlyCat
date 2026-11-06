@@ -9,6 +9,7 @@ import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
 import type { List as WatchLaterItem } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { isActualHomepage, isHomePage, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -25,7 +26,7 @@ const viewAllUrl = computed((): string => {
   return 'https://www.bilibili.com/watchlater/list'
 })
 const playAllUrl = computed((): string => {
-  return 'https://www.bilibili.com/list/watchlater'
+  return localizeBilibiliUrl('https://www.bilibili.com/list/watchlater')
 })
 
 const scrollContainer = ref<HTMLElement>()
@@ -72,11 +73,11 @@ onMounted(async () => {
 })
 
 function getVideoPageUrl(bvid: string): string {
-  return `https://www.bilibili.com/video/${bvid}/`
+  return localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
 }
 
 function getWatchLaterVideoUrl(bvid: string): string {
-  return `https://www.bilibili.com/list/watchlater?bvid=${bvid}`
+  return localizeBilibiliUrl(`https://www.bilibili.com/list/watchlater?bvid=${bvid}`)
 }
 
 function openVideoPage(url: string) {

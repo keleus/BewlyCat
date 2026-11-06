@@ -1,3 +1,5 @@
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
+
 import type { DisplayMoment } from './types'
 
 export function httpsUrl(url = '') {
@@ -12,11 +14,11 @@ export function getSafeImageRatio(width: number, height: number) {
 /** 视频跳转地址：优先接口给出的 jump_url，其次按 bvid / aid 拼接 */
 export function getMomentVideoUrl(video: { videoUrl?: string, bvid?: string, aid?: number | string }) {
   if (video.videoUrl)
-    return video.videoUrl
+    return localizeBilibiliUrl(video.videoUrl)
   if (video.bvid)
-    return `https://www.bilibili.com/video/${video.bvid}`
+    return localizeBilibiliUrl(`https://www.bilibili.com/video/${video.bvid}`)
   if (video.aid)
-    return `https://www.bilibili.com/video/av${video.aid}`
+    return localizeBilibiliUrl(`https://www.bilibili.com/video/av${video.aid}`)
   return ''
 }
 

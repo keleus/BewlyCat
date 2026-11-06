@@ -1,4 +1,5 @@
 import { settings } from '~/logic'
+import { getBilibiliOriginalTitle } from '~/utils/bilibiliLocale'
 import { isVerticalVideo } from '~/utils/uriParse'
 
 const get = (obj: any, path: string[]) => path.reduce((acc, part) => acc && acc[part], obj)
@@ -75,9 +76,10 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
    * @returns `true` if the title does not contain any of the filter keywords, `false` otherwise.
    */
   function compareTitle(item: any, keyPath: string[], _filterValue: string) {
-    const value = get(item, keyPath)
+    // 标题可能已被替换为译文，关键词同时匹配原标题，否则中文关键词在多语言页面上会失效。
+    const titles = [get(item, keyPath), getBilibiliOriginalTitle(get(item, keyPath.slice(0, -1)))]
 
-    return !(filterByTitleStringValues.some(keyword => `${value}`.toUpperCase().includes(keyword))
+    return !titles.some(value => filterByTitleStringValues.some(keyword => `${value}`.toUpperCase().includes(keyword))
       || filterByTitleRegExpValues.some(regex => regex.test(value)))
   }
   // #endregion

@@ -8,6 +8,7 @@ import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { ensureFreshAppAccessToken, requestAppClient } from '~/utils/authProvider'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { removeHttpFromUrl } from '~/utils/main'
@@ -113,7 +114,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       if (!urlObj.pathname.endsWith('/')) {
         urlObj.pathname += '/'
       }
-      return urlObj.toString()
+      return localizeBilibiliUrl(urlObj.toString())
     }
     catch {
       return url

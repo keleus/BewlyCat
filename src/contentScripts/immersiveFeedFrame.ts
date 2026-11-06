@@ -1,5 +1,6 @@
 import { settings } from '~/logic'
 import { BEWLY_WIDESCREEN_APPLIED, BEWLY_WIDESCREEN_USER_EXIT, isBewlyWidescreenActive, setBewlyWidescreenPlaylistOverride } from '~/utils/bewlyWidescreen'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { i18n } from '~/utils/i18n'
 import type { ImmersiveFeedFrameState } from '~/utils/immersiveFeed'
 import {
@@ -99,7 +100,7 @@ function createFeedPanel() {
 function createCard(item: ImmersiveFeedFrameState['items'][number]) {
   const card = document.createElement('a')
   card.className = `${PANEL_CLASS}__card`
-  card.href = `/video/${item.bvid}/`
+  card.href = localizeBilibiliUrl(`/video/${item.bvid}/`)
   card.dataset.key = item.key
   card.setAttribute('role', 'listitem')
   card.title = item.title

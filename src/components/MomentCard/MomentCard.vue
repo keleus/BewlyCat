@@ -8,6 +8,7 @@ import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { settings } from '~/logic'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { normalizeWatchLaterTarget } from '~/utils/watchLaterActions'
 
@@ -242,8 +243,8 @@ function getMenuVideo(source: {
   if (!Number.isFinite(aid) || aid <= 0)
     return null
 
-  const url = source.url
-    || (source.bvid ? `https://www.bilibili.com/video/${source.bvid}` : `https://www.bilibili.com/video/av${aid}`)
+  const url = localizeBilibiliUrl(source.url
+    || (source.bvid ? `https://www.bilibili.com/video/${source.bvid}` : `https://www.bilibili.com/video/av${aid}`))
   if (!url)
     return null
 

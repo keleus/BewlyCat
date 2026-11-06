@@ -19,6 +19,7 @@ import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/vid
 import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import {
   FAVORITE_SEASON_PAGE_SIZE,
   fetchFavoriteSeasonPage,
@@ -1079,7 +1080,7 @@ async function handlePlayAll() {
   }
 
   if (selectedCategory.value)
-    openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value.id}`)
+    openLinkToNewTab(localizeBilibiliUrl(`https://www.bilibili.com/list/ml${selectedCategory.value.id}`))
 }
 
 function jumpToLoginPage() {

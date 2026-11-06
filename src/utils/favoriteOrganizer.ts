@@ -4,6 +4,7 @@ import { settings } from '~/logic'
 import type { FavoritesCategoryResult, List as FavoriteFolder } from '~/models/video/favoriteCategory'
 import type { VideoInfo } from '~/models/video/videoInfo'
 import api from '~/utils/api'
+import { getBilibiliOriginalTitle } from '~/utils/bilibiliLocale'
 import { getCSRF, getUserID } from '~/utils/main'
 
 export interface FavoriteOrganizerVideo {
@@ -182,7 +183,7 @@ export async function syncVideoToMatchedFolders(target: { aid?: number, bvid?: s
     aid: Number(info.data.aid),
     mid: String(info.data.owner?.mid ?? ''),
     tid: Number(info.data.tid),
-    title: info.data.title ?? '',
+    title: getBilibiliOriginalTitle(info.data) ?? '',
   }
   if (!Number.isSafeInteger(video.aid) || video.aid <= 0)
     throw new FavoriteOrganizerError('request_failed')
@@ -228,7 +229,7 @@ async function scanFavoriteFolder(mediaId: number, onPage: (scanned: number) => 
         aid,
         mid: String(item.upper?.mid ?? ''),
         tid: Number(item.tid) || 0,
-        title: String(item.title ?? ''),
+        title: String(getBilibiliOriginalTitle(item) ?? ''),
       })
     }
     onPage(videos.length)

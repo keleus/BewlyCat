@@ -5,6 +5,7 @@ import browser from 'webextension-polyfill'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { numFormatter } from '~/utils/dataFormatter'
 import type { ImmersiveFeedFrameState } from '~/utils/immersiveFeed'
 import {
@@ -79,7 +80,7 @@ const frameItems = computed(() => {
 })
 
 function getFrameUrl(item: ImmersiveFeedItem) {
-  return `${location.origin}/video/${item.video.bvid}/`
+  return localizeBilibiliUrl(`${location.origin}/video/${item.video.bvid}/`)
 }
 
 // 只传可结构化克隆的普通对象，推荐流数据本身是响应式代理

@@ -9,7 +9,7 @@ import { waitWithSignal } from '~/utils/abort'
 
 import { createApiResponseCache } from './apiResponseCache'
 import { withRequestTimeout } from './requestTimeout'
-import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, storeWbiKeys } from './wbiSign'
+import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, parseBilibiliApiUrl, storeWbiKeys } from './wbiSign'
 
 const cacheApiResponse = createApiResponseCache()
 
@@ -163,7 +163,7 @@ function doRequest(message: Message, api: API, cookies?: Browser.Cookies.Cookie[
 
 async function performApiRequest(message: Message, api: API, cookies?: Browser.Cookies.Cookie[], signal?: AbortSignal) {
   try {
-    let { contentScriptQuery, bewlyNoCookie = false, ...rest } = message
+    let { contentScriptQuery, bewlyNoCookie = false, bewlyLocale, ...rest } = message
     // rest above two part body or params
     rest = rest || {}
 
@@ -186,6 +186,10 @@ async function performApiRequest(message: Message, api: API, cookies?: Browser.C
       else if (!body || body[key] === undefined)
         targetParams[key] = rest[key]
     })
+
+    // 与 B 站网页一致：内容接口按该参数返回 translated_title，WBI 接口需一并签名，nav 不携带。
+    if (bewlyLocale && isGET && parseBilibiliApiUrl(url) && !isBilibiliNavUrl(url))
+      targetParams['x-bili-locale-json'] = bewlyLocale
 
     const baseUrl = url
     const needsWbi = needsWbiSign(url)

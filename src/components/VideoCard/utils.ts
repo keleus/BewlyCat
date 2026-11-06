@@ -1,3 +1,4 @@
+import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { buildKeywordSearchUrl } from '~/utils/searchNavigation'
 
 import type { Author, Video } from './types'
@@ -43,7 +44,7 @@ export function getCurrentVideoUrl(video: Video, currentTime: number | null) {
 
   try {
     const url = new URL(baseUrl)
-    if (url.hostname === 'www.bilibili.com' && /^\/(?:video\/|bangumi\/play\/)/.test(url.pathname))
+    if (url.hostname === 'www.bilibili.com' && /^\/(?:video\/|bangumi\/play\/)/.test(stripBilibiliLocalePathname(url.pathname)))
       url.searchParams.set('t', String(Math.floor(currentTime)))
     return url.toString()
   }

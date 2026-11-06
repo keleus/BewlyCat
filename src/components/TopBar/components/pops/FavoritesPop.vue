@@ -8,6 +8,7 @@ import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getUserID, removeHttpFromUrl, scrollToTop } from '~/utils/main'
 
@@ -45,7 +46,7 @@ const viewAllUrl = computed((): string => {
 })
 
 const playAllUrl = computed((): string => {
-  return `https://www.bilibili.com/list/ml${activatedMediaId.value}`
+  return localizeBilibiliUrl(`https://www.bilibili.com/list/ml${activatedMediaId.value}`)
 })
 
 watch(activatedMediaId, (newId, oldId) => {
@@ -400,7 +401,7 @@ defineExpose({
           <ALink
             v-for="item in favoriteResources"
             :key="item.id"
-            :href="isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : `//www.bilibili.com/video/${item.bvid}`"
+            :href="isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : localizeBilibiliUrl(`//www.bilibili.com/video/${item.bvid}`)"
             type="topBar"
             block
             hover:bg="$bew-fill-2"

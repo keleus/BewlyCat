@@ -1,12 +1,13 @@
 import type { List as HistoryItem } from '~/models/history/history'
 import { Business } from '~/models/history/history'
+import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 
 export function getHistoryUrl(item: HistoryItem): string {
   const { history } = item
 
   // 稿件优先使用历史分 P，避免 uri 或缺失的分 P 总数导致回到第一 P。
   if (history.business === Business.ARCHIVE) {
-    const url = `https://www.bilibili.com/video/${history.bvid}`
+    const url = localizeBilibiliUrl(`https://www.bilibili.com/video/${history.bvid}`)
     return Number.isInteger(history.page) && history.page > 0
       ? `${url}?p=${history.page}`
       : url
