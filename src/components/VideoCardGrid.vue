@@ -4,6 +4,7 @@ import { useDebounceFn } from '@vueuse/core'
 import type { Video, VideoCardRemovedState, VideoCardState } from '~/components/VideoCard/types'
 import { createVideoCardState } from '~/components/VideoCard/types'
 import { isBangumiVideo } from '~/components/VideoCard/utils'
+import { openApiErrorDetails } from '~/composables/useApiErrorDetails'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import type { CardWindowSnapshot } from '~/composables/useCardWindow'
 import { useCardWindow } from '~/composables/useCardWindow'
@@ -16,6 +17,7 @@ import type { GridLayoutType } from '~/logic'
 import { originalSettings, settings } from '~/logic'
 import { normalizeVideoCardCoverRatio } from '~/logic/storage'
 import { useUserRelationStore } from '~/stores/userRelationStore'
+import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
@@ -200,6 +202,11 @@ interface VideoCardGridProps<T = any> {
    * @default false
    */
   requestFailed?: boolean
+
+  /**
+   * 请求失败时错误详情弹窗使用的页面信息；未传入时不显示详情按钮。
+   */
+  errorReportSource?: ApiErrorReportSource
 }
 
 const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
@@ -894,9 +901,20 @@ const renderedGridClass = computed(() => [
   ...(isAutoSwitchSingleColumn.value ? ['grid-list-auto-switch-single'] : []),
 ])
 
-// 判断是否应该显示空状态（确认无更多内容且数据为空）
+// 判断是否应该显示空状态（确认无更多内容或请求失败，且数据为空）
 const showEmptyState = computed(() => {
-  return !props.loading && props.noMoreContent && props.items.length === 0 && !props.needToLoginFirst
+  return !props.loading
+    && (props.noMoreContent || props.requestFailed)
+    && props.items.length === 0
+    && !props.needToLoginFirst
+})
+
+// 列表底部的结束提示；请求失败时即使还有下一页也要给出说明和重试入口。
+const showListEndState = computed(() => {
+  return props.showNoMoreContent
+    && (props.noMoreContent || (props.requestFailed && !props.loading))
+    && props.items.length > 0
+    && !props.needToLoginFirst
 })
 
 function normalizePositiveInt(value: unknown, fallback: number): number {
@@ -1361,11 +1379,16 @@ function getUniqueKey(item: T, index: number): string | number {
     <Empty
       v-else-if="showEmptyState"
       mt-6
-      :description="emptyDescription || $t('common.no_more_content')"
+      :description="emptyDescription || $t(requestFailed ? 'common.api_error.request_failed' : 'common.no_more_content')"
     >
-      <Button type="primary" @click="handleRefresh">
-        {{ refreshButtonText || $t('common.operation.refresh') }}
-      </Button>
+      <div class="grid-state-actions">
+        <Button type="primary" @click="handleRefresh">
+          {{ refreshButtonText || $t('common.operation.refresh') }}
+        </Button>
+        <Button v-if="requestFailed && errorReportSource" type="secondary" @click="openApiErrorDetails(errorReportSource)">
+          {{ $t('common.api_error.details') }}
+        </Button>
+      </div>
     </Empty>
 
     <!-- 统一的 Grid 容器 - 保持 ref 稳定 -->
@@ -1414,11 +1437,16 @@ function getUniqueKey(item: T, index: number): string | number {
       :min-height="loadMoreIndicatorHeight"
     />
 
-    <!-- 无更多内容提示（仅在有数据时显示，避免与空列表提示重复） -->
-    <Empty v-if="showNoMoreContent && noMoreContent && !needToLoginFirst && items.length > 0" class="pb-4" :description="$t('common.no_more_content')">
-      <Button type="primary" @click="handleRefresh">
-        {{ refreshButtonText || $t('common.operation.refresh') }}
-      </Button>
+    <!-- 无更多内容或请求失败提示（仅在有数据时显示，避免与空列表提示重复） -->
+    <Empty v-if="showListEndState" class="pb-4" :description="$t(requestFailed ? 'common.api_error.request_failed' : 'common.no_more_content')">
+      <div class="grid-state-actions">
+        <Button type="primary" @click="handleRefresh">
+          {{ refreshButtonText || $t('common.operation.refresh') }}
+        </Button>
+        <Button v-if="requestFailed && errorReportSource" type="secondary" @click="openApiErrorDetails(errorReportSource)">
+          {{ $t('common.api_error.details') }}
+        </Button>
+      </div>
     </Empty>
   </div>
 </template>
@@ -1426,6 +1454,13 @@ function getUniqueKey(item: T, index: number): string | number {
 <style lang="scss" scoped>
 .video-card-grid-root {
   container-type: inline-size;
+}
+
+.grid-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--bew-space-2);
 }
 
 .video-card-slot {

@@ -4,11 +4,13 @@ import type { Ref } from 'vue'
 import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ApiErrorDetailsDialog from '~/components/ApiErrorDetailsDialog.vue'
 import Button from '~/components/Button.vue'
 import FirefoxScrollbar from '~/components/FirefoxScrollbar.vue'
 import Icon from '~/components/Icon.vue'
 import Radio from '~/components/Radio.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
+import { useActiveApiErrorSource } from '~/composables/useApiErrorDetails'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import type { ConfirmDialogOptions, ConfirmDialogToggleField } from '~/composables/useConfirmDialog'
@@ -342,6 +344,7 @@ const pages = {
   [AppPage.Favorites]: defineAsyncComponent(() => import('./Favorites/Favorites.vue')),
   [AppPage.Moments]: defineAsyncComponent(() => import('./Moments/Moments.vue')),
 }
+const activeApiErrorSource = useActiveApiErrorSource()
 const mainAppRef = ref<HTMLElement>() as Ref<HTMLElement>
 
 interface LayoutEditTargetProxy extends SettingsNavigationTarget {
@@ -2165,6 +2168,12 @@ if (settings.value.cleanUrlArgument) {
       :key="videoDialog.id"
       :url="videoDialog.url"
       @close="videoDialog = null"
+    />
+
+    <ApiErrorDetailsDialog
+      v-if="activeApiErrorSource"
+      :source="activeApiErrorSource"
+      @close="activeApiErrorSource = null"
     />
 
     <!-- Static confirm overlay: no Transition/Teleport (see finishConfirmDialog). -->

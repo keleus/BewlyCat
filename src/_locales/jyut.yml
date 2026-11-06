@@ -31,6 +31,16 @@ common:
   load_failed: 加載失敗
   no_more_content: 唔使睇喇，冇嘢喇
   load_more: 撈多啲
+  api_error:
+    request_failed: 請求失敗，遲啲再刷新試吓啦
+    details: 睇錯誤詳情
+    title: 錯誤詳情
+    desc: 登入資料同簽名已經換成 *，可以複製嚟回報問題
+    risk_hint: 似乎觸發咗風控。可以遲啲再試、減少刷新次數，或者睇吓下面診斷資料入面嘅請求方式同過濾設定。
+    no_records: 冇捕捉到失敗嘅介面請求，可能係擴充功能啱啱更新咗，或者後台暫時用唔到。
+    copy: 複製錯誤資料
+    copied: 錯誤資料已複製
+    copy_failed: 複製失敗，請手動揀選文字複製
   operation:
     add: 新增
     edit: 編輯
@@ -1479,6 +1489,7 @@ home:
   following_group_name: '分組 {id}'
   following_groups_load_failed: 分組載入失敗，暫按更新時間顯示
   following_groups_retry: 再試
+  following_list_load_failed: 關注列表加載失敗
   following_move_group: 移動分組
   following_remove_special: 取消特別關注
   following_add_special: 設為特別關注

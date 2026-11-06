@@ -43,6 +43,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { Author, Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
+import { openApiErrorDetails } from '~/composables/useApiErrorDetails'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
@@ -59,6 +60,8 @@ import type { DataItem as MomentItem, MomentResult } from '~/models/moment/momen
 import { BadgeText } from '~/models/moment/moment'
 import type { UserVideo, UserVideosResult } from '~/models/video/userVideos'
 import api from '~/utils/api'
+import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
+import { getFollowingSettingsDiagnostics } from '~/utils/apiDiagnosticSettings'
 import { calcTimeSince, parseStatNumber } from '~/utils/dataFormatter'
 import type { FollowingGroup, FollowingGroupsResult, FollowingRelationUser } from '~/utils/followingGroups'
 import { getFollowingGroupIds, groupFollowingUploaders } from '~/utils/followingGroups'
@@ -145,6 +148,7 @@ const requestFailed = tabState.ref<boolean>('requestFailed', false)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
 const needToLoginFirst = tabState.ref<boolean>('needToLoginFirst', false)
 const isRefreshContextActive = ref<boolean>(false)
+const uploaderListRequestFailed = ref(false)
 
 // 分别管理ALL和单个UP主的分页状态
 const allViewOffset = tabState.ref<string>('allViewOffset', '')
@@ -162,6 +166,28 @@ const videoSearchPlaceholder = computed(() => t('home.following_search_videos', 
 }))
 
 const currentUserMid = tabState.ref<number>('currentUserMid', 0) // 当前登录用户的mid
+
+const errorReportSource: ApiErrorReportSource = {
+  scene: '正在关注',
+  queries: ['getMoments', 'getUserMoments', 'getUserVideos', 'getUserFollowings', 'getUserInfo', 'getFollowingGroups', 'getFollowingLiveList'],
+  getContext: () => ({
+    关注页设置: getFollowingSettingsDiagnostics(),
+    关注页状态: {
+      当前视图: selectedUploader.value === null ? '全部' : '单个UP主',
+      正在搜索投稿: Boolean(videoSearchKeyword.value),
+      已加载视频: videoList.value.length,
+      已加载UP主: uploaderList.value.length,
+      关注列表已加载完: followingListLoaded.value,
+      关注列表页码: followingPage.value,
+      关注列表加载失败: uploaderListRequestFailed.value,
+      分组已加载: followingGroupsLoaded.value,
+      分组加载失败: groupsRequestFailed.value,
+    },
+  }),
+}
+
+// 搜索结果已有内容时由下方分页区域提示失败并保留列表，网格不再显示第二个失败提示。
+const gridRequestFailed = computed(() => requestFailed.value && !(videoSearchKeyword.value && videoList.value.length > 0))
 
 function syncRefreshAvailability() {
   canRefreshHomeSubPage.value = isRefreshContextActive.value && selectedUploader.value === null
@@ -449,8 +475,8 @@ watch(() => settings.value.followingUploaderSort, (sort) => {
 
 const gridKey = computed(() => `following-grid-${selectedUploader.value ?? 'all'}-${videoSearchKeyword.value}`)
 
-// 获取当前用户信息以获取关注列表
-async function getCurrentUserInfo() {
+// 获取当前用户信息以获取关注列表。返回 0 表示未登录，null 表示请求失败（如风控），二者需要不同的提示。
+async function getCurrentUserInfo(): Promise<number | null> {
   try {
     const response: any = await api.user.getUserInfo()
     if (!tabState.isCurrent())
@@ -459,11 +485,12 @@ async function getCurrentUserInfo() {
       currentUserMid.value = response.data.mid
       return response.data.mid
     }
+    return response.code === 0 || response.code === -101 ? 0 : null
   }
   catch (error) {
     console.error('[Following] Failed to get current user info:', error)
+    return null
   }
-  return 0
 }
 
 function mapFollowingUploader(user: FollowingRelationUser): UploaderInfo {
@@ -486,11 +513,16 @@ async function loadFollowingList() {
   if (!tabState.isCurrent())
     return
   console.log('[Following] Loading all following list...')
+  uploaderListRequestFailed.value = false
 
   if (!currentUserMid.value) {
     const mid = await getCurrentUserInfo()
     if (!tabState.isCurrent())
       return
+    if (mid === null) {
+      uploaderListRequestFailed.value = true
+      return
+    }
     if (!mid) {
       needToLoginFirst.value = true
       return
@@ -551,6 +583,7 @@ async function loadFollowingList() {
       }
       else {
         hasMore = false
+        uploaderListRequestFailed.value = true
         console.log('[Following] API returned error code:', response.code)
       }
     }
@@ -561,6 +594,8 @@ async function loadFollowingList() {
     }
   }
   catch (error) {
+    if (tabState.isCurrent())
+      uploaderListRequestFailed.value = true
     console.error('[Following] Failed to load following list:', error)
   }
 }
@@ -1502,10 +1537,27 @@ function getItemKey(item: VideoElement) {
           <span v-if="groupsLoading">{{ $t('common.loading') }}</span>
           <template v-else-if="groupsRequestFailed">
             <span>{{ $t('home.following_groups_load_failed') }}</span>
-            <button type="button" class="group-retry" @click="loadFollowingGroups(true)">
+            <div class="group-status-actions">
+              <button type="button" class="group-retry" @click="loadFollowingGroups(true)">
+                {{ $t('home.following_groups_retry') }}
+              </button>
+              <button type="button" class="group-retry" @click="openApiErrorDetails(errorReportSource)">
+                {{ $t('common.api_error.details') }}
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <div v-if="uploaderListRequestFailed" class="group-status" role="status">
+          <span>{{ $t('home.following_list_load_failed') }}</span>
+          <div class="group-status-actions">
+            <button type="button" class="group-retry" @click="loadFollowingList()">
               {{ $t('home.following_groups_retry') }}
             </button>
-          </template>
+            <button type="button" class="group-retry" @click="openApiErrorDetails(errorReportSource)">
+              {{ $t('common.api_error.details') }}
+            </button>
+          </div>
         </div>
 
         <!-- 分组一次可能移除数百个成员，直接更新列表，避免退出动画的绝对定位行覆盖其他按钮。 -->
@@ -1665,7 +1717,8 @@ function getItemKey(item: VideoElement) {
         :loading="isLoading"
         :no-more-content="noMoreContent"
         :need-to-login-first="needToLoginFirst"
-        :request-failed="requestFailed"
+        :request-failed="gridRequestFailed"
+        :error-report-source="errorReportSource"
         :empty-description="videoSearchKeyword ? (requestFailed ? $t('search.search_failed') : $t('home.following_no_search_results')) : undefined"
         :show-loading-more-skeleton="selectedUploader === null"
         :transform-item="transformVideoItem"
@@ -1684,9 +1737,14 @@ function getItemKey(item: VideoElement) {
         <p v-if="requestFailed && videoList.length > 0" role="status">
           {{ $t('search.search_failed') }}
         </p>
-        <Button v-if="videoList.length > 0 || !requestFailed" type="secondary" @click="loadMoreSearchVideos">
-          {{ requestFailed ? $t('home.following_groups_retry') : $t('common.load_more') }}
-        </Button>
+        <div class="video-search-actions">
+          <Button v-if="videoList.length > 0 || !requestFailed" type="secondary" @click="loadMoreSearchVideos">
+            {{ requestFailed ? $t('home.following_groups_retry') : $t('common.load_more') }}
+          </Button>
+          <Button v-if="requestFailed && videoList.length > 0" type="secondary" @click="openApiErrorDetails(errorReportSource)">
+            {{ $t('common.api_error.details') }}
+          </Button>
+        </div>
       </div>
     </div>
     <FollowingUploaderMenu
@@ -1861,6 +1919,19 @@ function getItemKey(item: VideoElement) {
 }
 
 .uploader-group-heading,
+.group-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bew-space-1);
+}
+
+.video-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--bew-space-2);
+}
+
 .group-retry {
   display: flex;
   align-items: center;

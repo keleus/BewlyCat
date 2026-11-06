@@ -31,6 +31,16 @@ common:
   load_failed: 載入失敗
   no_more_content: 沒有更多內容了
   load_more: 載入更多
+  api_error:
+    request_failed: 請求失敗，請稍後重新整理再試
+    details: 查看錯誤詳情
+    title: 錯誤詳情
+    desc: 登入資訊和簽名已替換為 *，可複製後用於回報問題
+    risk_hint: 偵測到疑似風控回應。可以稍後再試、降低重新整理頻率，或檢查下方診斷資訊中的請求方式和過濾設定。
+    no_records: 沒有擷取到失敗的介面請求，可能是擴充功能剛更新或背景服務暫時無法使用。
+    copy: 複製錯誤資訊
+    copied: 錯誤資訊已複製
+    copy_failed: 複製失敗，請手動選取文字複製
   operation:
     add: 新增
     edit: 編輯
@@ -1479,6 +1489,7 @@ home:
   following_group_name: '分組 {id}'
   following_groups_load_failed: 分組載入失敗，暫按更新時間顯示
   following_groups_retry: 重試
+  following_list_load_failed: 關注列表載入失敗
   following_move_group: 移動分組
   following_remove_special: 取消特別關注
   following_add_special: 設為特別關注

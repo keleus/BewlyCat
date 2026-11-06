@@ -31,6 +31,16 @@ common:
   load_failed: Failed to load
   no_more_content: No more content now, owari da
   load_more: Load more
+  api_error:
+    request_failed: Request failed. Please refresh and try again later
+    details: View error details
+    title: Error details
+    desc: Login data and signatures are replaced with *. You can copy this to report the issue
+    risk_hint: This looks like a risk-control response. Try again later, refresh less often, or check the request mode and filter settings in the diagnostics below.
+    no_records: No failed API requests were captured. The extension may have just updated, or its background service may be temporarily unavailable.
+    copy: Copy error info
+    copied: Error info copied
+    copy_failed: Copy failed. Please select the text and copy it manually
   operation:
     add: Add
     edit: Edit
@@ -1545,6 +1555,7 @@ home:
   following_group_name: 'Group {id}'
   following_groups_load_failed: Could not load groups. Showing uploaders by update time.
   following_groups_retry: Retry
+  following_list_load_failed: Failed to load your following list
   following_move_group: Move to group
   following_remove_special: Remove from special follows
   following_add_special: Add to special follows

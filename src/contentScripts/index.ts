@@ -12,6 +12,7 @@ import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
+import { setupApiFailureDiagnostics } from '~/utils/apiDiagnostics'
 import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, isUserNativeLayoutModeClick, prepareBewlyWidescreenLoading, refreshBewlyWidescreenForNavigation } from '~/utils/bewlyWidescreen'
 import { isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
@@ -90,6 +91,7 @@ const contentScriptRuntimeUrl = browser.runtime.getURL('')
 
 if (shouldInitializeContentScript) {
   contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__ = true
+  setupApiFailureDiagnostics()
   // 先于 B 站脚本注册快捷键监听，覆盖其默认快捷键时才能先拦截事件。
   installShortcutListener()
   browser.runtime.onMessage.addListener((message: unknown) => {

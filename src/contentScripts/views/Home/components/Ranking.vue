@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
+import { openApiErrorDetails } from '~/composables/useApiErrorDetails'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
@@ -11,6 +12,7 @@ import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
 import type { List as RankingPgcItem, RankingPgcResult } from '~/models/video/rankingPgc'
 import api from '~/utils/api'
+import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { getListGridColumnCount } from '~/utils/gridLayout'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
@@ -76,6 +78,8 @@ const videoList = tabState.ref<RankingVideoElement[]>('videoList', [])
 const PgcList = tabState.ref<RankingPgcItem[]>('pgcList', [])
 const shouldMoveAsideUp = ref<boolean>(false)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 排行榜没有分页
+const requestFailed = tabState.ref<boolean>('requestFailed', false)
+const errorReportSource: ApiErrorReportSource = { scene: '排行', queries: ['getRankingVideos', 'getRankingPgc'] }
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const rankingGridRef = ref<HTMLElement | null>(null)
 const rankingGridWidth = ref(0)
@@ -210,6 +214,7 @@ function initData() {
   const selectionId = activatedRankingType.value.id
   videoList.value.length = 0
   PgcList.value.length = 0
+  requestFailed.value = false
   hasLoaded.value = false
   isLoading.value = true
   emit('beforeLoading')
@@ -250,8 +255,12 @@ async function getRankingVideos(version: number, selectionId: number, rid: numbe
       rid,
       type,
     })
-    if (!isRequestCurrent(version, selectionId) || response.code !== 0)
+    if (!isRequestCurrent(version, selectionId))
       return
+    if (response.code !== 0) {
+      requestFailed.value = true
+      return
+    }
 
     const processedList = response.data.list.map((item, index) => ({
       ...item,
@@ -261,8 +270,10 @@ async function getRankingVideos(version: number, selectionId: number, rid: numbe
     hasLoaded.value = true
   }
   catch (error) {
-    if (isRequestCurrent(version, selectionId))
+    if (isRequestCurrent(version, selectionId)) {
+      requestFailed.value = true
       console.error('[Ranking] Failed to load video ranking:', error)
+    }
   }
   finally {
     finishRequest(version, selectionId)
@@ -274,15 +285,21 @@ async function getRankingPgc(version: number, selectionId: number, seasonType: n
     const response: RankingPgcResult = await api.ranking.getRankingPgc({
       season_type: seasonType,
     })
-    if (!isRequestCurrent(version, selectionId) || response.code !== 0)
+    if (!isRequestCurrent(version, selectionId))
       return
+    if (response.code !== 0) {
+      requestFailed.value = true
+      return
+    }
 
     PgcList.value = response.data.list
     hasLoaded.value = true
   }
   catch (error) {
-    if (isRequestCurrent(version, selectionId))
+    if (isRequestCurrent(version, selectionId)) {
+      requestFailed.value = true
       console.error('[Ranking] Failed to load PGC ranking:', error)
+    }
   }
   finally {
     finishRequest(version, selectionId)
@@ -332,6 +349,8 @@ function getItemKey(item: RankingVideoElement) {
           :grid-layout="gridLayout"
           :loading="isLoading"
           :no-more-content="noMoreContent"
+          :request-failed="requestFailed"
+          :error-report-source="errorReportSource"
           :transform-item="getItemDisplayData"
           :get-item-key="getItemKey"
           show-preview
@@ -379,6 +398,16 @@ function getItemKey(item: RankingVideoElement) {
             />
           </template>
         </div>
+        <Empty v-if="requestFailed && !isLoading && PgcList.length === 0" mt-6 :description="$t('common.api_error.request_failed')">
+          <div flex="~ wrap justify-center gap-2">
+            <Button type="primary" @click="initData">
+              {{ $t('common.operation.refresh') }}
+            </Button>
+            <Button type="secondary" @click="openApiErrorDetails(errorReportSource)">
+              {{ $t('common.api_error.details') }}
+            </Button>
+          </div>
+        </Empty>
       </template>
     </div>
   </div>
