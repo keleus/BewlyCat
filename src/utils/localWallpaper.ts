@@ -12,6 +12,8 @@ const LOCAL_WALLPAPERS_STORAGE_KEY = 'localWallpapers'
 /** 备份文件中存放本地上传壁纸的字段，与设置项并列；旧版本导入时会按未知设置忽略。 */
 export const LOCAL_WALLPAPER_BACKUP_KEY = 'localWallpaperBackup'
 
+const WALLPAPER_DATA_URL_PATTERN = /^data:image\/[\w.+-]+;base64,[A-Z0-9+/]+=*$/i
+
 // 本地壁纸数据接口
 export interface LocalWallpaperData {
   id: string
@@ -128,11 +130,38 @@ function isLocalWallpaperData(value: unknown): value is LocalWallpaperData {
     && data.id.startsWith('wallpaper_')
     && typeof data.name === 'string'
     && typeof data.base64 === 'string'
-    && /^data:image\/[\w.+-]+;base64,[A-Z0-9+/]+=*$/i.test(data.base64)
+    && WALLPAPER_DATA_URL_PATTERN.test(data.base64)
     && typeof data.type === 'string'
     && Number.isFinite(data.size)
     && Number.isFinite(data.lastModified)
     && Number.isFinite(data.timestamp)
+}
+
+/**
+ * 转换旧版 locallyUploadedWallpaper。旧版把图片以 data URL 直接保存在该字段中，
+ * 只有引用、没有图片数据的记录无法转换。
+ * @param value 旧版字段的值
+ * @returns 壁纸数据或null
+ */
+export function convertLegacyUploadedWallpaper(value: unknown): LocalWallpaperData | null {
+  if (typeof value !== 'object' || value === null)
+    return null
+
+  const { name, url } = value as { name?: unknown, url?: unknown }
+  if (typeof url !== 'string' || !WALLPAPER_DATA_URL_PATTERN.test(url))
+    return null
+
+  const fileName = typeof name === 'string' && name ? name : 'wallpaper'
+  const timestamp = Date.now()
+  return {
+    id: generateWallpaperId(fileName),
+    name: fileName,
+    base64: url,
+    size: Math.floor((url.length - url.indexOf(',') - 1) * 3 / 4),
+    type: url.slice('data:'.length, url.indexOf(';')),
+    lastModified: timestamp,
+    timestamp,
+  }
 }
 
 /**

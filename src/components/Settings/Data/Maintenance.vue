@@ -7,7 +7,8 @@ import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { localSettings, localSettingsReady, normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
-import { extractWallpaperId, getLocalWallpaperData, hasLocalWallpaper, LOCAL_WALLPAPER_BACKUP_KEY, localWallpapersLoaded, restoreLocalWallpaper } from '~/utils/localWallpaper'
+import type { LocalWallpaperData } from '~/utils/localWallpaper'
+import { convertLegacyUploadedWallpaper, extractWallpaperId, getLocalWallpaperData, hasLocalWallpaper, LOCAL_WALLPAPER_BACKUP_KEY, localWallpapersLoaded, restoreLocalWallpaper } from '~/utils/localWallpaper'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -199,23 +200,31 @@ function handleImportSettings() {
   importSettingsRef.value?.click()
 }
 
-/** 恢复备份中的本地壁纸，返回是否成功。失败时保留当前壁纸，避免设置指向不存在的数据。 */
+/**
+ * 恢复备份中的本地壁纸，返回是否成功。旧版备份的壁纸设置直接保存图片数据，成功后改为引用。
+ * 失败时保留当前壁纸，避免设置指向不存在的数据或把大体积图片写入设置。
+ */
 async function restoreBackupWallpaper(backup: unknown, recognizedSettings: Record<string, unknown>) {
+  const backupDataUrl = (backup as Partial<LocalWallpaperData>).base64
+  const wallpaperKeys = ['wallpaper', 'searchPageWallpaper']
+
   try {
     await localSettingsReady
     const wallpaper = await restoreLocalWallpaper(backup)
-    localSettings.value.locallyUploadedWallpaper = {
-      ...wallpaper,
-      url: `local-wallpaper:${wallpaper.id}`,
+    const url = `local-wallpaper:${wallpaper.id}`
+    localSettings.value.locallyUploadedWallpaper = { ...wallpaper, url }
+    for (const key of wallpaperKeys) {
+      if (recognizedSettings[key] === backupDataUrl)
+        recognizedSettings[key] = url
     }
     return true
   }
   catch (error) {
     console.error('Failed to restore local wallpaper:', error)
-    for (const key of ['wallpaper', 'searchPageWallpaper']) {
+    for (const key of wallpaperKeys) {
       const value = recognizedSettings[key]
       const id = typeof value === 'string' ? extractWallpaperId(value) : null
-      if (id && !hasLocalWallpaper(id))
+      if (value === backupDataUrl || (id && !hasLocalWallpaper(id)))
         Reflect.deleteProperty(recognizedSettings, key)
     }
     return false
@@ -264,9 +273,10 @@ function handleImportFile(event: Event) {
 
       const currentSettings = originalSettings as unknown as Record<string, unknown>
       const recognizedSettings: Record<string, unknown> = {}
+      const legacyWallpaper = convertLegacyUploadedWallpaper(importedSettings.locallyUploadedWallpaper)
       let ignoredCount = 0
       Object.entries(importedSettings).forEach(([key, value]) => {
-        if (key === LOCAL_WALLPAPER_BACKUP_KEY)
+        if (key === LOCAL_WALLPAPER_BACKUP_KEY || (key === 'locallyUploadedWallpaper' && legacyWallpaper))
           return
 
         if (!Object.prototype.hasOwnProperty.call(currentSettings, key)) {
@@ -289,7 +299,7 @@ function handleImportFile(event: Event) {
       }
 
       // 先写入壁纸数据，设置生效时才能解析到其中的本地壁纸引用。
-      const wallpaperBackup = importedSettings[LOCAL_WALLPAPER_BACKUP_KEY]
+      const wallpaperBackup = importedSettings[LOCAL_WALLPAPER_BACKUP_KEY] ?? legacyWallpaper
       const wallpaperRestored = wallpaperBackup == null
         || await restoreBackupWallpaper(wallpaperBackup, recognizedSettings)
 
@@ -313,8 +323,10 @@ async function handleExportSettings() {
   await Promise.all([localSettingsReady, localWallpapersLoaded])
 
   // 本地壁纸不进入设置存储和云同步，只在导出文件中附带完整数据。
-  const uploadedWallpaperId = localSettings.value.locallyUploadedWallpaper?.id
-  const uploadedWallpaper = uploadedWallpaperId ? getLocalWallpaperData(uploadedWallpaperId) : null
+  const uploadedWallpaperItem = localSettings.value.locallyUploadedWallpaper
+  const uploadedWallpaper = uploadedWallpaperItem?.id
+    ? getLocalWallpaperData(uploadedWallpaperItem.id)
+    : convertLegacyUploadedWallpaper(uploadedWallpaperItem)
   const jsonStr = JSON.stringify({
     ...settings.value,
     ...(uploadedWallpaper ? { [LOCAL_WALLPAPER_BACKUP_KEY]: uploadedWallpaper } : {}),
