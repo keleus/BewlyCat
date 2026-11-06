@@ -21,6 +21,8 @@ export interface VideoCardRemovedState {
   onConfirm?: () => void
   onCancel?: () => void
   onUndo?: () => void
+  /** 收起已移除的占位卡片（不还原）；提供时网格遮罩显示右上角「收起」按钮 */
+  onDismiss?: () => void
 }
 
 export interface Video {

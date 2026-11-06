@@ -285,6 +285,7 @@ function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | und
     message: t('watch_later.removed'),
     pending: status !== 'removed',
     onUndo: () => void restoreWatchLater(item),
+    onDismiss: () => dismissRemovedItem(item),
   }
 }
 

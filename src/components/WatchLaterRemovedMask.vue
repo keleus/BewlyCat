@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MaskDismissButton from '~/components/MaskDismissButton.vue'
+
 defineProps<{
   /** 遮罩主文案，如「已移除」 */
   message: string
@@ -14,12 +16,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="watch-later-removed-mask" @click.prevent.stop>
-    <button
-      class="watch-later-dismiss-btn" :aria-label="$t('watch_later.dismiss')"
-      @click.prevent.stop="emit('dismiss')"
-    >
-      <i i-tabler:x aria-hidden="true" />
-    </button>
+    <MaskDismissButton :label="$t('watch_later.dismiss')" @dismiss="emit('dismiss')" />
     <p class="watch-later-removed-text">
       {{ message }}
     </p>
@@ -55,32 +52,5 @@ const emit = defineEmits<{
 
 .watch-later-removed-text {
   margin: 0;
-}
-
-.watch-later-dismiss-btn {
-  position: absolute;
-  top: var(--bew-space-2);
-  right: var(--bew-space-2);
-  display: grid;
-  place-items: center;
-  width: var(--bew-space-6);
-  height: var(--bew-space-6);
-  padding: 0;
-  border: 0;
-  border-radius: var(--bew-radius-full);
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
-  font-size: var(--bew-font-size-control);
-  cursor: pointer;
-  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.32);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--bew-theme-color);
-    outline-offset: var(--bew-space-0-5);
-  }
 }
 </style>
