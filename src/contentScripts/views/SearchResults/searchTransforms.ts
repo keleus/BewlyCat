@@ -514,6 +514,7 @@ function extractBangumiEpisodes(item: any): BangumiEpisode[] {
   }
 
   const candidates = [
+    item?.eps,
     item?.episodes,
     item?.ep_list,
     item?.module_info?.episodes,
@@ -533,34 +534,28 @@ function extractBangumiEpisodes(item: any): BangumiEpisode[] {
   return foundEpisodes
 }
 
-function resolveEpisodeNumber(source: any, fallbackTitle: string): number | undefined {
-  const values: Array<string | number | undefined> = [
-    source?.order,
-    source?.episode,
-    source?.index,
-    source?.index_title,
-    source?.title,
-    source?.long_title,
-    source?.episode_index,
-    source?.ep_index,
-    source?.ep_title,
-    fallbackTitle,
-  ]
+// 只接受「12」「第12话」这类正片序号；PV1、SP2、12.5、总集篇等特殊集不算。
+// 序号限制在 4 位以内，避免把 20240101 这类日期当成集数。
+function parseRegularEpisodeNumber(value: unknown): number | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number')
+    return undefined
+  const match = removeHighlight(String(value)).trim().match(/^(?:第\s*)?(\d{1,4})(?:\s*[话話集回])?$/)
+  const parsed = match ? Number.parseInt(match[1], 10) : 0
+  return parsed > 0 ? parsed : undefined
+}
 
+function resolveEpisodeNumber(source: any, fallbackTitle: string): number | undefined {
+  // 集标签优先：标签不是序号就是特殊集，不能再用 order 等排序字段补一个集数
+  const label = [source?.index_title, source?.title, source?.index, source?.ep_title]
+    .find(value => value !== undefined && value !== null && value !== '')
+  if (label !== undefined)
+    return parseRegularEpisodeNumber(label)
+
+  const values = [source?.order, source?.episode, source?.episode_index, source?.ep_index, fallbackTitle]
   for (const value of values) {
-    if (typeof value === 'number') {
-      const parsed = Number.parseInt(String(value), 10)
-      if (Number.isFinite(parsed) && parsed > 0)
-        return parsed
-    }
-    else if (typeof value === 'string') {
-      const match = value.match(/(\d+)/)
-      if (match) {
-        const parsed = Number.parseInt(match[1], 10)
-        if (Number.isFinite(parsed) && parsed > 0)
-          return parsed
-      }
-    }
+    const parsed = parseRegularEpisodeNumber(value)
+    if (parsed)
+      return parsed
   }
 
   return undefined
@@ -744,6 +739,17 @@ function formatPublishDate(timestamp?: number): string {
 }
 
 function resolveBangumiEpisodeCount(item: any, episodes: BangumiEpisode[]): number | undefined {
+  const reportedCount = resolveReportedBangumiEpisodeCount(item, episodes)
+  const regularCount = new Set(episodes.map(episode => episode.number).filter(Boolean)).size
+
+  // 接口总数包含特殊集；分集列表完整时以其中的正片数为准，不完整时无从判断，保留接口总数
+  if (regularCount > 0 && (!reportedCount || episodes.length >= reportedCount))
+    return regularCount
+
+  return reportedCount
+}
+
+function resolveReportedBangumiEpisodeCount(item: any, episodes: BangumiEpisode[]): number | undefined {
   const normalizeNumber = (value: any) => {
     const number = Number(value)
     return Number.isFinite(number) && number > 0 ? number : undefined

@@ -51,24 +51,25 @@ const normalizedEpisodes = computed(() => Array.isArray(props.episodes) ? props.
 
 const episodeMap = computed(() => {
   const map = new Map<number, Episode>()
+  // 有正片序号时跳过没有序号的特殊集；全部没有序号（如上/下篇）时按顺序编号
+  const hasNumberedEpisode = normalizedEpisodes.value.some(episode => episode.number)
   normalizedEpisodes.value.forEach((episode, index) => {
-    const resolvedNumber = resolveEpisodeNumber(episode, index)
+    const resolvedNumber = hasNumberedEpisode ? episode.number : index + 1
     if (resolvedNumber && !map.has(resolvedNumber))
       map.set(resolvedNumber, episode)
   })
   return map
 })
 
-const totalEpisodes = computed(() => {
+const episodeNumbers = computed(() => {
+  const knownNumbers = [...episodeMap.value.keys()].sort((a, b) => a - b)
   const provided = Number(props.totalEpisodes)
-  if (Number.isFinite(provided) && provided > 0)
-    return provided
+  const total = Number.isFinite(provided) && provided > 0 ? provided : knownNumbers.length
 
-  const numbers = [...episodeMap.value.keys()]
-  if (numbers.length > 0)
-    return Math.max(...numbers)
-
-  return normalizedEpisodes.value.length
+  // 列表已覆盖全部集数时用真实序号，兼容跨季连续编号（13~24）和缺集；否则按总数补齐
+  if (knownNumbers.length >= total)
+    return knownNumbers
+  return Array.from({ length: total }, (_, index) => index + 1)
 })
 
 const maxVisibleButtons = computed(() => {
@@ -81,45 +82,21 @@ const maxVisibleButtons = computed(() => {
 })
 
 const entries = computed<Entry[]>(() => {
-  const total = totalEpisodes.value
-  if (!Number.isFinite(total) || total <= 0)
-    return []
-
+  const numbers = episodeNumbers.value
   const limit = Math.max(maxVisibleButtons.value, MIN_BUTTONS)
-  const result: Entry[] = []
 
-  if (total <= limit) {
-    for (let number = 1; number <= total; number += 1)
-      result.push(createEpisodeEntry(number))
-    return result
-  }
+  if (numbers.length <= limit)
+    return numbers.map(createEpisodeEntry)
 
-  const leadingCount = Math.min(total - 1, limit - 2)
-  for (let number = 1; number <= leadingCount; number += 1)
-    result.push(createEpisodeEntry(number))
-
-  result.push({
-    type: 'ellipsis',
-    key: 'ellipsis',
-  })
-
-  result.push(createEpisodeEntry(total))
-  return result
+  return [
+    ...numbers.slice(0, limit - 2).map(createEpisodeEntry),
+    {
+      type: 'ellipsis',
+      key: 'ellipsis',
+    },
+    createEpisodeEntry(numbers[numbers.length - 1]),
+  ]
 })
-
-function resolveEpisodeNumber(episode: Episode, index: number): number | undefined {
-  if (typeof episode.number === 'number' && Number.isFinite(episode.number) && episode.number > 0)
-    return Math.round(episode.number)
-
-  const match = episode.title.match(/(\d+)/)
-  if (match) {
-    const parsed = Number.parseInt(match[1], 10)
-    if (Number.isFinite(parsed) && parsed > 0)
-      return parsed
-  }
-
-  return index + 1
-}
 
 function createEpisodeEntry(number: number): EpisodeEntry {
   const episode = episodeMap.value.get(number)
