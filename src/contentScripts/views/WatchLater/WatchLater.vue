@@ -514,13 +514,15 @@ function getItemKey(item: VideoItem) {
                 content-visibility-auto
               >
                 <!-- 删除遮罩：覆盖整行并拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
-                <WatchLaterRemovedMask
-                  v-if="removeStatuses.has(item.aid)"
-                  :message="t('watch_later.removed')"
-                  :pending="removeStatuses.get(item.aid) !== 'removed'"
-                  @undo="restoreWatchLater(item)"
-                  @dismiss="dismissRemovedItem(item)"
-                />
+                <Transition name="fade">
+                  <WatchLaterRemovedMask
+                    v-if="removeStatuses.has(item.aid)"
+                    :message="t('watch_later.removed')"
+                    :pending="removeStatuses.get(item.aid) !== 'removed'"
+                    @undo="restoreWatchLater(item)"
+                    @dismiss="dismissRemovedItem(item)"
+                  />
+                </Transition>
 
                 <!-- Cover -->
                 <div

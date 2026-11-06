@@ -345,13 +345,15 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
           </PopMediaCard>
 
           <!-- 删除遮罩：拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
-          <WatchLaterRemovedMask
-            v-if="removeStatuses.has(item.aid)"
-            :message="$t('watch_later.removed')"
-            :pending="removeStatuses.get(item.aid)?.status !== 'removed'"
-            @undo="restoreWatchLaterItem(item.aid)"
-            @dismiss="dismissRemovedItem(item.aid)"
-          />
+          <Transition name="fade">
+            <WatchLaterRemovedMask
+              v-if="removeStatuses.has(item.aid)"
+              :message="$t('watch_later.removed')"
+              :pending="removeStatuses.get(item.aid)?.status !== 'removed'"
+              @undo="restoreWatchLaterItem(item.aid)"
+              @dismiss="dismissRemovedItem(item.aid)"
+            />
+          </Transition>
         </ALink>
       </TransitionGroup>
 
