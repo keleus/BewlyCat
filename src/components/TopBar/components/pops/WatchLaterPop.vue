@@ -5,6 +5,7 @@ import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Progress from '~/components/Progress.vue'
 import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
+import WatchLaterRemovedMask from '~/components/WatchLaterRemovedMask.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
 import type { List as WatchLaterItem } from '~/models/video/watchLater'
@@ -344,30 +345,13 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
           </PopMediaCard>
 
           <!-- 删除遮罩：拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
-          <div
+          <WatchLaterRemovedMask
             v-if="removeStatuses.has(item.aid)"
-            class="watch-later-removed-mask"
-            @click.prevent.stop
-          >
-            <button
-              class="watch-later-dismiss-btn"
-              :aria-label="$t('watch_later.dismiss')"
-              @click.prevent.stop="dismissRemovedItem(item.aid)"
-            >
-              <i i-tabler:x aria-hidden="true" />
-            </button>
-            <span>{{ $t('watch_later.removed') }}</span>
-            <Button
-              color="rgba(255,255,255,.35)" text-color="white" size="small"
-              :disabled="removeStatuses.get(item.aid)?.status !== 'removed'"
-              @click.prevent.stop="restoreWatchLaterItem(item.aid)"
-            >
-              <template #left>
-                <div i-mingcute-back-line />
-              </template>
-              {{ $t('common.undo') }}
-            </Button>
-          </div>
+            :message="$t('watch_later.removed')"
+            :pending="removeStatuses.get(item.aid)?.status !== 'removed'"
+            @undo="restoreWatchLaterItem(item.aid)"
+            @dismiss="dismissRemovedItem(item.aid)"
+          />
         </ALink>
       </TransitionGroup>
 
@@ -389,50 +373,6 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 </template>
 
 <style scoped lang="scss">
-.watch-later-removed-mask {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bew-space-2);
-  border-radius: inherit;
-  background: var(--bew-fill-4);
-  backdrop-filter: blur(20px);
-  color: white;
-  font-size: var(--bew-font-size-control);
-  cursor: default;
-}
-
-.watch-later-dismiss-btn {
-  position: absolute;
-  top: var(--bew-space-2);
-  right: var(--bew-space-2);
-  display: grid;
-  place-items: center;
-  width: var(--bew-space-6);
-  height: var(--bew-space-6);
-  padding: 0;
-  border: 0;
-  border-radius: var(--bew-radius-full);
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
-  font-size: var(--bew-font-size-control);
-  cursor: pointer;
-  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.32);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--bew-theme-color);
-    outline-offset: var(--bew-space-0-5);
-  }
-}
-
 .watch-later-header-action {
   display: inline-flex;
   align-items: center;
