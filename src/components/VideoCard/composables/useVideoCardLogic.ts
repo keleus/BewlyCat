@@ -15,7 +15,7 @@ import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video, VideoCardState } from '../types'
 import { createVideoCardState } from '../types'
-import { getCurrentTime, getCurrentVideoUrl } from '../utils'
+import { getCurrentVideoUrl } from '../utils'
 import { releaseVideoPreviewCacheEntry, retainVideoPreviewCacheEntry } from './videoPreviewCache'
 
 interface VideoCardProps {
@@ -52,7 +52,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const mouseEnterTimeOut = ref<number | null>(null)
   const mouseLeaveTimeOut = ref<number | null>(null)
   const previewVideoUrl = ref<string>('')
-  const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
   const isDisposed = ref<boolean>(false) // 跟踪组件是否已卸载
   const isActive = ref(true)
@@ -344,7 +343,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   }
 
   function handleClick(event: MouseEvent) {
-    videoCurrentTime.value = getCurrentTime(videoElement) ?? videoCurrentTime.value
     if (settings.value.videoCardLinkOpenMode === 'background' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
       event.preventDefault()
       openLinkInBackground(videoUrl.value)
@@ -420,7 +418,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     isHover,
     isPreviewFullscreen,
     previewVideoUrl,
-    videoElement,
     cardRootRef,
 
     // Computed

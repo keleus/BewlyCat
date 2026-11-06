@@ -174,7 +174,7 @@ const hoverPreviewOnCoverOnly = computed(() =>
   previewEnabled.value && settings.value.onlyCoverVideoPreview,
 )
 
-function handleLinkClick(event: MouseEvent) {
+function handleLinkActivate(event: MouseEvent) {
   // 移除遮罩期间卡片不再作为链接响应
   if (props.removedState) {
     event.preventDefault()
@@ -189,11 +189,18 @@ function handleLinkClick(event: MouseEvent) {
   catch (error) {
     console.error('Video card click observer failed:', error)
   }
+}
+
+function handleLinkClick(event: MouseEvent) {
+  if (props.removedState)
+    return
+
   const clickHandler = props.customClickHandler || logic.handleClick
   clickHandler(event)
 }
 
 const linkEvents = computed(() => ({
+  activate: handleLinkActivate,
   click: handleLinkClick,
   ...(hoverPreviewOnCoverOnly.value
     ? {}
@@ -392,7 +399,6 @@ provide('getVideoType', () => props.type!)
           v-on="coverSkeleton ? {} : coverEvents"
         >
           <VideoCardCover
-            v-model:video-element="logic.videoElement.value"
             v-model:preview-time="logic.videoCurrentTime.value"
             :skeleton="coverSkeleton"
             :video="props.video"
