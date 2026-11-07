@@ -165,7 +165,7 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
    卡片本身已有底色，悬停只做背景加深（不向外扩环，避免色环与底色粘连），按下 fill-3 */
 .article-card--interactive {
   background-color: var(--bew-elevated);
-  transition: background-color 0.2s ease;
+  transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
 }
 
 /* 只在支持 hover 的设备上启用（与视频卡片相同，避免触屏性能损失） */
