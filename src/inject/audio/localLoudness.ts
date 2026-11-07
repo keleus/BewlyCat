@@ -157,10 +157,23 @@ export function createLocalLoudnessController() {
       if (record?.owned)
         reconnectOwned(record)
     }
-    if (!ownedConnected.size) {
-      if (ownedContext?.state === 'running')
-        void ownedContext.suspend().catch(() => {})
-    }
+    settleOwnedContext()
+  }
+
+  // Keep ownedContext running only while an owned element can actually output
+  // sound. A silent running context is handed to SilentSinkSuspender after ~30s,
+  // which on macOS resumes at a 0.5x AudioWorklet clock and drags the video
+  // timeline down with it whenever video.volume > 0.
+  function settleOwnedContext() {
+    const context = ownedContext
+    if (!context || context.state === 'closed')
+      return
+    const audible = document.visibilityState !== 'hidden'
+      && [...ownedConnected].some(record => record.video.isConnected && !record.video.paused && !record.video.ended)
+    if (audible)
+      void context.resume().catch(() => {})
+    else if (context.state === 'running')
+      void context.suspend().catch(() => {})
   }
 
   function reconnectOwned(record: SourceRecord) {
@@ -168,8 +181,7 @@ export function createLocalLoudnessController() {
       return
     record.source.connect(record.source.context.destination)
     ownedConnected.add(record)
-    if (!record.video.paused)
-      void (record.source.context as AudioContext).resume().catch(() => {})
+    settleOwnedContext()
     cleanupObserver.observe(document, { childList: true, subtree: true })
   }
 
@@ -189,6 +201,8 @@ export function createLocalLoudnessController() {
       applyDelay()
   }
   document.addEventListener('play', onPlay, { capture: true, signal: lifetime.signal })
+  document.addEventListener('pause', settleOwnedContext, { capture: true, signal: lifetime.signal })
+  document.addEventListener('ended', settleOwnedContext, { capture: true, signal: lifetime.signal })
   document.addEventListener('pointerdown', () => {
     for (const record of new Set([active, delayed])) {
       if (record && !record.video.paused)
@@ -350,9 +364,7 @@ export function createLocalLoudnessController() {
         void ownedContext.close().catch(() => {})
         ownedContext = undefined
       }
-      else if (ownedContext && !ownedConnected.size && ownedContext.state === 'running') {
-        void ownedContext.suspend().catch(() => {})
-      }
+      settleOwnedContext()
     }
   }
 
@@ -501,7 +513,7 @@ export function createLocalLoudnessController() {
       clearInterval(timer)
     timer = undefined
     if (event.persisted) {
-      void ownedContext?.suspend().catch(() => {})
+      settleOwnedContext()
       return
     }
     disposed = true
@@ -513,10 +525,12 @@ export function createLocalLoudnessController() {
     if (AudioContext.prototype.createMediaElementSource === patchedCreate)
       AudioContext.prototype.createMediaElementSource = originalCreate
   })
+  // Background tab switches never fire pagehide, so visibilitychange is the only
+  // chance to suspend ownedContext before SilentSinkSuspender engages.
+  document.addEventListener('visibilitychange', settleOwnedContext, { signal: lifetime.signal })
   window.addEventListener('pageshow', () => {
     hidden = false
-    if (ownedConnected.size && [...ownedConnected].some(record => !record.video.paused))
-      void ownedContext?.resume().catch(() => {})
+    settleOwnedContext()
     if (!disposed) {
       update(config)
       if (delayEnabled)
