@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Select from '~/components/Select.vue'
 import { FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, settings } from '~/logic'
+import { requestBilibiliTab } from '~/utils/settingsPage'
 
 import ChangeWallpaper from '../components/ChangeWallpaper.vue'
 import SettingsItem from '../components/SettingsItem.vue'
@@ -72,9 +73,12 @@ const isCustomDarkModeBaseColor = computed<boolean>(() => {
   return !darkModeBaseColorOptions.value.includes(settings.value.darkModeBaseColor)
 })
 
-const bilibiliEvolvedThemeColor = computed(() => {
-  return getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim() || '#00a1d6'
-})
+// Bilibili Evolved 的主题色只存在于 B 站页面，没有打开的页面时使用默认色。
+const bilibiliEvolvedThemeColor = ref('#00a1d6')
+requestBilibiliTab<string>({ action: 'getEvolvedThemeColor' }).then((color) => {
+  if (color)
+    bilibiliEvolvedThemeColor.value = color
+}).catch(() => {})
 
 const fontPreferenceOptions = computed(() => {
   return [
@@ -149,6 +153,7 @@ function changeWallpaper(url: string) {
 
     <SettingsItemGroup :title="$t('settings.group_visual_effects')">
       <SettingsItem
+        v-if="!settings.useOriginalBilibiliHomepage"
         :title="$t('settings.sidebar_cover_blur')"
         :desc="$t('settings.sidebar_cover_blur_desc')"
         right-width="auto"
@@ -196,14 +201,7 @@ function changeWallpaper(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup :title="$t('settings.group_page_style')">
-      <SettingsItem
-        :title="$t('settings.adapt_to_other_page_styles')"
-        :desc="$t('settings.adapt_to_other_page_styles_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.adaptToOtherPageStyles" />
-      </SettingsItem>
+    <SettingsItemGroup v-if="!settings.useOriginalBilibiliHomepage" :title="$t('settings.group_page_style')">
       <SettingsItem
         :title="$t('settings.disable_background')"
         :desc="$t('settings.disable_background_desc')"
@@ -318,7 +316,7 @@ function changeWallpaper(url: string) {
         </div>
       </SettingsItem>
 
-      <SettingsItem v-if="!settings.disableBackground" :title="$t('settings.gradient_theme_color_background')" right-width="auto">
+      <SettingsItem v-if="!settings.useOriginalBilibiliHomepage && !settings.disableBackground" :title="$t('settings.gradient_theme_color_background')" right-width="auto">
         <Radio v-model="settings.useLinearGradientThemeColorBackground" />
       </SettingsItem>
       <SettingsItem
@@ -341,7 +339,7 @@ function changeWallpaper(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <ChangeWallpaper v-if="!settings.disableBackground" type="global" />
+    <ChangeWallpaper v-if="!settings.useOriginalBilibiliHomepage && !settings.disableBackground" type="global" />
 
     <SettingsItemGroup :title="$t('settings.group_fonts')">
       <SettingsItem :title="$t('settings.customize_font')" right-width="auto">

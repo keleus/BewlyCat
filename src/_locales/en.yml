@@ -221,18 +221,38 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
-  category_general_desc: Configure language, interaction, link opening, and drawer behavior.
+  category_general_desc: Configure language and interaction, and turn on only the parts of the extension you need, such as just comment or VIP features.
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
-  usage_guide: Help — BewlyCat feature guide videos
-  group_interaction_layout: Interaction & Layout
+  usage_guide: Help
+  group_modules_interface: Interface
+  group_modules_interface_desc: Turning one off restores the original Bilibili interface and hides the settings that only serve it.
+  module_bewly_pages: Bewly pages
+  module_bewly_pages_desc: 'Custom home, moments, and search pages with their video cards and wallpapers. When off, the original Bilibili pages are used and open home pages reload automatically.'
+  module_top_bar: Top bar
+  module_top_bar_desc: "The extension's top bar and its management of the original one. When off, the extension no longer hides or changes any top bar, so pages show Bilibili's own. The Bewly homepage replaces the whole page and shows no top bar."
+  module_dock: Dock
+  module_dock_desc: 'Page navigation. When Bewly pages are off, clicking an item goes straight to the original Bilibili page.'
+  module_sidebar: Floating sidebar
+  module_sidebar_desc: 'Theme switch and settings entry, hidden while the Dock is shown. When off, open settings from the browser toolbar icon.'
+  group_modules_enhancements: Enhancements
+  group_modules_enhancements_desc: 'Independent of the interface modules above. Premium features, favorites organizer, original moments, and cleanup are configured under Bilibili.'
+  module_comments: Comment enhancements
+  module_comments_desc: 'Reply trees, IP location, gender, original poster tags, and comment image improvements.'
+  module_player: Player enhancements
+  module_player_desc: 'Display modes, player buttons, listen mode, volume balance, ambient light, and autoplay control. Takes effect after a page refresh.'
+  module_shortcuts: Keyboard shortcuts
+  module_shortcuts_desc: Player and home page shortcuts provided by the extension.
+  category_bilibili_moments_desc: 'Adjust modules and comment behavior on the original moments page, and filter moments.'
+  group_interaction: Interaction
   category_browsing_home_desc: Configure home recommendations, content filters, following, and home tabs.
   category_browsing_video_card_desc: Configure video card layout, previews, metadata, and link behavior.
   category_browsing_favorites_desc: Organize favorite folders by rules and sync videos after a triple action.
   category_navigation_link_opening_desc: Configure where top bar, video card, and search links open, including drawer behavior.
   category_navigation_topbar_desc: Adjust top bar layout, components, channels, search, and notifications in one place.
   category_navigation_dock_desc: Configure Dock and sidebar position, visibility, and quick actions.
+  category_navigation_interaction_desc: Configure link opening, drawer behavior, and list scrolling.
   category_navigation_search_desc: Configure search appearance, suggestions, history, trending, and results.
   category_navigation_moments_desc: Configure the dynamic feed sidebar and how dynamic cards are opened.
   category_playback_player_desc: Configure player mode, scrolling, danmaku, captions, and playback state.
@@ -285,10 +305,13 @@ settings:
     moments: Dynamic Feed
     favorites: Favorites
     search: Search
+    interaction: Interaction
 
   # Bilibili Features Enhancement submenu
   bilibili_features:
     comments: Comments
+    moments: Moments
+    favorite_organizer: Favorites organizer
     video_playback: Player
     auto_play: Playback Behavior
     vip_features: VIP Features
@@ -301,6 +324,7 @@ settings:
 
   group_common: Common
   group_drawer_behavior: Drawer Behavior
+  group_list_scrolling: List Scrolling
   group_language: Language
   group_ad_blocking: Ad Blocking
   group_comments: Comments
@@ -646,12 +670,10 @@ settings:
   show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages
   filter_articles_in_moments: Filter articles
   filter_articles_in_moments_desc: Hide articles from the moments feed and only show videos
-  top_bar_icon_badges: Icon badges
   top_bar_icon_badges_opt:
     number: Number
     dot: Dot
     none: Do not show
-  show_watch_later_badge: Show watch later badge
   show_bcoin_receive_reminder: VIP B-coin receive reminder
   auto_receive_bcoin_coupon: Auto receive B-coin coupon
   auto_receive_bcoin_coupon_desc: When enabled, B-coin coupons will be automatically received when detected
@@ -837,7 +859,6 @@ settings:
   enable_search_history_desc: When enabled, the search bar will record and display your search history. Disabling this will clear all history
   use_plugin_search_results_page: Use plugin search results page
   use_plugin_search_results_page_desc: When enabled, searches will use the plugin's built-in search results page with category filtering and more features
-  use_plugin_search_results_page_disabled_by_original_homepage: Searches use bilibili's original results page while the original bilibili homepage is enabled
   depersonalize_search_results: Depersonalized search
   depersonalize_search_results_desc: When enabled, search as a signed-out user so results are not personalized.
   show_search_identity_switcher: Show signed-in / guest quick switcher
@@ -1034,17 +1055,12 @@ settings:
   home_tabs_adjustment: Tabs adjustment
   home_tabs_adjustment_desc: The first activated tab is the default page.
   home_tabs_position: Home tabs position
-  always_show_tabs_on_home_page: Hide home tabs while scrolling
   fixed_home_tabs_on_home_page: Fix home tabs to the top
   topbar_visibility: BewlyBewly's top bar visibility
   topbar_visibility_desc: >-
     When enabled, the BewlyCat or original Bilibili top bar is shown. When
     disabled, both are hidden so Bilibili Evolved and other third-party top bars
     can take over.
-  use_original_bilibili_homepage: Use the original Bilibili homepage
-  use_original_bilibili_homepage_desc: >-
-    After you change it, the page will automatically refresh if you are on the
-    homepage!
   use_original_bilibili_topbar: Use the original Bilibili top bar
   use_original_bilibili_topbar_desc: >-
     Only applies when top bar visibility is on. Enable it to use the original
@@ -1118,9 +1134,9 @@ settings:
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
   custom_playback_rate: Custom playback rate
-  custom_playback_rate_desc: Enter a rate from 0.25 to 5 to apply to the current video. Enable Remember playback rate to save it.
-  custom_playback_rate_apply: Apply to current video
-  custom_playback_rate_no_video: No controllable video on this page. Open these settings on a video playback page.
+  custom_playback_rate_desc: Enter a rate from 0.25 to 5 to apply to the most recently visited video tab. Enable Remember playback rate to save it.
+  custom_playback_rate_apply: Apply to video
+  custom_playback_rate_no_video: No controllable video found. Open a video in another tab first.
   playback_rate_step: Playback rate shortcut step
   playback_rate_step_desc: Change the rate by 0.01–1 per key press; the default is 0.25. Configure the keys in Shortcuts.
   fullscreen_wheel_volume: Mouse wheel volume in fullscreen
@@ -1142,9 +1158,6 @@ settings:
   auto_exit_fullscreen_on_end: Auto exit fullscreen/webFullscreen when video ends
   auto_exit_fullscreen_on_end_desc: >
     When enabled, the player will automatically exit fullscreen mode when the video finishes playing and no single-loop, random-play, or auto-play behavior is active
-  auto_exit_fullscreen_exclude_auto_play: Exclude auto-play mode
-  auto_exit_fullscreen_exclude_auto_play_desc: >
-    When enabled, videos in auto-play mode will not auto-exit fullscreen when finished, allowing continuous viewing
   use_bilibili_default_auto_play: Use Bilibili's default auto-play behavior
   use_bilibili_default_auto_play_desc: >
     Let Bilibili decide what happens when playback ends instead of applying the per-video-type settings below.

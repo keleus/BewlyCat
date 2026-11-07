@@ -162,9 +162,6 @@ function findShortcutId(e: KeyboardEvent): string | null {
 }
 
 function shouldIgnoreShortcutEvent(e: KeyboardEvent): boolean {
-  if (document.getElementById('bewly')?.classList.contains('settings-open'))
-    return true
-
   // 插件界面在 #bewly 的 Shadow DOM 中，e.target 会被重定向到宿主元素；取实际焦点元素判断，
   // 否则焦点留在插件界面（如刚关闭设置）时快捷键会被跳过，按键落到 B 站原有快捷键上。
   const target = (e.composedPath()[0] ?? e.target) as HTMLElement | null

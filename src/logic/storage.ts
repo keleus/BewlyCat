@@ -16,8 +16,6 @@ import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
 import { normalizePlaybackRateStep } from '~/utils/playbackRate'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
-export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
-
 export type { AppAuthTokens } from './appAuthStorage'
 export { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from './appAuthStorage'
 
@@ -427,8 +425,6 @@ export interface Settings {
   showBewlyOrBiliPageSwitcher: boolean
   showBewlyOrBiliPageSwitcherOnMorePages: boolean
   topBarLogoStyle: TopBarLogoStyle
-  topBarIconBadges: 'number' | 'dot' | 'none'
-  showWatchLaterBadge: boolean
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   topBarPinnedChannels: string[]
   openNotificationsPageAsDrawer: boolean
@@ -598,14 +594,9 @@ export interface Settings {
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   homeTabsPosition: TabsPosition
-  alwaysShowTabsOnHomePage: boolean
   fixedHomeTabsOnHomePage: boolean
   enableVersionReminder: boolean
   lastAcknowledgedVersion: string
-  // Title font size for cards (px); when auto is enabled, this is ignored
-  homeAdaptiveTitleFontSize: number
-  // Auto adjust title font size based on grid width
-  homeAdaptiveTitleAutoSize: boolean
   // Video card title font size token
   videoCardTitleFontSize: VideoCardFontSizeSetting
   // Video card author (UP) font size token
@@ -623,7 +614,19 @@ export interface Settings {
   rememberNoCookieRecommendationState: boolean
 
   adaptToOtherPageStyles: boolean
+  /** 顶栏模块总开关，关闭后插件不再隐藏、托管或改写任何顶栏 */
+  enableTopBarModule: boolean
   enableTopBar: boolean
+  /** Dock 总开关；Bewly 页面关闭时 Dock 直接跳转 B 站原站页面 */
+  enableDock: boolean
+  /** 悬浮侧栏总开关；Dock 显示时不显示 */
+  enableSideBar: boolean
+  /** 原站评论区增强总开关，关闭后各评论子项不生效 */
+  enableCommentEnhancements: boolean
+  /** 原站播放器增强总开关，关闭后播放器相关子项不生效，刷新页面后生效 */
+  enablePlayerEnhancements: boolean
+  /** 模块开关的旧设置迁移是否已完成 */
+  pluginModulesMigrated: boolean
   useOriginalBilibiliTopBar: boolean
   useOriginalBilibiliHomepage: boolean
   preventMobileRedirect: boolean
@@ -643,7 +646,6 @@ export interface Settings {
   enableVideoPlayerModeOverrides: boolean // 启用按场景覆盖播放器显示模式
   videoPlayerModeOverrides: VideoPlayerModeOverrides // 不同播放场景的显示模式覆盖
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
-  autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
   showVerticalVideoZoomButton: boolean // 显示竖屏视频放大按钮
   showBewlyWidescreenButton: boolean // 显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
@@ -811,8 +813,6 @@ export const originalSettings: Settings = {
   showBewlyOrBiliPageSwitcher: true,
   showBewlyOrBiliPageSwitcherOnMorePages: false,
   topBarLogoStyle: 'icon',
-  topBarIconBadges: 'number',
-  showWatchLaterBadge: false,
   topBarComponentsConfig: [
     { key: 'moments', visible: true, badgeType: 'number' },
     { key: 'favorites', visible: true, badgeType: 'none' },
@@ -978,12 +978,9 @@ export const originalSettings: Settings = {
 
   homePageTabVisibilityList: [],
   homeTabsPosition: 'left',
-  alwaysShowTabsOnHomePage: false,
   fixedHomeTabsOnHomePage: false,
   enableVersionReminder: true,
   lastAcknowledgedVersion: '',
-  homeAdaptiveTitleFontSize: 16,
-  homeAdaptiveTitleAutoSize: true,
   videoCardTitleFontSize: 'base',
   videoCardAuthorFontSize: 'sm',
   videoCardMetaFontSize: 'xs',
@@ -1000,7 +997,13 @@ export const originalSettings: Settings = {
   rememberNoCookieRecommendationState: true,
 
   adaptToOtherPageStyles: true,
+  enableTopBarModule: true,
   enableTopBar: true,
+  enableDock: true,
+  enableSideBar: true,
+  enableCommentEnhancements: true,
+  enablePlayerEnhancements: true,
+  pluginModulesMigrated: false,
   useOriginalBilibiliTopBar: false,
   useOriginalBilibiliHomepage: false,
   preventMobileRedirect: false,
@@ -1027,7 +1030,6 @@ export const originalSettings: Settings = {
     momentsDialog: 'inherit',
   },
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
-  autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
   showVerticalVideoZoomButton: true, // 默认显示竖屏视频放大按钮
   showBewlyWidescreenButton: true, // 默认显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
@@ -1233,6 +1235,13 @@ export const settings = useSettingsStorage(originalSettings, {
       Reflect.deleteProperty(record, 'enableFavoriteCoverBlur')
     }
 
+    // 原版首页用户此前看不到 Dock，引入独立开关后保持原有界面。
+    if (!record.pluginModulesMigrated) {
+      if (record.useOriginalBilibiliHomepage === true)
+        record.enableDock = false
+      record.pluginModulesMigrated = true
+    }
+
     record.favoriteOrganizerFolders = normalizeFavoriteOrganizerFolders(record.favoriteOrganizerFolders)
     record.recommendationModeSwitcherOptions = normalizeRecommendationModeSwitcherOptions(record.recommendationModeSwitcherOptions)
 
@@ -1240,6 +1249,12 @@ export const settings = useSettingsStorage(originalSettings, {
     Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')
     Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
     Reflect.deleteProperty(record, 'releaseOffscreenVideoCardImages')
+    Reflect.deleteProperty(record, 'topBarIconBadges')
+    Reflect.deleteProperty(record, 'showWatchLaterBadge')
+    Reflect.deleteProperty(record, 'alwaysShowTabsOnHomePage')
+    Reflect.deleteProperty(record, 'autoExitFullscreenExcludeAutoPlay')
+    Reflect.deleteProperty(record, 'homeAdaptiveTitleFontSize')
+    Reflect.deleteProperty(record, 'homeAdaptiveTitleAutoSize')
 
     const validTabsPositions: TabsPosition[] = ['left', 'center']
     if (!validTabsPositions.includes(record.homeTabsPosition))

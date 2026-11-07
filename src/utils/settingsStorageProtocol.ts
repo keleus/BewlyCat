@@ -47,12 +47,21 @@ function hasOwn(record: Record<string, unknown>, key: string) {
   return Object.prototype.hasOwnProperty.call(record, key)
 }
 
+function sortObjectKeys(_key: string, value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return value
+
+  const record = value as Record<string, unknown>
+  return Object.fromEntries(Object.keys(record).sort().map(key => [key, record[key]]))
+}
+
 function valuesEqual(left: unknown, right: unknown) {
   if (Object.is(left, right))
     return true
 
+  // chrome.storage 读回的对象键按字母序排列，键顺序不同不算修改，否则规范化结果和云端回写会互相覆盖。
   try {
-    return JSON.stringify(left) === JSON.stringify(right)
+    return JSON.stringify(left, sortObjectKeys) === JSON.stringify(right, sortObjectKeys)
   }
   catch {
     return false

@@ -221,18 +221,38 @@ settings:
     placeholder: 搜尋設定
     no_results: 搵唔到相關設定
     located: 已定位到呢個設定
-  category_general_desc: 設定語言、互動版面、連結打開方式同抽屜行為。
+  category_general_desc: 設定語言同互動方式，並按需要開啟外掛嘅各個部分，可以淨係保留評論、大會員等單項功能。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式同其他頁面嘅適配。
   category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。
   breadcrumb: 設定位置
-  usage_guide: 使用說明：BewlyCat 功能講解影片合集
-  group_interaction_layout: 互動同版面
+  usage_guide: 使用說明
+  group_modules_interface: 介面模組
+  group_modules_interface_desc: 閂咗之後恢復 B 站原有介面，淨係服務呢個模組嘅設定都會一齊隱藏。
+  module_bewly_pages: Bewly 頁面
+  module_bewly_pages_desc: 自訂主頁、動態、搜尋等頁面同佢哋嘅影片卡片、桌布。閂咗之後用 B 站原版頁面，已開啟嘅主頁會自動重新整理。
+  module_top_bar: 頂欄
+  module_top_bar_desc: 外掛提供嘅頂欄同原版頂欄託管。閂咗之後外掛唔會再隱藏或者改動任何頂欄，頁面顯示 B 站自己嘅頂欄；Bewly 首頁成頁由外掛接管，唔顯示頂欄。
+  module_dock: Dock 欄
+  module_dock_desc: 頁面切換導覽。Bewly 頁面閂咗嘅時候，撳落直接跳去 B 站原站頁面。
+  module_sidebar: 懸浮側欄
+  module_sidebar_desc: 提供主題切換同設定入口，Dock 顯示時唔會顯示。閂咗之後可以喺瀏覽器工具列圖示開啟設定。
+  group_modules_enhancements: 功能增強
+  group_modules_enhancements_desc: 唔依賴上面嘅介面模組。大會員、收藏夾整理、原版動態同淨化功能喺「Bilibili」分類單獨設定。
+  module_comments: 評論增強
+  module_comments_desc: 回覆樹、IP 屬地、性別、樓主標識同評論圖片最佳化。
+  module_player: 播放器增強
+  module_player_desc: 顯示模式、播放器掣、聽影片、音量均衡、環境光同連播控制。重新整理頁面後生效。
+  module_shortcuts: 鍵盤快捷鍵
+  module_shortcuts_desc: 外掛提供嘅播放器同主頁快捷鍵。
+  category_bilibili_moments_desc: 調整原版動態頁嘅模組同評論行為，並過濾動態。
+  group_interaction: 互動
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁同首頁分頁。
   category_browsing_video_card_desc: 設定影片卡片嘅版面、預覽、資料顯示同開啟方式。
   category_browsing_favorites_desc: 按規則整理收藏夾，一鍵三連之後自動同步去對應收藏夾。
   category_navigation_link_opening_desc: 統一設定頂欄、影片卡片同搜尋列連結嘅開啟位置同抽屜行為。
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口同通知顯示。
   category_navigation_dock_desc: 設定 Dock 欄同側欄嘅位置、顯示同快捷操作。
+  category_navigation_interaction_desc: 設定連結打開方式、抽屜行為同清單捲動。
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋同結果頁。
   category_navigation_moments_desc: 設定插件動態頁左邊嘅元件同動態卡片開啟方式。
   category_playback_player_desc: 設定播放器模式、捲動、彈幕、字幕同播放狀態。
@@ -285,10 +305,13 @@ settings:
     moments: 動態頁
     favorites: 收藏
     search: 搵嘢頁
+    interaction: 互動行為
 
   # Bilibili 功能增強 子選單
   bilibili_features:
     comments: 評論
+    moments: 動態增強
+    favorite_organizer: 收藏夾整理
     video_playback: 播放器
     auto_play: 播放行為
     vip_features: 大會員
@@ -301,6 +324,7 @@ settings:
 
   group_common: 通用
   group_drawer_behavior: 抽屜行為
+  group_list_scrolling: 清單捲動
   group_language: 語言
   group_ad_blocking: 廣告攔截
   group_comments: 評論
@@ -651,12 +675,10 @@ settings:
   show_bewly_or_bili_page_switcher_on_more_pages: 喺更多頁面顯示 BewlyCat/Bilibili 頁面切換掣
   filter_articles_in_moments: 過濾專欄
   filter_articles_in_moments_desc: 喺動態列表過濾專欄內容，只顯示影片
-  top_bar_icon_badges: 圖標邊位標記
   top_bar_icon_badges_opt:
     number: 數字
     dot: 圓點
     none: 唔顯示
-  show_watch_later_badge: 顯示稍後再睇角標
   show_bcoin_receive_reminder: 大會員 B 幣領取提示
   auto_receive_bcoin_coupon: 自動領取大會員 B 幣券
   auto_receive_bcoin_coupon_desc: 開啟後，偵測到未領取嘅 B 幣券時會自動領取
@@ -792,7 +814,6 @@ settings:
   enable_search_history_desc: 啓用後，搜尋欄會記同顯示你嘅搜尋歷史。關咗之後會剷晒所有歷史
   use_plugin_search_results_page: 使用插件搜尋結果頁
   use_plugin_search_results_page_desc: 開啟後，搜尋會使用插件內置嘅搜尋結果頁，支援分類篩選等功能
-  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首頁嗰陣，搜尋會使用 bilibili 原版結果頁
   depersonalize_search_results: 去個人化搜尋
   depersonalize_search_results_desc: 開啟後以未登入狀態搜尋，結果唔受個人偏好影響。
   show_search_identity_switcher: 顯示登入 / 訪客快速切換按鈕組
@@ -977,12 +998,9 @@ settings:
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
   home_tabs_position: 主頁分頁欄位置
-  always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
   topbar_visibility_desc: 開咗之後顯示 BewlyCat 或 B 站原本頂欄；閂咗就兩個都收埋，交俾 Bilibili Evolved 等第三方頂欄。
-  use_original_bilibili_homepage: 用返原本嘅 Bilibili 主頁
-  use_original_bilibili_homepage_desc: 改咗之後，如果你喺主頁，個頁面就會自動重新整理！
   use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂欄
   use_original_bilibili_topbar_desc: 淨係喺「頂欄可視性」開咗先會生效。開咗就用 B 站原本頂欄，閂咗就用 BewlyCat 頂欄。
   top_bar_mode: 頂欄類型
@@ -1049,9 +1067,9 @@ settings:
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 開啟後，播放器會記住你上次設定嘅倍速，並喺下次開片嗰陣自動套用
   custom_playback_rate: 自訂播放倍速
-  custom_playback_rate_desc: 輸入 0.25–5 倍，套用到而家嘅影片。開咗「記住倍速」就會儲存呢個值。
-  custom_playback_rate_apply: 套用到而家嘅影片
-  custom_playback_rate_no_video: 呢個頁面冇可以控制嘅影片，請喺影片播放頁開啟呢個設定。
+  custom_playback_rate_desc: 輸入 0.25–5 倍，套用到最近睇過嘅影片分頁。開咗「記住倍速」就會儲存呢個值。
+  custom_playback_rate_apply: 套用到影片
+  custom_playback_rate_no_video: 搵唔到可以控制嘅影片，請先喺其他分頁開影片。
   playback_rate_step: 倍速快捷鍵調整幅度
   playback_rate_step_desc: 每次增減 0.01–1 倍；預設 0.25。快捷鍵可以喺「快捷鍵」設定修改。
   fullscreen_wheel_volume: 全螢幕滾輪調音量
@@ -1070,8 +1088,6 @@ settings:
   remember_video_aspect_ratio_desc: 啟用後，播放器會記住你上次揀嘅影片比例，並喺下次打開影片嗰陣自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播完後自動退出
   auto_exit_fullscreen_on_end_desc: 啟用後，影片播完而且冇單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
-  auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
-  auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
   use_bilibili_default_auto_play: 用 Bilibili 預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用之後由 Bilibili 決定播放結束行為，唔會套用下面按影片類型設定。
   auto_play_watch_later: 稍後再睇

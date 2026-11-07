@@ -1,7 +1,8 @@
 import type { App, Plugin } from 'vue'
 
 const componentModules: Record<string, { default: Component }> = import.meta.glob(
-  ['./*.vue', './*/*.vue'],
+  // 设置页在独立的扩展页面中显式引入，不打进 B 站页面的内容脚本。
+  ['./*.vue', './*/*.vue', '!./Settings/*.vue'],
   { eager: true },
 )
 

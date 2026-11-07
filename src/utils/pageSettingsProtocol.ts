@@ -64,8 +64,12 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     return null
   }
 
+  // 页面脚本校验已转换的 payload 时没有总开关字段，此时子项已按总开关计算过。
+  const commentsEnabled = value.enableCommentEnhancements !== false
+  const playerEnabled = value.enablePlayerEnhancements !== false
+
   return {
-    localLoudnessEnabled: value.localLoudnessEnabled === true,
+    localLoudnessEnabled: playerEnabled && value.localLoudnessEnabled === true,
     localLoudnessTarget: typeof value.localLoudnessTarget === 'number' && Number.isFinite(value.localLoudnessTarget)
       ? Math.max(-24, Math.min(-14, value.localLoudnessTarget))
       : -18,
@@ -73,12 +77,12 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
       ? Math.max(40, Math.min(100, value.localLoudnessStrength))
       : 75,
     // 页面脚本会再次校验已转换的 payload，此时直接沿用字段。
-    audioDelayEnabled: value.audioDelayEnabled === true || value.playerAudioDelayEnabled === true,
+    audioDelayEnabled: playerEnabled && (value.audioDelayEnabled === true || value.playerAudioDelayEnabled === true),
     observeTripleRequests: value.observeTripleRequests === true
       || (value.favoriteOrganizerSyncAfterTriple === true
         && Array.isArray(value.favoriteOrganizerFolders)
         && value.favoriteOrganizerFolders.length > 0),
-    adjustCommentImageHeight: value.adjustCommentImageHeight,
+    adjustCommentImageHeight: commentsEnabled && value.adjustCommentImageHeight,
     cleanShareLinkIncludeTitle: value.cleanShareLinkIncludeTitle,
     cleanShareLinkRemoveTrackingParams: value.cleanShareLinkRemoveTrackingParams,
     commentReplyPaginationMode: value.commentReplyPaginationMode,
@@ -86,14 +90,14 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     commentReplyTreeMode: value.commentReplyTreeMode,
     depersonalizeSearchResults: value.depersonalizeSearchResults,
     enableCleanShareLink: value.enableCleanShareLink,
-    enableCommentReplyTreeContainer: value.enableCommentReplyTreeContainer,
-    enableCommentReplyTreeDisplay: value.enableCommentReplyTreeDisplay,
+    enableCommentReplyTreeContainer: commentsEnabled && value.enableCommentReplyTreeContainer,
+    enableCommentReplyTreeDisplay: commentsEnabled && value.enableCommentReplyTreeDisplay,
     language: value.language,
     preventMobileRedirect: value.preventMobileRedirect,
-    showCommentHostTag: value.showCommentHostTag,
-    showIPLocation: value.showIPLocation,
-    showSex: value.showSex,
-    skipConciseDanmaku: value.skipConciseDanmaku !== false,
+    showCommentHostTag: commentsEnabled && value.showCommentHostTag,
+    showIPLocation: commentsEnabled && value.showIPLocation,
+    showSex: commentsEnabled && value.showSex,
+    skipConciseDanmaku: playerEnabled && value.skipConciseDanmaku !== false,
   }
 }
 

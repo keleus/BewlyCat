@@ -221,18 +221,38 @@ settings:
     placeholder: 搜索设置
     no_results: 没有找到相关设置
     located: 已定位到此设置
-  category_general_desc: 配置语言、交互布局、链接打开方式与抽屉行为。
+  category_general_desc: 配置语言和交互方式，并按需开启插件的各个部分，可以只保留评论、大会员等单项功能。
   category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
   breadcrumb: 设置位置
-  usage_guide: 使用帮助：BewlyCat 功能讲解视频合集
-  group_interaction_layout: 交互与布局
+  usage_guide: 使用帮助
+  group_modules_interface: 界面模块
+  group_modules_interface_desc: 关闭后恢复 B 站原有界面，只服务于该模块的设置也会一并隐藏。
+  module_bewly_pages: Bewly 页面
+  module_bewly_pages_desc: 自定义首页、动态、搜索等页面及其视频卡片和壁纸。关闭后使用 B 站原版页面，已打开的首页会自动刷新。
+  module_top_bar: 顶栏
+  module_top_bar_desc: 插件提供的顶栏及原版顶栏托管。关闭后插件不再隐藏或改动任何顶栏，页面显示 B 站自己的顶栏；Bewly 首页整页由插件接管，不显示顶栏。
+  module_dock: Dock 栏
+  module_dock_desc: 页面切换导航。Bewly 页面关闭时，点击直接跳转 B 站原站页面。
+  module_sidebar: 悬浮侧栏
+  module_sidebar_desc: 提供主题切换和设置入口，Dock 显示时不显示。关闭后可从浏览器工具栏图标打开设置。
+  group_modules_enhancements: 功能增强
+  group_modules_enhancements_desc: 不依赖上方界面模块。大会员、收藏夹整理、原版动态和净化功能在「Bilibili」分类中单独设置。
+  module_comments: 评论增强
+  module_comments_desc: 回复树、IP 属地、性别、楼主标识和评论图片优化。
+  module_player: 播放器增强
+  module_player_desc: 显示模式、播放器按钮、听视频、音量均衡、环境光和连播控制。刷新页面后生效。
+  module_shortcuts: 键盘快捷键
+  module_shortcuts_desc: 插件提供的播放器和首页快捷键。
+  category_bilibili_moments_desc: 调整原版动态页的模块和评论行为，并过滤动态。
+  group_interaction: 交互
   category_browsing_home_desc: 配置首页推荐、内容过滤、关注页和首页标签。
   category_browsing_video_card_desc: 配置视频卡片的布局、预览、信息展示与打开方式。
   category_browsing_favorites_desc: 按规则整理收藏夹，并在一键三连后自动同步到对应收藏夹。
   category_navigation_link_opening_desc: 统一配置顶栏、视频卡片与搜索栏链接的打开位置和抽屉行为。
   category_navigation_topbar_desc: 统一调整顶栏布局、组件、频道、搜索入口和通知显示。
   category_navigation_dock_desc: 配置 Dock 栏与侧栏的位置、显隐和快捷操作。
+  category_navigation_interaction_desc: 配置链接打开方式、抽屉行为和列表滚动。
   category_navigation_search_desc: 配置搜索页外观、搜索建议、历史、热搜与结果页。
   category_navigation_moments_desc: 配置插件动态页的左侧组件和动态卡片打开方式。
   category_playback_player_desc: 配置播放器模式、滚动行为、弹幕、字幕和播放状态。
@@ -285,10 +305,13 @@ settings:
     moments: 动态页
     favorites: 收藏
     search: 搜索页
+    interaction: 交互行为
 
   # Bilibili 功能增强 子菜单
   bilibili_features:
     comments: 评论
+    moments: 动态增强
+    favorite_organizer: 收藏夹整理
     video_playback: 播放器
     auto_play: 播放行为
     vip_features: 大会员
@@ -301,6 +324,7 @@ settings:
 
   group_common: 通用
   group_drawer_behavior: 抽屉行为
+  group_list_scrolling: 列表滚动
   group_language: 语言
   group_ad_blocking: 广告拦截
   group_comments: 评论
@@ -631,9 +655,9 @@ settings:
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
   custom_playback_rate: 自定义播放倍速
-  custom_playback_rate_desc: 输入 0.25–5 倍，应用到当前视频。开启「记住倍速」后会保存此值。
-  custom_playback_rate_apply: 应用到当前视频
-  custom_playback_rate_no_video: 当前页面没有可控制的视频，请在视频播放页打开此设置。
+  custom_playback_rate_desc: 输入 0.25–5 倍，应用到最近访问的视频标签页。开启「记住倍速」后会保存此值。
+  custom_playback_rate_apply: 应用到视频
+  custom_playback_rate_no_video: 没有找到可控制的视频，请先在其他标签页打开视频。
   playback_rate_step: 倍速快捷键调节幅度
   playback_rate_step_desc: 每次增减 0.01–1 倍；默认 0.25。快捷键可在「快捷键」设置中修改。
   fullscreen_wheel_volume: 全屏滚轮调节音量
@@ -652,8 +676,6 @@ settings:
   remember_video_aspect_ratio_desc: 启用后，播放器会记住您上次选择的视频比例，并在下次打开视频时自动应用
   auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出
   auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束且没有单集循环、随机播放、自动连播等后续播放行为时，会自动退出全屏模式
-  auto_exit_fullscreen_exclude_auto_play: 自动连播下除外
-  auto_exit_fullscreen_exclude_auto_play_desc: 启用后，在自动连播下播放结束时不会自动退出全屏，方便连续观看
   use_bilibili_default_auto_play: 使用 Bilibili 默认自动播放行为
   use_bilibili_default_auto_play_desc: 启用后由 Bilibili 决定播放结束行为，不应用下方按视频类型设置。
   auto_play_watch_later: 稍后再看
@@ -757,12 +779,10 @@ settings:
   sync_cloud_status_failed: 无法读取云端同步状态
   sync_cloud_enable_failed: 开启云同步失败
   sync_cloud_incompatible: 云端数据由更新版本的扩展写入，请先升级扩展再开启同步
-  top_bar_icon_badges: 图标角标
   top_bar_icon_badges_opt:
     number: 数字
     dot: 圆点
     none: 不显示
-  show_watch_later_badge: 显示稍后再看角标
   show_bcoin_receive_reminder: 大会员B币领取提醒
   auto_receive_bcoin_coupon: 大会员B币自动领取
   auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
@@ -941,7 +961,6 @@ settings:
   enable_search_history_desc: 启用后，搜索栏将记录和显示您的搜索历史记录。关闭后将清除所有历史记录
   use_plugin_search_results_page: 使用插件搜索结果页
   use_plugin_search_results_page_desc: 启用后，搜索时将使用插件内置的搜索结果页面，支持分类筛选等功能
-  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首页时，搜索将使用 bilibili 原版结果页
   depersonalize_search_results: 去个性化搜索
   depersonalize_search_results_desc: 启用后以未登录状态搜索，结果不受个人偏好影响。
   show_search_identity_switcher: 显示登录 / 游客快速切换按钮组
@@ -1111,12 +1130,9 @@ settings:
   home_tabs_adjustment: 标签栏调整
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
   home_tabs_position: 首页标签栏位置
-  always_show_tabs_on_home_page: 滚动隐藏首页标签栏
   fixed_home_tabs_on_home_page: 固定首页标签栏
   topbar_visibility: 顶栏可见性
   topbar_visibility_desc: 开启后显示 BewlyCat 或 B 站原版顶栏；关闭后隐藏两者，交给 Bilibili Evolved 等第三方顶栏。
-  use_original_bilibili_homepage: 使用原版 Bilibili 首页
-  use_original_bilibili_homepage_desc: 在您更改此设置后，如果在首页上，页面将自动刷新！
   use_original_bilibili_topbar: 使用原版 Bilibili 顶栏
   use_original_bilibili_topbar_desc: 仅在「顶栏可见性」开启时生效。开启后使用 B 站原版顶栏，关闭后使用 BewlyCat 顶栏。
   top_bar_mode: 顶栏类型

@@ -1,11 +1,21 @@
 import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 
+let bilibiliCookieSnapshot: ReadonlyMap<string, string> | undefined
+
+/** 扩展页的 document.cookie 读不到 B 站 Cookie，由设置页提供 browser.cookies 的结果。 */
+export function setBilibiliCookieSnapshot(cookies: ReadonlyMap<string, string>) {
+  bilibiliCookieSnapshot = cookies
+}
+
 /**
  * Get cookie by name
  * @param name cookie name
  * @returns cookie value
  */
 export function getCookie(name: string): string {
+  if (bilibiliCookieSnapshot)
+    return bilibiliCookieSnapshot.get(name) ?? ''
+
   const value = `; ${document.cookie}`
   const parts: Array<string> = value.split(`; ${name}=`)
   if (parts.length === 2) {

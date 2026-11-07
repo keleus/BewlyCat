@@ -3,17 +3,14 @@ import { useI18n } from 'vue-i18n'
 
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
-const props = withDefaults(defineProps<{
-  scope?: 'all' | 'topBar' | 'videoCard'
-}>(), {
-  scope: 'all',
-})
-
 const { t } = useI18n()
+
+const isBewlyTopBarEnabled = computed(() => shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar))
 
 const openModeOptions = computed(() => {
   return [
@@ -69,7 +66,7 @@ const videoCardOpenModeOptions = computed(() => {
 <template>
   <SettingsItemGroup :title="$t('settings.group_link_opening_behavior')">
     <SettingsItem
-      v-if="props.scope === 'all' || props.scope === 'topBar'"
+      v-if="isBewlyTopBarEnabled"
       :title="$t('settings.top_bar_link_opening_behavior')"
       :desc="$t('settings.link_opening_behavior_desc')"
       right-width="auto"
@@ -77,7 +74,7 @@ const videoCardOpenModeOptions = computed(() => {
       <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="160px" />
     </SettingsItem>
     <SettingsItem
-      v-if="props.scope === 'all' || props.scope === 'videoCard'"
+      v-if="!settings.useOriginalBilibiliHomepage"
       :title="$t('settings.video_card_link_opening_behavior')"
       :desc="$t('settings.video_card_link_opening_behavior_desc')"
       right-width="auto"
@@ -89,7 +86,6 @@ const videoCardOpenModeOptions = computed(() => {
       />
     </SettingsItem>
     <SettingsItem
-      v-if="props.scope === 'all' || props.scope === 'topBar'"
       :title="$t('settings.search_bar_link_opening_behavior')"
       :desc="$t('settings.link_opening_behavior_desc')"
       right-width="auto"

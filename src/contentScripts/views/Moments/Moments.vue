@@ -1435,7 +1435,6 @@ function handleUpNavKeydown(event: KeyboardEvent) {
     detailImageViewerOpen.value
     || selectedMoment.value
     || lotteryDialogUrl.value
-    || document.getElementById('bewly')?.classList.contains('settings-open')
   ) {
     return
   }
