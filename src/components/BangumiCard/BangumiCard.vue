@@ -2,7 +2,6 @@
 import type { ComponentPublicInstance } from 'vue'
 
 import { useDark } from '~/composables/useDark'
-import { settings } from '~/logic'
 import { numFormatter } from '~/utils/dataFormatter'
 import { removeHttpFromUrl } from '~/utils/main'
 
@@ -195,7 +194,7 @@ const { isDark } = useDark()
           marginTop: horizontal ? '0' : '1rem',
         }"
       >
-        <p un-text="lg" mb-2 :class="{ 'bew-title-auto': settings.homeAdaptiveTitleAutoSize }" :style="!settings.homeAdaptiveTitleAutoSize && settings.homeAdaptiveTitleFontSize ? { fontSize: `${settings.homeAdaptiveTitleFontSize}px`, lineHeight: '1.25' } : {}">
+        <p un-text="lg" mb-2 class="bew-title-auto">
           <a
             :href="bangumi.url" target="_blank"
             class="keep-two-lines"

@@ -651,12 +651,10 @@ settings:
   show_bewly_or_bili_page_switcher_on_more_pages: 喺更多頁面顯示 BewlyCat/Bilibili 頁面切換掣
   filter_articles_in_moments: 過濾專欄
   filter_articles_in_moments_desc: 喺動態列表過濾專欄內容，只顯示影片
-  top_bar_icon_badges: 圖標邊位標記
   top_bar_icon_badges_opt:
     number: 數字
     dot: 圓點
     none: 唔顯示
-  show_watch_later_badge: 顯示稍後再睇角標
   show_bcoin_receive_reminder: 大會員 B 幣領取提示
   auto_receive_bcoin_coupon: 自動領取大會員 B 幣券
   auto_receive_bcoin_coupon_desc: 開啟後，偵測到未領取嘅 B 幣券時會自動領取
@@ -977,7 +975,6 @@ settings:
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
   home_tabs_position: 主頁分頁欄位置
-  always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
   topbar_visibility_desc: 開咗之後顯示 BewlyCat 或 B 站原本頂欄；閂咗就兩個都收埋，交俾 Bilibili Evolved 等第三方頂欄。
@@ -1070,8 +1067,6 @@ settings:
   remember_video_aspect_ratio_desc: 啟用後，播放器會記住你上次揀嘅影片比例，並喺下次打開影片嗰陣自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播完後自動退出
   auto_exit_fullscreen_on_end_desc: 啟用後，影片播完而且冇單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
-  auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
-  auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
   use_bilibili_default_auto_play: 用 Bilibili 預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用之後由 Bilibili 決定播放結束行為，唔會套用下面按影片類型設定。
   auto_play_watch_later: 稍後再睇
