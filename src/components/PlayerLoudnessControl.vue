@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
-import { applyPictureAdjustment, isPictureAdjusted, playerAdjustment } from '~/utils/playerAdjustment'
+import { applyPictureAdjustment, isPictureAdjusted, loudnessTemporarilyOff, playerAdjustment, resetPictureAdjustment } from '~/utils/playerAdjustment'
 
 const props = defineProps<{ video: HTMLVideoElement }>()
 const { t } = useI18n()
@@ -25,7 +25,13 @@ const gainPath = computed(() => {
     return `${move ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
   }).join(' ')
 })
-watch(() => settings.value.localLoudnessEnabled, () => {
+const loudnessOn = computed({
+  get: () => !loudnessTemporarilyOff.value,
+  set: (on) => {
+    loudnessTemporarilyOff.value = !on
+  },
+})
+watch(() => [settings.value.localLoudnessEnabled, loudnessTemporarilyOff.value], () => {
   history.value = []
   gain.value = null
 })
@@ -35,39 +41,15 @@ function updateParameter(event: Event, key: 'localLoudnessTarget' | 'localLoudne
     settings.value[key] = value
 }
 const statuses = new Set(['off', 'waiting', 'active', 'error', 'native-unavailable', 'unsupported'])
-const displayState = computed(() => settings.value.localLoudnessEnabled ? state.value : 'off')
+const displayState = computed(() => settings.value.localLoudnessEnabled && !loudnessTemporarilyOff.value ? state.value : 'off')
 const life = new AbortController()
 const panelResizeObserver = new ResizeObserver(placePanel)
 
-const delayStatuses = new Set(['off', 'waiting', 'active', 'unsupported', 'error'])
-const delayState = ref('off')
 const pictureAdjusted = computed(isPictureAdjusted)
-const adjusted = computed(() => pictureAdjusted.value || playerAdjustment.audioDelay > 0)
-const delayNotice = computed(() => playerAdjustment.audioDelay > 0 && ['waiting', 'unsupported', 'error'].includes(delayState.value)
-  ? t(`settings.player_adjustment.audio_delay_states.${delayState.value}`)
-  : t('settings.player_adjustment.audio_delay_desc'))
-const videoResizeObserver = new ResizeObserver(() => applyPictureAdjustment(props.video))
 
-watch(() => [playerAdjustment.rotation, playerAdjustment.flipX, playerAdjustment.flipY], () => {
+watch(() => [playerAdjustment.flipX, playerAdjustment.flipY], () => {
   applyPictureAdjustment(props.video)
 }, { immediate: true })
-watch(() => playerAdjustment.audioDelay, (delay) => {
-  window.postMessage({ type: 'BEWLY_AUDIO_DELAY', delay }, location.origin)
-}, { immediate: true })
-
-function rotate(step: number) {
-  playerAdjustment.rotation = (playerAdjustment.rotation + step + 360) % 360
-}
-function resetPicture() {
-  playerAdjustment.rotation = 0
-  playerAdjustment.flipX = false
-  playerAdjustment.flipY = false
-}
-function updateAudioDelay(event: Event) {
-  const value = (event.target as HTMLInputElement).valueAsNumber
-  if (Number.isFinite(value))
-    playerAdjustment.audioDelay = value
-}
 
 watch(open, (visible) => {
   if (visible) {
@@ -83,7 +65,6 @@ watch(open, (visible) => {
 
 function requestStatus() {
   window.postMessage({ type: 'BEWLY_LOUDNESS_STATUS_REQUEST' }, location.origin)
-  window.postMessage({ type: 'BEWLY_AUDIO_DELAY_STATUS_REQUEST' }, location.origin)
 }
 function show() {
   open.value = true
@@ -146,11 +127,6 @@ function resetStatus() {
 }
 function onStatus(event: MessageEvent) {
   const data = event.data
-  if (event.source === window && data?.type === 'BEWLY_AUDIO_DELAY_STATUS' && delayStatuses.has(data.state)
-    && data.url === location.href) {
-    delayState.value = data.state
-    return
-  }
   if (event.source !== window || data?.type !== 'BEWLY_LOUDNESS_STATUS' || !statuses.has(data.state)
     || data.url !== location.href || data.src !== props.video.currentSrc) {
     return
@@ -178,16 +154,11 @@ onMounted(() => {
   }
   for (const name of ['emptied', 'loadedmetadata', 'seeking'])
     props.video.addEventListener(name, resetStatus, { signal: life.signal })
-  // 画面尺寸或比例变化后重新计算旋转 90° 时的缩放。
-  for (const name of ['loadedmetadata', 'resize'])
-    props.video.addEventListener(name, () => applyPictureAdjustment(props.video), { signal: life.signal })
-  videoResizeObserver.observe(props.video)
   requestStatus()
 })
 onBeforeUnmount(() => {
   life.abort()
   panelResizeObserver.disconnect()
-  videoResizeObserver.disconnect()
   panel.value?.hidePopover()
 })
 </script>
@@ -200,7 +171,7 @@ onBeforeUnmount(() => {
     @click.stop @dblclick.stop @pointerdown.stop @mousedown.stop @wheel.stop
   >
     <button
-      ref="button" type="button" class="bpx-player-ctrl-btn-icon loudness-button" :class="{ 'is-adjusted': adjusted }"
+      ref="button" type="button" class="bpx-player-ctrl-btn-icon loudness-button" :class="{ 'is-adjusted': pictureAdjusted }"
       :aria-label="t('settings.player_adjustment.title')" :aria-expanded="open" aria-controls="bewly-loudness-panel"
       @click="open ? open = false : show()" @focus="onButtonFocus"
     >
@@ -249,21 +220,15 @@ onBeforeUnmount(() => {
       id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group" popover="manual"
       :aria-label="t('settings.player_adjustment.title')"
     >
-      <!-- 三项分别由设置页开关控制：画面、音画同步，以及跟随「启用局部音量均衡」的音量均衡 -->
+      <!-- 两项分别由设置页开关控制：画面镜像，以及跟随「启用局部音量均衡」的音量均衡 -->
       <div v-if="settings.playerPictureAdjustmentEnabled" class="panel-section">
         <div class="section-heading">
           <span>{{ t('settings.player_adjustment.picture') }}</span>
-          <button v-if="pictureAdjusted" type="button" class="text-button" @click="resetPicture">
+          <button v-if="pictureAdjusted" type="button" class="text-button" @click="resetPictureAdjustment">
             {{ t('settings.player_adjustment.reset') }}
           </button>
         </div>
         <div class="picture-actions">
-          <button type="button" class="action-button" @click="rotate(-90)">
-            {{ t('settings.player_adjustment.rotate_left') }}
-          </button>
-          <button type="button" class="action-button" @click="rotate(90)">
-            {{ t('settings.player_adjustment.rotate_right') }}
-          </button>
           <button
             type="button" class="action-button" :aria-pressed="playerAdjustment.flipX"
             @click="playerAdjustment.flipX = !playerAdjustment.flipX"
@@ -278,33 +243,13 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </div>
-      <div v-if="settings.playerAudioDelayEnabled" class="panel-section">
-        <div class="section-heading">
-          <span>{{ t('settings.player_adjustment.audio_sync') }}</span>
-          <button v-if="playerAdjustment.audioDelay > 0" type="button" class="text-button" @click="playerAdjustment.audioDelay = 0">
-            {{ t('settings.player_adjustment.reset') }}
-          </button>
-        </div>
-        <label class="parameter">
-          <span>{{ t('settings.player_adjustment.audio_delay') }} <output>{{ playerAdjustment.audioDelay }} ms</output></span>
-          <input
-            type="range" :value="playerAdjustment.audioDelay" min="0" max="1000" step="10"
-            :aria-label="t('settings.player_adjustment.audio_delay')"
-            :style="{ '--loudness-progress': `${playerAdjustment.audioDelay / 10}%` }"
-            @input="updateAudioDelay"
-          >
-        </label>
-        <div class="hint" role="status">
-          {{ delayNotice }}
-        </div>
-      </div>
       <div v-if="settings.localLoudnessEnabled" class="panel-section">
         <div class="section-heading">
           {{ t('settings.local_loudness.title') }}
         </div>
         <label class="toggle-row">
           <span>{{ t('settings.local_loudness.enable') }}</span>
-          <input v-model="settings.localLoudnessEnabled" type="checkbox" class="native-switch">
+          <input v-model="loudnessOn" type="checkbox" class="native-switch">
         </label>
         <label class="parameter">
           <span>{{ t('settings.local_loudness.target') }} <output>{{ settings.localLoudnessTarget }} LUFS</output></span>
@@ -444,13 +389,6 @@ onBeforeUnmount(() => {
   margin-top: 16px;
   padding-top: 12px;
 }
-.panel-section .parameter:first-of-type {
-  margin-top: 0;
-}
-.hint {
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.5);
-}
 .text-button,
 .action-button {
   border: 0;
@@ -480,7 +418,7 @@ onBeforeUnmount(() => {
     background: var(--bew-theme-color, #00a1d6);
   }
 }
-// 有画面或音画调整生效时在图标角落提示，避免忘记已改动。
+// 有画面镜像生效时在图标角落提示，避免忘记已改动。
 .loudness-button.is-adjusted {
   position: relative;
   &::after {
