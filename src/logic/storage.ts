@@ -324,10 +324,8 @@ export interface Settings {
   ambilightBlur: number
   ambilightSaturation: number
   ambilightFps: number
-  /** 画面与声音调整面板的画面项（旋转、镜像） */
+  /** 画面与声音调整面板的镜像项；音量均衡项跟随 localLoudnessEnabled，两项均关闭时不显示按钮 */
   playerPictureAdjustmentEnabled: boolean
-  /** 画面与声音调整面板的音画同步项；音量均衡项跟随 localLoudnessEnabled，三项均关闭时不显示按钮 */
-  playerAudioDelayEnabled: boolean
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
   localLoudnessStrength: number
@@ -722,7 +720,6 @@ export const originalSettings: Settings = {
   ambilightSaturation: 130,
   ambilightFps: 24,
   playerPictureAdjustmentEnabled: true,
-  playerAudioDelayEnabled: true,
   localLoudnessEnabled: false,
   localLoudnessTarget: -18,
   localLoudnessStrength: 75,
@@ -1297,18 +1294,16 @@ export const settings = useSettingsStorage(originalSettings, {
 
     // 音量均衡按钮已扩展为画面与声音调整按钮，旧显示开关不再沿用。
     Reflect.deleteProperty(record, 'showLocalLoudnessButton')
-    // 整体显示开关拆分为画面与音画同步两项；旧版关闭了按钮的用户两项一并关闭。
+    // 旧版关闭了调整按钮的用户沿用为关闭画面镜像。
     if (typeof record.showPlayerAdjustmentButton === 'boolean') {
-      if (!record.showPlayerAdjustmentButton) {
+      if (!record.showPlayerAdjustmentButton)
         record.playerPictureAdjustmentEnabled = false
-        record.playerAudioDelayEnabled = false
-      }
       Reflect.deleteProperty(record, 'showPlayerAdjustmentButton')
     }
-    for (const key of ['playerPictureAdjustmentEnabled', 'playerAudioDelayEnabled'] as const) {
-      if (typeof record[key] !== 'boolean')
-        record[key] = true
-    }
+    if (typeof record.playerPictureAdjustmentEnabled !== 'boolean')
+      record.playerPictureAdjustmentEnabled = true
+    // 音画同步功能已移除。
+    Reflect.deleteProperty(record, 'playerAudioDelayEnabled')
     if (typeof record.localLoudnessEnabled !== 'boolean')
       record.localLoudnessEnabled = false
     for (const [key, min, max, fallback] of [

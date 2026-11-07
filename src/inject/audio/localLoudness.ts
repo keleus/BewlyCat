@@ -9,12 +9,9 @@ interface SourceRecord {
   connect: AudioNode['connect']
   disconnect: AudioNode['disconnect']
   processor?: AudioWorkletNode
-  // 音画同步：DelayNode 延后声音，GainNode 在暂停与跳转时截断延迟线里残留的旧声音。
-  delay?: { input: DelayNode, output: GainNode }
   owned: boolean
 }
 
-const MAX_AUDIO_DELAY_MS = 1000
 const VIDEO_SELECTOR = '.bpx-player-video-wrap video, .bilibili-player-video video'
 
 /** Install at document_start, before the native player captures its media element. */
@@ -34,15 +31,12 @@ export function createLocalLoudnessController() {
   let hidden = false
   let disposed = false
   let config: Config = { enabled: false, target: -18, strength: 0.75 }
+  // 面板临时关闭时保留设置值，恢复时按设置重新启用。
+  let requested = config
+  let temporarilyOff = false
   let lastStatus = 'off'
   let lastReport = 0
   const failed = new WeakSet<HTMLMediaElement>()
-  // 音画同步跟随设置页的音画同步开关，关闭时不响应延迟请求，也不接管声音。
-  let delayEnabled = false
-  let delayMs = 0
-  let delayed: SourceRecord | undefined
-  let delayAbort: AbortController | undefined
-  let lastDelayStatus = 'off'
 
   function status(state: string, details: Record<string, number> = {}) {
     lastStatus = state
@@ -55,25 +49,20 @@ export function createLocalLoudnessController() {
   }
 
   function tail(record: SourceRecord): AudioNode {
-    return record.delay?.output ?? record.processor ?? record.source
+    return record.processor ?? record.source
   }
 
-  // Rebuild source → loudness → delay → native destinations, without a second source.
+  // Rebuild source → loudness → native destinations, without a second source.
   function rewire(record: SourceRecord) {
     try {
       Reflect.apply(record.disconnect, record.source, [])
     }
     catch { /* The native player may already have closed its context. */ }
     record.processor?.disconnect()
-    record.delay?.output.disconnect()
     let from: AudioNode = record.source
     if (record.processor) {
       rawConnect(record, from, [record.processor])
       from = record.processor
-    }
-    if (record.delay) {
-      rawConnect(record, from, [record.delay.input])
-      from = record.delay.output
     }
     for (const edge of record.edges) {
       try {
@@ -145,8 +134,6 @@ export function createLocalLoudnessController() {
         continue
       if (active === record)
         detach()
-      if (delayed === record)
-        removeDelay()
       record.source.disconnect()
       ownedConnected.delete(record)
     }
@@ -185,15 +172,11 @@ export function createLocalLoudnessController() {
     }
     if (config.enabled)
       void reconcile()
-    if (delayMs)
-      applyDelay()
   }
   document.addEventListener('play', onPlay, { capture: true, signal: lifetime.signal })
   document.addEventListener('pointerdown', () => {
-    for (const record of new Set([active, delayed])) {
-      if (record && !record.video.paused)
-        void (record.source.context as AudioContext).resume().catch(() => {})
-    }
+    if (active && !active.video.paused)
+      void (active.source.context as AudioContext).resume().catch(() => {})
   }, { capture: true, passive: true, signal: lifetime.signal })
   document.addEventListener('click', (event) => {
     if (!config.enabled || !(event.target instanceof Element))
@@ -362,113 +345,16 @@ export function createLocalLoudnessController() {
       || (Boolean(video.crossOrigin) && new URL(video.currentSrc, location.href).origin === location.origin)
   }
 
-  function delayStatus(state: string) {
-    lastDelayStatus = state
-    window.postMessage({ type: 'BEWLY_AUDIO_DELAY_STATUS', state, delay: delayMs, url: location.href }, location.origin)
-  }
-
-  // 延迟线里还留着上一段声音：暂停或跳转时立即静音，恢复播放后等新声音走完延迟再放开。
-  function gate(record: SourceRecord, open: boolean) {
-    const stage = record.delay
-    if (!stage)
-      return
-    const now = record.source.context.currentTime
-    stage.output.gain.cancelScheduledValues(now)
-    stage.output.gain.setValueAtTime(0, now)
-    if (open)
-      stage.output.gain.setValueAtTime(1, now + stage.input.delayTime.value)
-  }
-
-  function removeDelay() {
-    const record = delayed
-    delayed = undefined
-    delayAbort?.abort()
-    delayAbort = undefined
-    const stage = record?.delay
-    if (!record || !stage)
-      return
-    record.delay = undefined
-    stage.output.disconnect()
-    stage.input.disconnect()
-    rewire(record)
-  }
-
-  function applyDelay() {
-    if (disposed || hidden)
-      return
-    const video = document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR)
-    if (delayed && (!delayMs || delayed.video !== video || !video?.isConnected))
-      removeDelay()
-    if (!delayMs) {
-      delayStatus('off')
-      return
-    }
-    if (!video || !video.currentSrc) {
-      delayStatus('waiting')
-      return
-    }
-    let record = sources.get(video)
-    if (!record) {
-      if (failed.has(video) || !canCapture(video)) {
-        delayStatus('unsupported')
-        return
-      }
-      try {
-        record = capture(originalCreate.call(ownedContext ??= new AudioContext(), video), video, true)
-        ownedEverCaptured = true
-        reconnectOwned(record)
-      }
-      catch {
-        failed.add(video)
-        delayStatus('error')
-        return
-      }
-    }
-    const context = record.source.context
-    if (!record.delay) {
-      const current = record
-      const stage = { input: context.createDelay(MAX_AUDIO_DELAY_MS / 1000), output: context.createGain() }
-      stage.input.connect(stage.output)
-      current.delay = stage
-      rewire(current)
-      delayed = current
-      delayAbort = new AbortController()
-      for (const name of ['pause', 'seeking', 'emptied'])
-        video.addEventListener(name, () => gate(current, false), { signal: delayAbort.signal })
-      for (const name of ['playing', 'seeked']) {
-        video.addEventListener(name, () => {
-          if (!video.paused && !video.seeking)
-            gate(current, true)
-        }, { signal: delayAbort.signal })
-      }
-    }
-    // 直接改延迟时间会让已缓冲的声音变调或重复，先静音再按新延迟恢复。
-    record.delay!.input.delayTime.setValueAtTime(delayMs / 1000, context.currentTime)
-    gate(record, !video.paused && !video.seeking)
-    if (!video.paused)
-      void (context as AudioContext).resume().catch(() => {})
-    delayStatus('active')
-  }
-
-  function setAudioDelayEnabled(enabled: boolean) {
-    if (disposed || delayEnabled === enabled)
-      return
-    delayEnabled = enabled
-    if (!enabled) {
-      delayMs = 0
-      applyDelay()
-    }
-  }
-
   function update(next: Config) {
     if (disposed)
       return
-    config = next
+    requested = next
+    config = temporarilyOff ? { ...next, enabled: false } : next
     generation++
     if (timer)
       clearInterval(timer)
     timer = undefined
-    if (!next.enabled) {
+    if (!config.enabled) {
       detach()
       status('off')
       pruneOwned()
@@ -485,18 +371,14 @@ export function createLocalLoudnessController() {
     if (type === 'BEWLY_LOUDNESS_STATUS_REQUEST') {
       status(lastStatus)
     }
-    else if (delayEnabled && type === 'BEWLY_AUDIO_DELAY_STATUS_REQUEST') {
-      delayStatus(lastDelayStatus)
-    }
-    else if (delayEnabled && type === 'BEWLY_AUDIO_DELAY' && typeof event.data.delay === 'number' && Number.isFinite(event.data.delay)) {
-      delayMs = Math.round(Math.max(0, Math.min(MAX_AUDIO_DELAY_MS, event.data.delay)))
-      applyDelay()
+    else if (type === 'BEWLY_LOUDNESS_TEMPORARY_OFF' && typeof event.data.off === 'boolean') {
+      temporarilyOff = event.data.off
+      update(requested)
     }
   }, { signal: lifetime.signal })
   window.addEventListener('pagehide', (event) => {
     hidden = true
     detach()
-    removeDelay()
     if (timer)
       clearInterval(timer)
     timer = undefined
@@ -517,11 +399,8 @@ export function createLocalLoudnessController() {
     hidden = false
     if (ownedConnected.size && [...ownedConnected].some(record => !record.video.paused))
       void ownedContext?.resume().catch(() => {})
-    if (!disposed) {
-      update(config)
-      if (delayEnabled)
-        applyDelay()
-    }
+    if (!disposed)
+      update(requested)
   }, { signal: lifetime.signal })
-  return { update, setAudioDelayEnabled }
+  return { update }
 }

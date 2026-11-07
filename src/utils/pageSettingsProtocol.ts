@@ -6,8 +6,6 @@ export interface PageSettingsPayload {
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
   localLoudnessStrength: number
-  /** 音画同步关闭时，页面脚本不接管声音做延后。 */
-  audioDelayEnabled: boolean
   /** 收藏夹整理需要在三连后同步时，页面脚本才监听三连请求。 */
   observeTripleRequests: boolean
   adjustCommentImageHeight: boolean
@@ -76,8 +74,6 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     localLoudnessStrength: typeof value.localLoudnessStrength === 'number' && Number.isFinite(value.localLoudnessStrength)
       ? Math.max(40, Math.min(100, value.localLoudnessStrength))
       : 75,
-    // 页面脚本会再次校验已转换的 payload，此时直接沿用字段。
-    audioDelayEnabled: playerEnabled && (value.audioDelayEnabled === true || value.playerAudioDelayEnabled === true),
     observeTripleRequests: value.observeTripleRequests === true
       || (value.favoriteOrganizerSyncAfterTriple === true
         && Array.isArray(value.favoriteOrganizerFolders)
