@@ -198,10 +198,20 @@ export const useTopBarStore = defineStore('topBar', () => {
       return false
     }
 
-    if (shouldShowBewlyTopBar(settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar))
+    if (shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar))
       return true
     return false
   })
+
+  // 顶栏和 Bewly 页面都依赖账号与角标数据。
+  const needsSharedCounts = computed((): boolean =>
+    shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
+    || !settings.value.useOriginalBilibiliHomepage)
+  // 大会员自动领取不依赖界面模块，只用它时也要同步账号信息。
+  const needsAccountSync = computed((): boolean =>
+    needsSharedCounts.value
+    || settings.value.autoReceiveVipExp
+    || (settings.value.showBCoinReceiveReminder && settings.value.autoReceiveBCoinCoupon))
 
   function resetReceiveStates() {
     bCoinAlreadyReceived.value = false
@@ -443,7 +453,10 @@ export const useTopBarStore = defineStore('topBar', () => {
   // B币和大会员经验领取状态检查
   async function refreshVipRewardStatus() {
     const accountId = userInfo.mid
+    // 提醒显示在顶栏；顶栏关闭时只有开启自动领取才需要查询。
     const shouldCheckBCoin = settings.value.showBCoinReceiveReminder
+      && (shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
+        || settings.value.autoReceiveBCoinCoupon)
     const shouldCheckVipExp = settings.value.autoReceiveVipExp
     if (!isCurrentAccount(accountId) || userInfo.vip?.status !== 1 || (!shouldCheckBCoin && !shouldCheckVipExp))
       return
@@ -1405,9 +1418,9 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   async function refreshSharedData() {
     await Promise.all([
-      getUnreadMessageCount(),
-      getTopBarNewMomentsCount(),
-      getWatchLaterCount(),
+      ...needsSharedCounts.value
+        ? [getUnreadMessageCount(), getTopBarNewMomentsCount(), getWatchLaterCount()]
+        : [],
       refreshVipRewardStatus(),
     ])
   }
@@ -1560,6 +1573,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   async function initData() {
+    if (!needsAccountSync.value)
+      return
+
     const requestGeneration = loginStateGeneration
     await fetchUserInfoOnce()
 
@@ -1570,7 +1586,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function startUpdateTimer() {
-    if (updateTimer || document.hidden)
+    if (updateTimer || document.hidden || !needsAccountSync.value)
       return
 
     const timerGeneration = updateTimerGeneration
@@ -1728,6 +1744,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     invalidateUnreadMessageState,
     notifyFavoritesChanged,
     startUpdateTimer,
+    needsAccountSync,
     stopUpdateTimer,
 
     moments,

@@ -1,13 +1,13 @@
 import { SVG_ICONS } from '~/utils/svgIcons'
 
-/** 顶栏可见性开 + 原版顶栏开：使用 B 站原生顶栏 */
-export function shouldShowOriginalBilibiliTopBar(enableTopBar: boolean, useOriginalBilibiliTopBar: boolean): boolean {
-  return enableTopBar && useOriginalBilibiliTopBar
+/** 模块开 + 顶栏可见性开 + 原版顶栏开：由插件托管 B 站原生顶栏 */
+export function shouldShowOriginalBilibiliTopBar(enableTopBarModule: boolean, enableTopBar: boolean, useOriginalBilibiliTopBar: boolean): boolean {
+  return enableTopBarModule && enableTopBar && useOriginalBilibiliTopBar
 }
 
-/** 顶栏可见性开 + 原版顶栏关：使用 Bewly 顶栏 */
-export function shouldShowBewlyTopBar(enableTopBar: boolean, useOriginalBilibiliTopBar: boolean): boolean {
-  return enableTopBar && !useOriginalBilibiliTopBar
+/** 模块开 + 顶栏可见性开 + 原版顶栏关：使用 Bewly 顶栏 */
+export function shouldShowBewlyTopBar(enableTopBarModule: boolean, enableTopBar: boolean, useOriginalBilibiliTopBar: boolean): boolean {
+  return enableTopBarModule && enableTopBar && !useOriginalBilibiliTopBar
 }
 
 let cachedOriginalTopBar: HTMLElement | null = null

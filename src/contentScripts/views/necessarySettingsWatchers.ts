@@ -374,13 +374,18 @@ export function setupNecessarySettingsWatchers() {
   )
 
   function isOriginalTopBarEnabled(): boolean {
-    return shouldShowOriginalBilibiliTopBar(settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
+    return shouldShowOriginalBilibiliTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
+  }
+
+  // 模块关闭时原生顶栏完全交还给页面，不再隐藏。
+  function shouldRemoveNativeTopBar(): boolean {
+    return settings.value.enableTopBarModule && !isOriginalTopBarEnabled()
   }
 
   function applyDocumentTopBarClasses(doc: Document, shouldApplyRemoveTopBar: boolean) {
     doc.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
-    // 顶栏可见性关闭时留给 Evolved 等第三方顶栏
-    doc.documentElement.classList.toggle('remove-custom-navbar', settings.value.enableTopBar)
+    // 顶栏可见性或模块关闭时留给 Evolved 等第三方顶栏
+    doc.documentElement.classList.toggle('remove-custom-navbar', settings.value.enableTopBarModule && settings.value.enableTopBar)
   }
 
   function buildIframeTopBarMessage() {
@@ -388,11 +393,12 @@ export function setupNecessarySettingsWatchers() {
       type: IFRAME_TOP_BAR_CHANGE,
       useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
       enableTopBar: settings.value.enableTopBar,
+      enableTopBarModule: settings.value.enableTopBarModule,
     }
   }
 
   function applyIframeDocumentTopBarClasses(iframeDoc: Document) {
-    applyDocumentTopBarClasses(iframeDoc, !isOriginalTopBarEnabled())
+    applyDocumentTopBarClasses(iframeDoc, shouldRemoveNativeTopBar())
     if (isOriginalTopBarEnabled())
       resetBilibiliTopBarInlineStyles(iframeDoc)
   }
@@ -427,7 +433,7 @@ export function setupNecessarySettingsWatchers() {
   }
 
   watch(
-    [() => settings.value.enableTopBar, () => settings.value.useOriginalBilibiliTopBar],
+    [() => settings.value.enableTopBarModule, () => settings.value.enableTopBar, () => settings.value.useOriginalBilibiliTopBar],
     () => {
       applyOuterTopBarPolicy()
       syncTopBarPreferenceToIframes()
@@ -471,7 +477,7 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    () => settings.value.hideCommentImageScrollbar,
+    () => settings.value.enableCommentEnhancements && settings.value.hideCommentImageScrollbar,
     (enabled) => {
       document.documentElement.classList.toggle('bewly-hide-comment-image-scrollbar', enabled)
     },
@@ -479,7 +485,7 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    () => settings.value.imageViewerCloseAtBottom,
+    () => settings.value.enableCommentEnhancements && settings.value.imageViewerCloseAtBottom,
     (enabled) => {
       document.documentElement.classList.toggle('bewly-image-viewer-close-bottom', enabled)
     },
@@ -575,7 +581,7 @@ export function setupNecessarySettingsWatchers() {
 
   function applyOuterTopBarPolicy() {
     if (isInIframe()) {
-      applyDocumentTopBarClasses(document, !isOriginalTopBarEnabled())
+      applyDocumentTopBarClasses(document, shouldRemoveNativeTopBar())
       if (isOriginalTopBarEnabled())
         resetBilibiliTopBarInlineStyles(document)
       return
@@ -612,7 +618,7 @@ export function setupNecessarySettingsWatchers() {
     else {
       // 原版首页和其他原生页面只切换显隐，不搬移或改写顶栏。
       detachOriginalBilibiliTopBar(document)
-      applyDocumentTopBarClasses(document, !isOriginalTopBarEnabled())
+      applyDocumentTopBarClasses(document, shouldRemoveNativeTopBar())
       resetBilibiliTopBarInlineStyles(document)
     }
   }

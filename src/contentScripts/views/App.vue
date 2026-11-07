@@ -10,6 +10,7 @@ import FirefoxScrollbar from '~/components/FirefoxScrollbar.vue'
 import Icon from '~/components/Icon.vue'
 import Radio from '~/components/Radio.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
+import { useAccountSync } from '~/composables/useAccountSync'
 import { useActiveApiErrorSource } from '~/composables/useApiErrorDetails'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
@@ -28,7 +29,7 @@ import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
-import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
+import { setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
 import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, jumpScrollTo, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
@@ -43,6 +44,7 @@ import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
+useAccountSync()
 // Layout edit mode is UI-only; persistent choices continue to use `settings`.
 const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
 const { t } = useI18n()
@@ -1170,7 +1172,7 @@ useEventListener(window, 'message', ({ data, source }) => {
 
 const iframePageURL = computed((): string => {
   // If the iframe is not the BiliBili homepage or in iframe, then don't show the iframe page
-  if (!isHomePage(window.self.location.href) || isInIframe())
+  if (!isHomePage(window.self.location.href) || isInIframe() || settings.value.useOriginalBilibiliHomepage)
     return ''
   const currentDockItemConfig = settings.value.dockItemsConfig.find(e => e.page === activatedPage.value)
   if (currentDockItemConfig) {
@@ -1195,6 +1197,17 @@ const showBewlyPage = computed((): boolean => {
     return false
 
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
+})
+
+// Bewly 页面关闭时没有可切换的插件页，Dock 作为全站导航显示在所有页面。
+const showDock = computed((): boolean => {
+  if (!settings.value.enableDock)
+    return false
+
+  return settings.value.useOriginalBilibiliHomepage
+    || settings.value.alwaysUseDock
+    || showBewlyPage.value
+    || Boolean(iframePageURL.value)
 })
 
 // App outlives page components. Drop outgoing closures before the next page
@@ -1233,7 +1246,17 @@ watch(dockPageTitle, (title) => {
     document.title = title
 }, { immediate: true })
 
+const isOriginalTopBarActive = computed(() => shouldShowOriginalBilibiliTopBar(
+  settings.value.enableTopBarModule,
+  settings.value.enableTopBar,
+  settings.value.useOriginalBilibiliTopBar,
+))
+
 const showTopBar = computed((): boolean => {
+  // 模块关闭时不挂载顶栏组件，账号同步由 useAccountSync 继续负责。
+  if (!settings.value.enableTopBarModule)
+    return false
+
   // When using the open in drawer feature, the iframe inside the page will hide the top bar
   if (isVideoOrBangumiPage() && isInIframe())
     return false
@@ -1337,7 +1360,7 @@ watch([() => showTopBar.value, () => activatedPage.value], () => {
   // Remove the original Bilibili top bar when using original bilibili page to avoid two top bars showing
   const biliHeader = document.querySelector('.bili-header') as HTMLElement | null
   if (biliHeader && isHomePage()) {
-    if (settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && !isInIframe()) {
+    if (settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && !isInIframe() && !settings.value.useOriginalBilibiliHomepage) {
       biliHeader.style.visibility = 'hidden'
     }
     else {
@@ -1402,7 +1425,7 @@ onMounted(() => {
     })
   }
 
-  if (isHomePage()) {
+  if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     focusScrollViewport()
 
     // Windows/Linux: 监听 Home 键
@@ -1423,6 +1446,15 @@ onMounted(() => {
 })
 
 function handleDockItemClick(dockItem: DockItem) {
+  // Bewly 页面关闭时直接跳转原站页面，不经过 iframe。
+  if (settings.value.useOriginalBilibiliHomepage) {
+    if (dockItem.openInNewTab)
+      openLinkToNewTab(dockItem.url)
+    else
+      location.href = dockItem.url
+    return
+  }
+
   // Opening in a new tab while still on the current tab doesn't require changing the `activatedPage`
   if (dockItem.openInNewTab) {
     openLinkToNewTab(`https://www.bilibili.com/?page=${dockItem.page}`)
@@ -1522,7 +1554,7 @@ function handleOsScroll(_instance: any, event: Event) {
     const frameScrollTop = latestScrollTop
 
     emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, frameScrollTop)
-    if (settings.value.enableTopBar && settings.value.useOriginalBilibiliTopBar)
+    if (isOriginalTopBarActive.value)
       setOriginalBilibiliTopBarScrolled(document, frameScrollTop > 0)
 
     // 只在滚动距离超过阈值时更新状态
@@ -1979,6 +2011,7 @@ if (settings.value.cleanUrlArgument) {
         class="layout-edit-quick-actions"
       >
         <button
+          v-if="settings.enableTopBarModule"
           type="button"
           class="layout-edit-quick-action"
           @click="openLayoutEditTopBarModeSettings"
@@ -2059,7 +2092,7 @@ if (settings.value.cleanUrlArgument) {
       }"
     >
       <Dock
-        v-if="!settings.useOriginalBilibiliHomepage && (settings.alwaysUseDock || (showBewlyPage || iframePageURL))"
+        v-if="showDock"
         pointer-events-auto
         :activated-page="activatedPage"
         @refresh="handleThrottledPageRefresh"
@@ -2069,7 +2102,7 @@ if (settings.value.cleanUrlArgument) {
         @dock-item-click="handleDockItemClick"
       />
       <SideBar
-        v-else
+        v-else-if="settings.enableSideBar"
         pointer-events-auto
       />
     </div>
@@ -2097,8 +2130,7 @@ if (settings.value.cleanUrlArgument) {
 
     <TopBarModeSwitcher
       v-if="isInIframe()
-        && settings.enableTopBar
-        && settings.useOriginalBilibiliTopBar
+        && isOriginalTopBarActive
         && isComponentVisible('topBarSwitcher')"
       native
     />
@@ -2134,7 +2166,7 @@ if (settings.value.cleanUrlArgument) {
               <div
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
-                :style="settings.enableTopBar && settings.useOriginalBilibiliTopBar && !reachTop
+                :style="isOriginalTopBarActive && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
                 @mousedown.self="handlePageBackgroundMouseDown"

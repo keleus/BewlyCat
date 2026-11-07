@@ -10,6 +10,7 @@ import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage, isUserSpacePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
@@ -70,17 +71,6 @@ function checkUrlChange() {
 let hideTimer: number | null = null
 let urlChangeCheckQueued = false
 let topBarUnmounted = false
-// 后台恢复的标签页推迟到首次可见时再初始化，避免多个标签页同时挤占后台请求。
-let initDataDeferred = false
-
-async function initTopBarData() {
-  try {
-    await topBarStore.initData()
-  }
-  catch (error) {
-    console.error('初始化顶栏数据失败:', error)
-  }
-}
 
 function scheduleUrlChangeCheck() {
   if (urlChangeCheckQueued || topBarUnmounted)
@@ -122,8 +112,7 @@ function applyTopBarVisibility() {
 function syncOriginalVideoTopBarVisibility(visible: boolean) {
   const shouldControl = !isIframeDrawerHost()
     && isVideoOrBangumiPage()
-    && settings.value.enableTopBar
-    && settings.value.useOriginalBilibiliTopBar
+    && shouldShowOriginalBilibiliTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
     && settings.value.videoPageTopBarConfig !== VideoPageTopBarConfig.ShowOnMouse
 
   document.documentElement.classList.toggle(ORIGINAL_VIDEO_TOP_BAR_CONTROLLED_CLASS, shouldControl)
@@ -613,18 +602,10 @@ function handleClickOutsidePopup(event: MouseEvent) {
 
 // 生命周期钩子
 onMounted(() => {
-  nextTick(async () => {
-    // 初始化数据和更新定时器
-    if (document.hidden)
-      initDataDeferred = true
-    else
-      await initTopBarData()
+  nextTick(() => {
     if (topBarUnmounted)
       return
 
-    // 启动定时器：已登录时同步角标/补填 userInfo；未登录时不启动轮询，
-    // 登录态由本地 Cookie 事实与事件驱动维护（见 issue #921）
-    topBarStore.startUpdateTimer()
     setupScrollListeners()
 
     setupConflictingHeaderObserver()
@@ -644,34 +625,16 @@ onMounted(() => {
 
     // 添加全局点击事件监听器（用于触屏模式下点击外部关闭弹窗）
     document.addEventListener('click', handleClickOutsidePopup)
-    // 页面重新可见时按本地 Cookie 校正登录态：覆盖「他处登录/登出后
-    // 本标签处于后台」的场景，无需轮询（见 issue #921）
     document.addEventListener('visibilitychange', handleVisibilityChange)
   })
 })
 
 function handleVisibilityChange() {
-  if (!document.hidden) {
-    if (initDataDeferred) {
-      initDataDeferred = false
-      void initTopBarData().then(() => {
-        if (!topBarUnmounted && !document.hidden)
-          topBarStore.startUpdateTimer()
-      })
-    }
-    else {
-      topBarStore.reconcileLocalLoginState()
-      topBarStore.startUpdateTimer()
-      void topBarStore.syncSharedData().catch((error) => {
-        console.error('同步顶栏共享状态失败:', error)
-      })
-    }
-    scheduleUrlChangeCheck()
-    scheduleConflictingHeaderVisibilityUpdate()
-  }
-  else {
-    topBarStore.stopUpdateTimer()
-  }
+  if (document.hidden)
+    return
+
+  scheduleUrlChangeCheck()
+  scheduleConflictingHeaderVisibilityUpdate()
 }
 
 onUnmounted(() => {
@@ -690,8 +653,9 @@ onUnmounted(() => {
   }
 
   cleanupScrollListeners()
-  // 使用 store 中的方法清理定时器
-  topBarStore.cleanup()
+  // 账号数据由 useAccountSync 管理，这里只收起顶栏自己的界面。
+  topBarStore.closeAllPopups()
+  topBarStore.drawerVisible.notifications = false
 
   // 移除全局点击事件监听器
   document.removeEventListener('click', handleClickOutsidePopup)
@@ -781,8 +745,7 @@ defineExpose({
     </Transition>
 
     <TopBarModeSwitcher
-      v-if="settings.enableTopBar
-        && settings.useOriginalBilibiliTopBar
+      v-if="shouldShowOriginalBilibiliTopBar(settings.enableTopBarModule, settings.enableTopBar, settings.useOriginalBilibiliTopBar)
         && isComponentVisible('topBarSwitcher')"
       native
     />

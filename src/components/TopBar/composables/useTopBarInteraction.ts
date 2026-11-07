@@ -257,7 +257,7 @@ export function useTopBarInteraction() {
   }
 
   function getTopBarItemHref(key: string, originalHref: string): string {
-    if (settings.value.touchScreenOptimization || !settings.value.openTopBarItemsInBewly)
+    if (settings.value.touchScreenOptimization || !settings.value.openTopBarItemsInBewly || settings.value.useOriginalBilibiliHomepage)
       return originalHref
 
     const page = bewlyPageByTopBarItem[key]
@@ -281,7 +281,7 @@ export function useTopBarInteraction() {
       return
     }
 
-    if (!settings.value.openTopBarItemsInBewly || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+    if (!settings.value.openTopBarItemsInBewly || settings.value.useOriginalBilibiliHomepage || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
       return
 
     const page = bewlyPageByTopBarItem[key]

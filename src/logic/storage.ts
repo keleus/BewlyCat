@@ -616,7 +616,19 @@ export interface Settings {
   rememberNoCookieRecommendationState: boolean
 
   adaptToOtherPageStyles: boolean
+  /** 顶栏模块总开关，关闭后插件不再隐藏、托管或改写任何顶栏 */
+  enableTopBarModule: boolean
   enableTopBar: boolean
+  /** Dock 总开关；Bewly 页面关闭时 Dock 直接跳转 B 站原站页面 */
+  enableDock: boolean
+  /** 悬浮侧栏总开关；Dock 显示时不显示 */
+  enableSideBar: boolean
+  /** 原站评论区增强总开关，关闭后各评论子项不生效 */
+  enableCommentEnhancements: boolean
+  /** 原站播放器增强总开关，关闭后播放器相关子项不生效，刷新页面后生效 */
+  enablePlayerEnhancements: boolean
+  /** 模块开关的旧设置迁移是否已完成 */
+  pluginModulesMigrated: boolean
   useOriginalBilibiliTopBar: boolean
   useOriginalBilibiliHomepage: boolean
   preventMobileRedirect: boolean
@@ -987,7 +999,13 @@ export const originalSettings: Settings = {
   rememberNoCookieRecommendationState: true,
 
   adaptToOtherPageStyles: true,
+  enableTopBarModule: true,
   enableTopBar: true,
+  enableDock: true,
+  enableSideBar: true,
+  enableCommentEnhancements: true,
+  enablePlayerEnhancements: true,
+  pluginModulesMigrated: false,
   useOriginalBilibiliTopBar: false,
   useOriginalBilibiliHomepage: false,
   preventMobileRedirect: false,
@@ -1217,6 +1235,13 @@ export const settings = useSettingsStorage(originalSettings, {
     if (typeof record.enableFavoriteCoverBlur === 'boolean') {
       record.enableSidebarCoverBlur = record.enableFavoriteCoverBlur
       Reflect.deleteProperty(record, 'enableFavoriteCoverBlur')
+    }
+
+    // 原版首页用户此前看不到 Dock，引入独立开关后保持原有界面。
+    if (!record.pluginModulesMigrated) {
+      if (record.useOriginalBilibiliHomepage === true)
+        record.enableDock = false
+      record.pluginModulesMigrated = true
     }
 
     record.favoriteOrganizerFolders = normalizeFavoriteOrganizerFolders(record.favoriteOrganizerFolders)
