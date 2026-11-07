@@ -1,3 +1,4 @@
+// @unocss-include
 import type { Settings } from '~/logic/storage'
 
 export type MomentTypeFilterSetting = Extract<keyof Settings, | 'momentsHideVideoDynamics'

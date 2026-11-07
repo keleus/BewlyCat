@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import type { Manifest } from 'webextension-polyfill'
 
 import type PkgType from '../package.json'
-import { isDev, isFirefox, isSafari, port, r } from '../scripts/utils'
+import { isDev, isFirefox, isSafari, r } from '../scripts/utils'
 import { CONTENT_SCRIPT_EXCLUDE_MATCHES, CONTENT_SCRIPT_MATCHES } from './constants/contentScript'
 
 export async function getManifest() {
@@ -16,14 +16,14 @@ export async function getManifest() {
     version: pkg.version,
     description: pkg.description,
     homepage_url: pkg.homepage,
-    // action: {
-    //   default_icon: './assets/icon-512.png',
-    //   default_popup: './dist/popup/index.html',
-    // },
-    // options_ui: {
-    //   page: './dist/options/index.html',
-    //   open_in_tab: true,
-    // },
+    action: {
+      default_title: pkg.displayName,
+      default_icon: 'assets/icon-512.png',
+    },
+    options_ui: {
+      page: 'dist/options/index.html',
+      open_in_tab: true,
+    },
 
     // Setting `persistent` to true in Manifest V3 results in an error in Firefox
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background
@@ -81,16 +81,9 @@ export async function getManifest() {
         matches: [...CONTENT_SCRIPT_MATCHES],
       },
     ],
-    content_security_policy: isFirefox
-      ? {
-          extension_pages: 'script-src \'self\'; object-src \'self\'',
-        }
-      : {
-          extension_pages: isDev
-          // this is required on dev for Vite script to load
-            ? `script-src 'self' http://localhost:${port}; object-src 'self' http://localhost:${port}`
-            : 'script-src \'self\'; object-src \'self\'',
-        },
+    content_security_policy: {
+      extension_pages: 'script-src \'self\'; object-src \'self\'',
+    },
     ...isFirefox
       ? {}
       : {

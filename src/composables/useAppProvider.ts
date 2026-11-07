@@ -57,7 +57,6 @@ export interface BewlyAppProvider {
   // 添加活跃抽屉状态
   activeDrawer: Ref<DrawerType>
   setActiveDrawer: (drawer: DrawerType) => void
-  pendingSettingsNavigation: Ref<SettingsNavigationTarget | undefined>
   openSettings: (target?: SettingsNavigationTarget) => void
 }
 

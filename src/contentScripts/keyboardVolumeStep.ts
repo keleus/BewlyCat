@@ -28,10 +28,6 @@ function isEditableTarget(target: Element | null): boolean {
     && (target.isContentEditable || target.closest('[contenteditable="true"], [role="textbox"]') !== null)
 }
 
-function isSettingsOpen(): boolean {
-  return !!document.getElementById('bewly')?.classList.contains('settings-open')
-}
-
 function handleKeydown(event: KeyboardEvent) {
   interceptedCode = undefined
 
@@ -45,7 +41,7 @@ function handleKeydown(event: KeyboardEvent) {
   // B 站自己是在文档级别接管方向键的（焦点在 body 也照常调音量），
   // 所以这里只按“页面上有播放器”判断，而不是要求焦点在播放器内。
   const target = getEventTarget(event)
-  if (isEditableTarget(target) || isSettingsOpen())
+  if (isEditableTarget(target))
     return
   if (!getVideoElement())
     return

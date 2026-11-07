@@ -483,7 +483,8 @@ function toggleTabContentLoading(loading: boolean) {
             v-if="isLayoutEditing || settings.enableGridLayoutSwitcher"
             class="glass-panel home-grid-layout-switcher bew-segment-control bew-segment-control--surface"
             data-layout-edit-target="home-grid-layout-switcher"
-            data-layout-settings-menu="General"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="home"
             data-layout-settings-title-key="settings.enable_grid_layout_switcher"
             :class="{
               'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,

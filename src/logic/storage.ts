@@ -16,8 +16,6 @@ import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
 import { normalizePlaybackRateStep } from '~/utils/playbackRate'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
-export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
-
 export type { AppAuthTokens } from './appAuthStorage'
 export { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from './appAuthStorage'
 

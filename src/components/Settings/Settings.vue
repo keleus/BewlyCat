@@ -3,117 +3,123 @@ import { useEventListener } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { SettingsMenu, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { USAGE_GUIDE_URL } from '~/constants/usageGuide'
 import { settings } from '~/logic'
-import { createTransformer } from '~/utils/transformer'
+import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
+import { buildSettingsPageHash } from '~/utils/settingsPage'
 
+import SettingsSectionHeading from './components/SettingsSectionHeading.vue'
 import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
+import { useSettingsUrlSync } from './composables/useSettingsUrlSync'
 import type { SettingsSearchEntry } from './searchCatalog'
-import { settingsSearchEntries } from './searchCatalog'
-import type { MenuItem } from './types'
+import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries } from './searchCatalog'
+import type { SettingsSecondaryPage } from './settingsMenus'
+import { settingsMenus } from './settingsMenus'
 import { MenuType } from './types'
 
-const emit = defineEmits(['close'])
+const pendingNavigation = defineModel<SettingsNavigationTarget | undefined>('pendingNavigation')
 
 const pinnedChannelHistory = createPinnedChannelHistory(computed({
   get: () => settings.value.topBarPinnedChannels,
   set: keys => settings.value.topBarPinnedChannels = keys,
 }))
 provide(pinnedChannelHistoryKey, pinnedChannelHistory)
-// Settings is cached by KeepAlive; closing it does not dispose its scope.
-onDeactivated(pinnedChannelHistory.reset)
-onActivated(pinnedChannelHistory.reset)
 
 const { t, tm, rt } = useI18n()
-const breadcrumbDetail = ref<string>()
 const searchQuery = ref('')
-const settingsContentKey = ref(0)
-const settingsContentReady = ref(false)
-let settingsContentFrame: number | undefined
 
-onMounted(() => {
-  // 先让设置外壳完成首帧绘制，再挂载异步设置页，避免点击反馈被重组件初始化阻塞。
-  settingsContentFrame = requestAnimationFrame(() => {
-    settingsContentFrame = requestAnimationFrame(() => {
-      settingsContentFrame = undefined
-      settingsContentReady.value = true
-    })
-  })
-})
-
-provide('setSettingsBreadcrumb', (detail?: string) => {
-  breadcrumbDetail.value = detail
-})
-
-const settingsMenu = {
-  [MenuType.General]: defineAsyncComponent(() => import('./PluginComponentsAndPages/General/General.vue')),
-  [MenuType.BewlyPages]: defineAsyncComponent(() => import('./Navigation/BewlyPages.vue')),
-  [MenuType.BewlyComponents]: defineAsyncComponent(() => import('./Navigation/BewlyComponents.vue')),
-  [MenuType.Bilibili]: defineAsyncComponent(() => import('./BilibiliFeaturesEnhancement/BilibiliFeaturesEnhancement.vue')),
-  [MenuType.Appearance]: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
-  [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
-  [MenuType.Data]: defineAsyncComponent(() => import('./Data/Data.vue')),
-  [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
-}
 const settingsMenuStorageKey = 'bewly-settings-active-menu'
-const navigationPageStorageKey = 'bewly-settings-navigation-page'
-const bewlyPagesStorageKey = 'bewly-settings-bewly-pages-page'
-const bewlyComponentsStorageKey = 'bewly-settings-bewly-components-page'
-const playbackPageStorageKey = 'bewly-settings-playback-page'
-const bilibiliPageStorageKey = 'bewly-settings-bilibili-page'
-const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey)
-const legacyNavigationPage = sessionStorage.getItem(navigationPageStorageKey)
-const legacyPlaybackPages: Record<string, string> = {
-  Player: 'player',
-  AutoPlay: 'auto-play',
-}
-if (storedMenuItem && legacyPlaybackPages[storedMenuItem])
-  sessionStorage.setItem(bilibiliPageStorageKey, legacyPlaybackPages[storedMenuItem])
-
-if (!sessionStorage.getItem(bilibiliPageStorageKey)) {
-  const legacyPlaybackPage = sessionStorage.getItem(playbackPageStorageKey)
-  if (legacyPlaybackPage)
-    sessionStorage.setItem(bilibiliPageStorageKey, legacyPlaybackPage)
-}
-
-const legacyNavigationComponentPages = new Set(['video-card', 'topbar', 'dock'])
-const legacyNavigationMenu = legacyNavigationPage === 'link-opening'
-  ? MenuType.General
-  : legacyNavigationPage && legacyNavigationComponentPages.has(legacyNavigationPage)
-    ? MenuType.BewlyComponents
-    : MenuType.BewlyPages
-
-const legacyMenuAliases: Record<string, MenuType> = {
-  Browsing: legacyNavigationMenu,
-  Navigation: legacyNavigationMenu,
-  Player: MenuType.Bilibili,
-  AutoPlay: MenuType.Bilibili,
-  Playback: MenuType.Bilibili,
-  BilibiliFeaturesEnhancement: MenuType.Bilibili,
-  Advanced: MenuType.General,
-}
-
-if (!sessionStorage.getItem(bewlyPagesStorageKey) && legacyNavigationPage && ['home', 'moments', 'search'].includes(legacyNavigationPage))
-  sessionStorage.setItem(bewlyPagesStorageKey, legacyNavigationPage)
-
-if (!sessionStorage.getItem(bewlyComponentsStorageKey) && legacyNavigationPage && legacyNavigationComponentPages.has(legacyNavigationPage))
-  sessionStorage.setItem(bewlyComponentsStorageKey, legacyNavigationPage)
-
-const initialMenuItem = storedMenuItem
-  ? legacyMenuAliases[storedMenuItem] ?? storedMenuItem as MenuType
-  : null
+const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey) as MenuType | null
 const activatedMenuItem = ref<MenuType>(
-  initialMenuItem && Object.values(MenuType).includes(initialMenuItem)
-    ? initialMenuItem
+  storedMenuItem && settingsMenus.some(menu => menu.value === storedMenuItem)
+    ? storedMenuItem
     : MenuType.General,
 )
-const settingsWindow = ref<HTMLDivElement>()
+// 每个一级菜单各自记住当前二级页，切换回来时保持原位。
+const activeSecondaryPages = reactive<Partial<Record<MenuType, string>>>(Object.fromEntries(
+  settingsMenus.flatMap((menu) => {
+    if (!menu.pages)
+      return []
+    const stored = sessionStorage.getItem(menu.storageKey!)
+    return [[menu.value, menu.pages.some(page => page.value === stored) ? stored : menu.pages[0].value]]
+  }),
+))
+// 依赖的模块关闭后，对应菜单和二级页一并隐藏。
+const visibleMenus = computed(() => settingsMenus.flatMap((menu) => {
+  if (menu.available && !menu.available())
+    return []
+  if (!menu.pages)
+    return [menu]
+  const pages = menu.pages.filter(page => !page.available || page.available())
+  return pages.length ? [{ ...menu, pages }] : []
+}))
+// 当前页面被隐藏时回到通用页，用户可以在那里重新开启对应模块。
+const activeMenu = computed(() => visibleMenus.value.find(menu => menu.value === activatedMenuItem.value)
+  ?? visibleMenus.value.find(menu => menu.value === MenuType.General)!)
+function getSecondaryPage(menu: typeof activeMenu.value) {
+  return menu.pages?.find(page => page.value === activeSecondaryPages[menu.value]) ?? menu.pages?.[0]
+}
+const activeSecondaryPage = computed(() => getSecondaryPage(activeMenu.value))
+const activeContent = computed(() => activeSecondaryPage.value?.component ?? activeMenu.value.component)
+const expandedMenusStorageKey = 'bewly-settings-expanded-menus'
+const defaultExpandedMenus = settingsMenus.filter(menu => menu.pages?.length).map(menu => menu.value)
+
+function readExpandedMenus(): MenuType[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(expandedMenusStorageKey) ?? 'null')
+    return Array.isArray(stored) ? stored : defaultExpandedMenus
+  }
+  catch {
+    return defaultExpandedMenus
+  }
+}
+
+// 展开与页面选中分别管理，浏览其他分类时保留已展开的菜单，下次打开设置页时也保持。
+const expandedMenus = ref(new Set<MenuType>([...readExpandedMenus(), activatedMenuItem.value]))
+watch(expandedMenus, (menus) => {
+  localStorage.setItem(expandedMenusStorageKey, JSON.stringify([...menus]))
+}, { deep: true })
+
+const secondaryGroups = computed(() => new Map(visibleMenus.value.map((menu) => {
+  const groups: Array<{ key: string | null, pages: SettingsSecondaryPage[] }> = []
+  for (const page of menu.pages ?? []) {
+    const groupKey = page.groupKey ?? null
+    const lastGroup = groups[groups.length - 1]
+    if (lastGroup?.key === groupKey)
+      lastGroup.pages.push(page)
+    else
+      groups.push({ key: groupKey, pages: [page] })
+  }
+  return [menu.value, groups] as const
+})))
+
+function toggleMenu(menu: MenuType) {
+  if (expandedMenus.value.has(menu))
+    expandedMenus.value.delete(menu)
+  else
+    expandedMenus.value.add(menu)
+}
+
 const settingsSearchRef = ref<HTMLElement>()
 const searchInputRef = ref<HTMLInputElement>()
 const searchPopoverStyle = ref<CSSProperties>({})
 const isSearchFocused = ref(false)
-const { mainAppRef, pendingSettingsNavigation } = useBewlyApp()
+const { mainAppRef } = useBewlyApp()
+
+// 鼠标点选后焦点仍留在控件上时，之后的任意按键（包括系统快捷键）都会让浏览器
+// 把它判定为键盘聚焦并显示焦点环，因此点击后释放焦点。
+const POINTER_RELEASED_FOCUS_SELECTOR = 'a, button, [role="button"], [role="tab"], input[type="checkbox"], input[type="radio"]'
+useEventListener(mainAppRef, 'click', (event: MouseEvent) => {
+  // 键盘触发的 click 其 detail 为 0，需要保留焦点和焦点环。
+  if (event.detail === 0)
+    return
+
+  const activeElement = (mainAppRef.value.getRootNode() as ShadowRoot).activeElement
+  if (activeElement instanceof HTMLElement && activeElement.matches(POINTER_RELEASED_FOCUS_SELECTOR))
+    activeElement.blur()
+}, { capture: true })
 
 function handleSearchBlur() {
   isSearchFocused.value = false
@@ -125,7 +131,7 @@ function handleSearchFocus() {
 
 function updateSearchPopoverBounds() {
   const searchElement = settingsSearchRef.value
-  const contentElement = searchElement?.closest<HTMLElement>('.settings-content')
+  const contentElement = searchElement?.closest<HTMLElement>('.settings-page')
   if (!searchElement || !contentElement)
     return
 
@@ -156,18 +162,7 @@ function focusSettingsSearch(event: MouseEvent) {
   nextTick(updateSearchPopoverBounds)
 }
 
-useEventListener(window, 'resize', () => {
-  createTransformer(settingsWindow, {
-    x: '50%',
-    y: '50%',
-    notrigger: true,
-    centerTarget: {
-      x: true,
-      y: true,
-    },
-  })
-  nextTick(updateSearchPopoverBounds)
-})
+useEventListener(window, 'resize', () => nextTick(updateSearchPopoverBounds))
 
 const scrollViewportRef = ref<HTMLElement>()
 
@@ -179,78 +174,22 @@ useEventListener(() => scrollViewportRef.value, 'scroll', () => {
   }
 }, { capture: true })
 
-provide('scrollSettingsContentToTop', () => {
-  cancelSearchNavigation()
+watch(activatedMenuItem, (menu) => {
+  sessionStorage.setItem(settingsMenuStorageKey, menu)
+  expandedMenus.value.add(menu)
+})
+watch(activeSecondaryPages, (pages) => {
+  for (const menu of settingsMenus) {
+    if (menu.storageKey && pages[menu.value])
+      sessionStorage.setItem(menu.storageKey, pages[menu.value]!)
+  }
+})
+watch([activatedMenuItem, activeSecondaryPage], () => {
   scrollViewportRef.value?.scrollTo({ top: 0 })
 })
 
-watch(
-  () => activatedMenuItem.value,
-  (menuItem) => {
-    breadcrumbDetail.value = undefined
-    sessionStorage.setItem(settingsMenuStorageKey, menuItem)
-    scrollViewportRef.value?.scrollTo({ top: 0 })
-  },
-)
-
-const settingsMenuItems: MenuItem[] = [
-  {
-    value: MenuType.General,
-    icon: 'i-mingcute:settings-3-line',
-    iconActivated: 'i-mingcute:settings-3-fill',
-    titleKey: 'settings.menu_general',
-  },
-  {
-    value: MenuType.BewlyPages,
-    icon: 'i-mingcute:web-line',
-    iconActivated: 'i-mingcute:web-fill',
-    titleKey: 'settings.menu_bewly_pages',
-  },
-  {
-    value: MenuType.BewlyComponents,
-    icon: 'i-mingcute:tool-line',
-    iconActivated: 'i-mingcute:tool-fill',
-    titleKey: 'settings.menu_bewly_components',
-  },
-  {
-    value: MenuType.Bilibili,
-    icon: 'i-mingcute:sparkles-2-line',
-    iconActivated: 'i-mingcute:sparkles-2-fill',
-    titleKey: 'settings.menu_bilibili',
-    sectionStart: true,
-  },
-  {
-    value: MenuType.Appearance,
-    titleKey: 'settings.menu_appearance',
-    icon: 'i-mingcute:paint-brush-line',
-    iconActivated: 'i-mingcute:paint-brush-fill',
-  },
-  {
-    value: MenuType.Shortcuts,
-    icon: 'i-mingcute:keyboard-line',
-    iconActivated: 'i-mingcute:keyboard-fill',
-    titleKey: 'settings.shortcuts.title',
-    sectionStart: true,
-  },
-  {
-    value: MenuType.Data,
-    icon: 'i-mingcute:save-2-line',
-    iconActivated: 'i-mingcute:save-2-fill',
-    titleKey: 'settings.menu_data',
-    sectionStart: true,
-  },
-  {
-    value: MenuType.About,
-    icon: 'i-mingcute:information-line',
-    iconActivated: 'i-mingcute:information-fill',
-    titleKey: 'settings.menu_about',
-  },
-]
-
-const title = computed(() => {
-  const currentMenuItem = settingsMenuItems.find(item => item.value === activatedMenuItem.value)
-  return currentMenuItem ? t(currentMenuItem.titleKey) : t('settings.title')
-})
+const title = computed(() => t(activeMenu.value.titleKey))
+const titleDetail = computed(() => activeSecondaryPage.value ? t(activeSecondaryPage.value.titleKey) : undefined)
 
 function getSearchEntryTitle(entry: SettingsSearchEntry) {
   return entry.titleKey ? t(entry.titleKey) : entry.title ?? ''
@@ -300,7 +239,22 @@ interface SearchIndexEntry {
 }
 
 // 搜索文本只随 locale/目录变化重算，输入时复用，避免每次击键重复翻译全部条目。
-const searchIndex = computed<SearchIndexEntry[]>(() => settingsSearchEntries.map((entry, order) => {
+function isSearchEntryVisible(entry: SettingsSearchEntry) {
+  const menu = visibleMenus.value.find(item => item.value === entry.menu)
+  if (!menu)
+    return false
+  if (settings.value.useOriginalBilibiliHomepage && entry.titleKey && bewlyPagesOnlyTitleKeys.has(entry.titleKey))
+    return false
+  if (entry.titleKey && bewlyTopBarOnlyTitleKeys.has(entry.titleKey)
+    && !shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
+    return false
+  }
+
+  const secondaryPage = entry.storageValues?.find(({ key }) => key === menu.storageKey)?.value
+  return !secondaryPage || !menu.pages || menu.pages.some(page => page.value === secondaryPage)
+}
+
+const searchIndex = computed<SearchIndexEntry[]>(() => settingsSearchEntries.filter(isSearchEntryVisible).map((entry, order) => {
   const titleText = getSearchEntryTitle(entry).toLocaleLowerCase()
   const keywordText = getSearchEntryKeywordText(entry)
   return {
@@ -391,7 +345,7 @@ function activateSearchResult(event: KeyboardEvent) {
 }
 
 function getMenuTitle(menu: MenuType) {
-  const menuItem = settingsMenuItems.find(item => item.value === menu)
+  const menuItem = settingsMenus.find(item => item.value === menu)
   return menuItem ? t(menuItem.titleKey) : t('settings.title')
 }
 
@@ -469,8 +423,7 @@ function scrollToSearchTarget(
     }, 100)
   }
   const viewport = scrollViewportRef.value
-  // 异步页面挂载及离场节点都会影响布局，等待过渡结束后再测量。
-  if (!viewport || viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
+  if (!viewport) {
     retry()
     return
   }
@@ -515,10 +468,6 @@ function scrollToSearchTarget(
       searchTargetFrame = undefined
       if (navigationId !== searchNavigationId || !viewport.contains(target))
         return
-      if (viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
-        retry()
-        return
-      }
       if (!target.getClientRects().length) {
         retry()
         return
@@ -543,13 +492,13 @@ function scrollToSearchTarget(
 function navigateToSearchResult(entry: SettingsSearchEntry) {
   cancelSearchNavigation()
   const navigationId = searchNavigationId
-  // 页面存储值未变化时保持现有页面实例，避免无意义的整页重挂载。
-  const shouldReloadContent = entry.storageValues?.some(({ key, value }) => sessionStorage.getItem(key) !== value) ?? false
-  entry.storageValues?.forEach(({ key, value }) => sessionStorage.setItem(key, value))
+  const menu = settingsMenus.find(item => item.value === entry.menu)
+  const secondaryPage = entry.storageValues?.find(({ key }) => key === menu?.storageKey)?.value
+  if (secondaryPage && menu?.pages?.some(page => page.value === secondaryPage))
+    activeSecondaryPages[entry.menu] = secondaryPage
 
+  expandedMenus.value.add(entry.menu)
   activatedMenuItem.value = entry.menu
-  if (shouldReloadContent)
-    settingsContentKey.value++
   searchQuery.value = ''
   const targetTitle = entry.targetTitleKey
     ? t(entry.targetTitleKey)
@@ -558,265 +507,204 @@ function navigateToSearchResult(entry: SettingsSearchEntry) {
   nextTick(() => scrollToSearchTarget(targetKey, targetTitle, entry.fallbackTargetKey, navigationId))
 }
 
-const secondaryPageStorageKeys: Partial<Record<MenuType, string>> = {
-  [MenuType.BewlyPages]: bewlyPagesStorageKey,
-  [MenuType.BewlyComponents]: bewlyComponentsStorageKey,
-  [MenuType.Bilibili]: bilibiliPageStorageKey,
-}
-
-watch(pendingSettingsNavigation, (request) => {
-  if (!request)
-    return
-
-  const secondaryStorageKey = secondaryPageStorageKeys[request.menu as MenuType]
+function navigateToTarget(target: SettingsNavigationTarget) {
+  const storageKey = settingsMenus.find(menu => menu.value === target.menu)?.storageKey
   navigateToSearchResult({
-    menu: request.menu as MenuType,
-    targetTitleKey: request.targetTitleKey,
-    storageValues: request.secondaryPage && secondaryStorageKey
-      ? [{ key: secondaryStorageKey, value: request.secondaryPage }]
+    menu: target.menu as MenuType,
+    targetTitleKey: target.targetTitleKey,
+    storageValues: target.secondaryPage && storageKey
+      ? [{ key: storageKey, value: target.secondaryPage }]
       : undefined,
   })
-  pendingSettingsNavigation.value = undefined
+}
+
+watch(pendingNavigation, (target) => {
+  if (!target)
+    return
+
+  navigateToTarget(target)
+  pendingNavigation.value = undefined
 }, { immediate: true })
 
-onBeforeUnmount(() => {
-  if (settingsContentFrame !== undefined)
-    cancelAnimationFrame(settingsContentFrame)
-  cancelSearchNavigation()
+function getMenuHref(menu: (typeof visibleMenus.value)[number], secondaryPage = getSecondaryPage(menu)?.value) {
+  return buildSettingsPageHash({ menu: menu.value as SettingsMenu, secondaryPage })
+}
+
+useSettingsUrlSync(computed(() => getMenuHref(activeMenu.value)), navigateToTarget)
+
+watchEffect(() => {
+  document.title = `${titleDetail.value ?? title.value} - BewlyCat`
 })
 
-function handleClose() {
-  emit('close')
-}
+onBeforeUnmount(cancelSearchNavigation)
 
-function changeMenuItem(menuItem: MenuType) {
-  cancelSearchNavigation()
-  activatedMenuItem.value = menuItem
-}
+const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
 </script>
 
 <template>
-  <div class="fixed w-full h-full top-0 left-0" data-layout-edit-control>
-    <div
-      class="fixed w-full h-full top-0 left-0"
-      @click="handleClose"
-    />
-    <div
-      id="settings-window"
-      ref="settingsWindow"
-      pos="fixed top-1/2 left-1/2" w="90%" h="90%"
-      max-w-1000px max-h-900px transform="~ translate-x--1/2 translate-y--1/2 gpu"
-      flex="~ justify-between items-center"
-    >
-      <aside
-        class="settings-primary-navigation group"
-        shrink-0 p="x-4"
-        pos="absolute xl:left--84px left--44px" z-2
-      >
-        <ul
-          class="settings-primary-navigation__list"
-          style="
-            box-shadow: var(--bew-shadow-4);
-          "
-          relative
-          bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
-          overflow-hidden antialiased
-        >
-          <!-- frosted glass background -->
-          <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
-          <div
-            class="settings-primary-navigation__surface"
-            :style="{
-              boxShadow: 'var(--bew-shadow-edge-glow-2)',
-              // 对齐 1.6.9：侧栏固定用 dialog 级 glass-2
-              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
-            }"
-            z--1 pointer-events-none rounded-inherit
-          />
-
+  <div class="settings-page">
+    <aside class="settings-sidebar">
+      <div class="settings-sidebar__brand">
+        <img :src="brandIconUrl" alt="" width="32" height="32">
+        <span>BewlyCat</span>
+      </div>
+      <nav class="settings-sidebar__nav" :aria-label="$t('settings.title')">
+        <ul>
           <li
-            v-for="menuItem in settingsMenuItems"
-            :key="menuItem.value"
-            :class="{ 'menu-section-start': menuItem.sectionStart }"
+            v-for="menu in visibleMenus"
+            :key="menu.value"
+            :class="{ 'menu-section-start': menu.sectionStart }"
           >
-            <button
-              type="button"
-              class="settings-primary-navigation__item"
-              cursor-pointer
-              :class="{ 'menu-item-activated': menuItem.value === activatedMenuItem }"
-              :aria-current="menuItem.value === activatedMenuItem ? 'page' : undefined"
-              @click="changeMenuItem(menuItem.value)"
-            >
-              <div
-                v-show="menuItem.value !== activatedMenuItem"
-                text="xl center" w-40px h-20px flex="~ shrink-0" justify-center
-                :class="menuItem.icon"
-              />
-              <div
-                v-show="menuItem.value === activatedMenuItem"
-                text="xl center" w-40px h-20px flex="~ shrink-0" justify-center
-                :class="menuItem.iconActivated"
-              />
-              <div flex="~ items-center gap-2" shrink-0>
-                <span>{{ $t(menuItem.titleKey) }}</span>
+            <div class="settings-sidebar__row">
+              <a
+                class="settings-sidebar__item"
+                :class="{
+                  'settings-sidebar__item--parent': menu.pages,
+                  'is-active': menu.value === activeMenu.value && (!menu.pages || !expandedMenus.has(menu.value)),
+                  'is-current': menu.value === activeMenu.value,
+                }"
+                :href="getMenuHref(menu)"
+                :aria-current="menu.value === activeMenu.value && !menu.pages ? 'page' : undefined"
+                @click="expandedMenus.add(menu.value)"
+              >
                 <span
-                  v-if="menuItem.badge"
-                  text="xs"
-                  bg="orange-500/20"
-                  px-2 py-0.5
-                  rounded-full
-                  text-orange-500
-                  fw-500
-                >
-                  {{ menuItem.badge }}
-                </span>
+                  class="settings-sidebar__icon"
+                  :class="menu.value === activeMenu.value ? menu.iconActivated : menu.icon"
+                />
+                <span>{{ $t(menu.titleKey) }}</span>
+              </a>
+              <button
+                v-if="menu.pages"
+                type="button"
+                class="settings-sidebar__toggle"
+                :aria-label="$t(menu.titleKey)"
+                :aria-expanded="expandedMenus.has(menu.value)"
+                :aria-controls="`settings-menu-${menu.value}`"
+                @click="toggleMenu(menu.value)"
+              >
+                <span class="settings-sidebar__chevron i-mingcute:down-line" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div
+              v-if="menu.pages"
+              :id="`settings-menu-${menu.value}`"
+              class="settings-sidebar__children"
+              :class="{ 'is-expanded': expandedMenus.has(menu.value) }"
+              :inert="!expandedMenus.has(menu.value)"
+              :aria-hidden="!expandedMenus.has(menu.value)"
+            >
+              <div class="settings-sidebar__children-inner">
+                <ul>
+                  <template v-for="(group, groupIndex) in secondaryGroups.get(menu.value)" :key="group.key ?? groupIndex">
+                    <li v-if="group.key" class="settings-sidebar__group-label">
+                      {{ $t(group.key) }}
+                    </li>
+                    <li v-for="page in group.pages" :key="page.value">
+                      <a
+                        class="settings-sidebar__item settings-sidebar__item--child"
+                        :class="{ 'is-active': page === activeSecondaryPage }"
+                        :href="getMenuHref(menu, page.value)"
+                        :aria-current="page === activeSecondaryPage ? 'page' : undefined"
+                      >
+                        <span
+                          class="settings-sidebar__icon"
+                          :class="page === activeSecondaryPage ? page.iconActivated : page.icon"
+                        />
+                        <span>{{ $t(page.titleKey) }}</span>
+                      </a>
+                    </li>
+                  </template>
+                </ul>
               </div>
-            </button>
+            </div>
           </li>
         </ul>
-      </aside>
-
-      <div
-        class="settings-content"
-        :style="{
-          '--un-shadow': 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)',
-          'backdropFilter': settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-        }"
-        relative overflow-hidden flex-1 min-w-0
-        h-full
-        bg="$bew-elevated-alt"
-        shadow rounded="$bew-modal-radius" border="1 $bew-border-color"
+      </nav>
+      <a
+        class="settings-sidebar__item settings-sidebar__guide"
+        :href="USAGE_GUIDE_URL"
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        <header
-          class="settings-header"
-          flex justify-between items-center w-full h-92px
-          pos="absolute top-0 left-0" p="x-11" box-border gap-4
-          z-1 rounded="t-$bew-modal-radius"
-          style="
-            text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
-          "
-        >
-          <!-- Mask -->
-          <div
-            pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
-            :style="{
-              maskImage: settings.enableFrostedGlass
-                ? 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)'
-                : 'none',
-              WebkitMaskImage: settings.enableFrostedGlass
-                ? 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)'
-                : 'none',
-              backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-elevated-alt-solid)',
-              backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
-              WebkitBackdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
-            }"
-            z--1 rounded-inherit
-          />
-          <nav class="settings-breadcrumb" :aria-label="$t('settings.breadcrumb')">
-            <span>{{ $t('settings.title') }}</span>
+        <span class="settings-sidebar__icon i-mingcute:question-line" />
+        <span>{{ $t('settings.usage_guide') }}</span>
+      </a>
+    </aside>
+
+    <div class="settings-content">
+      <header class="settings-header">
+        <nav class="settings-breadcrumb" :aria-label="$t('settings.breadcrumb')">
+          <span>{{ $t('settings.title') }}</span>
+          <i i-mingcute:right-line />
+          <strong>{{ title }}</strong>
+          <template v-if="titleDetail">
             <i i-mingcute:right-line />
-            <strong>{{ title }}</strong>
-            <template v-if="breadcrumbDetail">
-              <i i-mingcute:right-line />
-              <strong>{{ breadcrumbDetail }}</strong>
-            </template>
-          </nav>
-          <div
-            ref="settingsSearchRef"
-            class="settings-search"
-            :class="{ 'has-query': Boolean(searchQuery) }"
-            :style="{
-              backgroundColor: settings.enableFrostedGlass ? 'var(--bew-content)' : 'var(--bew-content-solid)',
-            }"
-            @click="focusSettingsSearch"
-          >
-            <i i-mingcute:search-2-line />
-            <input
-              ref="searchInputRef"
-              v-model="searchQuery"
-              type="search"
-              :placeholder="$t('settings.search.placeholder')"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-controls="settings-search-results"
-              :aria-expanded="Boolean(searchQuery)"
-              :aria-activedescendant="activeSearchResultIndex >= 0 ? `settings-search-result-${activeSearchResultIndex}` : undefined"
-              @keydown.esc="searchQuery = ''"
-              @keydown.down="moveSearchResultSelection($event, 1)"
-              @keydown.up="moveSearchResultSelection($event, -1)"
-              @keydown.enter="activateSearchResult"
-              @focus="() => { handleSearchFocus(); updateSearchPopoverBounds() }"
-              @blur="handleSearchBlur"
-            >
-          </div>
-          <div
-            style="
-              box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-            "
-            :style="{
-              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-            }"
-            text="!16px hover:$bew-theme-color" w="32px" h="32px"
-            flex="~ items-center justify-center shrink-0"
-            relative z-1
-            bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-            rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
-            duration-300
-            @click="handleClose"
-          >
-            <div i-ic-baseline-clear />
-          </div>
-        </header>
+            <strong>{{ titleDetail }}</strong>
+          </template>
+        </nav>
         <div
-          ref="scrollViewportRef"
-          :style="{
-            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
-            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
-            scrollbarGutter: 'stable',
-            overflowAnchor: 'none',
-            overscrollBehavior: 'contain',
-            // 隔离内容控件的层叠上下文（如 .bew-segment-control__item 的 z-1），
-            // 避免毛玻璃关闭时与同 z-index 的 .settings-header 落入同一上下文、
-            // 因 DOM 顺序靠后而绘制到头部之上。
-            isolation: 'isolate',
-          }"
-          h-inherit of-y-auto of-x-hidden
-          style="padding-top: 92px;"
+          ref="settingsSearchRef"
+          class="settings-search"
+          @click="focusSettingsSearch"
         >
-          <!-- 底部留白高于右下角帮助按钮（16px 边距 + 32px），让末行内容可滚到按钮上方 -->
-          <main w-full min-h="[calc(100%-92px)]" p="x-12 b-20">
-            <!-- <div h-80px mt--8 /> -->
-
-            <Transition name="page-fade">
-              <Component
-                :is="settingsMenu[activatedMenuItem as keyof typeof settingsMenu]"
-                v-if="settingsContentReady"
-                :key="settingsContentKey"
-              />
-            </Transition>
-          </main>
-        </div>
-
-        <!-- 右下角落在内容区 x-12 内边距内，不遮挡设置项右侧控件 -->
-        <Tooltip
-          class="settings-usage-guide"
-          :content="$t('settings.usage_guide')"
-          placement="left"
-          floating
-          floating-z-index="var(--bew-z-settings-tooltip)"
-        >
-          <a
-            :href="USAGE_GUIDE_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            :aria-label="$t('settings.usage_guide')"
-            :style="{
-              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-            }"
+          <i i-mingcute:search-2-line />
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="search"
+            :placeholder="$t('settings.search.placeholder')"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="settings-search-results"
+            :aria-expanded="Boolean(searchQuery)"
+            :aria-activedescendant="activeSearchResultIndex >= 0 ? `settings-search-result-${activeSearchResultIndex}` : undefined"
+            @keydown.esc="searchQuery = ''"
+            @keydown.down="moveSearchResultSelection($event, 1)"
+            @keydown.up="moveSearchResultSelection($event, -1)"
+            @keydown.enter="activateSearchResult"
+            @focus="() => { handleSearchFocus(); updateSearchPopoverBounds() }"
+            @blur="handleSearchBlur"
           >
-            <i i-mingcute:question-line />
-          </a>
-        </Tooltip>
+        </div>
+      </header>
+
+      <!-- 窄屏时侧栏变为横向，二级菜单在这里单独显示一行。 -->
+      <nav
+        v-if="activeMenu.pages"
+        class="settings-subnav"
+        :aria-label="$t('settings.category_navigation')"
+      >
+        <a
+          v-for="page in activeMenu.pages"
+          :key="page.value"
+          class="settings-sidebar__item settings-sidebar__item--child"
+          :class="{ 'is-active': page === activeSecondaryPage }"
+          :href="getMenuHref(activeMenu, page.value)"
+          :aria-current="page === activeSecondaryPage ? 'page' : undefined"
+        >
+          <span
+            class="settings-sidebar__icon"
+            :class="page === activeSecondaryPage ? page.iconActivated : page.icon"
+          />
+          <span>{{ $t(page.titleKey) }}</span>
+        </a>
+      </nav>
+
+      <div ref="scrollViewportRef" class="settings-viewport">
+        <!-- 按页面重建节点以重播入场动画；旧页立即移除，避免两页文字叠影。 -->
+        <main
+          :key="`${activeMenu.value}/${activeSecondaryPage?.value ?? ''}`"
+          class="settings-main"
+        >
+          <SettingsSectionHeading
+            v-if="activeSecondaryPage"
+            :title="$t(activeSecondaryPage.titleKey)"
+            :desc="activeSecondaryPage.descriptionKey ? $t(activeSecondaryPage.descriptionKey) : undefined"
+            :icon="activeSecondaryPage.iconActivated"
+          />
+          <Component :is="activeContent" />
+        </main>
       </div>
     </div>
 
@@ -860,63 +748,167 @@ function changeMenuItem(menuItem: MenuType) {
 </template>
 
 <style lang="scss" scoped>
-.menu-item-activated {
-  --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
+.settings-page {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  // 设置卡片是半透明白色，需要有底色才能和页面区分。
+  background: var(--bew-elevated-alt-solid);
 }
 
-// Animate from the capsule's real geometric radius instead of `radius-full`.
-// Interpolating from 9999px stays visually clamped until the final frames and
-// makes the corners appear to snap when the rail expands.
-.settings-primary-navigation__list {
-  --settings-primary-nav-inset: var(--bew-space-2);
-  --settings-primary-nav-item-size: 40px;
-  --settings-primary-nav-expanded-item-width: 190px;
-
+.settings-sidebar {
   display: flex;
-  box-sizing: border-box;
-  width: calc(
-    var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
-  );
-  padding: var(--settings-primary-nav-inset);
   flex-direction: column;
-  align-items: stretch;
-  gap: var(--bew-space-2);
-  border-radius: 28px; // 40px item + 8px padding on each side, divided by two.
-  transition:
-    width var(--bew-duration-moderate) var(--bew-ease-standard),
-    border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
-    transform var(--bew-duration-moderate) var(--bew-ease-standard);
+  gap: var(--bew-space-4);
+  min-height: 0;
+  // 右侧由滚动条预留位补足，展开多个菜单出现滚动条时菜单宽度不跳动。
+  padding: var(--bew-space-5) var(--bew-space-1) var(--bew-space-3) var(--bew-space-3);
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  background: var(--bew-content-solid);
+  border-right: 1px solid var(--bew-border-color);
+}
 
-  > li {
-    width: 100%;
+.settings-sidebar__brand {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--bew-space-2);
+  align-items: center;
+  padding: 0 var(--bew-space-3);
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-display);
+  font-weight: var(--bew-font-weight-bold);
+  line-height: 32px;
+
+  img {
     flex: 0 0 auto;
+    border-radius: var(--bew-radius-md);
   }
 }
 
-.settings-primary-navigation__surface {
-  position: absolute;
-  inset: 0;
-  box-sizing: border-box;
-  border: 1px solid var(--bew-border-color);
+.settings-sidebar__nav {
+  flex: 1 1 auto;
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bew-space-1);
+  }
 }
 
-.settings-primary-navigation__item {
+.settings-sidebar__row {
   position: relative;
-  z-index: 1;
+}
+
+.settings-sidebar__item {
   display: flex;
-  width: 100%;
-  height: var(--settings-primary-nav-item-size);
+  box-sizing: border-box;
+  gap: var(--bew-space-3);
   align-items: center;
-  overflow-x: hidden;
-  border-radius: var(--bew-space-5); // Half of the collapsed 40px item.
+  min-height: 40px;
+  padding: var(--bew-space-2) var(--bew-space-3);
+  color: var(--bew-text-1);
+  border-radius: var(--bew-interactive-radius);
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-body);
+  text-decoration: none;
   transition:
-    border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    color var(--bew-duration-normal) var(--bew-ease-standard);
+
+  &:hover:not(.is-active) {
+    background: var(--bew-theme-color-10);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: -2px;
+  }
+
+  &.is-current {
+    font-weight: var(--bew-font-weight-semibold);
+  }
+
+  &.is-active {
+    background: var(--bew-theme-color-20);
+  }
+
+  &.is-current .settings-sidebar__icon,
+  &.is-active .settings-sidebar__icon {
+    color: var(--bew-theme-color);
+  }
+}
+
+.settings-sidebar__item--parent {
+  padding-right: calc(var(--bew-space-8) + var(--bew-space-2));
+}
+
+.settings-sidebar__item--child {
+  gap: var(--bew-space-2);
+  min-height: 36px;
+  padding-block: var(--bew-space-1);
+}
+
+.settings-sidebar__children {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--bew-duration-normal) var(--bew-ease-standard),
+    opacity var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &.is-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+.settings-sidebar__children-inner {
+  min-height: 0;
+  overflow: hidden;
+
+  > ul {
+    padding: var(--bew-space-1) 0 var(--bew-space-1) var(--bew-space-4);
+  }
+}
+
+.settings-sidebar__group-label {
+  padding: var(--bew-space-1) var(--bew-space-3) 0;
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+}
+
+.settings-sidebar__icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  font-size: var(--bew-icon-size-md);
+}
+
+.settings-sidebar__toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--bew-space-1);
+  display: grid;
+  place-items: center;
+  width: var(--bew-space-8);
+  height: var(--bew-space-8);
+  color: var(--bew-text-2);
+  border-radius: var(--bew-interactive-radius);
+  transform: translateY(-50%);
+  transition:
     color var(--bew-duration-normal) var(--bew-ease-standard),
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
 
-  &:hover:not(.menu-item-activated) {
-    background: var(--bew-fill-2);
+  &:hover {
+    color: var(--bew-text-1);
+    background: var(--bew-theme-color-10);
   }
 
   &:focus-visible {
@@ -925,14 +917,87 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
-.settings-primary-navigation:hover {
-  .settings-primary-navigation__list {
-    width: calc(
-      var(--settings-primary-nav-expanded-item-width) + var(--settings-primary-nav-inset) +
-        var(--settings-primary-nav-inset)
-    );
-    border-radius: var(--bew-radius-2xl);
-    transform: scale(1.05);
+.settings-sidebar__chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  transform: rotate(-90deg);
+  transition: transform var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.settings-sidebar__toggle[aria-expanded="true"] .settings-sidebar__chevron {
+  transform: none;
+}
+
+.settings-sidebar__guide {
+  flex: 0 0 auto;
+  color: var(--bew-text-2);
+}
+
+.settings-subnav {
+  display: none;
+}
+
+.menu-section-start {
+  position: relative;
+  margin-top: var(--bew-space-1);
+  padding-top: var(--bew-space-2);
+
+  &::before {
+    position: absolute;
+    top: 0;
+    right: var(--bew-space-3);
+    left: var(--bew-space-3);
+    height: 1px;
+    background: var(--bew-border-color);
+    content: "";
+  }
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.settings-header {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--bew-space-4);
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 0 var(--bew-space-8);
+  border-bottom: 1px solid var(--bew-border-color);
+}
+
+.settings-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  // 隔离内容控件的层叠上下文，避免滚动内容盖住搜索结果。
+  isolation: isolate;
+}
+
+.settings-main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--bew-space-6) var(--bew-space-8) var(--bew-space-12);
+  animation: settings-page-enter var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+// 从半透明开始而不是全透明：切换时内容立即可见，只是平滑地变实，不会出现整屏空白。
+@keyframes settings-page-enter {
+  from {
+    opacity: 0.4;
+    transform: translateY(var(--bew-space-1));
   }
 }
 
@@ -973,58 +1038,18 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
-/* 需高于 Tooltip 根节点自带的 relative 定位 */
-.settings-content .settings-usage-guide {
-  position: absolute;
-  right: var(--bew-space-4);
-  bottom: var(--bew-space-4);
-  z-index: 1;
-
-  a {
-    display: flex;
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    color: var(--bew-text-2);
-    font-size: 16px;
-    background: var(--bew-elevated);
-    border: 1px solid var(--bew-border-color);
-    border-radius: 50%;
-    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-    transition:
-      color var(--bew-duration-moderate) var(--bew-ease-standard),
-      background-color var(--bew-duration-moderate) var(--bew-ease-standard);
-  }
-
-  a:hover {
-    color: var(--bew-theme-color);
-    background: var(--bew-theme-color-30);
-  }
-
-  a:focus-visible {
-    outline: 2px solid var(--bew-theme-color-40);
-    outline-offset: 2px;
-  }
-}
-
-.dark .settings-content .settings-usage-guide a:not(:hover) {
-  background: var(--bew-fill-1);
-}
-
 .settings-search {
   position: relative;
   display: flex;
   box-sizing: border-box;
   align-items: center;
   flex: 0 1 auto;
-  width: min(320px, 38%);
+  width: clamp(180px, 20vw, 320px);
   min-width: 42px;
   height: var(--bew-control-height);
   padding: 0 var(--bew-space-3);
   color: var(--bew-text-1);
-  background: var(--bew-content);
+  background: var(--bew-content-solid);
   border: 1px solid var(--bew-border-color);
   border-radius: calc(var(--bew-control-height) / 2);
   box-shadow: var(--bew-shadow-edge-glow-1);
@@ -1229,110 +1254,100 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
-@media (max-width: 1279px) {
-  #settings-window {
-    /* 侧栏进入布局后先维持 1000px 内容宽度，空间不足时再连续收缩。 */
-    width: min(calc(1000px + 72px), calc(100% - var(--bew-space-6)));
-    max-width: none;
-    margin-left: calc(-1 * var(--bew-space-1));
+@media (max-width: 900px) {
+  .settings-page {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .settings-primary-navigation {
-    /* xl 以下外侧空间不足：让折叠导航占据布局宽度，展开时仍可覆盖 content。 */
-    position: relative;
-    left: auto !important;
-    width: 72px;
-    box-sizing: border-box;
-    padding-inline: var(--bew-space-2);
+  .settings-sidebar {
+    flex-direction: row;
+    padding: var(--bew-space-2) var(--bew-space-3);
+    overflow: auto hidden;
+    scrollbar-width: none;
+    scrollbar-gutter: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--bew-border-color);
+  }
+
+  .settings-sidebar__brand,
+  .settings-sidebar__guide,
+  .settings-sidebar__toggle {
+    display: none;
+  }
+
+  .settings-sidebar__nav ul {
+    flex-direction: row;
+  }
+
+  .settings-sidebar__nav .settings-sidebar__children {
+    display: none;
+  }
+
+  .settings-sidebar__item {
+    white-space: nowrap;
+
+    &.is-current {
+      background: var(--bew-theme-color-20);
+    }
+  }
+
+  .settings-sidebar__item--parent {
+    padding-right: var(--bew-space-3);
+  }
+
+  .settings-subnav {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--bew-space-1);
+    padding: var(--bew-space-2) var(--bew-space-3);
+    overflow: auto hidden;
+    scrollbar-width: none;
+    background: var(--bew-content-solid);
+    border-bottom: 1px solid var(--bew-border-color);
+  }
+
+  .menu-section-start {
+    margin-top: 0;
+    padding-top: 0;
+
+    &::before {
+      display: none;
+    }
   }
 }
 
 @media (max-width: 760px) {
   .settings-header {
-    gap: var(--bew-space-2);
-    padding-inline: var(--bew-space-4);
+    height: 56px;
+    padding: 0 var(--bew-space-4);
   }
 
-  .settings-primary-navigation {
-    /* 触屏窄屏不依赖 hover，保持常驻图标列。 */
-    li {
-      width: 100%;
-    }
-
-    button {
-      justify-content: center;
-    }
-
-    button > div:last-child {
-      display: none;
-    }
-
-    button > div:first-child,
-    button > div:nth-child(2) {
-      width: 40px;
-      flex: 0 0 40px;
-    }
-
-    &:hover {
-      .settings-primary-navigation__list {
-        width: calc(
-          var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
-        );
-        border-radius: 28px;
-      }
-
-      .settings-primary-navigation__item {
-        border-radius: var(--bew-space-5);
-      }
-    }
+  .settings-breadcrumb {
+    display: none;
   }
 
   .settings-search {
-    width: 42px;
-    flex: 0 0 42px;
-    cursor: pointer;
+    flex: 1 1 auto;
+    width: auto;
+  }
 
-    input {
-      width: 0;
-      margin-left: 0;
-      opacity: 0;
-      pointer-events: none;
-      transition:
-        width var(--bew-duration-moderate) var(--bew-ease-standard),
-        margin-left var(--bew-duration-moderate) var(--bew-ease-standard),
-        opacity var(--bew-duration-normal) var(--bew-ease-standard);
-    }
-
-    &:focus-within,
-    &.has-query {
-      position: absolute;
-      right: calc(var(--bew-space-4) + 32px + var(--bew-space-2));
-      left: var(--bew-space-4);
-      z-index: 3;
-      width: auto;
-
-      input {
-        width: 100%;
-        margin-left: var(--bew-space-2);
-        opacity: 1;
-        pointer-events: auto;
-      }
-    }
+  .settings-main {
+    // 设置卡片向两侧外扩 16px，留出 24px 才不会贴住窗口边缘。
+    padding: var(--bew-space-4) var(--bew-space-6) var(--bew-space-10);
   }
 }
 
-.menu-section-start {
-  position: relative;
-  padding-top: calc(var(--bew-space-2) + 1px);
+@media (prefers-reduced-motion: reduce) {
+  .settings-sidebar__item,
+  .settings-sidebar__toggle,
+  .settings-sidebar__chevron,
+  .settings-sidebar__children {
+    transition: none;
+  }
 
-  &::before {
-    position: absolute;
-    top: 0;
-    right: 8px;
-    left: 8px;
-    height: 1px;
-    background: var(--bew-border-color);
-    content: "";
+  .settings-main {
+    animation: none;
   }
 }
 </style>

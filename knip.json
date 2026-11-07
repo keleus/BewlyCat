@@ -4,7 +4,6 @@
     "src/contentScripts/index.ts",
     "src/inject/index.ts",
     "src/options/main.ts",
-    "src/popup/main.ts",
     "src/components/**",
     "scripts/*.ts",
     "*.config.*"

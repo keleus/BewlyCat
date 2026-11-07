@@ -91,11 +91,11 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
 
 <template>
   <div>
-    <SettingsItemGroup :title="$t('settings.group_dock')">
+    <SettingsItemGroup v-if="settings.enableDock" :title="$t('settings.group_dock')">
       <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
         <Radio v-model="settings.showLayoutEditButton" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')" right-width="auto">
+      <SettingsItem v-if="!settings.useOriginalBilibiliHomepage" :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')" right-width="auto">
         <Radio v-model="settings.alwaysUseDock" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.auto_hide_dock')" right-width="auto">
@@ -160,6 +160,7 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
                 </div>
                 <div flex="~ gap-4 items-center justify-between wrap" @click.stop>
                   <div
+                    v-if="!settings.useOriginalBilibiliHomepage"
                     flex="~ items-center"
                   >
                     {{ $t('settings.dock_item_use_original_bili_web_page') }}
@@ -205,7 +206,7 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">
+    <SettingsItemGroup v-if="settings.enableSideBar" :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">
       <SettingsItem :title="$t('settings.sidebar_position')" right-width="auto">
         <Select v-model="settings.sidebarPosition" :options="sidebarPositions" w="160px" />
       </SettingsItem>

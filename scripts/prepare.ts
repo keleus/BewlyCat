@@ -1,4 +1,3 @@
-// generate stub index.html files for dev entry
 import { execSync } from 'node:child_process'
 import process from 'node:process'
 
@@ -13,34 +12,6 @@ const extensionDirectory = isFirefox
 const contributorsImageUrl = 'https://contrib.rocks/image?repo=keleus/BewlyCat'
 const contributorsImageCachePath = r('.cache/bewlycat/contributors.svg')
 const contributorsImagePath = r(extensionDirectory, 'assets/contributors.svg')
-
-/**
- * Stub index.html to use Vite in development
- */
-async function stubIndexHtml() {
-  const views = [
-    'options',
-    'popup',
-  ]
-
-  for (const view of views) {
-    await fs.ensureDir(r(
-      isFirefox
-        ? `extension-firefox/dist/${view}`
-        : isSafari ? `extension-safari/dist/${view}` : `extension/dist/${view}`,
-    ))
-    let data = await fs.readFile(r(`src/${view}/index.html`), 'utf-8')
-    data = data
-      .replace('"./main.ts"', `"/${view}/main.ts.js"`)
-      .replace('<div id="app"></div>', '<div id="app">Vite server did not start</div>')
-    await fs.writeFile(r(
-      isFirefox
-        ? `extension-firefox/dist/${view}/index.html`
-        : isSafari ? `extension-safari/dist/${view}/index.html` : `extension/dist/${view}/index.html`,
-    ), data, 'utf-8')
-    log('PRE', `stub ${view}`)
-  }
-}
 
 function writeManifest() {
   execSync('esno ./scripts/manifest.ts', { stdio: 'inherit' })
@@ -98,11 +69,6 @@ async function prepare() {
   writeManifest()
 
   if (isDev) {
-    await stubIndexHtml()
-    chokidar.watch(r('src/**/*.html'))
-      .on('change', () => {
-        stubIndexHtml()
-      })
     chokidar.watch([r('src/manifest.ts'), r('package.json')])
       .on('change', () => {
         writeManifest()

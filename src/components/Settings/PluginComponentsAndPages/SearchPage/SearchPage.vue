@@ -21,13 +21,6 @@ const paginationModeOptions = computed(() => [
   { label: t('settings.search_results_pagination_mode_opt.pagination'), value: 'pagination' as const },
 ])
 
-watch(() => settings.value.individuallySetSearchPageWallpaper, (newValue) => {
-  if (newValue)
-    document.documentElement.style.backgroundImage = `url(${settings.value.searchPageWallpaper})`
-  else
-    document.documentElement.style.backgroundImage = `url(${settings.value.wallpaper})`
-})
-
 function changeSearchBarFocusCharacter(url: string) {
   settings.value.searchPageSearchBarFocusCharacter = url
 }
@@ -118,23 +111,11 @@ function changeSearchBarFocusCharacter(url: string) {
     <SettingsItemGroup :title="$t('settings.group_search_results')">
       <SettingsItem :title="$t('settings.use_plugin_search_results_page')" right-width="auto">
         <template #desc>
-          <span>
-            {{ settings.useOriginalBilibiliHomepage
-              ? $t('settings.use_plugin_search_results_page_disabled_by_original_homepage')
-              : $t('settings.use_plugin_search_results_page_desc') }}
-          </span>
+          <span>{{ $t('settings.use_plugin_search_results_page_desc') }}</span>
         </template>
         <Radio
           v-model="settings.usePluginSearchResultsPage"
-          :disabled="settings.useOriginalBilibiliHomepage"
         />
-      </SettingsItem>
-
-      <SettingsItem :title="$t('settings.depersonalize_search_results')" right-width="auto">
-        <template #desc>
-          <span>{{ $t('settings.depersonalize_search_results_desc') }}</span>
-        </template>
-        <Radio v-model="settings.depersonalizeSearchResults" />
       </SettingsItem>
 
       <SettingsItem
