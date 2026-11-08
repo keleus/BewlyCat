@@ -96,12 +96,10 @@
   --bew-z-original-top-bar: 1002;
   // 保留原站头像（2）高于下拉面板（1）的内部顺序。
   --bew-z-original-top-bar-popover: 1;
-  // 首页沉浸式模式覆盖顶栏与 Dock，低于设置窗口、对话框和 Toast。
+  // 首页沉浸式模式覆盖顶栏与 Dock，低于对话框和 Toast。
   --bew-z-immersive-feed: 10002;
-  --bew-z-settings-host: 10003;
-  --bew-z-settings: 10004;
   --bew-z-settings-popover: 10005;
-  // 设置内的浮动 Tooltip 需高于设置窗口，避免被其背景遮挡。
+  // 设置页内的浮动 Tooltip 需高于搜索结果。
   --bew-z-settings-tooltip: 10006;
   --bew-z-dialog: 10010;
   --bew-z-confirm-dialog: 10011;

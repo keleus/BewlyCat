@@ -7,7 +7,8 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
-import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
+import { getNativeBiliAppPage } from '~/utils/bilibiliNativePages'
+import { isHomePage, isInIframe } from '~/utils/main'
 import { buildNativeSearchUrl } from '~/utils/searchNavigation'
 
 import TopBarItemEditor from './TopBarItemEditor.vue'
@@ -21,32 +22,7 @@ const { isLayoutEditing } = useLayoutEditMode()
 const { getDockItemByPage } = useMainStore()
 const { getDockItemConfigByPage } = useSettingsStore()
 
-function getOriginalBiliAppPage(url: string): AppPage | undefined {
-  const urlObj = new URL(url)
-  const { hostname, pathname } = urlObj
-
-  if (hostname === 'search.bilibili.com')
-    return AppPage.Search
-  if (hostname === 't.bilibili.com')
-    return AppPage.Moments
-  if (hostname === 'space.bilibili.com' && /^\/\d+\/favlist\/?$/.test(pathname))
-    return AppPage.Favorites
-  if (hostname !== 'www.bilibili.com' && hostname !== 'bilibili.com')
-    return undefined
-
-  if (/^\/(?:anime|guochuang)(?:\/|$)/.test(pathname))
-    return AppPage.Anime
-  if (/^\/(?:account\/)?history(?:\/|$)/.test(pathname))
-    return AppPage.History
-  if (pathname.startsWith('/opus/'))
-    return AppPage.Moments
-  if (isWatchLaterListPage(url))
-    return AppPage.WatchLater
-
-  return undefined
-}
-
-const originalBiliAppPage = getOriginalBiliAppPage(window.location.href)
+const originalBiliAppPage = getNativeBiliAppPage(window.location.href)
 
 function getSearchKeyword(url: string): string {
   try {
@@ -156,6 +132,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
       type: IFRAME_TOP_BAR_CHANGE,
       useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
       enableTopBar: settings.value.enableTopBar,
+      enableTopBarModule: settings.value.enableTopBarModule,
     }, '*')
   }
 }

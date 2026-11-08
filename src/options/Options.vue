@@ -1,19 +1,63 @@
 <script setup lang="ts">
-import { storageDemo } from '~/logic/storage'
+import type { Ref } from 'vue'
+
+import ConfirmDialogOverlay from '~/components/ConfirmDialogOverlay.vue'
+import Settings from '~/components/Settings/Settings.vue'
+import { useAppearanceSettings } from '~/composables/useAppearanceSettings'
+import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
+import { useConfirmDialogHost } from '~/composables/useConfirmDialog'
+import { useDark } from '~/composables/useDark'
+import { onMessage } from '~/utils/messaging'
+import type { SettingsPageTabLocation } from '~/utils/settingsPage'
+import { NAVIGATE_SETTINGS_PAGE_MESSAGE, parseSettingsPageHash } from '~/utils/settingsPage'
+
+useAppearanceSettings()
+const { isDark } = useDark()
+const { activeConfirmDialog, finishConfirmDialog } = useConfirmDialogHost()
+
+const mainAppRef = ref<HTMLElement>() as Ref<HTMLElement>
+const pendingNavigation = ref<SettingsNavigationTarget | undefined>(parseSettingsPageHash(location.hash))
+const isMounted = ref(false)
+
+// 设置页及其子组件只使用这部分能力，其余是 B 站页面内布局相关的状态。
+const appProvider: Pick<BewlyAppProvider, 'mainAppRef' | 'openSettings'> = {
+  mainAppRef,
+  openSettings: target => pendingNavigation.value = target,
+}
+provide('BEWLY_APP', appProvider as BewlyAppProvider)
+
+onMessage<SettingsNavigationTarget | undefined, SettingsPageTabLocation>(NAVIGATE_SETTINGS_PAGE_MESSAGE, async (target) => {
+  if (target)
+    pendingNavigation.value = target
+
+  const tab = await browser.tabs.getCurrent()
+  return { tabId: tab?.id, windowId: tab?.windowId }
+})
+
+onMounted(() => {
+  // Teleport 的目标 mainAppRef 在根节点挂载后才可用。
+  isMounted.value = true
+})
 </script>
 
 <template>
-  <main class="px-4 py-10 text-center text-gray-700 dark:text-gray-200">
-    <!-- <img src="/assets/icon.svg" class="icon-btn mx-2 text-2xl" alt="extension icon"> -->
-    <div>Options</div>
-    <p class="mt-2 opacity-50">
-      This is the options page
-    </p>
+  <div
+    id="bewly-wrapper"
+    ref="mainAppRef"
+    class="bewly-wrapper"
+    :class="{ dark: isDark }"
+    text="$bew-text-1"
+  >
+    <Settings
+      v-if="isMounted"
+      v-model:pending-navigation="pendingNavigation"
+    />
 
-    <input v-model="storageDemo" class="border border-gray-400 rounded px-2 py-1 mt-2">
-
-    <div class="mt-4">
-      Powered by Vite <pixelarticons-zap class="align-middle inline-block" />
-    </div>
-  </main>
+    <ConfirmDialogOverlay
+      v-if="activeConfirmDialog"
+      :key="activeConfirmDialog.id"
+      :request="activeConfirmDialog"
+      @finish="finishConfirmDialog"
+    />
+  </div>
 </template>

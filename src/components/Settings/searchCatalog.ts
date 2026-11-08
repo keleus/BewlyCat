@@ -112,11 +112,23 @@ const dockRoute: SearchRoute = {
   secondaryTitleKey: 'settings.plugin.dock_and_sidebar',
   storageKey: bewlyComponentsStorageKey,
 }
+const interactionRoute: SearchRoute = {
+  menu: MenuType.BewlyComponents,
+  secondaryPage: 'interaction',
+  secondaryTitleKey: 'settings.plugin.interaction',
+  storageKey: bewlyComponentsStorageKey,
+}
 const favoritesRoute: SearchRoute = {
-  menu: MenuType.BewlyPages,
-  secondaryPage: 'favorites',
-  secondaryTitleKey: 'settings.plugin.favorites',
-  storageKey: bewlyPagesStorageKey,
+  menu: MenuType.Bilibili,
+  secondaryPage: 'favorite-organizer',
+  secondaryTitleKey: 'settings.bilibili_features.favorite_organizer',
+  storageKey: bilibiliStorageKey,
+}
+const originalMomentsRoute: SearchRoute = {
+  menu: MenuType.Bilibili,
+  secondaryPage: 'moments',
+  secondaryTitleKey: 'settings.bilibili_features.moments',
+  storageKey: bilibiliStorageKey,
 }
 const searchPageRoute: SearchRoute = {
   menu: MenuType.BewlyPages,
@@ -230,27 +242,60 @@ const topBarGlobalTitleKeys = [
   'settings.filter_articles_in_moments',
 ]
 
+/** 只在 Bewly 页面中生效；关闭 Bewly 页面后从搜索结果中隐藏。 */
+export const bewlyPagesOnlyTitleKeys = new Set([
+  ...wallpaperTitleKeys,
+  'settings.disable_background',
+  'settings.sidebar_cover_blur',
+  'settings.gradient_theme_color_background',
+  'settings.always_use_dock',
+  'settings.dock_item_use_original_bili_web_page',
+  'settings.video_card_link_opening_behavior',
+  'settings.group_list_scrolling',
+  'settings.enable_horizontal_scrolling',
+])
+
+/** 只在 Bewly 顶栏中生效；关闭 Bewly 顶栏后从搜索结果中隐藏。 */
+export const bewlyTopBarOnlyTitleKeys = new Set([
+  'settings.top_bar_link_opening_behavior',
+])
+
 const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(generalRoute, [
     'settings.menu_general',
     'settings.group_language',
     'settings.select_language',
-    'settings.group_interaction_layout',
+    'settings.group_interaction',
     'settings.touch_screen_optimization',
-    'settings.enable_grid_layout_switcher',
+  ]),
+  ...createEntries(interactionRoute, [
+    'settings.plugin.interaction',
+    'settings.group_list_scrolling',
     'settings.enable_horizontal_scrolling',
     'settings.group_drawer_behavior',
     'settings.close_drawer_without_pressing_esc_again',
     'settings.hide_drawer_esc_hint',
   ]),
-  ...createEntries(generalRoute, [
+  ...createEntries(interactionRoute, [
     'settings.group_link_opening_behavior',
     'settings.top_bar_link_opening_behavior',
     'settings.search_bar_link_opening_behavior',
   ], { keywordKeys: linkOpeningOptionKeys }),
-  ...createEntries(generalRoute, [
+  ...createEntries(interactionRoute, [
     'settings.video_card_link_opening_behavior',
   ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
+  ...createEntries(generalRoute, [
+    'settings.group_modules_interface',
+    'settings.group_modules_enhancements',
+    'settings.module_bewly_pages',
+    'settings.module_top_bar',
+    'settings.module_dock',
+    'settings.module_sidebar',
+    'settings.adapt_to_other_page_styles',
+    'settings.module_comments',
+    'settings.module_player',
+    'settings.module_shortcuts',
+  ]),
   ...createEntries(homeRoute, [
     'settings.menu_bewly_pages',
   ], { targetTitleKey: 'settings.plugin.home' }),
@@ -297,6 +342,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.home_tabs_adjustment',
     'settings.home_tabs_position',
     'settings.fixed_home_tabs_on_home_page',
+    'settings.enable_grid_layout_switcher',
     'settings.group_search_page_mode',
     'settings.use_search_page_mode',
     'settings.settings_shared_with_the_search_page',
@@ -315,14 +361,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   }),
   ...createEntries(momentsRoute, [
     'settings.plugin.moments',
-    'settings.group_original_moments_page',
-    'settings.original_moments_show_user_card',
-    'settings.original_moments_show_live_list',
-    'settings.original_moments_show_community_center',
-    'settings.original_moments_show_hot_search',
-    'settings.original_moments_show_up_list',
-    'settings.original_moments_show_fold_comments_button',
-    'settings.original_moments_click_blank_to_fold_comments',
     'settings.group_new_moments_page',
     'settings.moments_visible_components',
     'settings.moments_filtered_types',
@@ -331,6 +369,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_live',
     'settings.moments_show_hot_search',
     'settings.moments_show_up_list',
+    'settings.moments_grid_columns',
     'settings.moments_tabs_position',
     'settings.moments_start_from_last_seen',
     'settings.moments_enable_live_preview',
@@ -354,7 +393,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_filter_live_reservation',
     'settings.moments_filter_live_dynamic',
     'settings.moments_keyword_filter',
-    'settings.original_moments_use_bewly_filters',
     'settings.group_moments_wanted_users',
     'settings.moments_enable_wanted_filter',
     'settings.moments_wanted_users',
@@ -362,8 +400,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_pinned_users',
   ], {
     contextTitleKeysByTitleKey: {
-      'settings.original_moments_show_user_card': 'settings.group_original_moments_page',
-      'settings.original_moments_show_hot_search': 'settings.group_original_moments_page',
       'settings.moments_show_user_card': 'settings.group_new_moments_page',
       'settings.moments_show_hot_search': 'settings.group_new_moments_page',
     },
@@ -374,13 +410,27 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(momentsRoute, [
     'settings.moments_hide_charge_exclusive',
   ], { targetTitleKey: 'settings.moments_filter_charge_dynamic' }),
+  ...createEntries(originalMomentsRoute, [
+    'settings.bilibili_features.moments',
+    'settings.group_original_moments_page',
+    'settings.original_moments_show_user_card',
+    'settings.original_moments_show_live_list',
+    'settings.original_moments_show_community_center',
+    'settings.original_moments_show_hot_search',
+    'settings.original_moments_show_up_list',
+    'settings.original_moments_show_fold_comments_button',
+    'settings.original_moments_click_blank_to_fold_comments',
+    'settings.original_moments_use_bewly_filters',
+    'settings.moments_filtered_types',
+    'settings.moments_keyword_filter',
+  ], { keywordKeys: ['settings.bilibili_features.moments'] }),
   ...createEntries(favoritesRoute, [
-    'settings.plugin.favorites',
+    'settings.bilibili_features.favorite_organizer',
     'settings.group_favorite_organizer',
     'settings.favorite_organizer.sync_after_triple',
     'settings.favorite_organizer.batch_title',
     'settings.favorite_organizer.rules_title',
-  ]),
+  ], { keywordKeys: ['settings.bilibili_features.favorite_organizer'] }),
   ...createEntries(videoCardRoute, [
     'settings.plugin.video_card',
     'settings.group_video_card_grid',
@@ -539,7 +589,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_hot_search_in_search_page',
     'settings.group_search_results',
     'settings.use_plugin_search_results_page',
-    'settings.depersonalize_search_results',
     'settings.show_search_identity_switcher',
     'settings.search_results_pagination_mode',
     'settings.individually_set_search_page_wallpaper',
@@ -553,7 +602,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.local_loudness.strength',
     'settings.player_adjustment.title',
     'settings.player_adjustment.show_picture',
-    'settings.player_adjustment.show_audio_delay',
   ]),
   ...createEntries(ambilightRoute, [
     'settings.ambilight.title',
@@ -594,6 +642,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.keyboard_volume',
     'settings.keyboard_volume_step',
     'settings.remember_playback_rate',
+    'settings.remember_video_quality',
     'settings.remember_video_aspect_ratio',
     'settings.group_video_page_actions',
     'settings.enlarge_favorite_dialog',
@@ -727,7 +776,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_liquid_segment_indicator',
     'settings.disable_shadow',
     'settings.group_page_style',
-    'settings.adapt_to_other_page_styles',
     'settings.disable_background',
     'settings.group_color',
     'settings.theme',
@@ -785,8 +833,8 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(compatibilityRoute, [
     'settings.menu_compatibility',
     'settings.group_common',
-    'settings.use_original_bilibili_homepage',
     'settings.prevent_mobile_redirect',
+    'settings.depersonalize_search_results',
     ...(isFirefoxBuild ? ['settings.enable_firefox_scrollbar_repaint'] : []),
     'settings.group_ad_blocking',
     'settings.block_ads',

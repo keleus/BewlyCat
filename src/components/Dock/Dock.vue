@@ -14,6 +14,7 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
+import { getNativeBiliAppPage } from '~/utils/bilibiliNativePages'
 import { isHomePage, openLinkToNewTab } from '~/utils/main'
 import { matchesShortcutKey } from '~/utils/shortcutKeys'
 
@@ -330,6 +331,10 @@ const tooltipPlacement = computed(() => {
  * Whether to show the back to top or refresh button
  */
 const showBackToTopOrRefreshButton = computed((): boolean => {
+  // 这些操作只作用于插件页面，原站页面由浏览器自身处理。
+  if (settings.value.useOriginalBilibiliHomepage)
+    return false
+
   const dockItemConfig = settings.value.dockItemsConfig.find(e => e.page === props.activatedPage)
   if (dockItemConfig && dockItemConfig.useOriginalBiliPage) {
     return false
@@ -358,6 +363,9 @@ const showBackToTopOrRefreshActions = computed((): boolean => {
  * Only show on Home page when current sub-page is ForYou
  */
 const shouldShowUndoForwardButtons = computed((): boolean => {
+  if (settings.value.useOriginalBilibiliHomepage)
+    return false
+
   return props.activatedPage === AppPage.Home && homeActivatedPage.value === HomeSubPage.ForYou
 })
 
@@ -514,7 +522,7 @@ function openDockItemInNewTab(dockItem: DockItem, event?: MouseEvent) {
     return
 
   triggerDockIconClickFeedback(dockItem.page, event)
-  openLinkToNewTab(`https://www.bilibili.com/?page=${dockItem.page}`)
+  openLinkToNewTab(settings.value.useOriginalBilibiliHomepage ? dockItem.url : `https://www.bilibili.com/?page=${dockItem.page}`)
 }
 
 function handleDockEditClick(event: MouseEvent) {
@@ -569,7 +577,13 @@ function handleHistoryNavigation() {
   }
 }
 
+// Bewly 页面关闭时 Dock 每次跳转都会重新加载页面，当前页只需计算一次。
+const nativeActivatedPage = isHomePage() ? AppPage.Home : getNativeBiliAppPage(location.href)
+
 function isDockItemActivated(dockItem: DockItem): boolean {
+  if (settings.value.useOriginalBilibiliHomepage)
+    return nativeActivatedPage === dockItem.page
+
   // SearchResults 页面时也激活 Search 按钮
   if (props.activatedPage === AppPage.SearchResults && dockItem.page === AppPage.Search) {
     return isHomePage()

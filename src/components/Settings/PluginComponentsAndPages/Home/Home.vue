@@ -384,6 +384,9 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
       <SettingsItem :title="$t('settings.fixed_home_tabs_on_home_page')" right-width="auto">
         <Radio v-model="settings.fixedHomeTabsOnHomePage" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.enable_grid_layout_switcher')" right-width="auto">
+        <Radio v-model="settings.enableGridLayoutSwitcher" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_search_page_mode')">

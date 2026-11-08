@@ -3,16 +3,15 @@ import { createApp, watch } from 'vue'
 import PlayerLoudnessControl from '~/components/PlayerLoudnessControl.vue'
 import { settings, settingsReady } from '~/logic'
 import { i18n } from '~/utils/i18n'
-import { applyPictureAdjustment, playerAdjustment, resetPictureAdjustment, resetPlayerAdjustment, syncPlayerAdjustmentVideo } from '~/utils/playerAdjustment'
+import { applyPictureAdjustment, loudnessTemporarilyOff, resetPictureAdjustment, syncPlayerAdjustmentVideo } from '~/utils/playerAdjustment'
 
 import { schedulePlayerControlFit } from './playerControlFit'
 
 let initialized = false
 
-// 画面、音画同步、音量均衡任一项开启才显示按钮
+// 画面镜像、音量均衡任一项开启才显示按钮
 function isAdjustmentButtonVisible() {
   return settings.value.playerPictureAdjustmentEnabled
-    || settings.value.playerAudioDelayEnabled
     || settings.value.localLoudnessEnabled
 }
 
@@ -68,8 +67,8 @@ export function initLocalLoudnessControl() {
   function sync() {
     cancelRetry()
     if (!isAdjustmentButtonVisible()) {
-      // 隐藏按钮后无处还原，画面与音画调整随之重置；组件卸载前先把画面复原到视频上。
-      resetPlayerAdjustment()
+      // 隐藏按钮后无处还原，画面镜像随之重置；组件卸载前先把画面复原到视频上。
+      resetPictureAdjustment()
       if (media)
         applyPictureAdjustment(media)
       clearControl()
@@ -126,18 +125,25 @@ export function initLocalLoudnessControl() {
   void settingsReady.then(() => {
     if (stopped)
       return
+    // 设置页切换总开关后以设置为准，清除本页的临时关闭。
+    const stopLoudnessWatch = watch(() => settings.value.localLoudnessEnabled, () => {
+      loudnessTemporarilyOff.value = false
+    })
+    const stopTemporaryOffWatch = watch(loudnessTemporarilyOff, (off) => {
+      window.postMessage({ type: 'BEWLY_LOUDNESS_TEMPORARY_OFF', off }, location.origin)
+    })
     const stopVisibilityWatch = watch(isAdjustmentButtonVisible, discover, { immediate: true })
-    // 单项关闭后面板里不再有入口还原，对应调整随之重置。
-    const stopItemWatch = watch(() => [settings.value.playerPictureAdjustmentEnabled, settings.value.playerAudioDelayEnabled] as const, ([picture, audioDelay]) => {
+    // 单项关闭后面板里不再有入口还原，画面镜像随之重置。
+    const stopItemWatch = watch(() => settings.value.playerPictureAdjustmentEnabled, (picture) => {
       if (!picture) {
         resetPictureAdjustment()
         if (media)
           applyPictureAdjustment(media)
       }
-      if (!audioDelay)
-        playerAdjustment.audioDelay = 0
     }, { immediate: true })
     unwatch = () => {
+      stopLoudnessWatch()
+      stopTemporaryOffWatch()
       stopVisibilityWatch()
       stopItemWatch()
     }

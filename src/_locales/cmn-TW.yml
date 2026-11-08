@@ -178,24 +178,13 @@ settings:
       unsupported: 目前音源無法安全接入，保持原聲。
   player_adjustment:
     title: 畫面與聲音調整
-    desc: 在影片控制列顯示調整按鈕，懸停開啟面板。以下兩項可單獨關閉，音量均衡項隨上方「啟用局部音量均衡」顯示；三項都關閉時不顯示按鈕。
-    show_picture: 畫面旋轉與鏡像
-    show_picture_desc: 在面板中旋轉、鏡像畫面，只對目前影片生效；關閉後會重設目前畫面調整。
-    show_audio_delay: 音畫同步
-    show_audio_delay_desc: 在面板中調整聲音延後，只對目前影片生效；關閉後不再接管聲音。
+    desc: 在影片控制列顯示調整按鈕，懸停開啟面板。音量均衡項隨上方「啟用局部音量均衡」顯示；畫面鏡像與音量均衡都關閉時不顯示按鈕。
+    show_picture: 畫面鏡像
+    show_picture_desc: 在面板中鏡像畫面，只對目前影片生效；關閉後會重設目前畫面調整。
     picture: 畫面
-    rotate_left: 向左旋轉
-    rotate_right: 向右旋轉
     flip_horizontal: 水平鏡像
     flip_vertical: 垂直鏡像
     reset: 重設
-    audio_sync: 音畫同步
-    audio_delay: 聲音延後
-    audio_delay_desc: 聲音比畫面早時使用，最多延後 1000 ms。僅對目前影片生效。
-    audio_delay_states:
-      waiting: 等待影片播放後生效。
-      unsupported: 目前音源無法安全接入，保持原聲。
-      error: 音訊處理失敗，已回退到原聲。重新整理頁面後可重試。
   following_sort: 新版關注列表排序
   following_sort_updated: 按更新時間
   following_sort_group: 按分組
@@ -221,18 +210,38 @@ settings:
     placeholder: 搜尋設定
     no_results: 找不到相關設定
     located: 已定位到此設定
-  category_general_desc: 設定語言、互動版面、連結開啟方式與抽屜行為。
+  category_general_desc: 設定語言與互動方式，並依需求開啟外掛的各個部分，可以只保留評論、大會員等單項功能。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式與其他頁面的適配。
   category_shortcuts_desc: 啟用、修改或還原 BewlyCat 與播放器快速鍵。
   breadcrumb: 設定位置
-  usage_guide: 使用說明：BewlyCat 功能講解影片合集
-  group_interaction_layout: 互動與版面
+  usage_guide: 使用說明
+  group_modules_interface: 介面模組
+  group_modules_interface_desc: 關閉後恢復 B 站原有介面，只服務於該模組的設定也會一併隱藏。
+  module_bewly_pages: Bewly 頁面
+  module_bewly_pages_desc: 自訂首頁、動態、搜尋等頁面及其影片卡片和桌布。關閉後使用 B 站原版頁面，已開啟的首頁會自動重新整理。
+  module_top_bar: 頂欄
+  module_top_bar_desc: 外掛提供的頂欄及原版頂欄託管。關閉後外掛不再隱藏或變更任何頂欄，頁面顯示 B 站自己的頂欄；Bewly 首頁整頁由外掛接管，不顯示頂欄。
+  module_dock: Dock 欄
+  module_dock_desc: 頁面切換導覽。Bewly 頁面關閉時，點擊直接跳轉 B 站原站頁面。
+  module_sidebar: 懸浮側欄
+  module_sidebar_desc: 提供主題切換和設定入口，Dock 顯示時不顯示。關閉後可從瀏覽器工具列圖示開啟設定。
+  group_modules_enhancements: 功能增強
+  group_modules_enhancements_desc: 不依賴上方介面模組。大會員、收藏夾整理、原版動態和淨化功能在「Bilibili」分類中單獨設定。
+  module_comments: 評論增強
+  module_comments_desc: 回覆樹、IP 屬地、性別、樓主標識和評論圖片最佳化。
+  module_player: 播放器增強
+  module_player_desc: 顯示模式、播放器按鈕、聽影片、音量均衡、環境光和連播控制。重新整理頁面後生效。
+  module_shortcuts: 鍵盤快捷鍵
+  module_shortcuts_desc: 外掛提供的播放器和首頁快捷鍵。
+  category_bilibili_moments_desc: 調整原版動態頁的模組和評論行為，並過濾動態。
+  group_interaction: 互動
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁和首頁分頁。
   category_browsing_video_card_desc: 設定影片卡片的版面、預覽、資訊顯示與開啟方式。
   category_browsing_favorites_desc: 依規則整理收藏夾，並在一鍵三連後自動同步到對應收藏夾。
   category_navigation_link_opening_desc: 統一設定頂欄、影片卡片與搜尋列連結的開啟位置和抽屜行為。
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口和通知顯示。
   category_navigation_dock_desc: 設定 Dock 列與側欄的位置、顯示和快捷操作。
+  category_navigation_interaction_desc: 設定連結開啟方式、抽屜行為與清單捲動。
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋與結果頁。
   category_navigation_moments_desc: 設定插件動態頁的左側元件和動態卡片開啟方式。
   category_playback_player_desc: 設定播放器模式、捲動行為、彈幕、字幕和播放狀態。
@@ -285,10 +294,13 @@ settings:
     moments: 動態頁
     favorites: 收藏
     search: 搜尋頁
+    interaction: 互動行為
 
   # Bilibili 功能增強 子選單
   bilibili_features:
     comments: 評論
+    moments: 動態增強
+    favorite_organizer: 收藏夾整理
     video_playback: 播放器
     auto_play: 播放行為
     vip_features: 大會員
@@ -301,6 +313,7 @@ settings:
 
   group_common: 常用
   group_drawer_behavior: 抽屜行為
+  group_list_scrolling: 清單捲動
   group_language: 語言
   group_ad_blocking: 廣告攔截
   group_comments: 評論
@@ -672,12 +685,10 @@ settings:
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器
   filter_articles_in_moments: 過濾專欄
   filter_articles_in_moments_desc: 在動態列表中過濾專欄內容，僅顯示影片
-  top_bar_icon_badges: 圖示標記樣式
   top_bar_icon_badges_opt:
     number: 數字
     dot: 圓點
     none: 不顯示
-  show_watch_later_badge: 顯示稍後再看角標
   show_bcoin_receive_reminder: 大會員B幣領取提醒
   auto_receive_bcoin_coupon: 大會員B幣自動領取
   auto_receive_bcoin_coupon_desc: 啟用後，當檢測到有未領取的B幣券時將自動領取
@@ -947,12 +958,9 @@ settings:
   home_tabs_adjustment: 標籤列調整
   home_tabs_adjustment_desc: 第一個啟用的標籤項目調整頁面將是起始頁面。
   home_tabs_position: 首頁標籤列位置
-  always_show_tabs_on_home_page: 捲動時隱藏首頁標籤列
   fixed_home_tabs_on_home_page: 固定首頁標籤列
   topbar_visibility: 頂部列可視性
   topbar_visibility_desc: 開啟後顯示 BewlyCat 或 B 站原版頂欄；關閉後隱藏兩者，交給 Bilibili Evolved 等第三方頂欄。
-  use_original_bilibili_homepage: 使用原版 Bilibili 首頁
-  use_original_bilibili_homepage_desc: 當你變更此設定後，如果在首頁上，頁面將自動重新整理！
   use_original_bilibili_topbar: 使用原版 Bilibili 頂欄
   use_original_bilibili_topbar_desc: 僅在「頂部列可視性」開啟時生效。開啟後使用 B 站原版頂欄，關閉後使用 BewlyCat 頂欄。
   top_bar_mode: 頂欄類型
@@ -1005,9 +1013,9 @@ settings:
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住你上次設定的倍速，並在下次打開影片時自動套用
   custom_playback_rate: 自訂播放倍速
-  custom_playback_rate_desc: 輸入 0.25–5 倍，套用至目前影片。開啟「記住倍速」後會儲存此值。
-  custom_playback_rate_apply: 套用至目前影片
-  custom_playback_rate_no_video: 目前頁面沒有可控制的影片，請在影片播放頁開啟此設定。
+  custom_playback_rate_desc: 輸入 0.25–5 倍，套用至最近造訪的影片分頁。開啟「記住倍速」後會儲存此值。
+  custom_playback_rate_apply: 套用至影片
+  custom_playback_rate_no_video: 找不到可控制的影片，請先在其他分頁開啟影片。
   playback_rate_step: 倍速快捷鍵調整幅度
   playback_rate_step_desc: 每次增減 0.01–1 倍；預設 0.25。快捷鍵可在「快捷鍵」設定中修改。
   fullscreen_wheel_volume: 全螢幕滾輪調整音量
@@ -1026,8 +1034,6 @@ settings:
   remember_video_aspect_ratio_desc: 啟用後，播放器會記住你上次選擇的影片比例，並在下次打開影片時自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
   auto_exit_fullscreen_on_end_desc: 啟用後，當影片播放結束且沒有單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
-  auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
-  auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，在自動連播下播放結束時不會自動退出全螢幕，方便連續觀看
   use_bilibili_default_auto_play: 使用 Bilibili 預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用後由 Bilibili 決定播放結束行為，不套用下方依影片類型設定。
   auto_play_watch_later: 稍後觀看
@@ -1312,7 +1318,6 @@ settings:
   group_search_results: 搜尋結果
   use_plugin_search_results_page: 使用插件搜尋結果頁
   use_plugin_search_results_page_desc: 啟用後，搜尋時將使用插件內置的搜尋結果頁面，支持分類篩選等功能
-  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首頁時，搜尋將使用 bilibili 原版結果頁
   search_results_pagination_mode: 搜尋結果分頁模式
   search_results_pagination_mode_desc: 選擇搜尋結果的展示方式：滾動自動加載或翻頁
 auth:

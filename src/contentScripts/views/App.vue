@@ -5,16 +5,15 @@ import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ApiErrorDetailsDialog from '~/components/ApiErrorDetailsDialog.vue'
-import Button from '~/components/Button.vue'
+import ConfirmDialogOverlay from '~/components/ConfirmDialogOverlay.vue'
 import FirefoxScrollbar from '~/components/FirefoxScrollbar.vue'
 import Icon from '~/components/Icon.vue'
-import Radio from '~/components/Radio.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
+import { useAccountSync } from '~/composables/useAccountSync'
 import { useActiveApiErrorSource } from '~/composables/useApiErrorDetails'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
-import type { ConfirmDialogOptions, ConfirmDialogToggleField } from '~/composables/useConfirmDialog'
-import { confirmDialogKey } from '~/composables/useConfirmDialog'
+import { useConfirmDialogHost } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_SEARCH_NAVIGATION, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
@@ -28,13 +27,14 @@ import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
-import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
+import { setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
 import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, jumpScrollTo, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
+import { openSettingsPage } from '~/utils/settingsPage'
 import { isComponentVisible } from '~/utils/topBarBadge'
 import { canOpenInVideoDialog } from '~/utils/videoDialog'
 
@@ -43,6 +43,7 @@ import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
+useAccountSync()
 // Layout edit mode is UI-only; persistent choices continue to use `settings`.
 const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
 const { t } = useI18n()
@@ -58,8 +59,6 @@ if (shouldUseDark) {
 else {
   isDark = ref(false)
 }
-const showSettings = ref(false)
-const pendingSettingsNavigation = ref<SettingsNavigationTarget>()
 const searchFocusOverlayActive = ref(false)
 const pageWallpaperReady = ref(false)
 const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
@@ -67,114 +66,17 @@ const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
   && !settings.value.disableBackground
   && (pageWallpaperReady.value || (settings.value.useLinearGradientThemeColorBackground && isDark.value)))
 
-function openSettings(target?: SettingsNavigationTarget) {
-  pendingSettingsNavigation.value = target
-  showSettings.value = true
-}
-
-// The top-bar switcher is teleported to document.body, outside this Shadow DOM.
-// Raise the host while settings are open so the modal can stay above that layer.
-watch(showSettings, (visible) => {
-  document.getElementById('bewly')?.classList.toggle('settings-open', visible)
-}, { immediate: true })
-
-interface ConfirmDialogRequest {
-  id: number
-  message: string
-  title?: string
-  confirmLabel?: string
-  toggleFields?: ConfirmDialogToggleField[]
-  resolve: (confirmed: boolean) => void
-  settled: boolean
-}
-
-/**
- * Lightweight confirm host (no Dialog / Transition / Teleport).
- * Resolving the promise often mutates large page lists (favorites, history…);
- * doing that in the same tick as a Transition/Teleport teardown races Vue's
- * patcher and throws insertBefore NotFoundError under <App>.
- */
-const activeConfirmDialog = ref<ConfirmDialogRequest>()
-const confirmDialogQueue: ConfirmDialogRequest[] = []
-let confirmDialogBusy = false
-let confirmDialogIdSeq = 0
-
-function showNextConfirmDialog() {
-  activeConfirmDialog.value = confirmDialogQueue.shift()
-}
-
-const confirmDialogPanelStyle = computed(() => {
-  const frostedGlass = settings.value.enableFrostedGlass
-  return {
-    backdropFilter: frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
-    WebkitBackdropFilter: frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
-    backgroundColor: frostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-  }
-})
-
-function showConfirmDialog(message: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
-  return new Promise((resolve) => {
-    const request: ConfirmDialogRequest = {
-      id: ++confirmDialogIdSeq,
-      message,
-      title: options.title,
-      confirmLabel: options.confirmLabel,
-      toggleFields: options.toggleFields,
-      resolve,
-      settled: false,
-    }
-
-    if (activeConfirmDialog.value || confirmDialogBusy)
-      confirmDialogQueue.push(request)
-    else
-      activeConfirmDialog.value = request
-  })
-}
-
-function finishConfirmDialog(confirmed: boolean) {
-  const request = activeConfirmDialog.value
-  if (!request || request.settled)
-    return
-
-  request.settled = true
-  confirmDialogBusy = true
-  // Unmount the overlay first; only then resolve so callers' DOM updates
-  // (e.g. splicing favorite cards) never interleave with this node removal.
-  activeConfirmDialog.value = undefined
-
-  nextTick(() => {
-    request.resolve(confirmed)
-    confirmDialogBusy = false
-    showNextConfirmDialog()
-  })
-}
+// Registered before the layout-edit Escape handler: an open dialog consumes Escape first.
+const { activeConfirmDialog, showConfirmDialog, finishConfirmDialog } = useConfirmDialogHost()
 
 onKeyStroke('Escape', (e: KeyboardEvent) => {
-  if (!activeConfirmDialog.value && !isLayoutEditing.value)
+  if (!isLayoutEditing.value)
     return
   e.preventDefault()
   e.stopPropagation()
   e.stopImmediatePropagation()
-  if (activeConfirmDialog.value)
-    finishConfirmDialog(false)
-  else
-    exitLayoutEditMode()
+  exitLayoutEditMode()
 }, { dedupe: true })
-
-onKeyStroke('Enter', (e: KeyboardEvent) => {
-  if (!activeConfirmDialog.value)
-    return
-  const target = e.target as HTMLElement | null
-  if (target?.closest('.bew-confirm-dialog__field'))
-    return
-  e.preventDefault()
-  e.stopPropagation()
-  finishConfirmDialog(true)
-}, { dedupe: true })
-
-provide(confirmDialogKey, {
-  confirm: showConfirmDialog,
-})
 
 const SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY = 'bewlycat-settings-migration-prompt-dismissed'
 
@@ -622,7 +524,7 @@ function blockOriginalLayoutInteraction(event: Event) {
   if (event.type === 'click' && directTarget) {
     const menu = directTarget.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined
     if (menu) {
-      openSettings({
+      openSettingsPage({
         menu,
         secondaryPage: directTarget.dataset.layoutSettingsPage,
         targetTitleKey: directTarget.dataset.layoutSettingsTitleKey,
@@ -637,7 +539,7 @@ function blockOriginalLayoutInteraction(event: Event) {
 }
 
 function openLayoutTargetSettings(target: LayoutEditTargetProxy) {
-  openSettings({
+  openSettingsPage({
     menu: target.menu,
     secondaryPage: target.secondaryPage,
     targetTitleKey: target.targetTitleKey,
@@ -916,7 +818,7 @@ function openLayoutEditPageModeSettings() {
   if (!dockPage)
     return
 
-  openSettings({
+  openSettingsPage({
     menu: 'BewlyComponents',
     secondaryPage: 'dock',
     targetTitleKey: dockPage.i18nKey,
@@ -925,7 +827,7 @@ function openLayoutEditPageModeSettings() {
 
 function openLayoutEditGridSettings() {
   if (layoutEditGridActionKind.value === 'moments') {
-    openSettings({
+    openSettingsPage({
       menu: 'BewlyPages',
       secondaryPage: 'moments',
       targetTitleKey: 'settings.moments_grid_columns',
@@ -934,7 +836,7 @@ function openLayoutEditGridSettings() {
   }
 
   if (layoutEditGridActionKind.value === 'video-card') {
-    openSettings({
+    openSettingsPage({
       menu: 'BewlyComponents',
       secondaryPage: 'video-card',
       targetTitleKey: 'settings.grid_breakpoints',
@@ -943,7 +845,7 @@ function openLayoutEditGridSettings() {
 }
 
 function openLayoutEditDockPositionSettings() {
-  openSettings({
+  openSettingsPage({
     menu: 'BewlyComponents',
     secondaryPage: 'dock',
     targetTitleKey: 'settings.dock_position',
@@ -951,7 +853,7 @@ function openLayoutEditDockPositionSettings() {
 }
 
 function openLayoutEditTopBarModeSettings() {
-  openSettings({
+  openSettingsPage({
     menu: 'BewlyComponents',
     secondaryPage: 'topbar',
     targetTitleKey: 'topbar.top_bar_switcher',
@@ -959,7 +861,7 @@ function openLayoutEditTopBarModeSettings() {
 }
 
 function openLayoutEditSearchResultsSettings() {
-  openSettings({
+  openSettingsPage({
     menu: 'BewlyPages',
     secondaryPage: 'search',
     targetTitleKey: 'settings.group_search_results',
@@ -967,7 +869,7 @@ function openLayoutEditSearchResultsSettings() {
 }
 
 function openLayoutEditContextSettings(action: LayoutEditQuickSettingsAction) {
-  openSettings({
+  openSettingsPage({
     menu: action.menu,
     secondaryPage: action.secondaryPage,
     targetTitleKey: action.targetTitleKey,
@@ -1183,7 +1085,7 @@ useEventListener(window, 'message', ({ data, source }) => {
 
 const iframePageURL = computed((): string => {
   // If the iframe is not the BiliBili homepage or in iframe, then don't show the iframe page
-  if (!isHomePage(window.self.location.href) || isInIframe())
+  if (!isHomePage(window.self.location.href) || isInIframe() || settings.value.useOriginalBilibiliHomepage)
     return ''
   const currentDockItemConfig = settings.value.dockItemsConfig.find(e => e.page === activatedPage.value)
   if (currentDockItemConfig) {
@@ -1208,6 +1110,17 @@ const showBewlyPage = computed((): boolean => {
     return false
 
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
+})
+
+// Bewly 页面关闭时没有可切换的插件页，Dock 作为全站导航显示在所有页面。
+const showDock = computed((): boolean => {
+  if (!settings.value.enableDock)
+    return false
+
+  return settings.value.useOriginalBilibiliHomepage
+    || settings.value.alwaysUseDock
+    || showBewlyPage.value
+    || Boolean(iframePageURL.value)
 })
 
 // App outlives page components. Drop outgoing closures before the next page
@@ -1246,7 +1159,17 @@ watch(dockPageTitle, (title) => {
     document.title = title
 }, { immediate: true })
 
+const isOriginalTopBarActive = computed(() => shouldShowOriginalBilibiliTopBar(
+  settings.value.enableTopBarModule,
+  settings.value.enableTopBar,
+  settings.value.useOriginalBilibiliTopBar,
+))
+
 const showTopBar = computed((): boolean => {
+  // 模块关闭时不挂载顶栏组件，账号同步由 useAccountSync 继续负责。
+  if (!settings.value.enableTopBarModule)
+    return false
+
   // When using the open in drawer feature, the iframe inside the page will hide the top bar
   if (isVideoOrBangumiPage() && isInIframe())
     return false
@@ -1288,7 +1211,7 @@ function focusScrollViewport(options: { force?: boolean } = {}) {
     if (!viewport || !showBewlyPage.value)
       return
 
-    if (!options.force && (showSettings.value || activeDrawer.value !== DrawerType.None || isEditableElement(getActiveElement())))
+    if (!options.force && (activeDrawer.value !== DrawerType.None || isEditableElement(getActiveElement())))
       return
 
     viewport.focus({ preventScroll: true })
@@ -1350,7 +1273,7 @@ watch([() => showTopBar.value, () => activatedPage.value], () => {
   // Remove the original Bilibili top bar when using original bilibili page to avoid two top bars showing
   const biliHeader = document.querySelector('.bili-header') as HTMLElement | null
   if (biliHeader && isHomePage()) {
-    if (settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && !isInIframe()) {
+    if (settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && !isInIframe() && !settings.value.useOriginalBilibiliHomepage) {
       biliHeader.style.visibility = 'hidden'
     }
     else {
@@ -1415,7 +1338,7 @@ onMounted(() => {
     })
   }
 
-  if (isHomePage()) {
+  if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     focusScrollViewport()
 
     // Windows/Linux: 监听 Home 键
@@ -1436,6 +1359,15 @@ onMounted(() => {
 })
 
 function handleDockItemClick(dockItem: DockItem) {
+  // Bewly 页面关闭时直接跳转原站页面，不经过 iframe。
+  if (settings.value.useOriginalBilibiliHomepage) {
+    if (dockItem.openInNewTab)
+      openLinkToNewTab(dockItem.url)
+    else
+      location.href = dockItem.url
+    return
+  }
+
   // Opening in a new tab while still on the current tab doesn't require changing the `activatedPage`
   if (dockItem.openInNewTab) {
     openLinkToNewTab(`https://www.bilibili.com/?page=${dockItem.page}`)
@@ -1535,7 +1467,7 @@ function handleOsScroll(_instance: any, event: Event) {
     const frameScrollTop = latestScrollTop
 
     emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, frameScrollTop)
-    if (settings.value.enableTopBar && settings.value.useOriginalBilibiliTopBar)
+    if (isOriginalTopBarActive.value)
       setOriginalBilibiliTopBarScrolled(document, frameScrollTop > 0)
 
     // 只在滚动距离超过阈值时更新状态
@@ -1726,8 +1658,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   haveScrollbar,
   activeDrawer,
   setActiveDrawer,
-  pendingSettingsNavigation,
-  openSettings,
+  openSettings: openSettingsPage,
 })
 
 if (settings.value.cleanUrlArgument) {
@@ -1916,15 +1847,6 @@ if (settings.value.cleanUrlArgument) {
       <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
     </template>
 
-    <!-- Settings -->
-    <KeepAlive>
-      <Settings
-        v-if="showSettings"
-        style="z-index: var(--bew-z-settings);"
-        @close="showSettings = false"
-      />
-    </KeepAlive>
-
     <Transition name="fade">
       <svg
         v-if="isLayoutEditing"
@@ -1992,6 +1914,7 @@ if (settings.value.cleanUrlArgument) {
         class="layout-edit-quick-actions"
       >
         <button
+          v-if="settings.enableTopBarModule"
           type="button"
           class="layout-edit-quick-action"
           @click="openLayoutEditTopBarModeSettings"
@@ -2072,7 +1995,7 @@ if (settings.value.cleanUrlArgument) {
       }"
     >
       <Dock
-        v-if="!settings.useOriginalBilibiliHomepage && (settings.alwaysUseDock || (showBewlyPage || iframePageURL))"
+        v-if="showDock"
         pointer-events-auto
         :activated-page="activatedPage"
         @refresh="handleThrottledPageRefresh"
@@ -2082,7 +2005,7 @@ if (settings.value.cleanUrlArgument) {
         @dock-item-click="handleDockItemClick"
       />
       <SideBar
-        v-else
+        v-else-if="settings.enableSideBar"
         pointer-events-auto
       />
     </div>
@@ -2110,8 +2033,7 @@ if (settings.value.cleanUrlArgument) {
 
     <TopBarModeSwitcher
       v-if="isInIframe()
-        && settings.enableTopBar
-        && settings.useOriginalBilibiliTopBar
+        && isOriginalTopBarActive
         && isComponentVisible('topBarSwitcher')"
       native
     />
@@ -2147,7 +2069,7 @@ if (settings.value.cleanUrlArgument) {
               <div
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
-                :style="settings.enableTopBar && settings.useOriginalBilibiliTopBar && !reachTop
+                :style="isOriginalTopBarActive && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
                 @mousedown.self="handlePageBackgroundMouseDown"
@@ -2189,61 +2111,13 @@ if (settings.value.cleanUrlArgument) {
       @close="activeApiErrorSource = null"
     />
 
-    <!-- Static confirm overlay: no Transition/Teleport (see finishConfirmDialog). -->
-    <div
+    <!-- Static confirm overlay: no Transition/Teleport (see useConfirmDialogHost). -->
+    <ConfirmDialogOverlay
       v-if="activeConfirmDialog"
       :key="activeConfirmDialog.id"
-      class="bew-confirm-dialog"
-      role="alertdialog"
-      aria-modal="true"
-      :aria-label="$t('common.operation.confirm')"
-    >
-      <div class="bew-confirm-dialog__backdrop" @click="finishConfirmDialog(false)" />
-      <div class="bew-confirm-dialog__panel" :style="confirmDialogPanelStyle">
-        <header class="bew-confirm-dialog__header">
-          <p class="bew-confirm-dialog__title">
-            {{ activeConfirmDialog.title || $t('common.operation.confirm') }}
-          </p>
-          <button
-            type="button"
-            class="bew-confirm-dialog__close"
-            :aria-label="$t('common.operation.cancel')"
-            @click="finishConfirmDialog(false)"
-          >
-            <div i-ic-baseline-clear />
-          </button>
-        </header>
-        <div class="bew-confirm-dialog__body">
-          <p class="bew-confirm-dialog__message">
-            {{ activeConfirmDialog.message }}
-          </p>
-          <div
-            v-if="activeConfirmDialog.toggleFields?.length"
-            class="bew-confirm-dialog__fields"
-          >
-            <div
-              v-for="field in activeConfirmDialog.toggleFields"
-              :key="field.id"
-              class="bew-confirm-dialog__field"
-            >
-              <span class="bew-confirm-dialog__field-label">{{ field.label }}</span>
-              <Radio
-                v-model="field.value"
-                :label="field.value ? field.enabledLabel : field.disabledLabel"
-              />
-            </div>
-          </div>
-        </div>
-        <footer class="bew-confirm-dialog__footer">
-          <Button type="tertiary" @click="finishConfirmDialog(true)">
-            {{ activeConfirmDialog.confirmLabel || $t('common.operation.confirm') }}
-          </Button>
-          <Button type="primary" @click="finishConfirmDialog(false)">
-            {{ $t('common.operation.cancel') }}
-          </Button>
-        </footer>
-      </div>
-    </div>
+      :request="activeConfirmDialog"
+      @finish="finishConfirmDialog"
+    />
   </div>
 </template>
 
@@ -2402,126 +2276,6 @@ if (settings.value.cleanUrlArgument) {
 
 .top-bar-host--editing .top-bar-layer {
   z-index: 10001;
-}
-
-.bew-confirm-dialog {
-  position: fixed;
-  inset: 0;
-  z-index: var(--bew-z-confirm-dialog);
-  pointer-events: auto;
-}
-
-.bew-confirm-dialog__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgb(0 0 0 / 40%);
-}
-
-.bew-confirm-dialog__panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: flex;
-  flex-direction: column;
-  width: 420px;
-  max-width: calc(100vw - 32px);
-  overflow: hidden;
-  border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-modal-radius);
-  box-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
-  transform: translate(-50%, -50%);
-}
-
-.bew-confirm-dialog__header {
-  display: flex;
-  gap: var(--bew-space-4);
-  align-items: center;
-  justify-content: space-between;
-  min-height: 70px;
-  padding: 0 var(--bew-space-8);
-}
-
-.bew-confirm-dialog__title {
-  margin: 0;
-  font-size: var(--bew-font-size-title);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-title);
-}
-
-.bew-confirm-dialog__close {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  appearance: none;
-  color: inherit;
-  cursor: pointer;
-  background: var(--bew-elevated);
-  border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-interactive-radius);
-  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-
-  &:hover {
-    color: var(--bew-theme-color);
-    background: var(--bew-theme-color-30);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--bew-theme-color-40);
-    outline-offset: var(--bew-space-0-5);
-  }
-}
-
-.bew-confirm-dialog__body {
-  max-height: min(60vh, 480px);
-  padding: var(--bew-space-2) var(--bew-space-8) var(--bew-space-2);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.bew-confirm-dialog__message {
-  margin: 0;
-  color: var(--bew-text-1);
-  font-size: var(--bew-font-size-body);
-  font-weight: var(--bew-font-weight-regular);
-  line-height: var(--bew-line-height-body);
-  white-space: pre-line;
-}
-
-.bew-confirm-dialog__fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--bew-space-2);
-  margin-top: var(--bew-space-4);
-}
-
-.bew-confirm-dialog__field {
-  display: flex;
-  min-height: 48px;
-  gap: var(--bew-space-4);
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--bew-space-2) var(--bew-space-3);
-  background: var(--bew-fill-1);
-  border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-interactive-radius);
-}
-
-.bew-confirm-dialog__field-label {
-  color: var(--bew-text-1);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-}
-
-.bew-confirm-dialog__footer {
-  display: flex;
-  gap: var(--bew-space-2);
-  justify-content: flex-end;
-  padding: var(--bew-space-2) var(--bew-space-8) var(--bew-space-6);
 }
 
 .top-bar-host--behind-search-overlay {

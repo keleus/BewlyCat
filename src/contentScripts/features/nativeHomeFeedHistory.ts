@@ -201,7 +201,8 @@ export function setupNativeHomeFeedHistory() {
   function sync() {
     // The homepage's BiliBili switch opens the native feed in an iframe while
     // useOriginalBilibiliHomepage stays false on the outer BewlyCat page.
-    const nextEnabled = settings.value.enableUndoRefreshButton
+    // 该选项属于 Dock 设置，Dock 关闭后设置项已隐藏，不再改动原生首页。
+    const nextEnabled = settings.value.enableDock && settings.value.enableUndoRefreshButton
       && (isInIframe() || settings.value.useOriginalBilibiliHomepage) && isHomePage()
     if (nextEnabled === enabled) {
       updateButtons()
@@ -257,7 +258,7 @@ export function setupNativeHomeFeedHistory() {
   }
 
   void settingsReady.then(() => {
-    watch(() => [settings.value.enableUndoRefreshButton, settings.value.useOriginalBilibiliHomepage, settings.value.language], sync, { immediate: true })
+    watch(() => [settings.value.enableDock, settings.value.enableUndoRefreshButton, settings.value.useOriginalBilibiliHomepage, settings.value.language], sync, { immediate: true })
     window.addEventListener('popstate', sync)
     window.addEventListener('pageshow', sync)
   })

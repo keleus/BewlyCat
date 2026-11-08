@@ -337,7 +337,7 @@ const shouldShowDivider = computed(() => {
                 :href="getTopBarItemHref('moments', 'https://t.bilibili.com')"
                 :title="$t('topbar.moments')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
+                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'moments')"
               >
                 <div i-tabler:windmill />
@@ -372,7 +372,7 @@ const shouldShowDivider = computed(() => {
                 :href="getTopBarItemHref('favorites', `https://space.bilibili.com/${mid}/favlist`)"
                 :title="$t('topbar.favorites')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
+                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'favorites')"
               >
                 <div i-mingcute:star-line />
@@ -408,7 +408,7 @@ const shouldShowDivider = computed(() => {
                 :href="getTopBarItemHref('history', 'https://www.bilibili.com/history')"
                 :title="$t('topbar.history')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
+                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'history')"
               >
                 <div i-mingcute:time-line />
@@ -454,7 +454,7 @@ const shouldShowDivider = computed(() => {
                 :href="getTopBarItemHref('watchLater', 'https://www.bilibili.com/watchlater/list')"
                 :title="$t('topbar.watch_later')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
+                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'watchLater')"
               >
                 <div i-mingcute:carplay-line />

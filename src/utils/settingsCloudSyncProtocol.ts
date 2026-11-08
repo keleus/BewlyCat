@@ -77,6 +77,8 @@ const LOCAL_ONLY_RUNTIME_FIELDS = new Set([
   'savedVideoAspectRatio',
   'savedVideoQuality',
   'lastAcknowledgedVersion',
+  // 每台设备各自根据本机旧设置迁移。
+  'pluginModulesMigrated',
   // Removed volume-normalization field; keep it local while legacy storage is cleaned up.
   'targetVolume',
 ])

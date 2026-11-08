@@ -6,37 +6,16 @@ import Button from '~/components/Button.vue'
 import Input from '~/components/Input.vue'
 import { settings } from '~/logic'
 import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playbackRate'
-import { getVideoElement, setPlaybackRate } from '~/utils/player'
+import { requestBilibiliTab } from '~/utils/settingsPage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 
 const { t } = useI18n()
 const toast = useToast()
-const rate = ref<string | number>(1)
+const rate = ref<string | number>(settings.value.savedPlaybackRate)
 const step = ref<string | number>(settings.value.playbackRateStep)
 
-function findCurrentVideo() {
-  // 设置可从视频页、首页抽屉或动态视频弹窗打开；只查找当前页面持有的播放器。
-  const frames = document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe')
-  for (const frame of Array.from(frames ?? []).reverse()) {
-    if (!frame.getClientRects().length)
-      continue
-    try {
-      const video = frame.contentDocument && getVideoElement(frame.contentDocument)
-      if (video)
-        return video
-    }
-    catch {
-      // 跨域页面不能由当前设置窗口控制。
-    }
-  }
-  return getVideoElement()
-}
-
-onMounted(() => {
-  rate.value = findCurrentVideo()?.playbackRate ?? 1
-})
 watch(() => settings.value.playbackRateStep, value => step.value = value)
 
 function saveStep() {
@@ -45,12 +24,12 @@ function saveStep() {
   step.value = settings.value.playbackRateStep
 }
 
-function applyRate() {
+async function applyRate() {
   const value = rate.value === '' ? Number.NaN : Number(rate.value)
   if (!Number.isFinite(value))
     return
   rate.value = normalizePlaybackRate(value)
-  if (setPlaybackRate(rate.value, findCurrentVideo()))
+  if (await requestBilibiliTab<boolean>({ action: 'applyPlaybackRate', rate: rate.value }))
     toast.success(t('player_state.speed', { rate: rate.value }))
   else
     toast.info(t('settings.custom_playback_rate_no_video'))
