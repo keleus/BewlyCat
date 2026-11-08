@@ -515,6 +515,7 @@ export interface Settings {
   themeScheduleStart: string
   themeScheduleEnd: string
   videoPageDarkMode: boolean
+  videoPageGlassStyle: boolean
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
   useLinearGradientThemeColorBackground: boolean
@@ -899,6 +900,7 @@ export const originalSettings: Settings = {
   themeScheduleStart: '06:00',
   themeScheduleEnd: '18:00',
   videoPageDarkMode: false,
+  videoPageGlassStyle: false,
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
   useLinearGradientThemeColorBackground: false,

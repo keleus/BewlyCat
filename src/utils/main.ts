@@ -390,6 +390,15 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
  * @param url the url to check
  * @returns true if the current page is a video playback page
  */
+/**
+ * 普通视频与播放列表页，对应 adaptedStyles 的 `videoPage`；不含番剧、电影和课程页。
+ * @param url the url to check
+ */
+export function isStandardVideoPage(url: string = location.href): boolean {
+  url = stripBilibiliLocaleUrl(url)
+  return /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list|medialist\/play)\/.*/.test(url)
+}
+
 export function isVideoPlaybackPage(url: string = location.href): boolean {
   url = stripBilibiliLocaleUrl(url)
   return (

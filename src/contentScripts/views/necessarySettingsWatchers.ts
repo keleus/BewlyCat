@@ -3,7 +3,8 @@ import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled, shouldEnableUselessFeedCardBlocker } from '~/contentScripts/features/blockUselessFeedCards'
 import { appAuthTokens, localSettings, settings } from '~/logic'
 import { detachOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
-import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
+import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe } from '~/utils/main'
+import { isVideoPageDesignEnabled, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 
 function isFestivalPage(): boolean {
   return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(location.href)
@@ -262,19 +263,20 @@ export function setupNecessarySettingsWatchers() {
   const applyBewlyDesignClasses = () => {
     const shouldApply = settings.value.adaptToOtherPageStyles
       ? !isFestivalPage()
-      : settings.value.videoPageDarkMode && isVideoPlaybackPage()
+      : isVideoPageDesignEnabled()
     const shouldApplyVideoDarkOnly = !settings.value.adaptToOtherPageStyles
-      && settings.value.videoPageDarkMode
-      && isVideoPlaybackPage()
+      && isVideoPageDesignEnabled()
 
     document.documentElement.classList.toggle('bewly-design', shouldApply)
     document.documentElement.classList.toggle('bewly-video-dark-only', shouldApplyVideoDarkOnly)
+    document.documentElement.classList.toggle('bewly-video-glass', isVideoPageGlassStyleEnabled())
   }
 
   watch(
     [
       () => settings.value.adaptToOtherPageStyles,
       () => settings.value.videoPageDarkMode,
+      () => settings.value.videoPageGlassStyle,
     ],
     applyBewlyDesignClasses,
     { immediate: true },

@@ -39,6 +39,7 @@ import { installShortcutListener, setupShortcutHandlers } from '~/utils/shortcut
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
+import { isVideoPageDesignEnabled, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
@@ -367,13 +368,12 @@ else if (shouldInitializeContentScript) {
     if (settings.value.adaptToOtherPageStyles)
       return !isFestivalPage()
 
-    return settings.value.videoPageDarkMode && isVideoPlaybackPage()
+    return isVideoPageDesignEnabled()
   }
 
   function shouldApplyVideoPageDarkOnly() {
     return !settings.value.adaptToOtherPageStyles
-      && settings.value.videoPageDarkMode
-      && isVideoPlaybackPage()
+      && isVideoPageDesignEnabled()
   }
 
   function applyBewlyDesignClasses() {
@@ -390,7 +390,8 @@ else if (shouldInitializeContentScript) {
     if (!isSupportedPages() && !isSupportedIframePages())
       return
 
-    if (settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode)
+    // 玻璃风格只限当前视频页，避免把主题同步扩散到未适配的其他页面。
+    if (settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode || isVideoPageGlassStyleEnabled())
       useDark()
 
     const shouldApplyFullStyles = applyBewlyDesignClasses()

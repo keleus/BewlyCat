@@ -732,6 +732,15 @@ else if (shouldInitializePageScript) {
           border-color: var(--bew-comment-box-border, var(--Ga1)) !important;
         }
 
+        /* 编辑框底色钩子：未设置时回落到原生 var(--bg3) / var(--bg1)，供视频页玻璃风格改为半透明填充 */
+        #editor:not(:hover):not(.active) {
+          background-color: var(--bew-comment-box-bg, var(--bg3)) !important;
+        }
+
+        #editor:is(:hover, .active) {
+          background-color: var(--bew-comment-box-bg-active, var(--bg1)) !important;
+        }
+
         :is(#pub button, button[data-v-risk="fingerprint"]):not(:hover, :active, .active) {
           background-color: var(--bew-theme-color-60) !important;
         }

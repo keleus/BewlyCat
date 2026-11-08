@@ -37,6 +37,7 @@ import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, 
 import { openSettingsPage } from '~/utils/settingsPage'
 import { isComponentVisible } from '~/utils/topBarBadge'
 import { canOpenInVideoDialog } from '~/utils/videoDialog'
+import { isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -50,7 +51,7 @@ const { t } = useI18n()
 
 // Conditionally use dark mode. `useDark()` handles the video-page-only route gate.
 let isDark: Ref<boolean>
-const shouldUseDark = settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode
+const shouldUseDark = settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode || isVideoPageGlassStyleEnabled()
 
 if (shouldUseDark) {
   const darkResult = useDark()
@@ -1880,6 +1881,9 @@ if (settings.value.cleanUrlArgument) {
     <template v-if="showBewlyPage && !settings.disableBackground">
       <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
     </template>
+    <div v-else-if="isVideoPageGlassStyleEnabled()" class="bewly-video-page-background">
+      <AppBackground :activated-page="AppPage.Home" />
+    </div>
 
     <Transition name="fade">
       <svg
@@ -2326,6 +2330,25 @@ if (settings.value.cleanUrlArgument) {
   // To fix the filter used in `.bewly-wrapper` that cause the positions of elements become discorded.
   > * > * {
     filter: var(--bew-filter-force-dark);
+  }
+}
+
+// #bewly 不形成层叠上下文，负层级可以排到原生页面内容之后；
+// 需低于毛玻璃面板伪元素的 z-index: -1，否则面板会被壁纸盖住。
+.bewly-video-page-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+
+  // 整页一层毛玻璃：壁纸模糊后罩半透明底色，原生内容直接融在上面。
+  // 关闭毛玻璃时 --bew-filter-glass-2 为 none，只保留底色。
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: color-mix(in oklab, var(--bew-bg) 50%, transparent);
+    backdrop-filter: var(--bew-filter-glass-2);
   }
 }
 

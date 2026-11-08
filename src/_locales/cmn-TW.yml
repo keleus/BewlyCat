@@ -983,6 +983,8 @@ settings:
   adapt_to_other_page_styles_desc: 適應一些常見頁面，以配合 BewlyBewly 主題。
   disable_background: 關閉背景
   disable_background_desc: 徹底關閉擴充功能頁面的純色背景、漸層背景與桌布（含搜尋頁桌布），顯示 B 站原頁面背景。
+  video_page_glass_style: 影片頁玻璃風格
+  video_page_glass_style_desc: 在影片播放頁顯示背景，整頁鋪一層毛玻璃，內容直接融在背景上。桌布、遮罩、漸層和模糊強度沿用外觀設定，不含番劇和課程頁。
   prevent_mobile_redirect: 防止跳轉至行動版
   prevent_mobile_redirect_desc: 啟用後，避免造訪 www.bilibili.com 時被跳轉至行動版頁面。
   enable_firefox_scrollbar_repaint: Firefox 捲軸重繪

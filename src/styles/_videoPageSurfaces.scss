@@ -1,0 +1,120 @@
+// 视频页原生容器透明化，让页面后方的层（环境光、壁纸）透出来。
+// 弹幕发送栏属于播放器区域，是否穿透由各调用方决定（见 transparent-player-sending-area）。
+
+// 播放器占位层与弹幕发送栏透明化。占位层底部带骨架灰块，发送栏透明后会从后方露出，需一并处理。
+@mixin transparent-player-sending-area {
+  #bilibili-player-placeholder,
+  #bilibili-player-placeholder-top,
+  #bilibili-player-placeholder-bottom,
+  #bilibili-player-placeholder-bottom-left,
+  #bilibili-player-placeholder-bottom-right {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .bpx-player-sending-area,
+  .bpx-player-sending-bar,
+  .bpx-player-sending-bar-left,
+  .bpx-player-sending-bar-right,
+  .bpx-player-video-info,
+  .bpx-player-dm-root,
+  .bpx-player-dm-input,
+  .bpx-player-dm-switch,
+  .bpx-player-dm-setting,
+  .bpx-player-video-inputbar-wrap,
+  .bpx-player-sending-area::before,
+  .bpx-player-sending-area::after {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+@mixin transparent-video-page-surfaces {
+  // 点播播放页包裹层
+  #app,
+  #video-page-app {
+    background-color: transparent !important;
+  }
+
+  // 右侧栏、UP主信息卡、简介栏与弹幕列表
+  .right-container,
+  .right-container-inner,
+  .up-info-container,
+  .video-desc-container,
+  .bpx-player-dm-wrap,
+  #danmukuBox,
+  .danmaku-wrap,
+  .bpx-docker-minor,
+  .bpx-player-auxiliary,
+  .bpx-player-collapse,
+  .bpx-player-collapse .bui-collapse-header,
+  .bpx-player-collapse .bui-collapse-body,
+  .bpx-player-dm-management,
+  .bpx-player-dm-function,
+  .bpx-player-dm-load-status,
+  .bpx-player-dm-wrap-child {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 弹幕列表底部与历史记录按钮
+  .bpx-player-dm-btn-footer,
+  .bpx-player-dm-btn-history {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  // 视频选集（多P、合集面板）全层级
+  .video-pod,
+  .video-pod__header,
+  .video-pod__body,
+  .video-pod__list,
+  .video-pod__item,
+  .video-pod .single-p,
+  .video-pod .multi-p,
+  .video-pod .page-list,
+  .video-pod .simple-base-item {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 稍后再看与播放列表播放页
+  .playlist-app
+    :is(
+      .video-info-container,
+      #playlistToolbar,
+      .playlist-container--right,
+      .up-panel-container,
+      .recommend-list-container,
+      .action-list-container,
+      .action-list-header,
+      .action-list-body,
+      .action-list-body-top,
+      .action-list-body-bottom,
+      .action-list,
+      .action-list-inner,
+      .action-list-content,
+      .action-list-item-wrap,
+      .action-list-item,
+      .singlep-list-item-inner,
+      .multip-list-item-inner,
+      .multip-list,
+      .multip-list-item
+    ) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 评论区原生底色（吸底评论框、展开回复的吸底收起栏等）改为半透明，不再以实色块遮住后方；
+  // 保留部分底色，滚动经过的评论内容不会与吸底栏文字重叠。浮层使用 --bg1_float，不受影响
+  :is(bili-comments, .bb-comment, .comment-bilibili-fold) {
+    --bg1: color-mix(in oklab, var(--bew-bg), transparent 28%) !important;
+  }
+
+  .bb-comment,
+  .comment-bilibili-fold,
+  .comment-wrapper .comment-m {
+    background-color: transparent !important;
+  }
+}

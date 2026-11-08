@@ -1,4 +1,5 @@
 // BewlyCat 视频环境光（Ambilight）层级与穿透样式
+@use "./videoPageSurfaces" as surfaces;
 
 .bewly-ambilight-host {
   position: absolute;
@@ -61,26 +62,17 @@ html[data-bewly-ambilight] {
     background-color: var(--bew-bg) !important;
   }
 
-  // 点播播放页包裹层与播放器背景透明化
-  #app,
-  #video-page-app {
-    background-color: transparent !important;
-  }
+  @include surfaces.transparent-video-page-surfaces;
 
+  // 播放器背景透明化
   .bpx-player-video-area,
   .bpx-player-video-perch,
   .bpx-player-video-wrap {
     background: transparent !important;
   }
 
-  #bilibili-player-placeholder,
-  #bilibili-player-placeholder-top,
-  #bilibili-player-placeholder-bottom,
-  #bilibili-player-placeholder-bottom-left,
-  #bilibili-player-placeholder-bottom-right {
-    background: transparent !important;
-    box-shadow: none !important;
-  }
+  // 播放器占位层与发送弹幕区域透明穿透
+  @include surfaces.transparent-player-sending-area;
 
   #playerWrap,
   #bilibili-player,
@@ -88,47 +80,6 @@ html[data-bewly-ambilight] {
   .bpx-player-container,
   .bpx-player-video-area {
     box-shadow: none !important;
-  }
-
-  // 右侧栏、UP主信息卡、简介栏与发送弹幕区域透明穿透
-  .right-container,
-  .right-container-inner,
-  .up-info-container,
-  .video-desc-container,
-  .bpx-player-sending-area,
-  .bpx-player-sending-bar,
-  .bpx-player-sending-bar-left,
-  .bpx-player-sending-bar-right,
-  .bpx-player-video-info,
-  .bpx-player-dm-root,
-  .bpx-player-dm-input,
-  .bpx-player-dm-switch,
-  .bpx-player-dm-setting,
-  .bpx-player-video-inputbar-wrap,
-  .bpx-player-dm-wrap,
-  .bpx-player-sending-area::before,
-  .bpx-player-sending-area::after,
-  #danmukuBox,
-  .danmaku-wrap,
-  .bpx-docker-minor,
-  .bpx-player-auxiliary,
-  .bpx-player-collapse,
-  .bpx-player-collapse .bui-collapse-header,
-  .bpx-player-collapse .bui-collapse-body,
-  .bpx-player-dm-management,
-  .bpx-player-dm-function,
-  .bpx-player-dm-load-status,
-  .bpx-player-dm-wrap-child {
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  // 弹幕列表底部与历史记录按钮透明化
-  .bpx-player-dm-btn-footer,
-  .bpx-player-dm-btn-history {
-    background: transparent !important;
-    box-shadow: none !important;
-    border-color: transparent !important;
   }
 
   // UP主信息区操作按钮（充电、关注）透明穿透与幽灵蓝框适配
@@ -204,20 +155,7 @@ html[data-bewly-ambilight] {
     }
   }
 
-  // 视频选集（多P、合集面板）全层级透明化，保持文字颜色与播放指示图标
-  .video-pod,
-  .video-pod__header,
-  .video-pod__body,
-  .video-pod__list,
-  .video-pod__item,
-  .video-pod .single-p,
-  .video-pod .multi-p,
-  .video-pod .page-list,
-  .video-pod .simple-base-item {
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
+  // 视频选集透明后保持文字颜色与播放指示图标
   .video-pod__item.active,
   .video-pod .simple-base-item.active {
     color: var(--brand_blue, #00aeec) !important;
@@ -249,44 +187,5 @@ html[data-bewly-ambilight] {
     &::placeholder {
       color: var(--text3) !important;
     }
-  }
-
-  // 稍后再看与播放列表播放页透明穿透
-  .playlist-app
-    :is(
-      .video-info-container,
-      #playlistToolbar,
-      .playlist-container--right,
-      .up-panel-container,
-      .recommend-list-container,
-      .action-list-container,
-      .action-list-header,
-      .action-list-body,
-      .action-list-body-top,
-      .action-list-body-bottom,
-      .action-list,
-      .action-list-inner,
-      .action-list-content,
-      .action-list-item-wrap,
-      .action-list-item,
-      .singlep-list-item-inner,
-      .multip-list-item-inner,
-      .multip-list,
-      .multip-list-item
-    ) {
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  // 评论区原生底色（吸底评论框、展开回复的吸底收起栏等）改为半透明，不再以实色块遮住光晕；
-  // 保留部分底色，滚动经过的评论内容不会与吸底栏文字重叠。浮层使用 --bg1_float，不受影响
-  :is(bili-comments, .bb-comment, .comment-bilibili-fold) {
-    --bg1: color-mix(in oklab, var(--bew-bg), transparent 28%) !important;
-  }
-
-  .bb-comment,
-  .comment-bilibili-fold,
-  .comment-wrapper .comment-m {
-    background-color: transparent !important;
   }
 }

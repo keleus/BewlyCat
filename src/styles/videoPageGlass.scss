@@ -1,0 +1,66 @@
+// 视频页玻璃风格：整页一层毛玻璃（模糊与底色层由 App.vue 的背景层绘制），
+// 原生容器全部透明，内容直接融在玻璃上，不再分块成卡。
+@use "./videoPageSurfaces" as surfaces;
+
+html.bewly-video-glass.bewly-design.videoPage {
+  background-color: var(--bew-homepage-bg);
+
+  // 宽屏模式是自带不透明底色的全屏界面，不参与玻璃风格。
+  body:not(.bewly-widescreen-active) {
+    // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
+    --bew-comment-tree-node-bg: var(--bew-bg);
+    // 评论编辑框（Shadow DOM 内，钩子见 inject/index.ts）与其他输入控件统一为半透明填充
+    --bew-comment-box-bg: var(--bew-fill-1);
+    --bew-comment-box-bg-active: var(--bew-fill-alt);
+    --bew-comment-box-border: var(--bew-border-color);
+    --bew-comment-tag-color: var(--bew-text-2);
+    --bew-comment-tag-bg: var(--bew-fill-1);
+    --bew-ip-tag-bg: var(--bew-fill-1);
+
+    background-color: transparent !important;
+
+    @include surfaces.transparent-video-page-surfaces;
+    @include surfaces.transparent-player-sending-area;
+
+    // 原生实色控件（多为写死的 #f1f2f3 / #f6f7f8）改用插件的半透明填充，与玻璃底融合
+    .bpx-player-video-inputbar,
+    .tag-panel .tag-link,
+    .random-play-order-select,
+    .rec-footer,
+    .activity-m-v1 {
+      background: var(--bew-fill-1) !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+
+    // 原生的 .focus 类常驻，不代表真实聚焦，只按 :focus-within 切换
+    .bpx-player-video-inputbar:focus-within {
+      background: var(--bew-fill-alt) !important;
+    }
+
+    // 播放器外圈阴影会在透明发送栏四周勾出一圈边框
+    #playerWrap,
+    #bilibili-player,
+    .bpx-docker-major,
+    .bpx-player-container {
+      box-shadow: none !important;
+    }
+
+    .tag-panel .tag-link:hover,
+    .rec-footer:hover {
+      background: var(--bew-fill-2) !important;
+    }
+
+    // 右下角原生悬浮按钮（小窗、客服、回到顶部）浮在内容上，改为与 Dock 一致的毛玻璃
+    .fixed-sidenav-storage-item {
+      background: var(--bew-content) !important;
+      border-color: var(--bew-border-color) !important;
+      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1) !important;
+      backdrop-filter: var(--bew-filter-glass-1);
+
+      &:hover {
+        background: var(--bew-content-hover) !important;
+      }
+    }
+  }
+}
