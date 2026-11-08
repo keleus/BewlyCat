@@ -83,8 +83,8 @@ const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
-const shouldShowRecommendationModeSwitcher = computed(() => settings.value.showRecommendationModeSwitcher && activatedPage.value === HomeSubPage.ForYou)
-const shouldShowImmersiveModeEntry = computed(() => settings.value.showImmersiveModeEntry && activatedPage.value === HomeSubPage.ForYou)
+const shouldShowRecommendationModeSwitcher = computed(() => (isLayoutEditing.value || settings.value.showRecommendationModeSwitcher) && activatedPage.value === HomeSubPage.ForYou)
+const shouldShowImmersiveModeEntry = computed(() => (isLayoutEditing.value || settings.value.showImmersiveModeEntry) && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowRecommendationFilterEntry = computed(() => settings.value.showRecommendationFilterEntry && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value
   || shouldShowRecommendationModeSwitcher.value
@@ -444,9 +444,11 @@ function toggleTabContentLoading(loading: boolean) {
             v-if="shouldShowRecommendationModeSwitcher"
             class="glass-panel home-recommendation-mode-switcher bew-segment-control bew-segment-control--surface"
             :class="{
+              'home-editor-hidden': isLayoutEditing && !settings.showRecommendationModeSwitcher,
               'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
               'bew-segment-control--solid': !settings.enableFrostedGlass,
             }"
+            data-layout-edit-target="recommendation-mode-switcher"
             role="group"
             :aria-label="$t('settings.recommendation_mode')"
             data-layout-settings-menu="BewlyPages"
@@ -518,9 +520,13 @@ function toggleTabContentLoading(loading: boolean) {
           <div
             v-if="shouldShowImmersiveModeEntry"
             class="glass-panel home-immersive-entry bew-segment-control bew-segment-control--surface bew-segment-control--static"
-            :class="{ 'bew-segment-control--solid': !settings.enableFrostedGlass }"
+            :class="{
+              'bew-segment-control--solid': !settings.enableFrostedGlass,
+              'home-editor-hidden': isLayoutEditing && !settings.showImmersiveModeEntry,
+            }"
             data-layout-settings-menu="BewlyPages"
             data-layout-settings-page="home"
+            data-layout-edit-target="immersive-mode-entry"
             data-layout-settings-title-key="settings.show_immersive_mode_entry"
             flex="~ shrink-0 items-center"
             box-border
@@ -560,6 +566,10 @@ function toggleTabContentLoading(loading: boolean) {
 </template>
 
 <style scoped lang="scss">
+.home-editor-hidden {
+  border: 1px dashed var(--bew-theme-color);
+  color: var(--bew-text-3);
+}
 .bg-enter-active,
 .bg-leave-active {
   --uno: "duration-500 ease-in-out";

@@ -70,7 +70,7 @@ common:
     bottom: Bottom
 layout_editor:
   finish: Done
-  edit_dock: Edit Dock
+  edit_dock: Edit mode
   edit_sidebar: Edit mode
   back_to_top: Back to top
   click_to_adjust: Click the element you want to adjust

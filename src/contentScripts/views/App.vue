@@ -477,6 +477,19 @@ function refreshLayoutEditTargets() {
     }
   }
 
+  // 原站新版评论内部使用 Shadow DOM；只对外层评论区提供一个整体入口。
+  const commentRegion = Array.from(document.querySelectorAll<HTMLElement>(
+    'bili-comments, #commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment',
+  )).find(isLayoutEditCandidateVisible)
+  if (commentRegion) {
+    appendTarget(commentRegion, {
+      key: 'page-comments',
+      menu: 'Bilibili',
+      secondaryPage: 'comments',
+      targetTitleKey: 'settings.group_comments',
+    })
+  }
+
   if (isOriginalMomentsFeedPage()) {
     const originalMomentTargets = [
       {
