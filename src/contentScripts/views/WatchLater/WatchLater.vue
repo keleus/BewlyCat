@@ -265,6 +265,17 @@ async function restoreWatchLater(item: VideoItem) {
   }
 }
 
+// 收起已移除的占位卡片：条目已从服务器删除，这里移出列表并清除状态，触发 removable-list 离场动画
+function dismissRemovedItem(item: VideoItem) {
+  if (!removeStatuses.has(item.aid))
+    return
+
+  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
+  if (index !== -1)
+    currentWatchLaterList.value.splice(index, 1)
+  removeStatuses.delete(item.aid)
+}
+
 function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | undefined {
   const status = removeStatuses.get(item.aid)
   if (!status)
@@ -507,6 +518,14 @@ function getItemKey(item: VideoItem) {
                   class="watch-later-removed-mask"
                   @click.prevent.stop
                 >
+                  <button
+                    type="button"
+                    class="watch-later-dismiss-btn"
+                    :aria-label="t('common.dismiss')"
+                    @click.prevent.stop="dismissRemovedItem(item)"
+                  >
+                    <i i-tabler:x aria-hidden="true" />
+                  </button>
                   <p color-white text-lg>
                     {{ t('watch_later.removed') }}
                   </p>
@@ -855,6 +874,33 @@ function getItemKey(item: VideoItem) {
   background: var(--bew-fill-4);
   backdrop-filter: blur(20px);
   cursor: default;
+}
+
+.watch-later-dismiss-btn {
+  position: absolute;
+  top: var(--bew-space-2);
+  right: var(--bew-space-2);
+  display: grid;
+  place-items: center;
+  width: var(--bew-space-6);
+  height: var(--bew-space-6);
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-radius-full);
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-size: var(--bew-font-size-control);
+  cursor: pointer;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.32);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: var(--bew-space-0-5);
+  }
 }
 
 .watch-later-sidebar-panel {
