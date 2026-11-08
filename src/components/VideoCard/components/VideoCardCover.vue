@@ -6,6 +6,7 @@ import type { ErrorData, Events } from 'hls.js'
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
 import LazyPicture from '~/components/LazyPicture.vue'
+import MaskDismissButton from '~/components/MaskDismissButton.vue'
 import Progress from '~/components/Progress.vue'
 import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useVideoPreviewSwipeSeek } from '~/composables/useVideoPreviewSwipeSeek'
@@ -29,6 +30,8 @@ interface Props {
   removedPending?: boolean
   /** 等待确认移除：显示「确定/取消」而非「还原」 */
   removedConfirming?: boolean
+  /** 移除遮罩右上角显示「收起」按钮 */
+  removedDismissable?: boolean
   isHover: boolean
   shouldHideOverlayElements: boolean
   previewVideoUrl: string
@@ -60,6 +63,7 @@ const emit = defineEmits<{
   undo: []
   confirmRemoved: []
   cancelRemoved: []
+  dismissRemoved: []
   imageLoaded: []
   previewFullscreenChange: [isFullscreen: boolean]
 }>()
@@ -502,6 +506,11 @@ onBeforeUnmount(deactivatePreview)
         pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
         bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-media-radius" z-2
       >
+        <MaskDismissButton
+          v-if="removedDismissable"
+          :label="$t('common.dismiss')"
+          @dismiss="emit('dismissRemoved')"
+        />
         <p mb-2 color-white text-lg>
           {{ removedMessage || $t('video_card.video_removed') }}
         </p>
