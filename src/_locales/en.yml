@@ -178,13 +178,24 @@ settings:
       unsupported: This audio source cannot be safely processed. Audio is unchanged.
   player_adjustment:
     title: Picture & sound adjustments
-    desc: Shows an adjustment button in the player controls that opens a panel on hover. The volume balance item follows "Enable local volume balance" above; the button is hidden when both picture mirroring and volume balance are off.
-    show_picture: Mirror picture
-    show_picture_desc: Mirror the picture from the panel. Applies only to the current video; turning this off resets the current picture adjustment.
+    desc: Shows an adjustment button in the player controls that opens a panel on hover. The two items below can be turned off separately, and the volume balance item follows "Enable local volume balance" above; the button is hidden when all three are off.
+    show_picture: Rotate & mirror picture
+    show_picture_desc: Rotate or mirror the picture from the panel. Applies only to the current video; turning this off resets the current picture adjustment.
+    show_audio_delay: Audio sync
+    show_audio_delay_desc: Delay the audio from the panel. Applies only to the current video; turning this off stops processing the audio.
     picture: Picture
+    rotate_left: Rotate left
+    rotate_right: Rotate right
     flip_horizontal: Mirror horizontally
     flip_vertical: Mirror vertically
     reset: Reset
+    audio_sync: Audio sync
+    audio_delay: Delay audio
+    audio_delay_desc: Use when the sound is ahead of the picture, up to 1000 ms. Applies only to the current video.
+    audio_delay_states:
+      waiting: Takes effect once the video plays.
+      unsupported: This audio source can’t be processed safely; original sound is kept.
+      error: Audio processing failed and fell back to the original sound. Reload the page to retry.
   following_sort: Uploader order in the new Following layout
   following_sort_updated: By update time
   following_sort_group: By group

@@ -178,13 +178,24 @@ settings:
       unsupported: 目前音源無法安全接入，保持原聲。
   player_adjustment:
     title: 畫面同聲音調整
-    desc: 喺影片控制列顯示調整按鈕，滑鼠移上去開面板。音量均衡項跟上面「啟用局部音量均衡」顯示；畫面鏡像同音量均衡都關閉嗰陣唔顯示按鈕。
-    show_picture: 畫面鏡像
-    show_picture_desc: 喺面板度鏡像畫面，只對目前影片生效；關閉之後會重設目前畫面調整。
+    desc: 喺影片控制列顯示調整按鈕，滑鼠移上去開面板。下面兩項可以分開關閉，音量均衡項跟上面「啟用局部音量均衡」顯示；三項都關閉嗰陣唔顯示按鈕。
+    show_picture: 畫面旋轉同鏡像
+    show_picture_desc: 喺面板度旋轉、鏡像畫面，只對目前影片生效；關閉之後會重設目前畫面調整。
+    show_audio_delay: 音畫同步
+    show_audio_delay_desc: 喺面板度調整聲音延後，只對目前影片生效；關閉之後唔再接管聲音。
     picture: 畫面
+    rotate_left: 向左轉
+    rotate_right: 向右轉
     flip_horizontal: 水平鏡像
     flip_vertical: 垂直鏡像
     reset: 重設
+    audio_sync: 音畫同步
+    audio_delay: 聲音延後
+    audio_delay_desc: 聲音早過畫面嗰陣用，最多延後 1000 ms。只對目前影片生效。
+    audio_delay_states:
+      waiting: 等影片播放之後先生效。
+      unsupported: 目前音源冇辦法安全接入，保持原聲。
+      error: 音訊處理失敗，已經退返原聲。重新整理頁面之後可以再試。
   following_sort: 新版關注列表排序
   following_sort_updated: 按更新時間
   following_sort_group: 按分組

@@ -178,13 +178,24 @@ settings:
       unsupported: 当前音源无法安全接入，保持原声。
   player_adjustment:
     title: 画面与声音调整
-    desc: 在视频控制栏显示调整按钮，悬停打开面板。音量均衡项随上方「启用局部音量均衡」显示；画面镜像与音量均衡都关闭时不显示按钮。
-    show_picture: 画面镜像
-    show_picture_desc: 在面板中镜像画面，仅对当前视频生效；关闭后会重置当前画面调整。
+    desc: 在视频控制栏显示调整按钮，悬停打开面板。以下两项可单独关闭，音量均衡项随上方「启用局部音量均衡」显示；三项都关闭时不显示按钮。
+    show_picture: 画面旋转与镜像
+    show_picture_desc: 在面板中旋转、镜像画面，仅对当前视频生效；关闭后会重置当前画面调整。
+    show_audio_delay: 音画同步
+    show_audio_delay_desc: 在面板中调整声音延后，仅对当前视频生效；关闭后不再接管声音。
     picture: 画面
+    rotate_left: 向左旋转
+    rotate_right: 向右旋转
     flip_horizontal: 水平镜像
     flip_vertical: 垂直镜像
     reset: 重置
+    audio_sync: 音画同步
+    audio_delay: 声音延后
+    audio_delay_desc: 声音比画面早时使用，最多延后 1000 ms。仅对当前视频生效。
+    audio_delay_states:
+      waiting: 等待视频播放后生效。
+      unsupported: 当前音源无法安全接入，保持原声。
+      error: 音频处理失败，已回退到原声。刷新页面后可重试。
   following_sort: 新版关注列表排序
   following_sort_updated: 按更新时间
   following_sort_group: 按分组
