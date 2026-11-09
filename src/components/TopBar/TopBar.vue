@@ -719,7 +719,7 @@ defineExpose({
         data-layout-settings-menu="BewlyComponents"
         data-layout-settings-page="topbar"
         data-layout-settings-title-key="settings.topbar_visibility"
-        w="full"
+        w-screen
         :class="{
           'hide': hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
@@ -763,7 +763,8 @@ defineExpose({
 .top-bar {
   top: 0;
   left: 0;
-  right: 0;
+  // Use the same full viewport width with native and custom scroll containers.
+  right: auto;
   z-index: 999;
   position: fixed;
   min-height: var(--bew-top-bar-height);
