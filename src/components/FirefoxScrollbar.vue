@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * Firefox 只能通过 scrollbar-width / scrollbar-color 调整原生滚动条，
- * 这里为插件滚动容器绘制一条与 Chromium 版一致的覆盖式滚动条。
+ * 为插件滚动容器或原生页面视口绘制覆盖式滚动条。
+ * 视口模式仍由 document 滚动，不移动原站 DOM 或替换其滚动容器。
  * 目标容器需自行隐藏原生滚动条（scrollbar-width: none）。
  */
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 
 const props = defineProps<{
   target: HTMLElement | null
+  viewport?: boolean
 }>()
 
 const MIN_THUMB_SIZE = 32
@@ -32,8 +33,10 @@ function update() {
   const { scrollHeight, clientHeight, scrollTop } = target
   const trackSize = track.clientHeight
   const maxScrollTop = scrollHeight - clientHeight
-  scrollable.value = maxScrollTop > 1 && trackSize > 0
-  if (!scrollable.value)
+  // v-show 初始会隐藏轨道，此时高度为 0；先按内容判断显隐，
+  // 显示后的 ResizeObserver 再计算滑块，避免永远停在隐藏状态。
+  scrollable.value = maxScrollTop > 1
+  if (!scrollable.value || trackSize <= 0)
     return
 
   const size = Math.min(trackSize, Math.max(MIN_THUMB_SIZE, trackSize * clientHeight / scrollHeight))
@@ -89,7 +92,8 @@ function handleTrackPointerDown(event: PointerEvent) {
   target.scrollBy({ top: direction * target.clientHeight * 0.9, behavior: 'smooth' })
 }
 
-useEventListener(() => props.target, 'scroll', scheduleUpdate, { passive: true })
+// 根页面滚动在 document 派发事件，而不是在 scrollingElement 上。
+useEventListener(() => props.viewport ? document : props.target, 'scroll', scheduleUpdate, { passive: true })
 useResizeObserver(() => props.target, scheduleUpdate)
 useResizeObserver(trackRef, scheduleUpdate)
 
@@ -125,7 +129,7 @@ onBeforeUnmount(() => {
     v-show="scrollable"
     ref="trackRef"
     class="firefox-scrollbar"
-    :class="{ 'firefox-scrollbar--dragging': dragging }"
+    :class="{ 'firefox-scrollbar--dragging': dragging, 'firefox-scrollbar--viewport': viewport }"
     aria-hidden="true"
     @pointerdown.self="handleTrackPointerDown"
   >
@@ -162,6 +166,12 @@ onBeforeUnmount(() => {
     width 0.15s ease,
     background-color 0.15s ease;
   will-change: transform;
+}
+
+.firefox-scrollbar--viewport {
+  position: fixed;
+  // 顶栏沿用已有雾层覆盖滑块与透明轨道，与首页 iframe 的叠放关系一致。
+  z-index: 998;
 }
 
 .firefox-scrollbar:hover .firefox-scrollbar__thumb,

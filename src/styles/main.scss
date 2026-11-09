@@ -60,6 +60,16 @@ html.bewly-design > ::-webkit-scrollbar-track {
   background: var(--bew-bg);
 }
 
+// NativePageScrollbar owns this class and removes it when the custom top bar exits.
+// Keep document scrolling intact; only replace the viewport scrollbar's painting.
+html.bewly-native-scrollbar-overlay {
+  scrollbar-width: none !important;
+
+  &::-webkit-scrollbar {
+    width: 0 !important;
+  }
+}
+
 .dark.bewly-design body,
 html.dark.bewly-design {
   background-color: var(--bew-bg) !important;

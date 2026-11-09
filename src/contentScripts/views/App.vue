@@ -8,6 +8,7 @@ import ApiErrorDetailsDialog from '~/components/ApiErrorDetailsDialog.vue'
 import ConfirmDialogOverlay from '~/components/ConfirmDialogOverlay.vue'
 import FirefoxScrollbar from '~/components/FirefoxScrollbar.vue'
 import Icon from '~/components/Icon.vue'
+import NativePageScrollbar from '~/components/NativePageScrollbar.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
 import { useAccountSync } from '~/composables/useAccountSync'
 import { useActiveApiErrorSource } from '~/composables/useApiErrorDetails'
@@ -1996,6 +1997,14 @@ if (settings.value.cleanUrlArgument) {
         pointer-events-auto
       />
     </div>
+
+    <!-- Native pages need an in-page scrollbar so the top bar can cover its track. -->
+    <NativePageScrollbar
+      v-if="showTopBar
+        && (!isHomePage() || settings.useOriginalBilibiliHomepage)
+        && settings.enableTopBar
+        && !settings.useOriginalBilibiliTopBar"
+    />
 
     <!-- TopBar -->
     <div
