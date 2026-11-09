@@ -160,15 +160,17 @@ export function createLocalLoudnessController() {
     settleOwnedContext()
   }
 
-  // Keep ownedContext running only while an owned element can actually output
-  // sound. A silent running context is handed to SilentSinkSuspender after ~30s,
-  // which on macOS resumes at a 0.5x AudioWorklet clock and drags the video
-  // timeline down with it whenever video.volume > 0.
+  // Keep ownedContext running only while an owned element is playing. A silent
+  // running context is handed to SilentSinkSuspender after ~30s, which on macOS
+  // resumes at a 0.5x AudioWorklet clock and drags the video timeline down with
+  // it whenever video.volume > 0.
+  // A playing video in a background tab still pulls audio through this context,
+  // so tab visibility must not suspend it; only pagehide (bfcache) does.
   function settleOwnedContext() {
     const context = ownedContext
     if (!context || context.state === 'closed')
       return
-    const audible = document.visibilityState !== 'hidden'
+    const audible = !hidden
       && [...ownedConnected].some(record => record.video.isConnected && !record.video.paused && !record.video.ended)
     if (audible)
       void context.resume().catch(() => {})
@@ -525,9 +527,6 @@ export function createLocalLoudnessController() {
     if (AudioContext.prototype.createMediaElementSource === patchedCreate)
       AudioContext.prototype.createMediaElementSource = originalCreate
   })
-  // Background tab switches never fire pagehide, so visibilitychange is the only
-  // chance to suspend ownedContext before SilentSinkSuspender engages.
-  document.addEventListener('visibilitychange', settleOwnedContext, { signal: lifetime.signal })
   window.addEventListener('pageshow', () => {
     hidden = false
     settleOwnedContext()
