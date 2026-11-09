@@ -1278,12 +1278,15 @@ onUnmounted(() => {
   }
 
   &--right {
-    inset: 0 0 0 auto;
+    // Viewport units include the document scrollbar; right: 0 does not.
+    // Use the same screen edge as the custom homepage's scroll container.
+    inset: 0 auto 0 100vw;
     width: 0;
   }
 
   &--bottom {
     inset: auto 0 0 0;
+    width: 100vw;
     height: 0;
   }
 
@@ -1310,6 +1313,8 @@ onUnmounted(() => {
 
   &-right {
     --uno: "right-0 top-0 h-full";
+    // Keep the reveal target inside the usable viewport, off the native scrollbar.
+    position: fixed;
     width: var(--bew-edge-hit-area);
 
     &:hover {
