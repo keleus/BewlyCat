@@ -1998,9 +1998,9 @@ if (settings.value.cleanUrlArgument) {
       />
     </div>
 
-    <!-- Native pages need an in-page scrollbar so the top bar can cover its track. -->
+    <!-- Preserve Firefox's overlay; Chromium uses the homepage's native scrollbar. -->
     <NativePageScrollbar
-      v-if="showTopBar
+      v-if="isFirefoxBuild && showTopBar
         && (!isHomePage() || settings.useOriginalBilibiliHomepage)
         && settings.enableTopBar
         && !settings.useOriginalBilibiliTopBar"

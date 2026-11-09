@@ -60,6 +60,49 @@ html.bewly-design > ::-webkit-scrollbar-track {
   background: var(--bew-bg);
 }
 
+// Style the entire main scrollbar, including its track and system thumb inset.
+// Standard non-auto colors override these pseudo-elements in Chromium.
+// Firefox keeps its existing native/repainted scrollbar.
+@supports selector(::-webkit-scrollbar) {
+  :root.bewly-design,
+  :root.bewly-design > body,
+  .bewly-scroll-viewport {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+
+    &::-webkit-scrollbar {
+      width: var(--bew-page-scrollbar-width);
+      height: var(--bew-page-scrollbar-width);
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-track,
+    &::-webkit-scrollbar-track-piece,
+    &::-webkit-scrollbar-corner {
+      margin: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border: 0;
+      border-radius: var(--bew-radius-full);
+      background: rgba(120, 120, 140, 0.44);
+      box-shadow: none;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(120, 120, 140, 0.64);
+    }
+
+    &::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+  }
+}
+
 // NativePageScrollbar owns this class and removes it when the custom top bar exits.
 // Keep document scrolling intact; only replace the viewport scrollbar's painting.
 html.bewly-native-scrollbar-overlay {
