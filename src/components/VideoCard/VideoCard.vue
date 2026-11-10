@@ -408,6 +408,7 @@ provide('getVideoType', () => props.type!)
             :removed-message="props.removedState?.message"
             :removed-pending="props.removedState?.pending"
             :removed-confirming="props.removedState?.confirming"
+            :removed-dismissable="Boolean(props.removedState?.onDismiss)"
             :is-hover="logic.isHover.value"
             :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
             :preview-video-url="logic.previewVideoUrl.value || ''"
@@ -423,6 +424,7 @@ provide('getVideoType', () => props.type!)
             @undo="handleUndo"
             @confirm-removed="props.removedState?.onConfirm?.()"
             @cancel-removed="props.removedState?.onCancel?.()"
+            @dismiss-removed="props.removedState?.onDismiss?.()"
             @preview-fullscreen-change="logic.handlePreviewFullscreenChange"
           >
             <template #coverTopLeft>

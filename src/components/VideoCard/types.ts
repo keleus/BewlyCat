@@ -21,6 +21,8 @@ export interface VideoCardRemovedState {
   onConfirm?: () => void
   onCancel?: () => void
   onUndo?: () => void
+  /** 收起已移除的占位卡片（条目已从服务器删除，纯本地操作） */
+  onDismiss?: () => void
 }
 
 export interface Video {

@@ -4,6 +4,7 @@ common:
   loading: Loading...
   search: Search
   undo: UNDO
+  dismiss: Dismiss
   days: days
   view: no view | {count} view | {count} views
   viewWithoutNum: ' views'

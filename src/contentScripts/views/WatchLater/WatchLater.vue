@@ -10,6 +10,7 @@ import type { Video, VideoCardRemovedState } from '~/components/VideoCard/types'
 import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
 import VideoCardContextMenu from '~/components/VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
+import WatchLaterRemovedMask from '~/components/WatchLaterRemovedMask.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import type { WatchLaterLayout } from '~/logic'
@@ -265,6 +266,18 @@ async function restoreWatchLater(item: VideoItem) {
   }
 }
 
+// 收起已移除的占位卡片：条目已从服务器删除，这里移出列表并清除状态，触发 removable-list 离场动画
+// 仅在删除已完成（removed）时可收起：请求进行中收起会让计数与游标漏更新，或在还原后丢失同步
+function dismissRemovedItem(item: VideoItem) {
+  if (removeStatuses.get(item.aid) !== 'removed')
+    return
+
+  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
+  if (index !== -1)
+    currentWatchLaterList.value.splice(index, 1)
+  removeStatuses.delete(item.aid)
+}
+
 function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | undefined {
   const status = removeStatuses.get(item.aid)
   if (!status)
@@ -274,6 +287,7 @@ function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | und
     message: t('watch_later.removed'),
     pending: status !== 'removed',
     onUndo: () => void restoreWatchLater(item),
+    onDismiss: status === 'removed' ? () => dismissRemovedItem(item) : undefined,
   }
 }
 
@@ -501,26 +515,14 @@ function getItemKey(item: VideoItem) {
                 p-2 m-1
                 content-visibility-auto
               >
-                <!-- 删除遮罩：覆盖整行并拦截链接点击，删除后可撤销 -->
-                <div
+                <!-- 删除遮罩：覆盖整行并拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
+                <WatchLaterRemovedMask
                   v-if="removeStatuses.has(item.aid)"
-                  class="watch-later-removed-mask"
-                  @click.prevent.stop
-                >
-                  <p color-white text-lg>
-                    {{ t('watch_later.removed') }}
-                  </p>
-                  <Button
-                    color="rgba(255,255,255,.35)" text-color="white" size="small"
-                    :disabled="removeStatuses.get(item.aid) !== 'removed'"
-                    @click.prevent.stop="restoreWatchLater(item)"
-                  >
-                    <template #left>
-                      <div i-mingcute-back-line text-lg />
-                    </template>
-                    {{ t('common.undo') }}
-                  </Button>
-                </div>
+                  :message="t('watch_later.removed')"
+                  :pending="removeStatuses.get(item.aid) !== 'removed'"
+                  @undo="restoreWatchLater(item)"
+                  @dismiss="dismissRemovedItem(item)"
+                />
 
                 <!-- Cover -->
                 <div
@@ -840,21 +842,6 @@ function getItemKey(item: VideoItem) {
   .watch-later-list-action {
     opacity: 1;
   }
-}
-
-.watch-later-removed-mask {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bew-space-3);
-  border-radius: var(--bew-radius);
-  background: var(--bew-fill-4);
-  backdrop-filter: blur(20px);
-  cursor: default;
 }
 
 .watch-later-sidebar-panel {

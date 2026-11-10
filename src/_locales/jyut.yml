@@ -4,6 +4,7 @@ common:
   loading: 撈緊...
   search: 搵嘢
   undo: 整返返去
+  dismiss: 收起
   days: 日
   view: '{count}次'
   viewWithoutNum: 次

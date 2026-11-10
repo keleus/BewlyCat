@@ -5,6 +5,7 @@ import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Progress from '~/components/Progress.vue'
 import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
+import WatchLaterRemovedMask from '~/components/WatchLaterRemovedMask.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
 import type { List as WatchLaterItem } from '~/models/video/watchLater'
@@ -148,6 +149,12 @@ async function restoreWatchLaterItem(aid: number) {
     removeStatuses.delete(aid)
   else
     entry.status = 'removed'
+}
+
+// 收起已移除的占位卡片：条目已从服务器删除，这里仅移出展示集合，触发 removable-list 离场动画
+function dismissRemovedItem(aid: number) {
+  if (removeStatuses.get(aid)?.status === 'removed')
+    removeStatuses.delete(aid)
 }
 
 /** progress = -1 表示已看完，直接展示总时长；角标文案形如「12:34 / 45:00」。 */
@@ -339,24 +346,14 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
             </template>
           </PopMediaCard>
 
-          <!-- 删除遮罩：拦截链接点击，删除后可撤销 -->
-          <div
+          <!-- 删除遮罩：拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
+          <WatchLaterRemovedMask
             v-if="removeStatuses.has(item.aid)"
-            class="watch-later-removed-mask"
-            @click.prevent.stop
-          >
-            <span>{{ $t('watch_later.removed') }}</span>
-            <Button
-              color="rgba(255,255,255,.35)" text-color="white" size="small"
-              :disabled="removeStatuses.get(item.aid)?.status !== 'removed'"
-              @click.prevent.stop="restoreWatchLaterItem(item.aid)"
-            >
-              <template #left>
-                <div i-mingcute-back-line />
-              </template>
-              {{ $t('common.undo') }}
-            </Button>
-          </div>
+            :message="$t('watch_later.removed')"
+            :pending="removeStatuses.get(item.aid)?.status !== 'removed'"
+            @undo="restoreWatchLaterItem(item.aid)"
+            @dismiss="dismissRemovedItem(item.aid)"
+          />
         </ALink>
       </TransitionGroup>
 
@@ -378,23 +375,6 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 </template>
 
 <style scoped lang="scss">
-.watch-later-removed-mask {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bew-space-2);
-  border-radius: inherit;
-  background: var(--bew-fill-4);
-  backdrop-filter: blur(20px);
-  color: white;
-  font-size: var(--bew-font-size-control);
-  cursor: default;
-}
-
 .watch-later-header-action {
   display: inline-flex;
   align-items: center;
