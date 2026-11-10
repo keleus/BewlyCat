@@ -1694,7 +1694,7 @@ function getItemKey(item: VideoElement) {
             <button
               v-if="videoSearchInput || videoSearchKeyword"
               type="button"
-              class="video-search-clear"
+              class="bew-toolbar-search-clear"
               :aria-label="$t('home.following_clear_video_search')"
               :title="$t('home.following_clear_video_search')"
               @click="clearVideoSearch"
@@ -1773,28 +1773,6 @@ function getItemKey(item: VideoElement) {
 .video-search-field {
   flex: 1;
   min-width: 0;
-}
-
-.video-search-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--bew-control-item-height);
-  height: var(--bew-control-item-height);
-  color: var(--bew-text-2);
-  font-size: var(--bew-icon-size-sm);
-  border-radius: var(--bew-interactive-radius);
-  cursor: pointer;
-
-  &:hover {
-    color: var(--bew-text-1);
-    background: var(--bew-fill-2);
-  }
-
-  &:active {
-    background: var(--bew-fill-3);
-  }
 }
 
 .video-search-pagination {

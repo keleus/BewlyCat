@@ -1047,6 +1047,14 @@ function handleSearchScopeChange() {
   handleSearch()
 }
 
+function clearSearchKeyword() {
+  if (!keyword.value)
+    return
+
+  keyword.value = ''
+  handleSearch()
+}
+
 async function handlePlayAll() {
   if (favoriteView.value === 'article' || searchScope.value === 'all' || isResolvingSeasonPlayAll.value)
     return
@@ -1306,41 +1314,41 @@ function transformFavoriteArticle(item: FavoriteArticle) {
         v-if="favoriteView === 'video'"
         class="favorites-toolbar bew-toolbar-controls"
       >
-        <div v-if="!isBatchManaging" class="toolbar-search-group">
-          <Select v-model="searchScope" class="search-scope-select" :options="searchScopeOptions" @change="handleSearchScopeChange" />
-          <Input
-            v-model="keyword"
-            class="favorites-search-input"
-            :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
-            :aria-label="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
-            @enter="handleSearch"
-          />
-          <Button
-            type="secondary"
-            :disabled="searchScope === 'all' && !keyword.trim()"
-            :aria-label="$t('common.search')"
-            @click="handleSearch"
-          >
-            <template #left>
-              <div i-tabler:search />
-            </template>
-          </Button>
-        </div>
-
-        <div v-if="canBatchManage" class="toolbar-action-group">
-          <Button
-            v-if="canBatchManage"
-            :type="isBatchManaging ? 'tertiary' : 'secondary'"
-            :disabled="isBatchOperating"
-            @click="toggleBatchManage"
-          >
-            <template #left>
-              <div :class="isBatchManaging ? 'i-tabler:x' : 'i-tabler:list-check'" />
-            </template>
-            {{ isBatchManaging ? t('common.operation.cancel') : t('favorites.batch_manage') }}
-          </Button>
-
-          <template v-if="isBatchManaging">
+        <Transition name="fade">
+          <div v-if="!isBatchManaging" key="search" class="toolbar-search-group">
+            <Select v-model="searchScope" class="search-scope-select" :options="searchScopeOptions" @change="handleSearchScopeChange" />
+            <Input
+              v-model="keyword"
+              class="favorites-search-input"
+              :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+              :aria-label="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+              @enter="handleSearch"
+            >
+              <template #suffix>
+                <button
+                  v-if="keyword"
+                  type="button"
+                  class="bew-toolbar-search-clear"
+                  :aria-label="t('favorites.clear_search')"
+                  :title="t('favorites.clear_search')"
+                  @click="clearSearchKeyword"
+                >
+                  <span i-mingcute:close-line aria-hidden="true" />
+                </button>
+              </template>
+            </Input>
+            <Button
+              type="secondary"
+              :disabled="searchScope === 'all' && !keyword.trim()"
+              @click="handleSearch"
+            >
+              <template #left>
+                <div i-tabler:search />
+              </template>
+              {{ t('common.search') }}
+            </Button>
+          </div>
+          <div v-else key="batch" class="toolbar-batch-group">
             <Button
               type="secondary"
               :disabled="favoriteResources.length === 0 || isBatchOperating"
@@ -1384,7 +1392,20 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               </template>
               {{ t('favorites.batch_unfavorite') }}
             </Button>
-          </template>
+          </div>
+        </Transition>
+
+        <div v-if="canBatchManage" class="toolbar-action-group">
+          <Button
+            :type="isBatchManaging ? 'tertiary' : 'secondary'"
+            :disabled="isBatchOperating"
+            @click="toggleBatchManage"
+          >
+            <template #left>
+              <div :class="isBatchManaging ? 'i-tabler:x' : 'i-tabler:list-check'" />
+            </template>
+            {{ isBatchManaging ? t('common.operation.cancel') : t('favorites.batch_manage') }}
+          </Button>
         </div>
       </div>
 
@@ -1428,6 +1449,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           :more-btn="favoriteView === 'video' && !isBatchManaging"
           :hide-author="favoriteView === 'season'"
           :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
+          :show-preview="!isBatchManaging"
           :get-removed-state="favoriteView === 'video' ? getFavoriteRemovedState : undefined"
           :cover-top-left-always-visible="isBatchManaging"
           enable-row-padding
@@ -2274,6 +2296,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
 }
 
 .favorites-toolbar {
+  position: relative;
   display: flex;
   gap: var(--bew-space-2);
   align-items: center;
@@ -2283,9 +2306,19 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   width: 100%;
   max-width: 100%;
   margin: var(--bew-space-3) 0;
+
+  // 搜索组与批量组在同一槽位交叉淡入淡出：离场一侧脱离文档流，
+  // 布局自第一帧起就由进场一侧决定，右侧开关按钮始终不移动，
+  // 避免批量操作先出现在右侧再跳回左侧的两段式闪现。
+  .fade-leave-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 }
 
 .toolbar-search-group,
+.toolbar-batch-group,
 .toolbar-action-group {
   display: flex;
   flex-wrap: wrap;

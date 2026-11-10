@@ -461,6 +461,32 @@ html.dark.bewly-design {
   padding-inline: var(--bew-space-3);
 }
 
+// 工具栏搜索框 suffix 槽内的标准清除按钮（关注流与收藏页共用）。
+.bew-toolbar-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--bew-control-item-height);
+  height: var(--bew-control-item-height);
+  color: var(--bew-text-2);
+  font-size: var(--bew-icon-size-sm);
+  border-radius: var(--bew-interactive-radius);
+  cursor: pointer;
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    color: var(--bew-text-1);
+    background: var(--bew-fill-2);
+  }
+
+  &:active {
+    background: var(--bew-fill-3);
+  }
+}
+
 .bew-page-sidebar {
   box-sizing: border-box;
   border-radius: var(--bew-panel-radius);
