@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn } from '@vueuse/core'
+import { onKeyStroke, useEventListener, useIntersectionObserver, useResizeObserver, useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -925,6 +925,15 @@ onUnmounted(stopLayoutEditTargetObserver)
 const scrollViewportRef = ref<HTMLElement | null>(null)
 // Firefox 原生滚动条无法自定义外观，仅 Firefox 包提供可选的重绘滚动条
 const useFirefoxScrollbar = computed(() => isFirefoxBuild && settings.value.enableFirefoxScrollbarRepaint)
+// 首页由内部容器或 iframe 滚动，滚动条位于窗口右缘；顶栏和 Dock 让出这一列，
+// 与原版页面中 fixed 元素止于文档滚动条左侧的位置保持一致。
+const viewportScrollbarGutter = ref(0)
+const iframeScrollbarGutter = ref(0)
+useResizeObserver(scrollViewportRef, ([entry]) => {
+  const viewport = entry.target as HTMLElement
+  viewportScrollbarGutter.value = viewport.offsetWidth - viewport.clientWidth
+})
+
 watch(scrollViewportRef, (viewport, _previousViewport, onCleanup) => {
   if (viewport && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
     onCleanup(installScrollBridge(viewport))
@@ -1117,6 +1126,12 @@ const showBewlyPage = computed((): boolean => {
     return false
 
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
+})
+
+const pageScrollbarGutter = computed(() => {
+  if (showBewlyPage.value)
+    return viewportScrollbarGutter.value
+  return iframePageURL.value ? iframeScrollbarGutter.value : 0
 })
 
 // Bewly 页面关闭时没有可切换的插件页，Dock 作为全站导航显示在所有页面。
@@ -1841,6 +1856,7 @@ if (settings.value.cleanUrlArgument) {
       'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
       [SELECTION_FALLBACK_CLASS]: !supportsHighlightInheritance(),
     }"
+    :style="{ '--bew-page-scrollbar-gutter': `${pageScrollbarGutter}px` }"
     text="$bew-text-1"
     @pointerdown.capture="blockOriginalLayoutInteraction"
     @click.capture="blockOriginalLayoutInteraction"
@@ -2095,7 +2111,12 @@ if (settings.value.cleanUrlArgument) {
       <FirefoxScrollbar v-if="useFirefoxScrollbar && showBewlyPage" :target="scrollViewportRef" />
 
       <Transition v-if="!showBewlyPage && iframePageURL && !isInIframe()" name="fade">
-        <IframePage ref="iframePageRef" :url="iframePageURL" @scroll="topBarRef?.handleScroll($event)" />
+        <IframePage
+          ref="iframePageRef"
+          :url="iframePageURL"
+          @scroll="topBarRef?.handleScroll($event)"
+          @scrollbar-gutter="iframeScrollbarGutter = $event"
+        />
       </Transition>
     </div>
 

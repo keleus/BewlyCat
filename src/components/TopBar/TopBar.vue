@@ -719,7 +719,6 @@ defineExpose({
         data-layout-settings-menu="BewlyComponents"
         data-layout-settings-page="topbar"
         data-layout-settings-title-key="settings.topbar_visibility"
-        w="full"
         :class="{
           'hide': hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
@@ -763,7 +762,8 @@ defineExpose({
 .top-bar {
   top: 0;
   left: 0;
-  right: 0;
+  // 首页的滚动条在内部容器中，需要让出它的槽位；原版页面中该值为 0。
+  right: var(--bew-page-scrollbar-gutter, 0px);
   z-index: 999;
   position: fixed;
   min-height: var(--bew-top-bar-height);
@@ -778,7 +778,7 @@ defineExpose({
   z-index: 1000;
   top: 0;
   left: 0;
-  right: 0;
+  right: var(--bew-page-scrollbar-gutter, 0px);
   height: 20px;
 }
 </style>

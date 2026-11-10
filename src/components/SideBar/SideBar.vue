@@ -187,7 +187,8 @@ function toggleHideSidebar(hide: boolean) {
 }
 
 .right-side {
-  --uno: "right-0";
+  // 与右侧 Dock 一致，让出首页滚动条槽位。
+  right: var(--bew-page-scrollbar-gutter, 0px);
 }
 
 .sidebar-edge {

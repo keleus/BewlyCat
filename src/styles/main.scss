@@ -38,9 +38,9 @@
   }
 }
 
+// 页面主滚动条沿用系统宽度，与 B 站原版页面及首页滚动容器一致，只调整颜色。
 :host,
 :root.bewly-design {
-  scrollbar-width: thin;
   scrollbar-color: rgba(120, 120, 140, 0.44) transparent;
 }
 

@@ -13,4 +13,6 @@ export const IFRAME_PAGE_SWITCH_BILI = 'iframePageSwitchBili'
 export const IFRAME_DARK_MODE_CHANGE = 'iframeDarkModeChange'
 export const IFRAME_SEARCH_NAVIGATION = 'bewlyIframeSearchNavigation'
 export const IFRAME_TOP_BAR_CHANGE = 'iframeTopBarChange'
+/** iframe 原版页向首页报告文档滚动条占位宽度，首页顶栏与 Dock 据此让出槽位。 */
+export const IFRAME_SCROLLBAR_GUTTER_CHANGE = 'iframeScrollbarGutterChange'
 export const DARK_MODE_BASE_COLOR_CHANGE = 'darkModeBaseColorChange'

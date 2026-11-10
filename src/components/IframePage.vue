@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
+
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import { IFRAME_DARK_MODE_CHANGE, IFRAME_SCROLLBAR_GUTTER_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { releaseIframeMedia } from '~/utils/iframe'
@@ -11,6 +13,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   scroll: [scrollTop: number]
+  scrollbarGutter: [width: number]
 }>()
 const { reachTop, scrollTop } = useBewlyApp()
 const { isDark } = useDark()
@@ -23,6 +26,15 @@ let initialThemeTimeout: ReturnType<typeof setTimeout> | undefined
 const showLoading = ref<boolean>(false)
 const iframeScrollCleanupFns = ref<Array<() => void>>([])
 const iframeScrollSyncFailed = ref(false)
+
+// 原版页面的滚动条位于 iframe 右缘，由 iframe 内的内容脚本报告其占位宽度。
+useEventListener(window, 'message', (event: MessageEvent) => {
+  if (event.source !== iframeRef.value?.contentWindow || event.data?.type !== IFRAME_SCROLLBAR_GUTTER_CHANGE)
+    return
+  const width = Number(event.data.width)
+  if (Number.isFinite(width))
+    emit('scrollbarGutter', Math.min(Math.max(width, 0), 32))
+})
 
 function cleanupIframeScrollSync() {
   for (const stop of iframeScrollCleanupFns.value)

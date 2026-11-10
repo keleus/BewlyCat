@@ -1296,13 +1296,14 @@ onUnmounted(() => {
     width: 0;
   }
 
+  // 首页滚动条在内部容器中，右侧与底部 Dock 需让出它的槽位；原版页面中该值为 0。
   &--right {
-    inset: 0 0 0 auto;
+    inset: 0 var(--bew-page-scrollbar-gutter, 0px) 0 auto;
     width: 0;
   }
 
   &--bottom {
-    inset: auto 0 0 0;
+    inset: auto var(--bew-page-scrollbar-gutter, 0px) 0 0;
     height: 0;
   }
 
