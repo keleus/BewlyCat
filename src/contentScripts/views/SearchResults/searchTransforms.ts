@@ -303,7 +303,8 @@ export function convertArticleCardData(article: any) {
     title: removeHighlight(article.title),
     desc: removeHighlight(article.desc),
     cover,
-    author: removeHighlight(article.author_name),
+    // 专栏搜索接口的作者字段为 author，兼容旧字段 author_name
+    author: removeHighlight(article.author_name || article.author),
     authorMid: article.mid,
     view: article.view,
     like: article.like,

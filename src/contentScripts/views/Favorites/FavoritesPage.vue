@@ -1287,6 +1287,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
     cover: getFavoriteArticleCover(item),
     author: item.author?.name || '',
     authorMid: mid != null && mid !== '' ? Number(mid) : undefined,
+    authorFace: item.author?.face || undefined,
     view: item.stat?.view || undefined,
     like: item.stat?.like || undefined,
     publishTime: item.pub_time || undefined,
