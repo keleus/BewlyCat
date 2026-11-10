@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementSize, useWindowSize } from '@vueuse/core'
+import { useElementSize, useEventListener, useWindowSize } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -14,6 +14,7 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
+import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { getNativeBiliAppPage } from '~/utils/bilibiliNativePages'
 import { isHomePage, openLinkToNewTab } from '~/utils/main'
 import { matchesShortcutKey } from '~/utils/shortcutKeys'
@@ -577,18 +578,36 @@ function handleHistoryNavigation() {
   }
 }
 
-// Bewly 页面关闭时 Dock 每次跳转都会重新加载页面，当前页只需计算一次。
-const nativeActivatedPage = isHomePage() ? AppPage.Home : getNativeBiliAppPage(location.href)
+const currentLocationHref = ref(window.location.href)
+useEventListener(window, ['pushstate', 'replacestate', 'popstate', 'hashchange', 'pageshow'], () => {
+  // Injected history notifications can arrive before the native history call.
+  queueMicrotask(() => {
+    currentLocationHref.value = window.location.href
+  })
+})
+
+const activeDockPage = computed(() => {
+  if (isHomePage(currentLocationHref.value)) {
+    if (settings.value.useOriginalBilibiliHomepage)
+      return AppPage.Home
+
+    return props.activatedPage === AppPage.SearchResults ? AppPage.Search : props.activatedPage
+  }
+
+  const currentUrl = stripBilibiliLocaleUrl(currentLocationHref.value)
+  const nativePage = getNativeBiliAppPage(currentUrl)
+  if (nativePage === AppPage.Favorites) {
+    // The Dock destination is the signed-in user's favorites, not any space.
+    const favorites = mainStore.dockItems.find(item => item.page === AppPage.Favorites)
+    if (!favorites || new URL(currentUrl).pathname.replace(/\/+$/, '') !== new URL(favorites.url).pathname)
+      return undefined
+  }
+
+  return nativePage
+})
 
 function isDockItemActivated(dockItem: DockItem): boolean {
-  if (settings.value.useOriginalBilibiliHomepage)
-    return nativeActivatedPage === dockItem.page
-
-  // SearchResults 页面时也激活 Search 按钮
-  if (props.activatedPage === AppPage.SearchResults && dockItem.page === AppPage.Search) {
-    return isHomePage()
-  }
-  return props.activatedPage === dockItem.page && isHomePage()
+  return activeDockPage.value === dockItem.page
 }
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
