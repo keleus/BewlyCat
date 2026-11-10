@@ -1133,6 +1133,14 @@ const pageScrollbarGutter = computed(() => {
     return viewportScrollbarGutter.value
   return iframePageURL.value ? iframeScrollbarGutter.value : 0
 })
+// 原版页面的文档滚动条不需要让位，但 Dock 需要据此收紧与滚动条之间的边距。
+const documentScrollbarWidth = ref(0)
+function measureDocumentScrollbar() {
+  documentScrollbarWidth.value = Math.max(0, window.innerWidth - document.documentElement.clientWidth)
+}
+useResizeObserver(document.documentElement, measureDocumentScrollbar)
+useEventListener(window, 'resize', measureDocumentScrollbar, { passive: true })
+const pageScrollbarSize = computed(() => pageScrollbarGutter.value || documentScrollbarWidth.value)
 
 // Bewly 页面关闭时没有可切换的插件页，Dock 作为全站导航显示在所有页面。
 const showDock = computed((): boolean => {
@@ -1856,7 +1864,10 @@ if (settings.value.cleanUrlArgument) {
       'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
       [SELECTION_FALLBACK_CLASS]: !supportsHighlightInheritance(),
     }"
-    :style="{ '--bew-page-scrollbar-gutter': `${pageScrollbarGutter}px` }"
+    :style="{
+      '--bew-page-scrollbar-gutter': `${pageScrollbarGutter}px`,
+      '--bew-page-scrollbar-size': `${pageScrollbarSize}px`,
+    }"
     text="$bew-text-1"
     @pointerdown.capture="blockOriginalLayoutInteraction"
     @click.capture="blockOriginalLayoutInteraction"

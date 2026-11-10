@@ -1392,7 +1392,9 @@ onUnmounted(() => {
   }
 
   &.right {
-    --uno: "right-2 after:left--4px";
+    --uno: "after:left--4px";
+    // 右侧紧邻滚动条时只保留内层外边距，避免与窗口边缘的距离明显大于左侧 Dock。
+    right: max(0px, calc(var(--bew-space-2) - var(--bew-page-scrollbar-size, 0px)));
   }
   &.right.hide:not(.hover) {
     --uno: "opacity-0 !translate-x-100%";
