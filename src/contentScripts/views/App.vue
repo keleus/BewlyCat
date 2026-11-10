@@ -384,12 +384,19 @@ function refreshLayoutEditTargets() {
     'bili-comments, #commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment',
   )).find(isLayoutEditCandidateVisible)
   if (commentRegion) {
-    appendTarget(commentRegion, {
-      key: 'page-comments',
-      menu: 'Bilibili',
-      secondaryPage: 'comments',
-      targetTitleKey: 'settings.group_comments',
-    })
+    // 评论增强关闭时评论设置页被隐藏，改为定位到常规设置中的评论模块开关。
+    appendTarget(commentRegion, settings.value.enableCommentEnhancements
+      ? {
+          key: 'page-comments',
+          menu: 'Bilibili',
+          secondaryPage: 'comments',
+          targetTitleKey: 'settings.group_comments',
+        }
+      : {
+          key: 'page-comments',
+          menu: 'General',
+          targetTitleKey: 'settings.module_comments',
+        })
   }
 
   if (isOriginalMomentsFeedPage()) {

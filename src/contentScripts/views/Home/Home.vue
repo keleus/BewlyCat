@@ -444,7 +444,7 @@ function toggleTabContentLoading(loading: boolean) {
             v-if="shouldShowRecommendationModeSwitcher"
             class="glass-panel home-recommendation-mode-switcher bew-segment-control bew-segment-control--surface"
             :class="{
-              'home-editor-hidden': isLayoutEditing && !settings.showRecommendationModeSwitcher,
+              'home-header-item--edit-hidden': isLayoutEditing && !settings.showRecommendationModeSwitcher,
               'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
               'bew-segment-control--solid': !settings.enableFrostedGlass,
             }"
@@ -489,6 +489,7 @@ function toggleTabContentLoading(loading: boolean) {
             data-layout-settings-page="home"
             data-layout-settings-title-key="settings.enable_grid_layout_switcher"
             :class="{
+              'home-header-item--edit-hidden': isLayoutEditing && !settings.enableGridLayoutSwitcher,
               'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
               'bew-segment-control--solid': !settings.enableFrostedGlass,
             }"
@@ -523,7 +524,7 @@ function toggleTabContentLoading(loading: boolean) {
             class="glass-panel home-immersive-entry bew-segment-control bew-segment-control--surface bew-segment-control--static"
             :class="{
               'bew-segment-control--solid': !settings.enableFrostedGlass,
-              'home-editor-hidden': isLayoutEditing && !settings.showImmersiveModeEntry,
+              'home-header-item--edit-hidden': isLayoutEditing && !settings.showImmersiveModeEntry,
             }"
             data-layout-settings-menu="BewlyPages"
             data-layout-settings-page="home"
@@ -567,10 +568,11 @@ function toggleTabContentLoading(loading: boolean) {
 </template>
 
 <style scoped lang="scss">
-.home-editor-hidden {
-  border: 1px dashed var(--bew-theme-color);
-  color: var(--bew-text-3);
+/* 平时关闭、仅在编辑模式下显示的入口半透明，与 Dock 编辑模式的隐藏项一致 */
+.home-header-item--edit-hidden {
+  opacity: 0.45;
 }
+
 .bg-enter-active,
 .bg-leave-active {
   --uno: "duration-500 ease-in-out";
