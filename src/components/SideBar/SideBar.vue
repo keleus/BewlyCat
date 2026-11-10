@@ -177,6 +177,11 @@ function toggleHideSidebar(hide: boolean) {
   }
 }
 
+.sidebar-edit-button.active {
+  // 与首页 Dock 的完成态一致，并保持悬停时的高亮。
+  --uno: "important-bg-$bew-theme-color text-white !dark:bg-white !dark:text-black";
+}
+
 .left-side {
   --uno: "left-0";
 }

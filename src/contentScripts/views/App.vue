@@ -379,6 +379,26 @@ function refreshLayoutEditTargets() {
     }
   }
 
+  // 原站新版评论内部使用 Shadow DOM；只对外层评论区提供一个整体入口。
+  const commentRegion = Array.from(document.querySelectorAll<HTMLElement>(
+    'bili-comments, #commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment',
+  )).find(isLayoutEditCandidateVisible)
+  if (commentRegion) {
+    // 评论增强关闭时评论设置页被隐藏，改为定位到常规设置中的评论模块开关。
+    appendTarget(commentRegion, settings.value.enableCommentEnhancements
+      ? {
+          key: 'page-comments',
+          menu: 'Bilibili',
+          secondaryPage: 'comments',
+          targetTitleKey: 'settings.group_comments',
+        }
+      : {
+          key: 'page-comments',
+          menu: 'General',
+          targetTitleKey: 'settings.module_comments',
+        })
+  }
+
   if (isOriginalMomentsFeedPage()) {
     const originalMomentTargets = [
       {

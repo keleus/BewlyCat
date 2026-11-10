@@ -71,7 +71,7 @@ common:
     bottom: 底部
 layout_editor:
   finish: 完成
-  edit_dock: 编辑 Dock
+  edit_dock: 编辑模式
   edit_sidebar: 编辑模式
   back_to_top: 回到顶部
   click_to_adjust: 点击你想要调整的元素
