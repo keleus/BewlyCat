@@ -936,7 +936,7 @@ async function getFavoriteSeasonResources(
     pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  // 合集视频按标准视频卡片展示；接口通常不返回 UP 主头像，缺失时由卡片回退占位，不额外请求。
+  // 合集卡片隐藏作者信息，直接展示列表，不额外请求 UP 主头像。
   loadedSeasonMedias.value = merged.medias
   loadedSeasonComplete.value = !merged.hasMore
   noMoreContent.value = !merged.hasMore
@@ -1043,11 +1043,7 @@ function handleSearch() {
   loadSelectedContent()
 }
 
-function handleSearchScopeSelect(value: 'current' | 'all') {
-  if (searchScope.value === value)
-    return
-
-  searchScope.value = value
+function handleSearchScopeChange() {
   handleSearch()
 }
 
@@ -1319,24 +1315,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
       >
         <Transition name="fade">
           <div v-if="!isBatchManaging" key="search" class="toolbar-search-group">
-            <div
-              class="search-scope-switch bew-segment-control bew-segment-control--surface bew-segment-control--toolbar bew-segment-control--static"
-              :class="{ 'bew-segment-control--solid': !settings.enableFrostedGlass }"
-              role="group"
-              :aria-label="t('favorites.search_scope')"
-            >
-              <button
-                v-for="option in searchScopeOptions" :key="option.value"
-                type="button"
-                class="bew-segment-control__item"
-                data-segment-item
-                :data-active="searchScope === option.value ? 'true' : undefined"
-                :aria-pressed="searchScope === option.value"
-                @click="handleSearchScopeSelect(option.value)"
-              >
-                {{ option.label }}
-              </button>
-            </div>
+            <Select v-model="searchScope" class="search-scope-select" :options="searchScopeOptions" @change="handleSearchScopeChange" />
             <Input
               v-model="keyword"
               class="favorites-search-input"
@@ -1379,7 +1358,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               </template>
               {{ isAllCurrentPageSelected ? t('favorites.batch_unselect_all') : t('favorites.batch_select_all') }}
             </Button>
-            <span class="bew-toolbar-note">
+            <span class="batch-selected-count bew-toolbar-note">
               {{ t('favorites.batch_selected_count', { count: selectedCount }) }}
             </span>
             <Button
@@ -1466,7 +1445,8 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           :loading="isLoading || isFullPageLoading"
           :no-more-content="noMoreContent"
           :empty-description="$t('common.no_more_content')"
-          :more-btn="!isBatchManaging"
+          :more-btn="favoriteView === 'video' && !isBatchManaging"
+          :hide-author="favoriteView === 'season'"
           :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
           :show-preview="!isBatchManaging"
           :get-removed-state="favoriteView === 'video' ? getFavoriteRemovedState : undefined"
@@ -2334,33 +2314,6 @@ function transformFavoriteArticle(item: FavoriteArticle) {
     top: 0;
     left: 0;
   }
-
-  // 整行控件与动态页筛选栏同款观感：标准 elevated 白底 + 柔影；
-  // hover 用 fill-1（与白底分段切换器的 hover 惯例一致），
-  // 聚焦保留组件自带的 2px 主题色 ring，并叠加在柔影之上。
-  .b-input,
-  .b-button,
-  .bew-toolbar-note {
-    background: var(--bew-control-background);
-  }
-
-  .b-input,
-  .b-button,
-  .bew-toolbar-note {
-    box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
-  }
-
-  .b-input:hover,
-  .b-button:hover:not(:disabled) {
-    background: var(--bew-fill-1);
-  }
-
-  .b-input:focus-within {
-    box-shadow:
-      var(--bew-shadow-1),
-      var(--bew-shadow-edge-glow-1),
-      0 0 0 2px var(--bew-theme-color);
-  }
 }
 
 .toolbar-search-group,
@@ -2381,9 +2334,19 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   flex: 0 0 auto;
 }
 
+.batch-selected-count {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  white-space: nowrap;
+}
+
+.search-scope-select {
+  flex: 0 0 120px;
+}
+
 .favorites-search-input {
-  flex: 0 1 320px;
-  min-width: 160px;
+  width: min(250px, 100%);
 }
 
 .article-favorites-content,
@@ -2569,6 +2532,10 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   .favorites-toolbar {
     flex-wrap: wrap;
     width: 100%;
+  }
+
+  .favorites-search-input {
+    flex: 1 1 200px;
   }
 }
 

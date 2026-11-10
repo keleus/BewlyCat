@@ -457,11 +457,6 @@ html.dark.bewly-design {
   border: 0;
 }
 
-// 选择器与同行输入框、按钮保持相同的水平内边距。
-.bew-toolbar-controls .select-trigger {
-  padding-inline: var(--bew-space-3);
-}
-
 .bew-toolbar-controls .b-input input::placeholder {
   color: var(--bew-control-surface-muted);
   opacity: 1;
