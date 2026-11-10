@@ -16,7 +16,8 @@ const emit = defineEmits<{
 
 <template>
   <div class="watch-later-removed-mask" @click.prevent.stop>
-    <MaskDismissButton :label="$t('common.dismiss')" @dismiss="emit('dismiss')" />
+    <!-- 删除/还原请求进行中不允许收起，避免本地列表、计数与服务器状态不一致 -->
+    <MaskDismissButton v-if="!pending" :label="$t('common.dismiss')" @dismiss="emit('dismiss')" />
     <p class="watch-later-removed-text">
       {{ message }}
     </p>

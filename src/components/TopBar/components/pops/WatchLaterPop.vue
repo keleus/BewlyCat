@@ -153,7 +153,8 @@ async function restoreWatchLaterItem(aid: number) {
 
 // 收起已移除的占位卡片：条目已从服务器删除，这里仅移出展示集合，触发 removable-list 离场动画
 function dismissRemovedItem(aid: number) {
-  removeStatuses.delete(aid)
+  if (removeStatuses.get(aid)?.status === 'removed')
+    removeStatuses.delete(aid)
 }
 
 /** progress = -1 表示已看完，直接展示总时长；角标文案形如「12:34 / 45:00」。 */

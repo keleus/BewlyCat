@@ -267,8 +267,9 @@ async function restoreWatchLater(item: VideoItem) {
 }
 
 // 收起已移除的占位卡片：条目已从服务器删除，这里移出列表并清除状态，触发 removable-list 离场动画
+// 仅在删除已完成（removed）时可收起：请求进行中收起会让计数与游标漏更新，或在还原后丢失同步
 function dismissRemovedItem(item: VideoItem) {
-  if (!removeStatuses.has(item.aid))
+  if (removeStatuses.get(item.aid) !== 'removed')
     return
 
   const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
@@ -286,7 +287,7 @@ function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | und
     message: t('watch_later.removed'),
     pending: status !== 'removed',
     onUndo: () => void restoreWatchLater(item),
-    onDismiss: () => dismissRemovedItem(item),
+    onDismiss: status === 'removed' ? () => dismissRemovedItem(item) : undefined,
   }
 }
 
