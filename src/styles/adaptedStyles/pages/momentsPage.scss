@@ -229,6 +229,12 @@
     }
   }
 
+  // 专栏正文的「无高亮」文字仍内联 linear-gradient(transparent 50%, var(--Wh0) 50%)，
+  // 只在背景恰为 Wh0 时不可见；我们的正文背景不同，暗色下会变成整行半高黑条。
+  .opus-module-content span[style*="var(--Wh0"] {
+    background: none !important;
+  }
+
   &.dark {
     #app div.bg {
       background-image: url("//i0.hdslb.com/bfs/static/jinkela/long/images/dynamic/bg_dark.png") !important;
