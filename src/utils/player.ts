@@ -263,13 +263,24 @@ export function webFullscreen(application?: PlayerModeApplication) {
   }, { signal: application?.signal, onFinished: application?.onSettled }).start()
 }
 
+// 评论深链（如通知里的「回复我的」）由 B 站滚动定位到目标评论，不能再拉回播放器
+function isCommentDeepLink() {
+  if (/#reply\d+/i.test(location.hash))
+    return true
+  const params = new URLSearchParams(location.search)
+  return params.has('comment_root_id') || params.has('comment_secondary_id')
+}
+
 // 将播放器滚动到设置的位置
 function scrollPlayerToOptimalPosition(delay = 1000, signal?: AbortSignal) {
   // 如果设置了不滚动，直接返回
-  if (!settings.value.videoPlayerScroll)
+  if (!settings.value.videoPlayerScroll || isCommentDeepLink())
     return
 
   const scroll = () => {
+    if (isCommentDeepLink())
+      return
+
     const playerElement = document.querySelector(_videoClassTag.player)
     if (!playerElement)
       return
