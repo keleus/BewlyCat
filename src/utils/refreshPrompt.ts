@@ -3,6 +3,7 @@ import browser from 'webextension-polyfill'
 import type { ContentScriptIdentity } from '~/constants/contentScript'
 import { CONTENT_SCRIPT_COMMIT, REFRESH_ALL_CONTENT_SCRIPT_TABS } from '~/constants/contentScript'
 import { LanguageType } from '~/enums/appEnums'
+import type { RunningPageScriptIdentity } from '~/utils/pageScriptIdentity'
 
 import { version as extensionVersion } from '../../package.json'
 
@@ -24,6 +25,8 @@ export interface RefreshPromptDiagnostic {
   attempts?: number
   failure?: 'timeout' | 'receiver-missing' | 'invalid-response' | 'message-error'
   update?: RefreshPromptUpdate
+  /** 页面中实际运行的 MAIN world 页面脚本版本；旧版本无法报告版本。 */
+  pageScript?: RunningPageScriptIdentity
 }
 
 export interface RefreshPromptCopy {
@@ -777,11 +780,16 @@ export function showRefreshPrompt(...args: unknown[]): void {
     if (copy.diagnostic.source === 'background')
       addDetail(labels.extensionVersion, formatVersion(copy.diagnostic.expected?.version ?? copy.currentVersion, copy.currentCommit))
     const pageIdentity = copy.diagnostic.received
-    addDetail(labels.pageVersion, pageIdentity
-      ? formatVersion(pageIdentity.version, pageIdentity.commit)
-      : runningVersion
-        ? formatVersion(runningVersion, runningCommit)
-        : copy.diagnostic.source === 'content-script' ? formatVersion(copy.currentVersion, copy.currentCommit) : undefined)
+    const pageScript = copy.diagnostic.pageScript
+    if (pageScript)
+      addDetail(labels.extensionVersion, formatVersion(copy.currentVersion, copy.currentCommit))
+    addDetail(labels.pageVersion, pageScript
+      ? pageScript === 'legacy' ? undefined : formatVersion(pageScript.version, pageScript.commit)
+      : pageIdentity
+        ? formatVersion(pageIdentity.version, pageIdentity.commit)
+        : runningVersion
+          ? formatVersion(runningVersion, runningCommit)
+          : copy.diagnostic.source === 'content-script' ? formatVersion(copy.currentVersion, copy.currentCommit) : undefined)
     addDetail(labels.reason, copy.reasonDescription)
     addDetail(labels.attempts, copy.diagnostic.attempts?.toString())
     addDetail(labels.failure, copy.failureDescription)
@@ -794,6 +802,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
       update: copy.diagnostic.update,
       expected: copy.diagnostic.expected,
       received: copy.diagnostic.received,
+      pageScript: copy.diagnostic.pageScript,
       runningVersion,
       runningCommit,
       promptVersion: copy.currentVersion,
@@ -851,8 +860,27 @@ function canShowRefreshPrompt(): boolean {
 }
 
 type ContentScriptRefreshReason = 'context-invalidated' | 'background-unreachable'
+  | 'version-mismatch' | 'legacy-content-script'
 
-let pendingRefreshPrompt: { reason: ContentScriptRefreshReason, attempts: number } | null = null
+// 页面脚本版本不一致是已确认的原因，优先于连接类的推测原因。
+const contentScriptReasonPriority: Record<ContentScriptRefreshReason, number> = {
+  'background-unreachable': 0,
+  'context-invalidated': 1,
+  'legacy-content-script': 2,
+  'version-mismatch': 3,
+}
+
+function isPageScriptReason(reason: ContentScriptRefreshReason): boolean {
+  return reason === 'version-mismatch' || reason === 'legacy-content-script'
+}
+
+interface PendingRefreshPrompt {
+  reason: ContentScriptRefreshReason
+  attempts: number
+  pageScript?: RunningPageScriptIdentity
+}
+
+let pendingRefreshPrompt: PendingRefreshPrompt | null = null
 let backgroundRecoveryRevision = 0
 
 export function markContentScriptHealthy(identity: ContentScriptIdentity) {
@@ -880,23 +908,31 @@ export function markBackgroundConnectionHealthy() {
   }
 }
 
-export function promptPageRefreshFromContentScript(reason: ContentScriptRefreshReason, attempts: number): void {
+export function promptPageRefreshFromContentScript(
+  reason: ContentScriptRefreshReason,
+  attempts: number,
+  pageScript?: RunningPageScriptIdentity,
+): void {
   if (!canShowRefreshPrompt())
     return
   if (pendingRefreshPrompt) {
     // 等待语言设置期间也保留已确认的失效原因，后续暂时断连不能将其降级。
-    if (reason === 'context-invalidated' && pendingRefreshPrompt.reason !== reason) {
+    if (contentScriptReasonPriority[reason] > contentScriptReasonPriority[pendingRefreshPrompt.reason]) {
       pendingRefreshPrompt.reason = reason
       pendingRefreshPrompt.attempts = attempts
+      pendingRefreshPrompt.pageScript = pageScript
     }
     return
   }
+  // 已有提示时只让更明确的原因更新它，是否替换由 showRefreshPrompt 按优先级决定。
   const existingPrompt = document.getElementById('bewlycat-refresh-required')
-  if (existingPrompt && (reason !== 'context-invalidated' || existingPrompt.dataset.reason !== 'background-unreachable'))
+  if (existingPrompt && !isPageScriptReason(reason)
+    && (reason !== 'context-invalidated' || existingPrompt.dataset.reason !== 'background-unreachable')) {
     return
+  }
 
   const revision = backgroundRecoveryRevision
-  const request = { reason, attempts }
+  const request: PendingRefreshPrompt = { reason, attempts, pageScript }
   pendingRefreshPrompt = request
   void (async () => {
     try {
@@ -920,6 +956,7 @@ export function promptPageRefreshFromContentScript(reason: ContentScriptRefreshR
         source: 'content-script',
         attempts: request.attempts,
         expected,
+        pageScript: request.pageScript,
       })
       showRefreshPrompt(copy)
     }
