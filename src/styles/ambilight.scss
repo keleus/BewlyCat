@@ -232,6 +232,11 @@ html[data-bewly-ambilight] {
     border-color: transparent !important;
   }
 
+  // 标签栏上下分隔线原为固定浅灰，叠在光晕上像突兀的白线；改为随环境光文字灰阶的淡线
+  .video-tag-container {
+    border-color: color-mix(in srgb, var(--text3) 16%, transparent) !important;
+  }
+
   // 弹幕输入框以浅填充示意可输入区域；发送按钮保留主题色底，白字不会落在光晕上
   .bpx-player-video-inputbar {
     background: var(--bew-fill-1) !important;
