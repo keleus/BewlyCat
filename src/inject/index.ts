@@ -596,6 +596,11 @@ else if (shouldInitializePageScript) {
            */
           /* 滚动条出现/消失都不改变可用宽度，避免缩进与线条被反复重算 */
           scrollbar-gutter: stable;
+          /*
+           * 吸底收起栏的 z-index 只在容器内比较。B 站吸底评论框（fixed, z-index: 1）
+           * 在 DOM 中位于楼层之前，同级比较时会被收起栏/「共 x 条回复」盖住。
+           */
+          isolation: isolate;
         }
 
         /* 原生「收起回复」在回复列表末尾；滚动时钉在容器底边保持可达 */
