@@ -4264,6 +4264,9 @@ watch(
         >
           <span i-tabler-x />
         </button>
+        <span v-if="detailImageViewerUrls.length > 1" class="moment-image-viewer__counter">
+          {{ detailImageViewerIndex + 1 }} / {{ detailImageViewerUrls.length }}
+        </span>
         <div class="moment-image-viewer__stage" @click.self="closeDetailImageViewer">
           <img
             :src="detailImageViewerUrl"
@@ -4301,10 +4304,6 @@ watch(
           <span i-tabler-chevron-right />
         </button>
         <div class="moment-image-viewer__toolbar">
-          <span class="moment-image-viewer__counter">
-            {{ detailImageViewerIndex + 1 }}/{{ detailImageViewerUrls.length }}
-          </span>
-          <span class="moment-image-viewer__divider" />
           <button type="button" :aria-label="t('moments.zoom_out')" :title="t('moments.zoom_out')" @click="setDetailImageViewerScale(detailImageViewerScale - 0.25)">
             −
           </button>
@@ -5454,24 +5453,36 @@ watch(
   font-family: inherit;
   cursor: pointer;
 }
-.moment-image-viewer__close:hover,
-.moment-image-viewer__nav:hover,
 .moment-image-viewer__toolbar button:hover {
   background: rgb(0 0 0 / 72%);
 }
+// 关闭、切换按钮与计数器的位置和外观对齐 B 站原生查看器（bili-photoswipe）
+.moment-image-viewer__close,
+.moment-image-viewer__nav {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 58%);
+  font-size: var(--bew-icon-size-md);
+}
+.moment-image-viewer__close:hover,
+.moment-image-viewer__nav:hover {
+  color: var(--brand_pink, #f69);
+}
 .moment-image-viewer__close {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: 16px;
+  right: 16px;
   z-index: 4;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  font-size: var(--bew-icon-size-lg);
+  opacity: 0.85;
+}
+.moment-image-viewer__close:hover {
+  opacity: 1;
 }
 // 关闭按钮置于底部工具栏上方，并为其预留图片区域
 .moment-image-viewer.is-close-bottom .moment-image-viewer__close {
   top: auto;
+  right: auto;
   left: 50%;
   bottom: 84px;
   transform: translateX(-50%);
@@ -5479,15 +5490,23 @@ watch(
 .moment-image-viewer.is-close-bottom .moment-image-viewer__stage {
   padding-bottom: 140px;
 }
+.moment-image-viewer__counter {
+  position: absolute;
+  top: 20px;
+  left: 16px;
+  z-index: 4;
+  height: 30px;
+  font-size: 14px;
+  line-height: 30px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 1px 1px 3px #4f4f4f;
+  opacity: 0.85;
+  user-select: none;
+}
 .moment-image-viewer__nav {
   position: absolute;
-  top: 50%;
+  top: calc(50% - 50px);
   z-index: 4;
-  width: 44px;
-  height: 56px;
-  border-radius: var(--bew-radius-md);
-  transform: translateY(-50%);
-  font-size: var(--bew-icon-size-xl);
   line-height: 1;
 }
 .moment-image-viewer__nav--prev {
@@ -5519,14 +5538,11 @@ watch(
   background: transparent;
   font-size: var(--bew-icon-size-md);
 }
-.moment-image-viewer__counter,
 .moment-image-viewer__zoom {
   min-width: 48px;
   text-align: center;
   font-size: var(--bew-font-size-control);
   font-variant-numeric: tabular-nums;
-}
-.moment-image-viewer__zoom {
   width: 64px;
   height: 30px;
   padding: 0 var(--bew-space-1);
@@ -5541,12 +5557,6 @@ watch(
 .moment-image-viewer__zoom:focus {
   background: rgb(255 255 255 / 14%);
 }
-.moment-image-viewer__divider {
-  width: 1px;
-  height: 24px;
-  margin: 0 var(--bew-space-1);
-  background: rgb(255 255 255 / 24%);
-}
 @media (max-width: 640px) {
   .moment-image-viewer__stage {
     padding: 68px 12px 92px;
@@ -5555,8 +5565,7 @@ watch(
     top: auto;
     bottom: 24px;
     width: 36px;
-    height: 42px;
-    transform: none;
+    height: 36px;
   }
 }
 @keyframes moment-shimmer {

@@ -766,25 +766,40 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__tool {
   justify-content: center !important;
   padding: 0 !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close:hover,
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav:hover,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__tool:hover {
   background: rgba(0, 0, 0, 0.72) !important;
 }
+/* 关闭、切换按钮与计数器的位置和外观对齐 B 站原生查看器（bili-photoswipe） */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  background: rgba(0, 0, 0, 0.58) !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close:hover,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav:hover {
+  color: var(--brand_pink, #f69) !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close > .bew-local-icon,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > .bew-local-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close {
   position: absolute !important;
-  top: 20px !important;
-  left: 20px !important;
+  top: 16px !important;
+  right: 16px !important;
   z-index: 4 !important;
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 50% !important;
-  font-size: 28px !important;
-  line-height: 1 !important;
+  opacity: 0.85 !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close:hover {
+  opacity: 1 !important;
 }
 /* 关闭按钮置于底部工具栏上方，并为其预留图片区域 */
 html.momentsPage.drawer.bewly-opus-layout.bewly-image-viewer-close-bottom .bewly-opus-viewer__close {
   top: auto !important;
+  right: auto !important;
   left: 50% !important;
   bottom: 84px !important;
   transform: translateX(-50%) !important;
@@ -792,19 +807,23 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-image-viewer-close-bottom .bewly
 html.momentsPage.drawer.bewly-opus-layout.bewly-image-viewer-close-bottom .bewly-opus-viewer__stage {
   padding-bottom: 140px !important;
 }
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__counter {
+  position: absolute !important;
+  top: 20px !important;
+  left: 16px !important;
+  z-index: 4 !important;
+  height: 30px !important;
+  font-size: 14px !important;
+  line-height: 30px !important;
+  font-variant-numeric: tabular-nums !important;
+  text-shadow: 1px 1px 3px #4f4f4f !important;
+  opacity: 0.85 !important;
+  user-select: none !important;
+}
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
   position: absolute !important;
-  top: 50% !important;
+  top: calc(50% - 50px) !important;
   z-index: 4 !important;
-  width: 44px !important;
-  height: 56px !important;
-  border-radius: 10px !important;
-  transform: translateY(-50%) !important;
-  font-size: 32px !important;
-}
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > .bew-local-icon {
-  width: 24px !important;
-  height: 24px !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav:disabled {
   display: none !important;
@@ -837,14 +856,11 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__tool {
   background: transparent !important;
   font-size: 20px !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__counter,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom {
   min-width: 48px !important;
   text-align: center !important;
   font-size: 13px !important;
   font-variant-numeric: tabular-nums !important;
-}
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom {
   width: 64px !important;
   height: 30px !important;
   padding: 0 4px !important;
@@ -859,12 +875,6 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom:hover,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom:focus {
   background: rgba(255, 255, 255, 0.14) !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__divider {
-  width: 1px !important;
-  height: 24px !important;
-  margin: 0 4px !important;
-  background: rgba(255, 255, 255, 0.24) !important;
-}
 @media (max-width: 640px) {
   html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__stage {
     padding: 68px 12px 92px !important;
@@ -873,8 +883,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__divider {
     top: auto !important;
     bottom: 24px !important;
     width: 36px !important;
-    height: 42px !important;
-    transform: none !important;
+    height: 36px !important;
   }
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel {
@@ -1564,7 +1573,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   viewerClose.type = 'button'
   viewerClose.className = 'bewly-opus-viewer__close'
   viewerClose.setAttribute('aria-label', '关闭图片查看器')
-  viewerClose.textContent = '×'
+  mountGalleryIcon(viewerClose, 'tabler:x')
 
   const viewerPrev = document.createElement('button')
   viewerPrev.type = 'button'
@@ -1588,8 +1597,6 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   viewerZoom.className = 'bewly-opus-viewer__zoom'
   viewerZoom.setAttribute('aria-label', '缩放比例，输入百分比后按回车或移开焦点应用')
   viewerZoom.title = '缩放比例，输入百分比后按回车或移开焦点应用'
-  const viewerDivider = document.createElement('span')
-  viewerDivider.className = 'bewly-opus-viewer__divider'
 
   const createViewerTool = (label: string, text: string) => {
     const button = document.createElement('button')
@@ -1605,8 +1612,6 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   const viewerReset = createViewerTool('适应窗口', '1:1')
   const viewerRotate = createViewerTool('顺时针旋转', '↻')
 
-  viewerToolbar.appendChild(viewerCounter)
-  viewerToolbar.appendChild(viewerDivider)
   viewerToolbar.appendChild(viewerZoomOut)
   viewerToolbar.appendChild(viewerZoom)
   viewerToolbar.appendChild(viewerZoomIn)
@@ -1614,6 +1619,8 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   viewerToolbar.appendChild(viewerRotate)
   viewer.appendChild(viewerStage)
   viewer.appendChild(viewerClose)
+  if (urls.length > 1)
+    viewer.appendChild(viewerCounter)
   viewer.appendChild(viewerPrev)
   viewer.appendChild(viewerNext)
   viewer.appendChild(viewerToolbar)
@@ -1915,7 +1922,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   const showViewerImage = (nextIndex: number) => {
     viewerIndex = wrapIndex(nextIndex)
     viewerImage.src = urls[viewerIndex]
-    viewerCounter.textContent = `${viewerIndex + 1}/${urls.length}`
+    viewerCounter.textContent = `${viewerIndex + 1} / ${urls.length}`
     viewerPrev.disabled = urls.length <= 1
     viewerNext.disabled = urls.length <= 1
     resetViewerTransform()

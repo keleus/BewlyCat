@@ -38,6 +38,7 @@ export default defineConfig({
     'i-tabler:eye-off',
     'i-tabler:chevron-left',
     'i-tabler:chevron-right',
+    'i-tabler:x',
     'i-mingcute:settings-3-line',
     'i-mingcute:check-line',
     'i-mingcute:edit-3-line',
