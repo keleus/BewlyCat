@@ -148,6 +148,11 @@ interface VideoCardGridProps<T = any> {
   emptyDescription?: string
 
   /**
+   * 请求失败时的说明，未提供时使用通用的失败提示
+   */
+  requestFailedDescription?: string
+
+  /**
    * 登录按钮文本
    */
   loginButtonText?: string
@@ -1379,7 +1384,7 @@ function getUniqueKey(item: T, index: number): string | number {
     <Empty
       v-else-if="showEmptyState"
       mt-6
-      :description="emptyDescription || $t(requestFailed ? 'common.api_error.request_failed' : 'common.no_more_content')"
+      :description="emptyDescription || (requestFailed ? requestFailedDescription || $t('common.api_error.request_failed') : $t('common.no_more_content'))"
     >
       <div class="grid-state-actions">
         <Button type="primary" @click="handleRefresh">
@@ -1438,7 +1443,7 @@ function getUniqueKey(item: T, index: number): string | number {
     />
 
     <!-- 无更多内容或请求失败提示（仅在有数据时显示，避免与空列表提示重复） -->
-    <Empty v-if="showListEndState" class="pb-4" :description="$t(requestFailed ? 'common.api_error.request_failed' : 'common.no_more_content')">
+    <Empty v-if="showListEndState" class="pb-4" :description="requestFailed ? requestFailedDescription || $t('common.api_error.request_failed') : $t('common.no_more_content')">
       <div class="grid-state-actions">
         <Button type="primary" @click="handleRefresh">
           {{ refreshButtonText || $t('common.operation.refresh') }}

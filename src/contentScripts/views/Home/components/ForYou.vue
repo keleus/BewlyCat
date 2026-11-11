@@ -26,6 +26,8 @@ import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { av2bv } from '~/utils/bvid'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { getCookie, jumpScrollTo } from '~/utils/main'
+import type { RequestFailure } from '~/utils/requestFailure'
+import { classifyRequestFailure, getRequestFailure, pickRequestFailure, RequestFailureError } from '~/utils/requestFailure'
 import { isVerticalVideo } from '~/utils/uriParse'
 
 import { isWithinHomeContentStart } from '../homeScroll'
@@ -186,6 +188,8 @@ const immersiveItems = computed<ImmersiveFeedItem[]>(() => {
 
 const isLoading = ref<boolean>(true)
 const requestFailed = tabState.ref<boolean>('requestFailed', false)
+// 最近一次推荐请求失败的原因，用于在提示和失败状态中说明具体情况
+const lastRecommendFailure = tabState.ref<RequestFailure | null>('lastRecommendFailure', null)
 const needToLoginFirst = tabState.ref<boolean>('needToLoginFirst', false)
 const refreshIdx = tabState.ref<number>('refreshIdx', 1)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
@@ -367,6 +371,7 @@ const errorReportSource: ApiErrorReportSource = {
       连续整批被过滤: consecutiveFullyFilteredLoadCount,
       风控冷却等级: webRiskCooldownLevel,
       风控冷却剩余: `${Math.ceil(getWebRiskCooldownRemainingMs() / 1000)} 秒`,
+      最近失败分类: lastRecommendFailure.value?.kind ?? '无',
     },
   }),
 }
@@ -374,6 +379,54 @@ const errorReportSource: ApiErrorReportSource = {
 function createRecommendationFailureToast(message: string) {
   return createApiErrorToastContent(message, t('common.api_error.details'), errorReportSource)
 }
+
+function formatApiFailureDetail({ code, message }: RequestFailure): string {
+  const codeText = code === undefined ? '' : String(code)
+  if (!message || message === codeText)
+    return codeText || '-'
+  return codeText ? `${codeText} ${message}` : message
+}
+
+/** 失败原因的说明；无法确定原因时返回 undefined，由调用方使用通用提示。 */
+function getRecommendFailureReason(failure: RequestFailure | null | undefined): string | undefined {
+  switch (failure?.kind) {
+    case 'background':
+      return t('home.recommendation_failure_reason.background')
+    case 'offline':
+      return t('home.recommendation_failure_reason.offline')
+    case 'timeout':
+      return t('home.recommendation_failure_reason.timeout')
+    case 'network':
+      return t('home.recommendation_failure_reason.network')
+    case 'http':
+      return t('home.recommendation_failure_reason.http', { status: failure.status ?? '-' })
+    case 'invalidResponse':
+      return t('home.recommendation_failure_reason.invalid_response')
+    case 'api':
+      return t('home.recommendation_failure_reason.api', { detail: formatApiFailureDetail(failure) })
+    case 'empty':
+      return t('home.recommendation_failure_reason.empty')
+    case 'riskControl':
+      return t('home.recommendation_failure_reason.risk_control')
+    default:
+      return undefined
+  }
+}
+
+function getRecommendFailureMessage(failure: RequestFailure | null | undefined, isAppMode: boolean): string {
+  const reason = getRecommendFailureReason(failure)
+  if (isAppMode)
+    return reason ? t('home.app_recommendation_failed', { reason }) : t('home.app_retry_web')
+  return reason ? t('home.recommendation_failed', { reason }) : t('home.recommendations_retry')
+}
+
+// 无法确定原因时沿用通用的失败说明
+const requestFailedDescription = computed(() => {
+  const failure = lastRecommendFailure.value
+  if (!requestFailed.value || !failure || !getRecommendFailureReason(failure))
+    return undefined
+  return getRecommendFailureMessage(failure, !isWebRecommendationMode.value)
+})
 
 function resetFilteredFeedPagingState() {
   filteredFeedCandidateCount.value = 0
@@ -1143,6 +1196,7 @@ async function initData() {
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
+  lastRecommendFailure.value = null
   needToLoginFirst.value = false
   try {
     await getData('refresh')
@@ -1166,6 +1220,7 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
   emit('beforeLoading')
   isLoading.value = true
   requestFailed.value = false
+  lastRecommendFailure.value = null
 
   try {
     if (isWebRecommendationMode.value) {
@@ -1183,15 +1238,17 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
 
         // 检查是否启用自动切换
         if (settings.value.autoSwitchRecommendationMode) {
-          // 切换到 web 模式并提示用户
+          // 切换到 web 模式并提示用户；Web 模式若同样失败会给出自己的原因说明。
           settings.value.recommendationMode = 'web'
           // 回退成功后页面没有失败状态，这条提示是查看详情的唯一入口，需要留足点击时间。
           toast.warning(createRecommendationFailureToast(t('home.app_fallback_web')), { timeout: 10_000 })
         }
         else {
+          const failure = getRequestFailure(error)
+          lastRecommendFailure.value = failure
           requestFailed.value = true
           noMoreContent.value = true
-          toast.error(createRecommendationFailureToast(t('home.app_retry_web')))
+          toast.error(createRecommendationFailureToast(getRecommendFailureMessage(failure, true)))
         }
       }
     }
@@ -1490,6 +1547,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
     let response: forYouResult | undefined
     let successfulIdentity: WebRecommendationIdentity | undefined
     let hadRiskControlFailure = false
+    let requestFailure: RequestFailure | undefined
 
     for (const [identityIndex, identity] of requestIdentities.entries()) {
       const phase = identityIndex === 0 ? 'primary' : 'fallback'
@@ -1509,6 +1567,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         }
         catch (error) {
           hadRiskControlFailure ||= isBilibiliRiskControl(error)
+          requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ error }))
           logRecommendRequestFailure(requestLog, {
             ...getRecommendErrorLogDetails(error),
             phase,
@@ -1536,6 +1595,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           const isSuspiciousEmptyResponse = response.code === 0
             && (!response.data || !Array.isArray(response.data.item) || response.data.item.length === 0)
           hadRiskControlFailure ||= isRiskResponse || isSuspiciousEmptyResponse
+          requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ response }))
           // code=0 的空列表后台不视为失败；带风控标记的响应后台已经记录。
           if (isSuspiciousEmptyResponse && !isRiskResponse) {
             recordPageApiFailure({
@@ -1586,17 +1646,23 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
       requestFailed.value = true
       noMoreContent.value = true
-      if (hadRiskControlFailure) {
+      // 后台断开、断网时请求根本没有到达 B 站，即使另一次尝试像风控也不进入风控冷却。
+      const isLocalFailure = requestFailure?.kind === 'background' || requestFailure?.kind === 'offline'
+      if (hadRiskControlFailure && !isLocalFailure) {
+        // 风控冷却有单独的提示
+        lastRecommendFailure.value = null
         stopWebRecommendationForRisk()
       }
       else {
-        toast.error(createRecommendationFailureToast(t('home.recommendations_retry')))
+        lastRecommendFailure.value = requestFailure ?? null
+        toast.error(createRecommendationFailureToast(getRecommendFailureMessage(requestFailure, false)))
       }
       return
     }
 
     resetWebRiskRecoveryState()
     requestFailed.value = false
+    lastRecommendFailure.value = null
     noMoreContent.value = false
 
     if (response.code === 0) {
@@ -1829,6 +1895,7 @@ async function getAppRecommendVideos(
       const retryDeadline = Date.now() + APP_REQUEST_RETRY_WINDOW_MS
       let requestLog: RecommendRequestLogContext | undefined
       let response: AppForYouResult | undefined
+      let requestFailure: RequestFailure | undefined
 
       for (let attempt = 1; attempt <= APP_REQUEST_MAX_ATTEMPTS; attempt++) {
         requestLog = createRecommendRequestLogContext(recommendationMode, requestType)
@@ -1844,6 +1911,7 @@ async function getAppRecommendVideos(
           })
         }
         catch (error) {
+          requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ error }, 'items'))
           logRecommendRequestFailure(requestLog, { error, attempt })
           response = undefined
         }
@@ -1860,6 +1928,7 @@ async function getAppRecommendVideos(
           break
 
         if (response) {
+          requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ response }, 'items'))
           if (response.code === 0) {
             recordPageApiFailure({
               query: 'feedIndex',
@@ -1892,10 +1961,10 @@ async function getAppRecommendVideos(
         return
 
       if (!response || !requestLog)
-        throw new Error('App 推荐接口连续请求失败')
+        throw new RequestFailureError('App 推荐接口连续请求失败', requestFailure ?? { kind: 'unknown' })
 
       if (response.code === 0 && (!response.data || !Array.isArray(response.data.items) || response.data.items.length === 0))
-        throw new Error('App 推荐接口连续返回空数据')
+        throw new RequestFailureError('App 推荐接口连续返回空数据', requestFailure ?? { kind: 'empty' })
 
       if (response.code === 0) {
         // 无论本批是否有可展示的卡片，都推进游标，下次请求下一页
@@ -1945,7 +2014,10 @@ async function getAppRecommendVideos(
           code: response.code,
           message: response.message,
         })
-        throw new Error(`App 推荐接口返回错误：${response.code} ${response.message || ''}`.trim())
+        throw new RequestFailureError(
+          `App 推荐接口返回错误：${response.code} ${response.message || ''}`.trim(),
+          requestFailure ?? classifyRequestFailure({ response }, 'items'),
+        )
       }
     }
     catch (error) {
@@ -2115,6 +2187,7 @@ function getItemKey(item: VideoElement | AppVideoElement) {
       :no-more-content="noMoreContent"
       :need-to-login-first="needToLoginFirst"
       :request-failed="requestFailed"
+      :request-failed-description="requestFailedDescription"
       :error-report-source="errorReportSource"
       :transform-item="getItemDisplayData"
       :get-item-key="getItemKey"

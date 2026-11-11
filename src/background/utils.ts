@@ -24,11 +24,26 @@ export class ApiRiskControlError extends Error {
 
 type FetchAfterHandler = ((data: Response) => Promise<any>) | ((data: any) => any)
 
+/**
+ * 响应不是可解析的 JSON。消息中的 `HTTP xxx` 会经消息通道保留下来，
+ * 页面据此区分服务端异常与被代理、网关改写的响应。
+ */
+class ApiInvalidResponseError extends Error {
+  constructor(status: number) {
+    super(`Invalid JSON response (HTTP ${status})`)
+    this.name = 'ApiInvalidResponseError'
+  }
+}
+
 async function toJsonHandler(data: Response): Promise<any> {
   const contentType = data.headers.get('content-type')
+  // 5xx 的 HTML 是网关或服务端错误页，不是风控验证页。
+  const isServerError = data.status >= 500
 
   // 检测是否返回了HTML（风控页面）
   if (contentType && contentType.includes('text/html')) {
+    if (isServerError)
+      throw new ApiInvalidResponseError(data.status)
     throw new ApiRiskControlError()
   }
 
@@ -39,13 +54,13 @@ async function toJsonHandler(data: Response): Promise<any> {
   try {
     return await data.json()
   }
-  catch (error) {
+  catch {
     // 如果JSON解析失败，可能也是风控页面
     const text = await fallbackResponse.text()
-    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+    if (!isServerError && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html'))) {
       throw new ApiRiskControlError()
     }
-    throw error
+    throw new ApiInvalidResponseError(data.status)
   }
 }
 function toData(data: Promise<any>): Promise<any> {

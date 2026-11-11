@@ -1562,6 +1562,18 @@ home:
   immersive_previous: 上一個
   immersive_next: 下一個
   recommendations_retry: 首頁推薦介面連續請求失敗，請重新整理後再試
+  recommendation_failed: 首頁推薦載入失敗：{reason}
+  app_recommendation_failed: App 推薦資料載入失敗：{reason}
+  recommendation_failure_reason:
+    background: 擴充功能背景連線已中斷，請重新整理頁面；仍然失敗時請在擴充功能管理頁重新啟用 BewlyCat
+    offline: 網路已中斷，請恢復連線後重新整理再試
+    timeout: 請求逾時，可能是網路較慢，或代理、IPv6 線路異常，請檢查網路後重新整理再試
+    network: 無法連線至 B 站伺服器，請檢查網路和代理設定，並確認廣告攔截等擴充功能沒有攔截 B 站介面
+    http: B 站伺服器回傳 HTTP {status}，服務可能暫時異常，請稍後重新整理再試
+    invalid_response: 回傳內容無法解析，可能被代理、閘道或網路環境改寫，請檢查網路環境後再試
+    api: 介面回傳錯誤（{detail}），請稍後重新整理再試
+    empty: 介面連續回傳空列表，B 站可能暫時限制了推薦，請稍後再試
+    risk_control: 請求觸發了 B 站風控，請降低重新整理頻率並稍後再試
   weekly_issue: 第{number}期
   select_issue: 選擇期號
   search_issue: 搜尋期號…

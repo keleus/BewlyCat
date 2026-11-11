@@ -1626,6 +1626,18 @@ home:
   immersive_previous: Previous
   immersive_next: Next
   recommendations_retry: Home recommendations repeatedly failed. Refresh and try again.
+  recommendation_failed: 'Home recommendations failed to load: {reason}'
+  app_recommendation_failed: 'App recommendations failed to load: {reason}'
+  recommendation_failure_reason:
+    background: The extension's background connection was lost. Refresh the page; if it still fails, re-enable BewlyCat on the extensions page.
+    offline: You're offline. Reconnect, then refresh and try again.
+    timeout: The request timed out. The network may be slow, or a proxy or IPv6 route may be misbehaving. Check your network, then refresh.
+    network: Couldn't reach Bilibili's servers. Check your network and proxy settings, and make sure ad blockers or other extensions aren't blocking Bilibili's API.
+    http: Bilibili's server returned HTTP {status} and may be temporarily unavailable. Refresh later.
+    invalid_response: The response couldn't be read and may have been altered by a proxy, gateway or your network. Check your network, then try again.
+    api: The API returned an error ({detail}). Refresh later.
+    empty: The API kept returning empty lists. Bilibili may be limiting recommendations for now; try again later.
+    risk_control: The request triggered Bilibili's risk control. Refresh less often and try again later.
   weekly_issue: 'Issue {number}'
   select_issue: Select issue
   search_issue: Search issues…

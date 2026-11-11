@@ -1547,6 +1547,18 @@ home:
   immersive_previous: 上一个
   immersive_next: 下一个
   recommendations_retry: 首页推荐接口连续请求失败，请刷新后重试
+  recommendation_failed: 首页推荐加载失败：{reason}
+  app_recommendation_failed: App 推荐数据加载失败：{reason}
+  recommendation_failure_reason:
+    background: 扩展后台连接已中断，请刷新页面；仍然失败时请在扩展管理页重新启用 BewlyCat
+    offline: 网络已断开，请恢复联网后刷新重试
+    timeout: 请求超时，可能是网络较慢，或代理、IPv6 线路异常，请检查网络后刷新重试
+    network: 无法连接 B 站服务器，请检查网络和代理设置，并确认广告拦截等扩展没有拦截 B 站接口
+    http: B 站服务器返回 HTTP {status}，服务可能暂时异常，请稍后刷新重试
+    invalid_response: 返回内容无法解析，可能被代理、网关或网络环境改写，请检查网络环境后重试
+    api: 接口返回错误（{detail}），请稍后刷新重试
+    empty: 接口连续返回空列表，B 站可能暂时限制了推荐，请稍后再试
+    risk_control: 请求触发了 B 站风控，请降低刷新频率并稍后再试
   weekly_issue: 第{number}期
   select_issue: 选择期号
   search_issue: 搜索期号…
