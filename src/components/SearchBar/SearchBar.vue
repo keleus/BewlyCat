@@ -666,6 +666,7 @@ function handleClearKeyword() {
         p="l-6 r-18 y-3"
         h-inherit
         spellcheck="false"
+        type="search"
         un-border="1 solid $bew-border-color"
         @focus="handleInputFocus"
         @input="handleNativeInput"
@@ -907,6 +908,14 @@ function handleClearKeyword() {
     input {
       @include card-content;
       appearance: none;
+
+      &[type="search"]::-webkit-search-cancel-button,
+      &[type="search"]::-webkit-search-decoration,
+      &[type="search"]::-webkit-search-results-button,
+      &[type="search"]::-webkit-search-results-decoration {
+        appearance: none;
+      }
+
       color: var(--b-search-bar-normal-text-color);
       min-width: 0;
       position: relative;
