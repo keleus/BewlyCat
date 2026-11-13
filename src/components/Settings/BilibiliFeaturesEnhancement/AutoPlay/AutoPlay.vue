@@ -91,6 +91,14 @@ const randomPlayActivationModeOptions = computed(() => {
       </SettingsItem>
 
       <SettingsItem
+        :title="t('settings.auto_exit_fullscreen_on_end')"
+        :desc="t('settings.auto_exit_fullscreen_on_end_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.autoExitFullscreenOnEnd" />
+      </SettingsItem>
+
+      <SettingsItem
         :title="t('settings.use_bilibili_default_auto_play')"
         :desc="t('settings.use_bilibili_default_auto_play_desc')"
         right-width="auto"

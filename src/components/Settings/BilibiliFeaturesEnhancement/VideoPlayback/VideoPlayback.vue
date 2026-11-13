@@ -197,14 +197,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       </SettingsItem>
 
       <SettingsItem
-        :title="t('settings.auto_exit_fullscreen_on_end')"
-        :desc="t('settings.auto_exit_fullscreen_on_end_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.autoExitFullscreenOnEnd" />
-      </SettingsItem>
-
-      <SettingsItem
         :title="t('settings.video_player_mode.enable_overrides')"
         :desc="t('settings.video_player_mode.enable_overrides_desc')"
         right-width="auto"
