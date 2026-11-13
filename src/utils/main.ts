@@ -370,8 +370,8 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
   if (
     // video page
     /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url)
-    // anime playback & movie page
-    || /https?:\/\/(?:www\.)?bilibili\.com\/bangumi\/play\/.*/.test(url)
+    // anime playback, movie, and legacy medialist playback pages
+    || /https?:\/\/(?:www\.)?bilibili\.com\/(?:bangumi|medialist)\/play\/.*/.test(url)
     // watch later playlist
     || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater\?(?:bvid|avid).*/.test(url)
     // favorite playlist
@@ -381,6 +381,15 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
     return true
   }
   return false
+}
+
+/**
+ * 支持视频页毛玻璃风格的播放页：普通视频、播放列表与番剧/电影播放页，不含课程页与活动专题页。
+ * @param url the url to check
+ */
+export function isGlassSupportedPlaybackPage(url: string = location.href): boolean {
+  url = stripBilibiliLocaleUrl(url)
+  return /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list|(?:medialist|bangumi)\/play)\/.*/.test(url)
 }
 
 /**

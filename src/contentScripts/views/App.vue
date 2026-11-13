@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useIntersectionObserver, useResizeObserver, useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { provide, ref, watch } from 'vue'
+import { effectScope, onScopeDispose, provide, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ApiErrorDetailsDialog from '~/components/ApiErrorDetailsDialog.vue'
@@ -26,6 +26,7 @@ import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
@@ -37,6 +38,7 @@ import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, 
 import { openSettingsPage } from '~/utils/settingsPage'
 import { isComponentVisible } from '~/utils/topBarBadge'
 import { canOpenInVideoDialog } from '~/utils/videoDialog'
+import { isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -48,17 +50,44 @@ useAccountSync()
 const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
 const { t } = useI18n()
 
-// Conditionally use dark mode. `useDark()` handles the video-page-only route gate.
-let isDark: Ref<boolean>
-const shouldUseDark = settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode
-
-if (shouldUseDark) {
-  const darkResult = useDark()
-  isDark = darkResult.isDark
-}
-else {
-  isDark = ref(false)
-}
+// Conditionally use dark mode. `useDark()` handles the video-page-only route gate;
+// lazily initialize in a persistent scope so toggling settings or SPA navigation takes effect immediately.
+const currentPageUrl = ref(window.location.href)
+const isWidescreenActive = ref(isBewlyWidescreenActive())
+let widescreenStateObserver: MutationObserver | undefined
+onMounted(() => {
+  isWidescreenActive.value = isBewlyWidescreenActive()
+  if (!document.body)
+    return
+  widescreenStateObserver = new MutationObserver(() => {
+    isWidescreenActive.value = isBewlyWidescreenActive()
+  })
+  widescreenStateObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class'],
+  })
+})
+onUnmounted(() => {
+  widescreenStateObserver?.disconnect()
+  widescreenStateObserver = undefined
+})
+const shouldUseDark = computed(() =>
+  settings.value.adaptToOtherPageStyles
+  || settings.value.videoPageDarkMode
+  || isVideoPageGlassStyleEnabled(currentPageUrl.value),
+)
+const darkIsDark = shallowRef<Ref<boolean>>()
+const darkScope = effectScope()
+onScopeDispose(() => darkScope.stop())
+watch(
+  shouldUseDark,
+  (enabled) => {
+    if (enabled && !darkIsDark.value)
+      darkIsDark.value = darkScope.run(() => useDark().isDark)
+  },
+  { immediate: true },
+)
+const isDark = computed(() => shouldUseDark.value ? (darkIsDark.value?.value ?? false) : false)
 const searchFocusOverlayActive = ref(false)
 const pageWallpaperReady = ref(false)
 const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
@@ -211,6 +240,7 @@ const isHomeTabSwitching = ref<boolean>(false)
 function syncNavigationFromUrl() {
   // 注入层的 pushstate 事件在原生方法执行前派发，延后读取最终地址。
   queueMicrotask(() => {
+    currentPageUrl.value = window.location.href
     const page = getPageParam()
     if (page)
       activatedPage.value = page
@@ -222,7 +252,9 @@ function syncNavigationFromUrl() {
   })
 }
 useEventListener(window, 'pushstate', syncNavigationFromUrl)
+useEventListener(window, 'replacestate', syncNavigationFromUrl)
 useEventListener(window, 'popstate', syncNavigationFromUrl)
+useEventListener(window, 'hashchange', syncNavigationFromUrl)
 
 watch(
   () => settings.value.homePageTabVisibilityList,
@@ -1880,6 +1912,13 @@ if (settings.value.cleanUrlArgument) {
     <template v-if="showBewlyPage && !settings.disableBackground">
       <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
     </template>
+    <div
+      v-else-if="isVideoPageGlassStyleEnabled(currentPageUrl)"
+      class="bewly-video-page-background"
+      :class="{ 'bewly-video-page-background--widescreen': isWidescreenActive }"
+    >
+      <AppBackground :activated-page="AppPage.Home" />
+    </div>
 
     <Transition name="fade">
       <svg
@@ -2326,6 +2365,28 @@ if (settings.value.cleanUrlArgument) {
   // To fix the filter used in `.bewly-wrapper` that cause the positions of elements become discorded.
   > * > * {
     filter: var(--bew-filter-force-dark);
+  }
+}
+
+// #bewly 不形成层叠上下文，负层级可排到原生页面内容（z-index: auto）与环境光（z-index: -1）之后；
+// Bewly 宽屏根节点为 z-index: 1000，此时背景层升至 999 以遮住底层未搬移的原站残余节点。
+.bewly-video-page-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+
+  &--widescreen {
+    z-index: 999;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: color-mix(in oklab, var(--bew-bg) calc(var(--bew-content-opacity) * 74%), transparent);
+    -webkit-backdrop-filter: var(--bew-filter-glass-2);
+    backdrop-filter: var(--bew-filter-glass-2);
   }
 }
 

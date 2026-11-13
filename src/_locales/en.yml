@@ -1074,6 +1074,10 @@ settings:
   adapt_to_other_page_styles_desc: Adapt to some common pages to match with the BewlyBewly theme.
   disable_background: Disable background
   disable_background_desc: Completely disable the plugin page's solid, gradient and wallpaper backgrounds (including the search page wallpaper) to show the original Bilibili page background.
+  video_page_glass_style: Video page glass style
+  video_page_glass_style_desc: Show the background under a full-page frosted glass layer on video and anime playback pages (including Bewly widescreen), letting content blend directly into it. Wallpaper, mask, gradient and blur follow the appearance settings. Course pages are excluded.
+  rounded_video_player: Rounded video player
+  rounded_video_player_desc: Add rounded corners to the video player on video and anime pages, while keeping fullscreen, web fullscreen and mini player corners square.
   prevent_mobile_redirect: Prevent mobile redirect
   prevent_mobile_redirect_desc: When enabled, prevents www.bilibili.com from redirecting to the mobile site.
   enable_firefox_scrollbar_repaint: Repaint Firefox scrollbar

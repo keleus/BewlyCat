@@ -39,6 +39,7 @@ import { installShortcutListener, setupShortcutHandlers } from '~/utils/shortcut
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
+import { applyBewlyDesignClasses, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
@@ -363,23 +364,8 @@ else if (shouldInitializeContentScript) {
 
   void settingsReady.then(() => setupPluginSearchLinkNavigation())
 
-  function shouldApplyBewlyDesign() {
-    if (settings.value.adaptToOtherPageStyles)
-      return !isFestivalPage()
-
-    return settings.value.videoPageDarkMode && isVideoPlaybackPage()
-  }
-
-  function shouldApplyVideoPageDarkOnly() {
-    return !settings.value.adaptToOtherPageStyles
-      && settings.value.videoPageDarkMode
-      && isVideoPlaybackPage()
-  }
-
-  function applyBewlyDesignClasses() {
-    const shouldApply = shouldApplyBewlyDesign()
-    document.documentElement.classList.toggle('bewly-design', shouldApply)
-    document.documentElement.classList.toggle('bewly-video-dark-only', shouldApplyVideoPageDarkOnly())
+  function applyInitialBewlyDesignClasses() {
+    const shouldApply = applyBewlyDesignClasses()
     // Only takes effect together with bewly-design, which another watcher also toggles.
     document.documentElement.classList.toggle(SELECTION_FALLBACK_CLASS, !supportsHighlightInheritance())
     return shouldApply
@@ -390,10 +376,11 @@ else if (shouldInitializeContentScript) {
     if (!isSupportedPages() && !isSupportedIframePages())
       return
 
-    if (settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode)
+    // 玻璃风格只限当前视频页，避免把主题同步扩散到未适配的其他页面。
+    if (settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode || isVideoPageGlassStyleEnabled())
       useDark()
 
-    const shouldApplyFullStyles = applyBewlyDesignClasses()
+    const shouldApplyFullStyles = applyInitialBewlyDesignClasses()
 
     // opus 详情分栏布局与图片查看器检测都不依赖“适配其他页样式”，只要在 iframe 内就启用；
     // 否则关闭该设置后，首页 iframe 内打开大图时父页面顶栏不会隐藏，遮住关闭按钮（#1298）

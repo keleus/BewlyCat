@@ -403,6 +403,17 @@ else if (shouldInitializePageScript) {
   `
 
   const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
+    'bili-comments-header-renderer': {
+      id: 'bewly-comment-header-style',
+      css: `
+        .bili-comments-bottom-fixed-wrapper > div {
+          background-color: var(--bew-comment-bottom-fixed-bg, var(--bg1)) !important;
+          -webkit-backdrop-filter: var(--bew-comment-bottom-fixed-filter, none);
+          backdrop-filter: var(--bew-comment-bottom-fixed-filter, none);
+          border-top-color: var(--bew-comment-bottom-fixed-border, var(--Ga2, var(--line_regular))) !important;
+        }
+      `,
+    },
     'bili-comment-thread-renderer': {
       id: 'bewly-comment-thread-style',
       css: `
@@ -643,6 +654,8 @@ else if (shouldInitializePageScript) {
           z-index: 1;
           /* 宽屏侧栏和原生评论区可有独立底色，不能优先取全局页面背景。 */
           background: var(--bewly-widescreen-sidebar-bg, var(--bg1, var(--bew-bg, #fff)));
+          -webkit-backdrop-filter: var(--bew-comment-sticky-footer-filter, none);
+          backdrop-filter: var(--bew-comment-sticky-footer-filter, none);
         }
 
         .bewly-comment-missing-parent__body {
@@ -730,6 +743,15 @@ else if (shouldInitializePageScript) {
         #editor:not(:hover):not(.active),
         .tool-btn {
           border-color: var(--bew-comment-box-border, var(--Ga1)) !important;
+        }
+
+        /* 编辑框底色钩子：未设置时回落到原生 var(--bg3) / var(--bg1)，供视频页玻璃风格改为半透明填充 */
+        #editor:not(:hover):not(.active) {
+          background-color: var(--bew-comment-box-bg, var(--bg3)) !important;
+        }
+
+        #editor:is(:hover, .active) {
+          background-color: var(--bew-comment-box-bg-active, var(--bg1)) !important;
         }
 
         :is(#pub button, button[data-v-risk="fingerprint"]):not(:hover, :active, .active) {

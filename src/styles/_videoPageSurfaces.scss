@@ -1,0 +1,174 @@
+// 视频页与番剧播放页原生容器透明化（供环境光与视频页毛玻璃风格复用）。
+
+// 播放器占位层透明化。占位层带方角底色与外圈阴影，透明/圆角后需一并清除。
+@mixin transparent-player-placeholders {
+  #bilibili-player-placeholder,
+  #bilibili-player-placeholder-top,
+  #bilibili-player-placeholder-bottom,
+  #bilibili-player-placeholder-bottom-left,
+  #bilibili-player-placeholder-bottom-right,
+  .bilibili-player-placeholder,
+  .bilibili-player-placeholder-top,
+  .bilibili-player-placeholder-bottom {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+// 播放器占位层与弹幕发送栏整体透明化（整页毛玻璃与环境光共用）。
+@mixin transparent-player-sending-area {
+  @include transparent-player-placeholders;
+
+  .bpx-player-sending-area,
+  .bpx-player-sending-bar,
+  .bpx-player-sending-bar-left,
+  .bpx-player-sending-bar-right,
+  .bpx-player-video-info,
+  .bpx-player-dm-root,
+  .bpx-player-dm-input,
+  .bpx-player-dm-switch,
+  .bpx-player-dm-setting,
+  .bpx-player-video-inputbar-wrap,
+  .bpx-player-sending-area::before,
+  .bpx-player-sending-area::after {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+@mixin transparent-video-page-surfaces {
+  // 点播播放页包裹层
+  #app,
+  .bili-app,
+  #bili-app,
+  #video-page-app,
+  .video-container-v1 {
+    background-color: transparent !important;
+  }
+
+  // 右侧栏、UP主信息卡、简介栏与弹幕列表全层级
+  .right-container,
+  .right-container-inner,
+  .up-info-container,
+  .video-desc-container,
+  .bpx-player-dm-wrap,
+  #danmukuBox,
+  .danmaku-wrap,
+  .bpx-docker,
+  .bpx-docker-minor,
+  .bpx-player-auxiliary,
+  .bpx-player-collapse,
+  .bpx-player-collapse .bui-collapse-wrap,
+  .bpx-player-collapse .bui-collapse-header,
+  .bpx-player-collapse .bui-collapse-body,
+  #danmukuBox
+    :is(
+      .bui-area,
+      .bpx-player-wraplist,
+      .bpx-player-filter-wrap,
+      .bpx-player-dm-container,
+      .bui-long-list-wrap,
+      .bui-long-list-list,
+      .bui-long-list-item
+    ),
+  .bpx-player-dm-management,
+  .bpx-player-dm-function,
+  .bpx-player-dm-load-status,
+  .bpx-player-dm-wrap-child {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 弹幕列表底部与历史记录按钮
+  .bpx-player-dm-btn-footer,
+  .bpx-player-dm-btn-history {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  // 视频选集（多P、合集面板）全层级
+  .video-pod,
+  .video-pod__header,
+  .video-pod__body,
+  .video-pod__list,
+  .video-pod__item,
+  .video-pod .single-p,
+  .video-pod .multi-p,
+  .video-pod .page-list,
+  .video-pod .simple-base-item,
+  .video-pod .normal-base-item,
+  .video-pod .pod-item {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 稍后再看与播放列表播放页
+  .playlist-app
+    :is(
+      .video-info-container,
+      #playlistToolbar,
+      .playlist-container--right,
+      .up-panel-container,
+      .recommend-list-container,
+      .action-list-container,
+      .action-list-header,
+      .action-list-body,
+      .action-list-body-top,
+      .action-list-body-bottom,
+      .action-list,
+      .action-list-inner,
+      .action-list-content,
+      .action-list-item-wrap,
+      .action-list-item,
+      .singlep-list-item-inner,
+      .multip-list-item-inner,
+      .multip-list,
+      .multip-list-item
+    ) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 评论区原生底色（吸底评论框、展开回复的吸底收起栏等）改为半透明，不再以实色块遮住后方；
+  // 保留部分底色，滚动经过的评论内容不会与吸底栏文字重叠。浮层使用 --bg1_float，不受影响
+  :is(bili-comments, .bb-comment, .comment-bilibili-fold) {
+    --bg1: color-mix(in oklab, var(--bew-bg), transparent 28%) !important;
+  }
+
+  .bb-comment,
+  .comment-bilibili-fold,
+  .comment-wrapper .comment-m {
+    background-color: transparent !important;
+  }
+}
+
+// 番剧与电影播放页（新旧两套 DOM）外层与面板底色透明化。
+@mixin transparent-bangumi-page-surfaces {
+  .home-container,
+  .home-container .main-container,
+  .main-container,
+  .plp-l,
+  .plp-r,
+  .comment-wrapper {
+    background-color: transparent !important;
+  }
+
+  [class*="eplist_ep_list_wrapper"],
+  .main-container .ep-list-wrapper,
+  .ep-section-module {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 选集栏横向展开遮罩与简介省略号渐变原先写死实色背景，玻璃底上会露出色块
+  [class*="SectionSelector_SectionSelector"] [class*="SectionSelector_expand"],
+  [class*="mediainfo_mediaRight"]
+    [class*="mediainfo_media_desc_section"]
+    [class*="mediainfo_display_area"]
+    [class*="mediainfo_ellipsis"],
+  [class*="mediainfo_mediaRight"] [class*="mediainfo_media_desc"] i,
+  .main-container .media-info .media-right .media-desc i {
+    background: transparent !important;
+  }
+}

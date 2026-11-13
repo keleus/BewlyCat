@@ -14,7 +14,7 @@ import SettingsSectionHeading from './components/SettingsSectionHeading.vue'
 import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
 import { useSettingsUrlSync } from './composables/useSettingsUrlSync'
 import type { SettingsSearchEntry } from './searchCatalog'
-import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries } from './searchCatalog'
+import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from './searchCatalog'
 import type { SettingsSecondaryPage } from './settingsMenus'
 import { settingsMenus } from './settingsMenus'
 import { MenuType } from './types'
@@ -243,7 +243,11 @@ function isSearchEntryVisible(entry: SettingsSearchEntry) {
   const menu = visibleMenus.value.find(item => item.value === entry.menu)
   if (!menu)
     return false
-  if (settings.value.useOriginalBilibiliHomepage && entry.titleKey && bewlyPagesOnlyTitleKeys.has(entry.titleKey))
+  const usedByVideoPageGlassStyle = settings.value.videoPageGlassStyle
+    && entry.menu === MenuType.Appearance
+    && entry.titleKey !== undefined
+    && videoPageBackgroundTitleKeys.has(entry.titleKey)
+  if (settings.value.useOriginalBilibiliHomepage && entry.titleKey && bewlyPagesOnlyTitleKeys.has(entry.titleKey) && !usedByVideoPageGlassStyle)
     return false
   if (entry.titleKey && bewlyTopBarOnlyTitleKeys.has(entry.titleKey)
     && !shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
