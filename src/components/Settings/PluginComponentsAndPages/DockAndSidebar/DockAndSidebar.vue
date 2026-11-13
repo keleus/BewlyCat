@@ -92,8 +92,12 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
 <template>
   <div>
     <SettingsItemGroup v-if="settings.enableDock" :title="$t('settings.group_dock')">
-      <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
-        <Radio v-model="settings.showLayoutEditButton" />
+      <SettingsItem :title="$t('settings.dock_position')" :desc="$t('settings.dock_position_desc')" right-width="auto">
+        <Select
+          v-model="settings.dockPosition"
+          :options="dockPositions"
+          w="160px"
+        />
       </SettingsItem>
       <SettingsItem v-if="!settings.useOriginalBilibiliHomepage" :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')" right-width="auto">
         <Radio v-model="settings.alwaysUseDock" />
@@ -110,13 +114,6 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       </SettingsItem>
       <SettingsItem :title="$t('settings.half_hide_dock')" right-width="auto">
         <Radio v-model="settings.halfHideDock" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.dock_position')" :desc="$t('settings.dock_position_desc')" right-width="auto">
-        <Select
-          v-model="settings.dockPosition"
-          :options="dockPositions"
-          w="160px"
-        />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.dock_content_adjustment')"
@@ -178,6 +175,9 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
             </template>
           </draggable>
         </template>
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
+        <Radio v-model="settings.showLayoutEditButton" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.disable_dock_glowing_effect')" right-width="auto">
         <Radio v-model="settings.disableDockGlowingEffect" />
