@@ -159,14 +159,6 @@ function changeWallpaper(url: string) {
 
     <SettingsItemGroup :title="$t('settings.group_visual_effects')">
       <SettingsItem
-        v-if="!settings.useOriginalBilibiliHomepage"
-        :title="$t('settings.sidebar_cover_blur')"
-        :desc="$t('settings.sidebar_cover_blur_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.enableSidebarCoverBlur" />
-      </SettingsItem>
-      <SettingsItem
         :title="$t('settings.enable_frosted_glass')"
         :badge="$t('settings.badge_performance_impact')"
         right-width="auto"
@@ -205,34 +197,13 @@ function changeWallpaper(url: string) {
       <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
         <Radio v-model="settings.disableShadow" />
       </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup :title="$t('settings.group_page_style')">
       <SettingsItem
         v-if="!settings.useOriginalBilibiliHomepage"
-        :title="$t('settings.disable_background')"
-        :desc="$t('settings.disable_background_desc')"
+        :title="$t('settings.sidebar_cover_blur')"
+        :desc="$t('settings.sidebar_cover_blur_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.disableBackground" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.video_page_glass_style')"
-        :badge="$t('settings.badge_performance_impact')"
-        right-width="auto"
-      >
-        <template #desc>
-          <span>{{ $t('settings.video_page_glass_style_desc') }}</span>
-          <span block class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
-        </template>
-        <Radio v-model="settings.videoPageGlassStyle" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.rounded_video_player')"
-        :desc="$t('settings.rounded_video_player_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.roundedVideoPlayer" />
+        <Radio v-model="settings.enableSidebarCoverBlur" />
       </SettingsItem>
     </SettingsItemGroup>
 
@@ -365,6 +336,35 @@ function changeWallpaper(url: string) {
     </SettingsItemGroup>
 
     <ChangeWallpaper v-if="showGlobalBackgroundSettings" type="global" />
+
+    <SettingsItemGroup :title="$t('settings.group_page_style')">
+      <SettingsItem
+        v-if="!settings.useOriginalBilibiliHomepage"
+        :title="$t('settings.disable_background')"
+        :desc="$t('settings.disable_background_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.disableBackground" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.video_page_glass_style')"
+        :badge="$t('settings.badge_performance_impact')"
+        right-width="auto"
+      >
+        <template #desc>
+          <span>{{ $t('settings.video_page_glass_style_desc') }}</span>
+          <span block class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
+        </template>
+        <Radio v-model="settings.videoPageGlassStyle" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.rounded_video_player')"
+        :desc="$t('settings.rounded_video_player_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.roundedVideoPlayer" />
+      </SettingsItem>
+    </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_fonts')">
       <SettingsItem :title="$t('settings.customize_font')" right-width="auto">
