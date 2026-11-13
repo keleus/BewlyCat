@@ -785,6 +785,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_page_style',
     'settings.disable_background',
     'settings.video_page_glass_style',
+    'settings.rounded_video_player',
     'settings.group_color',
     'settings.theme',
     'settings.theme_schedule',

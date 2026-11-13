@@ -1013,7 +1013,9 @@ settings:
   disable_background: 閂咗背景
   disable_background_desc: 徹底閂咗插件版面嘅純色背景、漸層背景同埋桌布（包括搜尋頁桌布），顯示返 B 站原本版面嘅背景。
   video_page_glass_style: 影片頁玻璃風格
-  video_page_glass_style_desc: 喺影片播放頁顯示背景，成頁鋪一層毛玻璃，內容直接融喺背景上面。桌布、遮罩、漸層同模糊強度跟返外觀設定，唔包括番劇同課程頁。
+  video_page_glass_style_desc: 喺影片同番劇播放頁（包括 Bewly 闊熒幕）顯示背景，成頁鋪一層毛玻璃等內容直接融落去。桌布、遮罩、漸層同模糊強度跟返外觀設定，唔包括課程頁。
+  rounded_video_player: 影片播放器圓角
+  rounded_video_player_desc: 幫影片同番劇頁嘅播放器加圓角，全熒幕、網頁全熒幕同細視窗就維持返直角。
   prevent_mobile_redirect: 防止跳轉去流動版
   prevent_mobile_redirect_desc: 開啟之後，避免進入 www.bilibili.com 時跳轉去流動版頁面。
   enable_firefox_scrollbar_repaint: Firefox 捲軸重繪

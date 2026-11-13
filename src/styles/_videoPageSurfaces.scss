@@ -1,16 +1,23 @@
-// 视频页原生容器透明化，让页面后方的层（环境光、壁纸）透出来。
-// 弹幕发送栏属于播放器区域，是否穿透由各调用方决定（见 transparent-player-sending-area）。
+// 视频页与番剧播放页原生容器透明化（供环境光与视频页毛玻璃风格复用）。
 
-// 播放器占位层与弹幕发送栏透明化。占位层底部带骨架灰块，发送栏透明后会从后方露出，需一并处理。
-@mixin transparent-player-sending-area {
+// 播放器占位层透明化。占位层带方角底色与外圈阴影，透明/圆角后需一并清除。
+@mixin transparent-player-placeholders {
   #bilibili-player-placeholder,
   #bilibili-player-placeholder-top,
   #bilibili-player-placeholder-bottom,
   #bilibili-player-placeholder-bottom-left,
-  #bilibili-player-placeholder-bottom-right {
+  #bilibili-player-placeholder-bottom-right,
+  .bilibili-player-placeholder,
+  .bilibili-player-placeholder-top,
+  .bilibili-player-placeholder-bottom {
     background: transparent !important;
     box-shadow: none !important;
   }
+}
+
+// 播放器占位层与弹幕发送栏整体透明化（整页毛玻璃与环境光共用）。
+@mixin transparent-player-sending-area {
+  @include transparent-player-placeholders;
 
   .bpx-player-sending-area,
   .bpx-player-sending-bar,
@@ -32,11 +39,14 @@
 @mixin transparent-video-page-surfaces {
   // 点播播放页包裹层
   #app,
-  #video-page-app {
+  .bili-app,
+  #bili-app,
+  #video-page-app,
+  .video-container-v1 {
     background-color: transparent !important;
   }
 
-  // 右侧栏、UP主信息卡、简介栏与弹幕列表
+  // 右侧栏、UP主信息卡、简介栏与弹幕列表全层级
   .right-container,
   .right-container-inner,
   .up-info-container,
@@ -44,11 +54,23 @@
   .bpx-player-dm-wrap,
   #danmukuBox,
   .danmaku-wrap,
+  .bpx-docker,
   .bpx-docker-minor,
   .bpx-player-auxiliary,
   .bpx-player-collapse,
+  .bpx-player-collapse .bui-collapse-wrap,
   .bpx-player-collapse .bui-collapse-header,
   .bpx-player-collapse .bui-collapse-body,
+  #danmukuBox
+    :is(
+      .bui-area,
+      .bpx-player-wraplist,
+      .bpx-player-filter-wrap,
+      .bpx-player-dm-container,
+      .bui-long-list-wrap,
+      .bui-long-list-list,
+      .bui-long-list-item
+    ),
   .bpx-player-dm-management,
   .bpx-player-dm-function,
   .bpx-player-dm-load-status,
@@ -74,7 +96,9 @@
   .video-pod .single-p,
   .video-pod .multi-p,
   .video-pod .page-list,
-  .video-pod .simple-base-item {
+  .video-pod .simple-base-item,
+  .video-pod .normal-base-item,
+  .video-pod .pod-item {
     background: transparent !important;
     box-shadow: none !important;
   }
@@ -116,5 +140,35 @@
   .comment-bilibili-fold,
   .comment-wrapper .comment-m {
     background-color: transparent !important;
+  }
+}
+
+// 番剧与电影播放页（新旧两套 DOM）外层与面板底色透明化。
+@mixin transparent-bangumi-page-surfaces {
+  .home-container,
+  .home-container .main-container,
+  .main-container,
+  .plp-l,
+  .plp-r,
+  .comment-wrapper {
+    background-color: transparent !important;
+  }
+
+  [class*="eplist_ep_list_wrapper"],
+  .main-container .ep-list-wrapper,
+  .ep-section-module {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 选集栏横向展开遮罩与简介省略号渐变原先写死实色背景，玻璃底上会露出色块
+  [class*="SectionSelector_SectionSelector"] [class*="SectionSelector_expand"],
+  [class*="mediainfo_mediaRight"]
+    [class*="mediainfo_media_desc_section"]
+    [class*="mediainfo_display_area"]
+    [class*="mediainfo_ellipsis"],
+  [class*="mediainfo_mediaRight"] [class*="mediainfo_media_desc"] i,
+  .main-container .media-info .media-right .media-desc i {
+    background: transparent !important;
   }
 }

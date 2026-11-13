@@ -227,6 +227,13 @@ function changeWallpaper(url: string) {
         </template>
         <Radio v-model="settings.videoPageGlassStyle" />
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.rounded_video_player')"
+        :desc="$t('settings.rounded_video_player_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.roundedVideoPlayer" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_color')">

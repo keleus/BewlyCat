@@ -1,18 +1,32 @@
-// 视频页玻璃风格：整页一层毛玻璃（模糊与底色层由 App.vue 的背景层绘制），
-// 原生容器全部透明，内容直接融在玻璃上，不再分块成卡。
+// 视频与番剧播放页整页毛玻璃风格（含普通播放页与 Bewly 宽屏模式）：
+// App.vue 在壁纸上罩一层全页模糊底衬，页面容器与宽屏侧栏/发送栏整体穿透融入，
+// 原生实色控件改为半透明填充，吸顶/吸底栏与悬浮按钮辅以毛玻璃防文字叠印。
 @use "./videoPageSurfaces" as surfaces;
 
-html.bewly-video-glass.bewly-design.videoPage {
+html.bewly-video-glass.bewly-design {
   background-color: var(--bew-homepage-bg);
 
-  // 宽屏模式是自带不透明底色的全屏界面，不参与玻璃风格。
-  body:not(.bewly-widescreen-active) {
+  --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-content-solid) 62%, transparent);
+
+  &.dark {
+    --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-content-solid) 58%, transparent);
+  }
+
+  &.disable-frosted-glass {
+    --bew-video-glass-sticky-bg: var(--bew-content-solid);
+  }
+
+  body {
     // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
     --bew-comment-tree-node-bg: var(--bew-bg);
-    // 评论编辑框（Shadow DOM 内，钩子见 inject/index.ts）与其他输入控件统一为半透明填充
+    // 评论编辑框与吸底栏（Shadow DOM 内，钩子见 inject/index.ts）统一为半透明与毛玻璃
     --bew-comment-box-bg: var(--bew-fill-1);
     --bew-comment-box-bg-active: var(--bew-fill-alt);
     --bew-comment-box-border: var(--bew-border-color);
+    --bew-comment-bottom-fixed-bg: var(--bew-video-glass-sticky-bg);
+    --bew-comment-bottom-fixed-filter: var(--bew-filter-glass-1);
+    --bew-comment-bottom-fixed-border: var(--bew-border-color);
+    --bew-comment-sticky-footer-filter: var(--bew-filter-glass-1);
     --bew-comment-tag-color: var(--bew-text-2);
     --bew-comment-tag-bg: var(--bew-fill-1);
     --bew-ip-tag-bg: var(--bew-fill-1);
@@ -20,17 +34,42 @@ html.bewly-video-glass.bewly-design.videoPage {
     background-color: transparent !important;
 
     @include surfaces.transparent-video-page-surfaces;
+    @include surfaces.transparent-bangumi-page-surfaces;
     @include surfaces.transparent-player-sending-area;
 
     // 原生实色控件（多为写死的 #f1f2f3 / #f6f7f8）改用插件的半透明填充，与玻璃底融合
     .bpx-player-video-inputbar,
     .tag-panel .tag-link,
+    .video-tag-container .show-more-btn,
+    .random-play-order-select,
+    .rec-footer,
+    .activity-m-v1,
+    [class*="upinfo_upInfoCard"],
+    [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
+      [class*="rankList_sp_right"]
+      [class*="rankList_sp_msg"],
+    .sponsor-rank-item.pos-rank-module .sp-right .sp-msg,
+    .main-container .review-module .review-list .review-item .review-body,
+    .main-container .season-list .ss-list-wrapper .expand-more,
+    .main-container .media-info .media-right .media-tool-bar .btn-rating,
+    .main-container .ep-list-wrapper .list-wrapper.simple ul .ep-item:not(.cursor):not(:hover) {
+      background: var(--bew-fill-1) !important;
+      border-color: var(--bew-border-color) !important;
+      box-shadow: none !important;
+    }
+
+    .bpx-player-video-inputbar,
+    .tag-panel .tag-link,
+    .video-tag-container .show-more-btn,
     .random-play-order-select,
     .rec-footer,
     .activity-m-v1 {
-      background: var(--bew-fill-1) !important;
       border-color: transparent !important;
-      box-shadow: none !important;
+    }
+
+    // 推荐视频顶部标签横滑遮罩原本写死 --bew-bg 渐变
+    .rcmd-tab-switcher .rcmd-tab-move .rcmd-tab-move-inner {
+      background: transparent !important;
     }
 
     // 原生的 .focus 类常驻，不代表真实聚焦，只按 :focus-within 切换
@@ -38,29 +77,126 @@ html.bewly-video-glass.bewly-design.videoPage {
       background: var(--bew-fill-alt) !important;
     }
 
-    // 播放器外圈阴影会在透明发送栏四周勾出一圈边框
+    .tag-panel .tag-link:hover,
+    .video-tag-container .show-more-btn:hover,
+    .rec-footer:hover {
+      background: var(--bew-fill-2) !important;
+    }
+
+    // 选集与播放列表条目覆盖第三方适配的实色 hover 底色，改为半透明反馈
+    :is(.video-pod, .video-pod .video-pod__list)
+      :is(.simple-base-item, .normal-base-item, .pod-item):is(:hover, .normal:hover),
+    .playlist-app :is(.singlep-list-item-inner, .multip-list-item-inner):hover {
+      background-color: var(--bew-fill-1) !important;
+    }
+
+    :is(.video-pod, .video-pod .video-pod__list)
+      :is(.simple-base-item, .normal-base-item, .pod-item):is(.active, .active:hover),
+    .playlist-app :is(.singlep-list-item-inner, .multip-list-item-inner):is(.active, .on, .siglep-active) {
+      background-color: var(--bew-theme-color-10) !important;
+    }
+
+    // 番剧数字选集格子（选中态保留主题色底）
+    [class*="numberListItem_number_list_item"]:not([class*="numberListItem_select"]) {
+      --bg1: var(--bew-fill-1);
+
+      &:hover {
+        --bg1: var(--bew-fill-2);
+      }
+    }
+
+    // 右下角原生悬浮按钮（视频页与番剧页新旧版）浮在内容上，改为与 Dock 一致的毛玻璃
+    .fixed-sidenav-storage-item,
+    [class*="navTools_navItem"],
+    [class*="navTools_toolItem"],
+    .main-container .nav-tools .tool-item:not(:hover) {
+      background: var(--bew-content) !important;
+      border-color: var(--bew-border-color) !important;
+      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1) !important;
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
+      backdrop-filter: var(--bew-filter-glass-1);
+    }
+
+    .fixed-sidenav-storage-item:hover,
+    [class*="navTools_navItem"]:hover,
+    [class*="navTools_toolItem"]:hover {
+      background: var(--bew-content-hover) !important;
+    }
+  }
+
+  // 发送栏透明后消去播放器外框阴影，避免勾出空框
+  body:not(.bewly-widescreen-active) {
+    #bilibili-player-wrap,
     #playerWrap,
     #bilibili-player,
     .bpx-docker-major,
     .bpx-player-container {
       box-shadow: none !important;
     }
+  }
 
-    .tag-panel .tag-link:hover,
-    .rec-footer:hover {
-      background: var(--bew-fill-2) !important;
+  // Bewly 宽屏模式：底层全页玻璃背景升至 z-index: 999，宽屏侧栏与底部发送栏直接穿透融入
+  #bewly-widescreen-root {
+    background: transparent !important;
+    --bewly-widescreen-sidebar-bg: var(--bew-video-glass-sticky-bg);
+    --bewly-widescreen-surface-bg: var(--bew-video-glass-sticky-bg);
+    --bewly-widescreen-text-primary: var(--bew-text-1);
+    --bewly-widescreen-text-secondary: var(--bew-text-2);
+    --bewly-widescreen-text-muted: var(--bew-text-3);
+    --bewly-widescreen-sidebar-border: var(--bew-border-color);
+    --bewly-widescreen-divider: var(--bew-border-color);
+    --bewly-widescreen-control-bg: var(--bew-fill-1);
+    --bewly-widescreen-control-hover-bg: var(--bew-fill-2);
+
+    .bewly-widescreen-player-slot {
+      background: transparent !important;
     }
 
-    // 右下角原生悬浮按钮（小窗、客服、回到顶部）浮在内容上，改为与 Dock 一致的毛玻璃
-    .fixed-sidenav-storage-item {
-      background: var(--bew-content) !important;
-      border-color: var(--bew-border-color) !important;
-      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1) !important;
+    .bewly-widescreen-danmaku-dock {
+      background: transparent !important;
+      border-top: 1px solid var(--bew-border-color);
+
+      .bpx-player-dm-btn-send.bui-disabled .bui-button-blue {
+        color: var(--bew-text-3) !important;
+        background-color: var(--bew-fill-2) !important;
+      }
+    }
+
+    // 常驻分栏模式（narrow）不叠双层底色，直接穿透共享底层整页毛玻璃
+    .bewly-widescreen-sidebar,
+    .bewly-widescreen-sidebar-details,
+    .bewly-widescreen-panels {
+      background: transparent;
+    }
+
+    // 自适应抽屉模式（fit）全程固定同一套玻璃底衬与滤镜，避免收起瞬间先变全透明再平移
+    &[data-sidebar-mode="fit"] .bewly-widescreen-sidebar {
+      background: var(--bew-content);
+      -webkit-backdrop-filter: var(--bew-filter-glass-2);
+      backdrop-filter: var(--bew-filter-glass-2);
+    }
+
+    .bewly-widescreen-sidebar-top,
+    .bewly-widescreen-tabs {
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
+      backdrop-filter: var(--bew-filter-glass-1);
+    }
+
+    .bewly-widescreen-back-to-top {
+      background: var(--bew-content);
+      border-color: var(--bew-border-color);
+      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
       backdrop-filter: var(--bew-filter-glass-1);
 
       &:hover {
-        background: var(--bew-content-hover) !important;
+        background: var(--bew-content-hover);
       }
     }
+  }
+
+  #bewly-widescreen-loading {
+    color: var(--bew-text-1);
+    background: var(--bew-bg);
   }
 }

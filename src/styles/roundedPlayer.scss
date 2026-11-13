@@ -1,0 +1,129 @@
+// 视频与番剧页播放器圆角样式（独立可选开关）。
+// 全屏、网页全屏、小窗与 Bewly 宽屏保持直角；#bilibili-player 限定主播放器，不影响卡片悬浮预览。
+@use "./videoPageSurfaces" as surfaces;
+
+$normal-screen-player: '#bilibili-player .bpx-player-container:not(:fullscreen):not([data-screen="full"]):not([data-screen="web"]):not([data-screen="mini"])';
+$normal-screen-wrap: ':is(.player-wrap, #playerWrap, #bilibili-player-wrap:not(:is(.player-wrap, #playerWrap) *)):has(#bilibili-player):not(:has([data-screen="full"], [data-screen="web"], [data-screen="mini"], [class*="video_playerFullScreen"]))';
+
+html.rounded-video-player {
+  body:not(.bewly-widescreen-active) {
+    #{$normal-screen-player} {
+      // 外层容器保持 overflow: visible，避免弹幕联想等浮层被裁剪；外发光统一交由外层 wrap 承担
+      overflow: visible;
+      border-radius: 0;
+      box-shadow: none;
+
+      .bpx-player-video-area {
+        border-radius: var(--bew-media-radius) var(--bew-media-radius) 0 0;
+        overflow: hidden;
+        // 合成视频图层的圆角裁剪需要独立渲染层抗锯齿
+        transform: translateZ(0);
+
+        @supports (corner-shape: superellipse(1.5)) {
+          border-radius: var(--bew-media-continuous-radius) var(--bew-media-continuous-radius) 0 0;
+          corner-shape: var(--bew-media-corner-shape);
+        }
+      }
+
+      // 无发送栏时视频画面四角完整圆角
+      &:not(:has(.bpx-player-sending-bar)) .bpx-player-video-area {
+        border-radius: var(--bew-media-radius);
+
+        @supports (corner-shape: superellipse(1.5)) {
+          border-radius: var(--bew-media-continuous-radius);
+          corner-shape: var(--bew-media-corner-shape);
+        }
+      }
+
+      .bpx-player-sending-bar {
+        border-radius: 0 0 var(--bew-media-radius) var(--bew-media-radius);
+
+        @supports (corner-shape: superellipse(1.5)) {
+          border-radius: 0 0 var(--bew-media-continuous-radius) var(--bew-media-continuous-radius);
+          corner-shape: var(--bew-media-corner-shape);
+        }
+      }
+    }
+
+    // 轻量播放器 class 位于 #bilibili-player 或外层包裹节点上，同样四角圆角
+    :is(#bilibili-player.bpx-player-light-weight, .bpx-player-light-weight #bilibili-player)
+      .bpx-player-container:not(:fullscreen):not([data-screen="full"]):not([data-screen="web"]):not(
+        [data-screen="mini"]
+      )
+      .bpx-player-video-area {
+      border-radius: var(--bew-media-radius);
+
+      @supports (corner-shape: superellipse(1.5)) {
+        border-radius: var(--bew-media-continuous-radius);
+        corner-shape: var(--bew-media-corner-shape);
+      }
+    }
+
+    // 普通视频页（.player-wrap）与番剧播放页（#bilibili-player-wrap）外框圆角；
+    // 不加 overflow: hidden 或 transform，避免困住网页全屏/小窗 fixed 定位或裁掉浮层。
+    #{$normal-screen-wrap} {
+      border-radius: var(--bew-media-radius);
+      overflow: visible;
+
+      @supports (corner-shape: superellipse(1.5)) {
+        border-radius: var(--bew-media-continuous-radius);
+        corner-shape: var(--bew-media-corner-shape);
+      }
+    }
+
+    // 占位层与番剧内层黑底为直角，需清除背景与方角阴影以免从圆角外侧露出
+    @include surfaces.transparent-player-placeholders;
+
+    #bilibili-player-wrap:not(
+        :has([data-screen="full"], [data-screen="web"], [data-screen="mini"], [class*="video_playerFullScreen"])
+      )
+      :is(
+        .video_playerInner,
+        [class*="video_playerInner"],
+        [class*="NanoPlayer_nonoPlayerContainer"],
+        [class*="NanoPlayer_nonoPlayerPrimaryArea"],
+        [class*="NanoPlayer_nanoDocker"]
+      ) {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+  }
+
+  // 整页毛玻璃或环境光下发送栏透明穿透，视频画面本身改为完整四角圆角
+  &:is(.bewly-video-glass, [data-bewly-ambilight]) body:not(.bewly-widescreen-active) {
+    #{$normal-screen-player} .bpx-player-video-area {
+      border-radius: var(--bew-media-radius);
+
+      @supports (corner-shape: superellipse(1.5)) {
+        border-radius: var(--bew-media-continuous-radius);
+        corner-shape: var(--bew-media-corner-shape);
+      }
+    }
+  }
+
+  &:not(.disable-shadow):not(.bewly-video-glass):not([data-bewly-ambilight]) body:not(.bewly-widescreen-active) {
+    #{$normal-screen-wrap} {
+      box-shadow:
+        0 0 8px var(--bpx-box-shadow, rgb(0 0 0 / 0.12)),
+        var(--bew-shadow-2);
+    }
+  }
+
+  &:is(.dark, .bili_dark):not(.disable-shadow):not(.bewly-video-glass):not([data-bewly-ambilight])
+    body:not(.bewly-widescreen-active) {
+    #{$normal-screen-wrap} {
+      box-shadow:
+        0 0 8px rgb(0 0 0 / 0.5),
+        0 4px 20px rgb(0 0 0 / 0.45),
+        0 0 4px rgb(255 255 255 / 0.18),
+        0 0 14px rgb(255 255 255 / 0.08);
+    }
+  }
+
+  // 整页毛玻璃模式下发送栏已透明，阴影只落在四角圆角的视频画面本身
+  &.bewly-video-glass:not(.disable-shadow):not([data-bewly-ambilight]) body:not(.bewly-widescreen-active) {
+    #{$normal-screen-player} .bpx-player-video-area {
+      box-shadow: var(--bew-shadow-2);
+    }
+  }
+}

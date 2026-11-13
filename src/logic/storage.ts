@@ -516,6 +516,7 @@ export interface Settings {
   themeScheduleEnd: string
   videoPageDarkMode: boolean
   videoPageGlassStyle: boolean
+  roundedVideoPlayer: boolean
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
   useLinearGradientThemeColorBackground: boolean
@@ -901,6 +902,7 @@ export const originalSettings: Settings = {
   themeScheduleEnd: '18:00',
   videoPageDarkMode: false,
   videoPageGlassStyle: false,
+  roundedVideoPlayer: false,
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
   useLinearGradientThemeColorBackground: false,
@@ -1387,6 +1389,11 @@ export const settings = useSettingsStorage(originalSettings, {
 
     if (typeof record.showLayoutEditButton !== 'boolean')
       record.showLayoutEditButton = originalSettings.showLayoutEditButton
+
+    if (typeof record.videoPageGlassStyle !== 'boolean')
+      record.videoPageGlassStyle = originalSettings.videoPageGlassStyle
+    if (typeof record.roundedVideoPlayer !== 'boolean')
+      record.roundedVideoPlayer = originalSettings.roundedVideoPlayer
 
     // Native range inputs and older cloud snapshots may contain a numeric
     // string. Canonicalize it instead of treating values such as "10" as
