@@ -56,6 +56,7 @@ interface BewlyWidescreenState {
   sidebarResizeCleanup?: () => void
   descriptionCleanup?: () => void
   escapeKeyCleanup?: () => void
+  detailsHeight: number
   descriptionExpanded: boolean
 }
 
@@ -544,6 +545,7 @@ function setActiveTab(nextTab: BewlyWidescreenTab) {
 
   if (nextTab === 'danmaku')
     expandDanmakuTab(state)
+  syncSidebarScrollState(state)
 }
 
 function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
@@ -651,6 +653,8 @@ function createSidebarBackToTop(sidebar: HTMLElement) {
     const hidden = sidebar.scrollTop <= 1
     if (button.hidden !== hidden)
       button.hidden = hidden
+    if (state?.sidebarEl === sidebar)
+      syncSidebarScrollState(state)
   }, { passive: true })
 
   actions.appendChild(button)
@@ -3334,11 +3338,34 @@ function schedulePlayerResizeSync(currentState: BewlyWidescreenState) {
   })
 }
 
+function syncSidebarScrollState(currentState: BewlyWidescreenState) {
+  const scrollTop = currentState.sidebarEl.scrollTop
+  const scrolled = scrollTop > 1
+  const tabsStuck = scrolled && scrollTop >= currentState.detailsHeight - 0.5
+
+  if (scrolled) {
+    if (currentState.root.dataset.sidebarScrolled !== 'true')
+      currentState.root.dataset.sidebarScrolled = 'true'
+  }
+  else if ('sidebarScrolled' in currentState.root.dataset) {
+    delete currentState.root.dataset.sidebarScrolled
+  }
+
+  if (tabsStuck) {
+    if (currentState.root.dataset.tabsStuck !== 'true')
+      currentState.root.dataset.tabsStuck = 'true'
+  }
+  else if ('tabsStuck' in currentState.root.dataset) {
+    delete currentState.root.dataset.tabsStuck
+  }
+}
+
 function syncSidebarLayoutMetrics(currentState: BewlyWidescreenState) {
   const { sidebarEl, sidebarTop, sidebarDetails, tabButtons } = currentState
   const headerHeight = sidebarTop.getBoundingClientRect().height
   const detailsHeight = sidebarDetails.getBoundingClientRect().height
   const tabsHeight = tabButtons.comment.parentElement?.getBoundingClientRect().height ?? 0
+  currentState.detailsHeight = detailsHeight
   // clientLeft 已包含左边框；侧栏位于左侧时，右边框也需纳入按钮定位。
   const rightInset = sidebarEl.offsetWidth - sidebarEl.clientWidth - sidebarEl.clientLeft
   // 标题换行、UP 信息异步加载和侧栏调宽后，Tab 始终贴在信息栏下方。
@@ -3352,6 +3379,7 @@ function syncSidebarLayoutMetrics(currentState: BewlyWidescreenState) {
     if (sidebarEl.style.getPropertyValue(property) !== value)
       sidebarEl.style.setProperty(property, value)
   }
+  syncSidebarScrollState(currentState)
 }
 
 function setupAspectObservers(currentState: BewlyWidescreenState) {
@@ -4180,6 +4208,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
     sidebarMode: 'fit',
     sidebarPosition,
     customSidebarWidth: 0,
+    detailsHeight: 0,
     descriptionExpanded: false,
   }
 
@@ -4378,6 +4407,7 @@ export function refreshBewlyWidescreenForNavigation() {
   currentState.descriptionExpanded = false
   fillSidebar(currentState)
   updateAspectRatio()
+  syncSidebarScrollState(currentState)
   return true
 }
 

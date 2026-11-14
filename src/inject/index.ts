@@ -745,13 +745,19 @@ else if (shouldInitializePageScript) {
           border-color: var(--bew-comment-box-border, var(--Ga1)) !important;
         }
 
-        /* 编辑框底色钩子：未设置时回落到原生 var(--bg3) / var(--bg1)，供视频页玻璃风格改为半透明填充 */
+        /* 编辑框底色与边框钩子：未设置时回落到原生 var(--bg3) / var(--bg1) / var(--Ga2)，供视频页玻璃风格统一为半透明填充 */
         #editor:not(:hover):not(.active) {
           background-color: var(--bew-comment-box-bg, var(--bg3)) !important;
         }
 
-        #editor:is(:hover, .active) {
+        #editor:hover:not(.active) {
+          background-color: var(--bew-comment-box-bg-hover, var(--bew-comment-box-bg-active, var(--bg1))) !important;
+          border-color: var(--bew-comment-box-border-hover, var(--Ga2)) !important;
+        }
+
+        #editor.active {
           background-color: var(--bew-comment-box-bg-active, var(--bg1)) !important;
+          border-color: var(--bew-comment-box-border-active, var(--Ga2)) !important;
         }
 
         :is(#pub button, button[data-v-risk="fingerprint"]):not(:hover, :active, .active) {
@@ -764,6 +770,18 @@ else if (shouldInitializePageScript) {
       css: `
         :host {
           --option-color: var(--bew-text-1, #18191c) !important;
+        }
+
+        /* 投票卡片底色与边框钩子：未设置时回落到原生 var(--bg1) / var(--Ga2)，供深色与视频页玻璃风格统一为半透明填充 */
+        #card {
+          background: var(--bew-comment-vote-card-bg, var(--bg1, #fff)) !important;
+          border-color: var(--bew-comment-vote-card-border, var(--Ga2, var(--line_regular, #e3e5e7))) !important;
+          box-shadow: none !important;
+        }
+
+        #card:hover {
+          background: var(--bew-comment-vote-card-bg-hover, var(--bew-comment-vote-card-bg, var(--bg1, #fff))) !important;
+          border-color: var(--bew-comment-vote-card-border-hover, var(--bew-comment-vote-card-border, var(--Ga2, var(--line_regular, #e3e5e7)))) !important;
         }
       `,
     },

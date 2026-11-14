@@ -184,6 +184,9 @@
   // Use this in dialogs if you want to add a frosted glass effect
   --bew-filter-glass-2: blur(30px) saturate(180%);
 
+  // 叠在已有饱和毛玻璃底衬之上的吸顶/吸底局部模糊层，仅保留模糊避免二次叠乘饱和度
+  --bew-filter-glass-blur-1: blur(20px);
+
   // Apply this to the Bilibili icon if it is an image with the brand's original blue or pink color
   // Change it to glow effect to matches the user's theme color
   --bew-filter-icon-glow: saturate(0) brightness(2) drop-shadow(0 0 0.2px white)
@@ -485,6 +488,7 @@
   --bew-content-opacity: 1;
   --bew-filter-glass-1: none;
   --bew-filter-glass-2: none;
+  --bew-filter-glass-blur-1: none;
   --bew-shadow-edge-glow-1: 0 0 0 transparent;
   --bew-shadow-edge-glow-2: 0 0 0 transparent;
   --bew-fill-alt: var(--bew-content-solid);

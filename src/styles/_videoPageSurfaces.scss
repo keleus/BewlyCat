@@ -29,6 +29,9 @@
   .bpx-player-dm-switch,
   .bpx-player-dm-setting,
   .bpx-player-video-inputbar-wrap,
+  .bilibili-player-video-sendbar,
+  .bilibili-player-video-inputbar,
+  [class*="NanoPlayer_nonoPlayerSendingBar"],
   .bpx-player-sending-area::before,
   .bpx-player-sending-area::after {
     background: transparent !important;
@@ -46,13 +49,17 @@
     background-color: transparent !important;
   }
 
-  // 右侧栏、UP主信息卡、简介栏与弹幕列表全层级
+  // 右侧栏、UP主信息卡（含联合投稿）、简介栏与弹幕列表全层级
   .right-container,
   .right-container-inner,
   .up-info-container,
+  .members-info-container,
+  .membersinfo-upcard-wrap,
   .video-desc-container,
   .bpx-player-dm-wrap,
   #danmukuBox,
+  [class*="DanmukuBox_wrap"],
+  .danmaku-box,
   .danmaku-wrap,
   .bpx-docker,
   .bpx-docker-minor,
@@ -61,8 +68,11 @@
   .bpx-player-collapse .bui-collapse-wrap,
   .bpx-player-collapse .bui-collapse-header,
   .bpx-player-collapse .bui-collapse-body,
-  #danmukuBox
+  :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap)
     :is(
+      .bui-collapse-wrap,
+      .bui-collapse-header,
+      .bui-collapse-body,
       .bui-area,
       .bpx-player-wraplist,
       .bpx-player-filter-wrap,
@@ -87,7 +97,7 @@
     border-color: transparent !important;
   }
 
-  // 视频选集（多P、合集面板）全层级
+  // 视频选集（多P、合集面板新旧版本）全层级
   .video-pod,
   .video-pod__header,
   .video-pod__body,
@@ -98,13 +108,24 @@
   .video-pod .page-list,
   .video-pod .simple-base-item,
   .video-pod .normal-base-item,
-  .video-pod .pod-item {
+  .video-pod .pod-item,
+  .multi-page,
+  .multi-page-v1,
+  .multi-page-v1 .head-con,
+  .multi-page-v1 .cur-list,
+  .multi-page-v1 .cur-list .list-box li,
+  .base-video-sections-v1,
+  .video-sections-v1,
+  .video-sections-head,
+  .video-sections-content-list,
+  .video-section-list,
+  .video-episode-card {
     background: transparent !important;
     box-shadow: none !important;
   }
 
-  // 稍后再看与播放列表播放页
-  .playlist-app
+  // 稍后再看与播放列表播放页（兼容被搬入 Bewly 宽屏侧栏的选集容器）
+  :is(.playlist-app, #bewly-widescreen-root)
     :is(
       .video-info-container,
       #playlistToolbar,
@@ -155,7 +176,7 @@
   }
 
   [class*="eplist_ep_list_wrapper"],
-  .main-container .ep-list-wrapper,
+  :is(.main-container, #bewly-widescreen-root) .ep-list-wrapper,
   .ep-section-module {
     background: transparent !important;
     box-shadow: none !important;
@@ -168,7 +189,7 @@
     [class*="mediainfo_display_area"]
     [class*="mediainfo_ellipsis"],
   [class*="mediainfo_mediaRight"] [class*="mediainfo_media_desc"] i,
-  .main-container .media-info .media-right .media-desc i {
+  :is(.main-container, #bewly-widescreen-root) .media-info .media-right .media-desc i {
     background: transparent !important;
   }
 }
