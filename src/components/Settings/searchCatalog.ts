@@ -485,8 +485,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'video_card.operation.view_the_original_cover',
     'video_card.operation.block_user',
     'video_card.operation.customize_menu',
-    'settings.video_card_shadow_curve',
-    'settings.video_card_shadow_height',
   ]),
   ...createEntries(videoCardRoute, [
     'settings.video_card_title_font_size',
@@ -974,8 +972,6 @@ const fallbackTargetKeysByTitleKey: Record<string, string> = {
   'settings.sidebar_position': 'settings.module_sidebar',
   'settings.theme_schedule': 'settings.theme',
   'settings.third_party_licenses': 'settings.open_source_license',
-  'settings.video_card_shadow_curve': 'settings.video_card_layout',
-  'settings.video_card_shadow_height': 'settings.video_card_layout',
   'settings.video_player_mode.context_bangumi': 'settings.video_player_mode.enable_overrides',
   'settings.video_player_mode.context_collection': 'settings.video_player_mode.enable_overrides',
   'settings.video_player_mode.context_moments_dialog': 'settings.video_player_mode.enable_overrides',

@@ -202,11 +202,6 @@ export type CommentReplyPaginationMode = 'loadMore' | 'pagination'
 export type MomentsCardOpenMode = 'dialog' | 'newTab' | 'background'
 export type MomentsVideoCardOpenMode = MomentsCardOpenMode | 'inherit' | 'currentTab'
 
-export interface ShadowCurvePoint {
-  position: number
-  opacity: number
-}
-
 // 本地存储配置接口（不同步到云端的配置）
 export interface LocalSettings {
   // 壁纸相关
@@ -607,9 +602,6 @@ export interface Settings {
   videoCardMetaFontSize: VideoCardFontSizeSetting
   // Preferred video card layout
   videoCardLayout: VideoCardLayoutSetting
-  // Video card shadow customization (modern layout only)
-  videoCardShadowCurve: ShadowCurvePoint[]
-  videoCardShadowHeight: number // 1.0-3.0
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
   preserveForYouState: boolean
@@ -989,12 +981,6 @@ export const originalSettings: Settings = {
   videoCardAuthorFontSize: 'sm',
   videoCardMetaFontSize: 'xs',
   videoCardLayout: 'modern',
-  videoCardShadowCurve: [
-    { position: 0, opacity: 80 },
-    { position: 30, opacity: 70 },
-    { position: 100, opacity: 0 },
-  ],
-  videoCardShadowHeight: 1.0,
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,
