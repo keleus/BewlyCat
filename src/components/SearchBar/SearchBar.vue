@@ -633,11 +633,14 @@ function handleClearKeyword() {
       }"
     />
 
-    <div
+    <form
       class="search-bar group"
       :class="isFocus ? 'focus' : ''"
+      role="search"
+      autocomplete="off"
       flex="~ items-center" pos="relative"
       h-inherit
+      @submit.prevent
     >
       <Transition name="focus-character">
         <img
@@ -657,15 +660,16 @@ function handleClearKeyword() {
         role="combobox"
         :value="keyword"
         :placeholder="placeholderText"
-        autocomplete="off"
+        autocomplete="one-time-code"
         autocapitalize="off"
         autocorrect="off"
         class="group"
         enterkeyhint="search"
-        name="search"
+        name="bewly-search-input"
         p="l-6 r-18 y-3"
         h-inherit
         spellcheck="false"
+        type="search"
         un-border="1 solid $bew-border-color"
         @focus="handleInputFocus"
         @input="handleNativeInput"
@@ -677,6 +681,7 @@ function handleClearKeyword() {
       >
       <button
         v-if="isFocus && keyword"
+        type="button"
         pos="absolute right-12" bg="$bew-fill-1 hover:$bew-fill-2" text="xs" rounded="$bew-radius-half"
         p-1
         flex="~ items-center justify-between"
@@ -686,6 +691,7 @@ function handleClearKeyword() {
       </button>
 
       <button
+        type="button"
         class="search-submit-btn"
         p-2
         rounded-full
@@ -697,7 +703,7 @@ function handleClearKeyword() {
       >
         <div i-tabler:search block align-middle />
       </button>
-    </div>
+    </form>
 
     <Transition name="result-list">
       <div
@@ -907,6 +913,14 @@ function handleClearKeyword() {
     input {
       @include card-content;
       appearance: none;
+
+      &[type="search"]::-webkit-search-cancel-button,
+      &[type="search"]::-webkit-search-decoration,
+      &[type="search"]::-webkit-search-results-button,
+      &[type="search"]::-webkit-search-results-decoration {
+        appearance: none;
+      }
+
       color: var(--b-search-bar-normal-text-color);
       min-width: 0;
       position: relative;
