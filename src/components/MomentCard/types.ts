@@ -75,6 +75,8 @@ export interface DisplayMoment {
   hotComment?: {
     text: string
     richText: DisplayRichTextSegment[]
+    /** 热评作者 mid，取自摘要富文本的 @ 节点；用于在评论区匹配同一条评论 */
+    authorMid?: string
   }
   url: string
   isVideo: boolean

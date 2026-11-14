@@ -181,8 +181,12 @@ watch(repostExpanded, (expanded) => {
 // 避免展开动画播到一半时被异步到达的评论内容突然撑开。
 const commentsHost = useExpandHost(() => commentPreview.expanded)
 const { mounted: commentsMounted, entered: commentsEntered } = commentsHost
+const commentsRef = ref<InstanceType<typeof MomentComments> | null>(null)
 const commentsPreparing = ref(false)
 let commentsReady = false
+// 热评点击后在首屏评论就绪、展开动画结束后再滚动到对应评论。
+let pendingHotCommentLocate = false
+let hotCommentLocateTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(() => commentPreview.expanded, (expanded) => {
   if (expanded) {
@@ -194,6 +198,8 @@ watch(() => commentPreview.expanded, (expanded) => {
       handleCommentsReady()
   }
   else {
+    pendingHotCommentLocate = false
+    clearTimeout(hotCommentLocateTimer)
     commentsPreparing.value = false
     commentsHost.leave()
   }
@@ -205,7 +211,28 @@ function handleCommentsReady() {
   commentsReady = true
   commentsPreparing.value = false
   commentsHost.enter()
+  if (pendingHotCommentLocate) {
+    pendingHotCommentLocate = false
+    clearTimeout(hotCommentLocateTimer)
+    // 等展开过渡结束、评论区滚动容器有了稳定高度再定位，避免按 0 高容器计算滚动量。
+    hotCommentLocateTimer = setTimeout(() => {
+      void commentsRef.value?.locateHotComment()
+    }, 260)
+  }
 }
+
+// 点击卡片热评：展开评论区并定位到该热评；已展开时直接重新定位。
+function openHotComment() {
+  if (!commentPreview.expanded) {
+    pendingHotCommentLocate = true
+    repostExpanded.value = false
+    toggleCommentPreview(commentPreview)
+    return
+  }
+  void commentsRef.value?.locateHotComment()
+}
+
+onBeforeUnmount(() => clearTimeout(hotCommentLocateTimer))
 
 async function collapseComments() {
   if (!commentPreview.expanded)
@@ -810,7 +837,7 @@ function handleAdditionalClick(event: MouseEvent) {
         :expanded="commentPreview.expanded"
         :loading="commentsPreparing"
         :controls="commentsId"
-        @toggle="toggleComments"
+        @open="openHotComment"
       />
 
       <MomentCardFooter
@@ -845,6 +872,7 @@ function handleAdditionalClick(event: MouseEvent) {
       >
         <MomentComments
           :id="commentsId"
+          ref="commentsRef"
           :moment="moment"
           :state="commentPreview"
           @ready="handleCommentsReady"
