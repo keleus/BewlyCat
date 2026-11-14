@@ -14,7 +14,7 @@ let initialized = false
 let engine: AmbilightEngine | null = null
 let currentVideo: HTMLVideoElement | null = null
 let playerObserver: MutationObserver | null = null
-let observedPlayerContainer: HTMLElement | null = null
+let observedModeTargets: Element[] = []
 let pageStateObserver: MutationObserver | null = null
 let syncTimer: ReturnType<typeof setTimeout> | null = null
 // 功能开启期间的视频发现与播放器形态监听；关闭时整体撤销，不在页面上保留任何监听
@@ -59,9 +59,9 @@ const BACKDROP_REGIONS: readonly BackdropRegion[] = [
     ] as Array<[number, number]>),
   },
   {
-    // UP 主信息、弹幕列表、合集与推荐列表
+    // UP 主信息、弹幕列表、合集/选集与推荐列表（含番剧右侧栏）
     name: 'side',
-    selector: '.right-container, .playlist-container--right',
+    selector: '.right-container, .playlist-container--right, .plp-r',
     points: (rect, video) => getVisibleSpans(rect, video).flatMap(([spanTop, spanBottom]) => {
       // 区段足够高时避开上下边缘，否则只取中线
       const inset = Math.min(60, (spanBottom - spanTop) / 4)
@@ -73,9 +73,9 @@ const BACKDROP_REGIONS: readonly BackdropRegion[] = [
     }),
   },
   {
-    // 播放器下方的弹幕发送栏与三连工具栏
+    // 播放器下方的弹幕发送栏与三连工具栏（含番剧播放页）
     name: 'bottom',
-    selector: '.bpx-player-sending-area, #arc_toolbar_report, .video-toolbar-container, #playlistToolbar',
+    selector: '.bpx-player-sending-area, [class*="NanoPlayer_nonoPlayerSendingBar"], .bilibili-player-video-sendbar, #arc_toolbar_report, .video-toolbar-container, #playlistToolbar, .plp-l .toolbar, [class*="toolbar_toolbar"], .main-container .tool-bar',
     // 紧贴视频下缘，光晕颜色随视频底边横向变化，沿宽度取三点
     points: rect => [0.15, 0.5, 0.85].map(fx => [rect.left + rect.width * fx, rect.top + rect.height / 2] as [number, number]),
   },
@@ -116,7 +116,10 @@ let lastPageBaseReadTime = 0
 let lastSamples: AmbilightBackdropSample[] | null = null
 
 function getPageTone(): AmbilightTone {
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  return document.documentElement.classList.contains('dark')
+    || document.documentElement.classList.contains('bili_dark')
+    ? 'dark'
+    : 'light'
 }
 
 // 改动 html 上的变量会让整页重算样式（实测 B 站播放页约 2300 个元素、40ms，每次都会掉帧），
@@ -271,10 +274,26 @@ function findTargetVideo(): HTMLVideoElement | null {
   return null
 }
 
-// data-screen 位于 .bpx-player-container；#playerWrap 是其外层，需排在后面兜底
+// data-screen 位于 .bpx-player-container；#playerWrap / #bilibili-player-wrap 是其外层兜底
 function findPlayerContainer(): HTMLElement | null {
   return document.querySelector<HTMLElement>('.bpx-player-container')
     || document.querySelector<HTMLElement>('#playerWrap')
+    || document.querySelector<HTMLElement>('#bilibili-player-wrap')
+}
+
+function getModeTargets(): Element[] {
+  const targets = new Set<Element>()
+  const playerContainer = findPlayerContainer()
+  if (playerContainer)
+    targets.add(playerContainer)
+  // 番剧页宽屏与网页全屏可能写在 .home-container.wide 或内层 video_playerFullScreen 上
+  const bangumiHome = document.querySelector('.home-container')
+  if (bangumiHome)
+    targets.add(bangumiHome)
+  const bangumiPlayerInner = document.querySelector('#bilibili-player-wrap [class*="video_playerInner"]')
+  if (bangumiPlayerInner)
+    targets.add(bangumiPlayerInner)
+  return Array.from(targets)
 }
 
 // 环境光只用于默认与宽屏播放器。全屏、网页全屏时页面其余内容不可见，Bewly 宽屏已重排整页，
@@ -283,6 +302,7 @@ function resolveDisplayMode(): AmbilightDisplayMode | null {
   if (document.fullscreenElement
     || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
     || document.documentElement.classList.contains('fullscreen-fix')
+    || Boolean(document.querySelector('[class*="video_playerFullScreen"], .player-fullscreen-fix'))
     || isBewlyWidescreenActive()) {
     return null
   }
@@ -300,6 +320,9 @@ function resolveDisplayMode(): AmbilightDisplayMode | null {
     if (screen === 'wide')
       return 'theater'
   }
+
+  if (document.querySelector('.home-container.wide'))
+    return 'theater'
 
   return 'normal'
 }
@@ -343,22 +366,26 @@ function handlePlayerModeChange() {
 }
 
 function observePlayerContainer() {
-  const playerContainer = findPlayerContainer()
-  if (!playerContainer || playerContainer === observedPlayerContainer)
+  const targets = getModeTargets()
+  if (!targets.length)
+    return
+  if (targets.length === observedModeTargets.length && targets.every((target, index) => target === observedModeTargets[index]))
     return
   playerObserver?.disconnect()
-  observedPlayerContainer = playerContainer
+  observedModeTargets = targets
   playerObserver = new MutationObserver(handlePlayerModeChange)
-  playerObserver.observe(playerContainer, {
-    attributes: true,
-    attributeFilter: ['data-screen', 'class'],
-  })
+  for (const target of targets) {
+    playerObserver.observe(target, {
+      attributes: true,
+      attributeFilter: ['data-screen', 'class'],
+    })
+  }
 }
 
 function stopObservingPlayerContainer() {
   playerObserver?.disconnect()
   playerObserver = null
-  observedPlayerContainer = null
+  observedModeTargets = []
 }
 
 function scheduleSync() {

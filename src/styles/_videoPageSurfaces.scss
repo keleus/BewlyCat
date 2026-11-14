@@ -166,16 +166,22 @@
 
 // 番剧与电影播放页（新旧两套 DOM）外层与面板底色透明化。
 @mixin transparent-bangumi-page-surfaces {
+  #__next,
   .home-container,
   .home-container .main-container,
   .main-container,
   .plp-l,
   .plp-r,
+  .plp-player,
   .comment-wrapper {
-    background-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   [class*="eplist_ep_list_wrapper"],
+  [class*="PaginatedEpList_root"],
+  [class*="SectionPanel_panel"],
+  #eplist_module,
   :is(.main-container, #bewly-widescreen-root) .ep-list-wrapper,
   .ep-section-module {
     background: transparent !important;

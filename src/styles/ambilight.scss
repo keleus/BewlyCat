@@ -63,17 +63,78 @@ html[data-bewly-ambilight] {
   }
 
   @include surfaces.transparent-video-page-surfaces;
+  @include surfaces.transparent-bangumi-page-surfaces;
 
-  // 播放器背景透明化
-  .bpx-player-video-area,
-  .bpx-player-video-perch,
-  .bpx-player-video-wrap {
+  // 带海报的电影/番剧页（.home-container.special）：隐藏静态海报头图及底部白色渐变遮罩，
+  // 并收起默认模式下为海报预留的大幅顶部留白，避免遮挡光晕或透入宽银幕上下留白区域
+  .home-container .special-cover,
+  :is(.home-container, #__next, #app) > :is([class*="specialCover"], [class*="special_cover"]) {
+    display: none !important;
+  }
+
+  .home-container.special:not(.wide) .main-container {
+    margin-top: var(--bew-space-5) !important;
+  }
+
+  // 海报隐藏后，原版顶栏未吸顶时将原白字入口改为随环境光自适应的文字色
+  &:has(.home-container.special):not(.remove-top-bar):not(.remove-top-bar-without-placeholder)
+    .bili-header
+    > .bili-header__bar:not(.slide-down) {
+    :is(.left-entry__item-trigger, .right-entry__item-trigger) {
+      color: var(--text1) !important;
+
+      .trigger-icon {
+        color: inherit !important;
+      }
+    }
+
+    > .left-entry > li > :is(a, .default-entry, .entry-title),
+    > .left-entry > li > .entry-title > .mini-header__title,
+    > .left-entry > .mini-header__logo,
+    > .left-entry > .download-entry > .download-entry__title,
+    > .right-entry > .right-entry-item > .right-entry__outside,
+    > .right-entry > .right-entry-item > .right-entry__outside > :is(.right-entry-icon, .right-entry-text) {
+      color: var(--text1) !important;
+    }
+  }
+
+  // 播放器背景透明化（小窗保持实底防下方评论透字；番剧全屏/网页全屏保留黑底）
+  .bpx-player-container:not(:fullscreen):not([data-screen="full"]):not([data-screen="web"]):not([data-screen="mini"]) {
+    .bpx-player-primary-area,
+    .bpx-player-video-area,
+    .bpx-player-video-perch,
+    .bpx-player-video-wrap {
+      background: transparent !important;
+    }
+  }
+
+  .bilibili-player-video-area,
+  .bilibili-player-video-wrap,
+  #player_module:not(.player-fullscreen-fix) {
     background: transparent !important;
+  }
+
+  #bilibili-player-wrap:not(:has([data-screen="full"], [data-screen="web"], [class*="video_playerFullScreen"])) {
+    background: transparent !important;
+    box-shadow: none !important;
+
+    :is(
+        .video_playerInner,
+        [class*="video_playerInner"],
+        [class*="NanoPlayer_nonoPlayerContainer"],
+        [class*="NanoPlayer_nonoPlayerPrimaryArea"],
+        [class*="NanoPlayer_nanoDocker"]
+      ):not([class*="Mini"]):not([class*="mini"]) {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
   }
 
   // 播放器占位层与发送弹幕区域透明穿透
   @include surfaces.transparent-player-sending-area;
 
+  #bilibili-player-wrap,
+  #player_module,
   #playerWrap,
   #bilibili-player,
   .bpx-docker-major,
@@ -161,6 +222,47 @@ html[data-bewly-ambilight] {
     color: var(--brand_blue, #00aeec) !important;
   }
 
+  // 番剧与电影页实色子卡片、选集格子与已追番按钮改为半透明填充，避免在光晕上形成白块
+  [class*="numberListItem_number_list_item"]:not([class*="numberListItem_select"]) {
+    --bg1: var(--bew-fill-1);
+
+    &:hover {
+      --bg1: var(--bew-fill-2);
+    }
+  }
+
+  [class*="EpisodeVirtualList_numberItem"]:not([class*="EpisodeVirtualList_activeNumber"]) {
+    background: var(--bew-fill-1) !important;
+    border-color: transparent !important;
+
+    &:hover {
+      background: var(--bew-fill-2) !important;
+    }
+  }
+
+  [class*="upinfo_upInfoCard"],
+  [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
+    [class*="rankList_sp_right"]
+    [class*="rankList_sp_msg"],
+  .sponsor-rank-item.pos-rank-module .sp-right .sp-msg,
+  .main-container .review-module .review-list .review-item .review-body,
+  .main-container .season-list .ss-list-wrapper .expand-more,
+  .main-container .media-info .media-right .media-tool-bar .btn-rating,
+  .main-container .ep-list-wrapper .list-wrapper.simple ul .ep-item:not(.cursor):not(:hover) {
+    background: var(--bew-fill-1) !important;
+    border-color: var(--bew-border-color) !important;
+    box-shadow: none !important;
+  }
+
+  [class*="follow_btnFollow"][class*="follow_followed"] {
+    background: var(--bew-fill-1) !important;
+    box-shadow: none !important;
+
+    &:hover {
+      background: var(--bew-fill-2) !important;
+    }
+  }
+
   // 推荐列表与标签容器透明化
   .recommend-list-v1 .rec-footer,
   .video-tag-container .tag-link,
@@ -170,13 +272,24 @@ html[data-bewly-ambilight] {
     border-color: transparent !important;
   }
 
-  // 标签栏上下分隔线原为固定浅灰，叠在光晕上像突兀的白线；改为随环境光文字灰阶的淡线
-  .video-tag-container {
+  // 标签栏与番剧模块上下分隔线原为固定浅灰，叠在光晕上像突兀的白线；改为随环境光文字灰阶的淡线
+  .video-tag-container,
+  .plp-l .toolbar,
+  [class*="toolbar_toolbar"],
+  [class*="mediainfo_mediaInfo"],
+  [class*="recommend_wrap"],
+  [class*="sponsor_sponsor_module"],
+  .main-container .tool-bar,
+  .main-container .media-info,
+  .main-container .review-module,
+  .main-container .sponsor-module,
+  .main-container .plp-l .split-line {
     border-color: color-mix(in srgb, var(--text3) 16%, transparent) !important;
   }
 
   // 弹幕输入框以浅填充示意可输入区域；发送按钮保留主题色底，白字不会落在光晕上
-  .bpx-player-video-inputbar {
+  .bpx-player-video-inputbar,
+  .bilibili-player-video-inputbar {
     background: var(--bew-fill-1) !important;
     border-color: transparent !important;
   }
