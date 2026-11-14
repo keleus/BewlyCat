@@ -161,14 +161,14 @@ settings:
     fps_30: 30 fps · 流畅
   local_loudness:
     gain_history: 均衡增益变化 · 近 60 秒
-    summary: 平衡不同视频之间的音量，减少切换视频时的大小声差异。
+    summary: 平衡不同视频之间的响度，同时平滑同一个视频内的大小声。
     title: 音量均衡
     enable: 启用局部音量均衡
-    description: 平衡不同视频之间的音量，减少切换视频时的大小声差异。启用后会关闭 B 站原生均衡（关闭本功能后不会自动恢复），最高提升 6 dB。
+    description: 平衡不同视频之间的响度，并在播放中实时调整增益，因此同一个视频内的大小声也会被平滑；强度越高，对原有动态的影响越大。启用后会关闭 B 站原生均衡（关闭本功能后不会自动恢复），最高提升 6 dB。
     target: 目标响度
     target_desc: 建议从 -18 LUFS 开始。数值越低越安静；播放器音量仍可单独调整。
     strength: 均衡强度
-    strength_desc: 强度越高，大小声差异越小，也会更多改变音乐和电影的动态。
+    strength_desc: 强度越高，视频之间与视频内的大小声差异越小，也会更多改变音乐和电影的动态。
     status: 运行状态
     states:
       off: 已关闭
@@ -261,7 +261,7 @@ settings:
   category_bilibili_comments_desc: 增强评论区的用户信息与内容显示。
   category_bilibili_vip_desc: 配置大会员权益相关的提醒功能。
   category_bilibili_listen_video_desc: 隐藏视频画面仅保留声音，以封面和标题组成音频播放界面。
-  category_bilibili_volume_balance_desc: 在本地均衡不同视频的响度，减少音量忽大忽小。
+  category_bilibili_volume_balance_desc: 在本地平衡不同视频的响度，并平滑视频内的大小声。
   category_bilibili_ambilight_desc: 在播放器四周投射随画面变化的柔和环境光。
   category_advanced_compatibility_desc: 拦截广告、净化链接，并配置原版页面和其他页面的兼容行为。
   category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。

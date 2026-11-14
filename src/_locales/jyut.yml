@@ -161,14 +161,14 @@ settings:
     fps_30: 30 fps · 流暢
   local_loudness:
     gain_history: 均衡增益變化 · 近 60 秒
-    summary: 平衡唔同影片之間嘅音量，減少切換影片時嘅大小聲差異。
+    summary: 平衡唔同影片之間嘅響度，同時平滑同一個影片內嘅大小聲。
     title: 音量均衡
     enable: 啟用局部音量均衡
-    description: 平衡唔同影片之間嘅音量，減少切換影片時嘅大小聲差異。啟用後會關閉 B 站原生均衡（關閉呢個功能後唔會自動恢復），最多提升 6 dB。
+    description: 平衡唔同影片之間嘅響度，並喺播放期間即時調整增益，所以同一個影片內嘅大小聲都會被平滑；強度越高，對原有動態嘅影響越大。啟用後會關閉 B 站原生均衡（關閉呢個功能後唔會自動恢復），最多提升 6 dB。
     target: 目標響度
     target_desc: 建議由 -18 LUFS 開始。數值越低越靜；播放器音量仍然可以獨立調整。
     strength: 均衡強度
-    strength_desc: 強度越高，大小聲差異越細，亦會更多改變音樂同電影嘅動態。
+    strength_desc: 強度越高，影片之間同影片內嘅大小聲差異越細，亦會更多改變音樂同電影嘅動態。
     status: 運行狀態
     states:
       off: 已關閉
@@ -261,7 +261,7 @@ settings:
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
   category_bilibili_listen_video_desc: 隱藏影片畫面淨係保留聲音，用封面同標題組成音訊播放介面。
-  category_bilibili_volume_balance_desc: 喺本機平衡唔同影片嘅響度，減少音量忽大忽細。
+  category_bilibili_volume_balance_desc: 喺本機平衡唔同影片嘅響度，並平滑影片內嘅大小聲。
   category_bilibili_ambilight_desc: 喺播放器四周投射跟住畫面變化嘅柔和環境光。
   category_advanced_compatibility_desc: 攔截廣告、淨化連結，同埋設定原版頁面同其他頁面嘅相容行為。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或者還原 BewlyCat 預設配置。
