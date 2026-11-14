@@ -619,9 +619,9 @@ export interface Settings {
   /** 顶栏模块总开关，关闭后插件不再隐藏、托管或改写任何顶栏 */
   enableTopBarModule: boolean
   enableTopBar: boolean
-  /** Dock 总开关；Bewly 页面关闭时 Dock 直接跳转 B 站原站页面 */
+  /** Dock 与悬浮侧栏模块总开关；Bewly 页面开启时强制开启，关闭时 Dock 直接跳转 B 站原站页面 */
   enableDock: boolean
-  /** 悬浮侧栏总开关；Dock 显示时不显示 */
+  /** 悬浮侧栏开关；仅在 Dock 模块开启且当前页面不显示 Dock 时生效 */
   enableSideBar: boolean
   /** 原站评论区增强总开关，关闭后各评论子项不生效 */
   enableCommentEnhancements: boolean
@@ -1245,6 +1245,10 @@ export const settings = useSettingsStorage(originalSettings, {
         record.enableDock = false
       record.pluginModulesMigrated = true
     }
+
+    // Bewly 页面依赖 Dock 导航，启用 Bewly 页面时必须保持 Dock 模块开启。
+    if (record.useOriginalBilibiliHomepage !== true)
+      record.enableDock = true
 
     record.favoriteOrganizerFolders = normalizeFavoriteOrganizerFolders(record.favoriteOrganizerFolders)
     record.recommendationModeSwitcherOptions = normalizeRecommendationModeSwitcherOptions(record.recommendationModeSwitcherOptions)

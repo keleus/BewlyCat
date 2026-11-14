@@ -653,14 +653,16 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
         secondaryPage: 'player',
         targetTitleKey: 'settings.external_watch_later_button',
       },
-      {
-        key: 'video-sidebar-position',
-        labelKey: 'layout_editor.video_sidebar_position',
-        icon: 'mingcute:navigation-line',
-        menu: 'BewlyComponents',
-        secondaryPage: 'dock',
-        targetTitleKey: 'settings.sidebar_position',
-      },
+      ...(settings.value.enableDock && settings.value.enableSideBar && !settings.value.useOriginalBilibiliHomepage && !settings.value.alwaysUseDock
+        ? [{
+            key: 'video-sidebar-position',
+            labelKey: 'layout_editor.video_sidebar_position',
+            icon: 'mingcute:navigation-line',
+            menu: 'BewlyComponents' as const,
+            secondaryPage: 'dock',
+            targetTitleKey: 'settings.sidebar_position',
+          }]
+        : []),
       {
         key: 'video-topbar-auto-hide',
         labelKey: 'layout_editor.video_topbar_auto_hide',
@@ -928,11 +930,6 @@ watch(isLayoutEditing, (editing) => {
   }
 }, { immediate: true })
 
-watch(() => settings.value.showLayoutEditButton, (visible) => {
-  if (!visible && isLayoutEditing.value)
-    exitLayoutEditMode()
-})
-
 watch(() => settings.value.dockPosition, () => {
   nextTick(scheduleLayoutEditTargetsRefresh)
   window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
@@ -1184,6 +1181,18 @@ const showDock = computed((): boolean => {
     || showBewlyPage.value
     || Boolean(iframePageURL.value)
 })
+
+const showSideBar = computed((): boolean => {
+  return settings.value.enableDock && settings.value.enableSideBar && !showDock.value
+})
+
+watch(
+  () => settings.value.showLayoutEditButton && (showDock.value || showSideBar.value),
+  (canEditLayout) => {
+    if (!canEditLayout && isLayoutEditing.value)
+      exitLayoutEditMode()
+  },
+)
 
 // App outlives page components. Drop outgoing closures before the next page
 // registers its actions so evicted KeepAlive pages and their lists can be collected.
@@ -2081,7 +2090,7 @@ if (settings.value.cleanUrlArgument) {
         @dock-item-click="handleDockItemClick"
       />
       <SideBar
-        v-else-if="settings.enableSideBar"
+        v-else-if="showSideBar"
         pointer-events-auto
       />
     </div>

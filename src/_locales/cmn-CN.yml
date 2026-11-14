@@ -234,7 +234,7 @@ settings:
   module_top_bar: 顶栏
   module_top_bar_desc: 插件提供的顶栏及原版顶栏托管。关闭后插件不再隐藏或改动任何顶栏，页面显示 B 站自己的顶栏；Bewly 首页整页由插件接管，不显示顶栏。
   module_dock: Dock 栏
-  module_dock_desc: 页面切换导航。Bewly 页面关闭时，点击直接跳转 B 站原站页面。
+  module_dock_desc: 页面切换导航与悬浮侧栏。Bewly 页面开启时需保持开启；Bewly 页面关闭时点击直接跳转 B 站原站页面，关闭本模块后可从浏览器工具栏图标打开设置。
   module_sidebar: 悬浮侧栏
   module_sidebar_desc: 提供主题切换和设置入口，Dock 显示时不显示。关闭后可从浏览器工具栏图标打开设置。
   group_modules_enhancements: 功能增强

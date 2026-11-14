@@ -91,7 +91,7 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
 
 <template>
   <div>
-    <SettingsItemGroup v-if="settings.enableDock" :title="$t('settings.group_dock')">
+    <SettingsItemGroup :title="$t('settings.group_dock')">
       <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
         <Radio v-model="settings.showLayoutEditButton" />
       </SettingsItem>
@@ -206,11 +206,14 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup v-if="settings.enableSideBar" :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">
-      <SettingsItem :title="$t('settings.sidebar_position')" right-width="auto">
+    <SettingsItemGroup :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">
+      <SettingsItem :title="$t('settings.module_sidebar')" :desc="$t('settings.module_sidebar_desc')" right-width="auto">
+        <Radio v-model="settings.enableSideBar" />
+      </SettingsItem>
+      <SettingsItem v-if="settings.enableSideBar" :title="$t('settings.sidebar_position')" right-width="auto">
         <Select v-model="settings.sidebarPosition" :options="sidebarPositions" w="160px" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.auto_hide_sidebar')" right-width="auto">
+      <SettingsItem v-if="settings.enableSideBar" :title="$t('settings.auto_hide_sidebar')" right-width="auto">
         <Radio v-model="settings.autoHideSidebar" />
       </SettingsItem>
     </SettingsItemGroup>

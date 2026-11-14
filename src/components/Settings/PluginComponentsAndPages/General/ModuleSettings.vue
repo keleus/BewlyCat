@@ -7,7 +7,20 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
 const bewlyPagesEnabled = computed({
   get: () => !settings.value.useOriginalBilibiliHomepage,
-  set: enabled => settings.value.useOriginalBilibiliHomepage = !enabled,
+  set: (enabled) => {
+    settings.value.useOriginalBilibiliHomepage = !enabled
+    if (enabled)
+      settings.value.enableDock = true
+  },
+})
+
+const dockModuleEnabled = computed({
+  get: () => bewlyPagesEnabled.value || settings.value.enableDock,
+  set: (enabled) => {
+    if (bewlyPagesEnabled.value && !enabled)
+      return
+    settings.value.enableDock = enabled
+  },
 })
 </script>
 
@@ -35,14 +48,7 @@ const bewlyPagesEnabled = computed({
       :desc="$t('settings.module_dock_desc')"
       right-width="auto"
     >
-      <Radio v-model="settings.enableDock" />
-    </SettingsItem>
-    <SettingsItem
-      :title="$t('settings.module_sidebar')"
-      :desc="$t('settings.module_sidebar_desc')"
-      right-width="auto"
-    >
-      <Radio v-model="settings.enableSideBar" />
+      <Radio v-model="dockModuleEnabled" :disabled="bewlyPagesEnabled" />
     </SettingsItem>
     <SettingsItem
       :title="$t('settings.adapt_to_other_page_styles')"

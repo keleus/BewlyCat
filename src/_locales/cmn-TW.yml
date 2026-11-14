@@ -234,7 +234,7 @@ settings:
   module_top_bar: 頂欄
   module_top_bar_desc: 外掛提供的頂欄及原版頂欄託管。關閉後外掛不再隱藏或變更任何頂欄，頁面顯示 B 站自己的頂欄；Bewly 首頁整頁由外掛接管，不顯示頂欄。
   module_dock: Dock 欄
-  module_dock_desc: 頁面切換導覽。Bewly 頁面關閉時，點擊直接跳轉 B 站原站頁面。
+  module_dock_desc: 頁面切換導覽與懸浮側欄。Bewly 頁面開啟時需保持開啟；Bewly 頁面關閉時點擊直接跳轉 B 站原站頁面，關閉本模組後可從瀏覽器工具列圖示開啟設定。
   module_sidebar: 懸浮側欄
   module_sidebar_desc: 提供主題切換和設定入口，Dock 顯示時不顯示。關閉後可從瀏覽器工具列圖示開啟設定。
   group_modules_enhancements: 功能增強

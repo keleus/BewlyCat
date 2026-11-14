@@ -234,7 +234,7 @@ settings:
   module_top_bar: Top bar
   module_top_bar_desc: "The extension's top bar and its management of the original one. When off, the extension no longer hides or changes any top bar, so pages show Bilibili's own. The Bewly homepage replaces the whole page and shows no top bar."
   module_dock: Dock
-  module_dock_desc: 'Page navigation. When Bewly pages are off, clicking an item goes straight to the original Bilibili page.'
+  module_dock_desc: 'Page navigation and floating sidebar. Required while Bewly pages are on; when Bewly pages are off, clicking an item goes straight to the original Bilibili page, and turning this module off leaves settings accessible from the browser toolbar icon.'
   module_sidebar: Floating sidebar
   module_sidebar_desc: 'Theme switch and settings entry, hidden while the Dock is shown. When off, open settings from the browser toolbar icon.'
   group_modules_enhancements: Enhancements
