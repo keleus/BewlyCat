@@ -1200,7 +1200,7 @@ watch([activatedPage, () => activatedPage.value === AppPage.Home ? homeActivated
 // Keep the browser tab title in sync with the page selected from the Dock.
 // Search results manages its own keyword-aware title in SearchResults.vue.
 const dockPageTitle = computed<string | undefined>(() => {
-  if (activatedPage.value === AppPage.SearchResults)
+  if (settings.value.useOriginalBilibiliHomepage || activatedPage.value === AppPage.SearchResults)
     return undefined
 
   const titleKey = activatedPage.value === AppPage.Home
@@ -1282,6 +1282,9 @@ function focusScrollViewport(options: { force?: boolean } = {}) {
 
 const isFirstTimeActivatedPageChange = ref<boolean>(true)
 function syncNavigationUrl() {
+  if (settings.value.useOriginalBilibiliHomepage)
+    return
+
   const url = new URL(window.location.href)
   // 停留在默认首页及默认标签时不写入参数，切换后再记录 page/tab。
   const keepTab = activatedPage.value === AppPage.Home
@@ -1331,7 +1334,7 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-watch([() => showTopBar.value, () => activatedPage.value], () => {
+watch([() => showTopBar.value, () => activatedPage.value, () => settings.value.useOriginalBilibiliHomepage], () => {
   // Remove the original Bilibili top bar when using original bilibili page to avoid two top bars showing
   const biliHeader = document.querySelector('.bili-header') as HTMLElement | null
   if (biliHeader && isHomePage()) {
@@ -2201,7 +2204,7 @@ if (settings.value.cleanUrlArgument) {
 
 <style lang="scss" scoped>
 .top-bar-layer {
-  z-index: 1001;
+  z-index: var(--bew-z-top-bar);
 }
 
 .layout-edit-backdrop {
