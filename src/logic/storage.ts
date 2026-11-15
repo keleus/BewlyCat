@@ -202,11 +202,6 @@ export type CommentReplyPaginationMode = 'loadMore' | 'pagination'
 export type MomentsCardOpenMode = 'dialog' | 'newTab' | 'background'
 export type MomentsVideoCardOpenMode = MomentsCardOpenMode | 'inherit' | 'currentTab'
 
-export interface ShadowCurvePoint {
-  position: number
-  opacity: number
-}
-
 // 本地存储配置接口（不同步到云端的配置）
 export interface LocalSettings {
   // 壁纸相关
@@ -607,9 +602,6 @@ export interface Settings {
   videoCardMetaFontSize: VideoCardFontSizeSetting
   // Preferred video card layout
   videoCardLayout: VideoCardLayoutSetting
-  // Video card shadow customization (modern layout only)
-  videoCardShadowCurve: ShadowCurvePoint[]
-  videoCardShadowHeight: number // 1.0-3.0
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
   preserveForYouState: boolean
@@ -619,9 +611,9 @@ export interface Settings {
   /** 顶栏模块总开关，关闭后插件不再隐藏、托管或改写任何顶栏 */
   enableTopBarModule: boolean
   enableTopBar: boolean
-  /** Dock 总开关；Bewly 页面关闭时 Dock 直接跳转 B 站原站页面 */
+  /** Dock 与悬浮侧栏模块总开关；Bewly 页面开启时强制开启，关闭时 Dock 直接跳转 B 站原站页面 */
   enableDock: boolean
-  /** 悬浮侧栏总开关；Dock 显示时不显示 */
+  /** 悬浮侧栏开关；仅在 Dock 模块开启且当前页面不显示 Dock 时生效 */
   enableSideBar: boolean
   /** 原站评论区增强总开关，关闭后各评论子项不生效 */
   enableCommentEnhancements: boolean
@@ -989,12 +981,6 @@ export const originalSettings: Settings = {
   videoCardAuthorFontSize: 'sm',
   videoCardMetaFontSize: 'xs',
   videoCardLayout: 'modern',
-  videoCardShadowCurve: [
-    { position: 0, opacity: 80 },
-    { position: 30, opacity: 70 },
-    { position: 100, opacity: 0 },
-  ],
-  videoCardShadowHeight: 1.0,
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,
@@ -1245,6 +1231,10 @@ export const settings = useSettingsStorage(originalSettings, {
         record.enableDock = false
       record.pluginModulesMigrated = true
     }
+
+    // Bewly 页面依赖 Dock 导航，启用 Bewly 页面时必须保持 Dock 模块开启。
+    if (record.useOriginalBilibiliHomepage !== true)
+      record.enableDock = true
 
     record.favoriteOrganizerFolders = normalizeFavoriteOrganizerFolders(record.favoriteOrganizerFolders)
     record.recommendationModeSwitcherOptions = normalizeRecommendationModeSwitcherOptions(record.recommendationModeSwitcherOptions)

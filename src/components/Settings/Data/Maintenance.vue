@@ -36,7 +36,6 @@ const structuredArrayKeys = new Set([
   'topBarComponentsConfig',
   'topBarPinnedChannels',
   'videoCardContextMenuConfig',
-  'videoCardShadowCurve',
 ])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -122,13 +121,6 @@ function normalizeStructuredArray(key: string, value: unknown): NormalizedImport
     return compatible
       ? { compatible: true, value: normalizeRecommendationModeSwitcherOptions(value) }
       : { compatible: false }
-  }
-
-  if (key === 'videoCardShadowCurve') {
-    const compatible = value.every(item => isRecord(item)
-      && Number.isFinite(item.position)
-      && Number.isFinite(item.opacity))
-    return compatible ? { compatible: true, value: structuredClone(value) } : { compatible: false }
   }
 
   return null

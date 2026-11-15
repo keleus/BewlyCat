@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import MomentRichText from './MomentRichText.vue'
 import type { DisplayMoment } from './types'
 
-// 动态列表附带的热评摘要，点击展开完整评论区。
+// 动态列表附带的热评摘要，点击展开评论区并定位到这条热评。
 const { comment, expanded = false, loading = false, controls } = defineProps<{
   comment: NonNullable<DisplayMoment['hotComment']>
   expanded?: boolean
@@ -14,7 +14,7 @@ const { comment, expanded = false, loading = false, controls } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggle: []
+  open: []
 }>()
 
 const { t } = useI18n()
@@ -27,7 +27,7 @@ const { t } = useI18n()
     :aria-label="t('moment_card.view_hot_comment')"
     :aria-expanded="expanded"
     :aria-controls="controls"
-    @click.stop="emit('toggle')"
+    @click.stop="emit('open')"
   >
     <span class="moment-card__hot-comment-label">
       <span v-if="loading" i-svg-spinners:ring-resize aria-hidden="true" />

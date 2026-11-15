@@ -434,6 +434,13 @@ export function mapMoment(item: DataItem): MappedMoment {
   )?.desc
   const hotCommentText = normalizeDescText(commentInteraction)
   const hotCommentRichText = extractRichTextSegments(String(id), commentInteraction?.rich_text_nodes)
+  // 评论摘要以「作者：正文」的富文本给出，@ 节点的 rid 即评论者 mid；
+  // 作者节点带「：」后缀，正文里的 @ 提及没有，优先取前者。
+  const hotCommentAtNodes = (Array.isArray(commentInteraction?.rich_text_nodes) ? commentInteraction.rich_text_nodes : [])
+    .filter((node: any) => node?.type === 'RICH_TEXT_NODE_TYPE_AT' && /^\d+$/.test(String(node?.rid || '')))
+  const hotCommentAuthorNode = hotCommentAtNodes.find(
+    (node: any) => /[：:]$/.test(String(node?.text || node?.orig_text || '')),
+  ) ?? hotCommentAtNodes[0]
   const threePointItems = raw.modules?.module_more?.three_point_items || []
   const deleteItem = threePointItems.find(item => item?.type === ThreePointItemType.ThreePointDelete)
 
@@ -474,6 +481,7 @@ export function mapMoment(item: DataItem): MappedMoment {
       ? {
           text: hotCommentText,
           richText: hotCommentRichText,
+          authorMid: hotCommentAuthorNode ? String(hotCommentAuthorNode.rid) : undefined,
         }
       : undefined,
     url: `https://www.bilibili.com/opus/${id}`,

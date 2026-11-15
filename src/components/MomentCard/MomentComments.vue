@@ -108,6 +108,174 @@ async function restoreScroll() {
   }
 }
 
+// 卡片热评摘要只有作者与正文、没有 rpid：热度排序下它通常位于首屏，
+// 这里按「作者 mid + 归一化正文」在已加载评论里匹配，命中后滚动并短暂高亮。
+const locatedCommentId = ref('')
+const isHotSortActive = computed(() => state.sort === 1)
+let locatedCommentTimer: ReturnType<typeof setTimeout> | undefined
+let locatingHotComment = false
+
+function normalizeHotCommentText(value: string) {
+  return value
+    .replace(/\s+/gu, '')
+    .replace(/(?:…|\.{3})+$/u, '')
+}
+
+interface LocatedHotComment {
+  root: PreviewComment
+  comment: PreviewComment
+}
+
+function commentText(comment: PreviewComment) {
+  return normalizeHotCommentText(comment.content.map(part => part.text).join(''))
+}
+
+function findHotComment(authorMid: string, targetText: string, allowPrefix = true) {
+  let prefixMatch: LocatedHotComment | null = null
+  for (const root of state.comments) {
+    for (const comment of [root, ...root.hotReplies, ...root.replies]) {
+      if (authorMid && comment.mid && comment.mid !== authorMid)
+        continue
+      const text = commentText(comment)
+      if (!text)
+        continue
+      if (text === targetText)
+        return { root, comment }
+      // 摘要可能截断长评论（评论正文以摘要开头），按前缀兜底且仅在精确匹配之后使用。
+      if (!prefixMatch && allowPrefix && text.startsWith(targetText))
+        prefixMatch = { root, comment }
+    }
+  }
+  return prefixMatch
+}
+
+function searchHotComment(authorMid: string, targetText: string) {
+  const matched = findHotComment(authorMid, targetText)
+  if (matched || !authorMid)
+    return matched
+  // 摘要里的 @ 节点偶尔不是评论作者，退化为正文精确匹配。
+  return findHotComment('', targetText, false)
+}
+
+function expandCommentAncestors(root: PreviewComment, comment: PreviewComment) {
+  if (comment === root)
+    return
+  const byId = new Map<string, PreviewComment>()
+  for (const item of [root, ...root.hotReplies, ...root.replies])
+    byId.set(item.id, item)
+  const visited = new Set<string>()
+  let cursor: PreviewComment | undefined = comment
+  while (cursor && cursor.id !== root.id && !visited.has(cursor.id)) {
+    visited.add(cursor.id)
+    cursor.collapsed = false
+    cursor = cursor.parentId && cursor.parentId !== '0' ? byId.get(cursor.parentId) : undefined
+  }
+  root.collapsed = false
+}
+
+function waitForLayout() {
+  return new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+}
+
+async function waitForCommentsIdle() {
+  const deadline = Date.now() + 10000
+  while (state.loading && !state.error && Date.now() < deadline)
+    await new Promise<void>(resolve => setTimeout(resolve, 60))
+}
+
+function findCommentElement(id: string) {
+  const container = scroller.value
+  if (!container)
+    return null
+  return Array.from(container.querySelectorAll<HTMLElement>('[data-comment-id]'))
+    .find(element => element.dataset.commentId === id) ?? null
+}
+
+async function revealComment(comment: PreviewComment) {
+  await nextTick()
+  const container = scroller.value
+  if (!container)
+    return
+  // 展开动画期间评论区高度从 0 增长，等高度稳定后再计算滚动位置。
+  const deadline = performance.now() + 700
+  while (performance.now() < deadline) {
+    const height = container.clientHeight
+    await waitForLayout()
+    if (height > 0 && container.clientHeight === height)
+      break
+  }
+  const element = findCommentElement(comment.id)
+  if (!element)
+    return
+  const containerRect = container.getBoundingClientRect()
+  const elementRect = element.getBoundingClientRect()
+  const centeredOffset = Math.max(0, (container.clientHeight - elementRect.height) / 2)
+  container.scrollTop += elementRect.top - containerRect.top - centeredOffset
+  locatedCommentId.value = comment.id
+  clearTimeout(locatedCommentTimer)
+  locatedCommentTimer = setTimeout(() => {
+    locatedCommentId.value = ''
+  }, 2400)
+}
+
+function resolveHotCommentAuthorMid(hotComment: NonNullable<DisplayMoment['hotComment']>) {
+  if (hotComment.authorMid)
+    return hotComment.authorMid
+  // 旧版本缓存没有 authorMid：作者节点是带「：」并指向其空间的链接，从这里还原。
+  for (const segment of hotComment.richText) {
+    if (segment.type !== 'link' || !/[：:]$/.test(segment.text))
+      continue
+    const matched = /space\.bilibili\.com\/(\d+)/.exec(segment.url || '')
+    if (matched)
+      return matched[1]
+  }
+  return ''
+}
+
+async function locateHotComment() {
+  const hotComment = moment.hotComment
+  if (locatingHotComment || !hotComment)
+    return
+  const targetText = normalizeHotCommentText(hotComment.text)
+  if (!targetText)
+    return
+  const authorMid = resolveHotCommentAuthorMid(hotComment)
+  locatingHotComment = true
+  try {
+    await waitForCommentsIdle()
+    let found = searchHotComment(authorMid, targetText)
+    // 命中优先于切换排序；未命中再看热度排序首屏，不覆盖用户选择的默认排序。
+    if (!found && !isHotSortActive.value) {
+      for (let attempt = 0; attempt < 3 && !isHotSortActive.value; attempt++) {
+        await waitForCommentsIdle()
+        await changeSort(1, false)
+        await waitForCommentsIdle()
+      }
+      found = searchHotComment(authorMid, targetText)
+    }
+    // 仍未命中时最多补两页，避免用户点了热评却停在评论区顶部。
+    for (let attempt = 0; !found && attempt < 2 && !state.error; attempt++) {
+      // 滚动补齐可能刚好在进行，先等当前加载结束再判断是否还有下一页。
+      await waitForCommentsIdle()
+      found = searchHotComment(authorMid, targetText)
+      if (found || state.done)
+        break
+      await loadComments()
+      await waitForCommentsIdle()
+      found = searchHotComment(authorMid, targetText)
+    }
+    if (!found)
+      return
+    expandCommentAncestors(found.root, found.comment)
+    await revealComment(found.comment)
+  }
+  finally {
+    locatingHotComment = false
+  }
+}
+
+defineExpose({ locateHotComment })
+
 watch(() => state.expanded, expanded => expanded && void restoreScroll())
 // 首屏、切换排序和失败重试后，继续补齐尚未填满滚动区的评论。
 watch(() => state.loading, loading => !loading && checkScroll())
@@ -133,7 +301,10 @@ onMounted(() => {
     void loadComments()
   void restoreScroll()
 })
-onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
+onBeforeUnmount(() => {
+  clearTimeout(pendingDeleteTimer)
+  clearTimeout(locatedCommentTimer)
+})
 </script>
 
 <template>
@@ -189,7 +360,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
           v-for="row in group.rows"
           :key="row.comment.id"
           class="moment-comments__comment"
-          :class="{ 'is-collapsed-body': row.hideBody }"
+          :class="{ 'is-collapsed-body': row.hideBody, 'is-located': row.comment.id === locatedCommentId }"
           :data-comment-id="row.comment.id"
           :style="{ '--comment-depth': Math.min(row.depth, 10) }"
         >
@@ -423,8 +594,20 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
 .moment-comments__comment {
   min-width: 0;
   padding-bottom: var(--bew-space-3);
+  border-radius: var(--bew-card-radius);
   margin-inline-start: calc(var(--comment-depth) * var(--bew-comment-reply-indent-step, var(--bew-space-6)));
   padding-inline-start: calc(var(--bew-space-6) + var(--bew-space-3));
+  /* 零值初始状态，保证定位高亮出现和消失时都能平滑过渡，且不改变布局。 */
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+/* 定位热评沿用视频卡片的聚焦样式：填充色 + 同色外扩，不使用左侧竖线。 */
+.moment-comments__comment.is-located {
+  background-color: var(--bew-fill-2);
+  box-shadow: 0 0 0 6px var(--bew-fill-2);
 }
 
 .moment-comments__comment.is-collapsed-body .moment-comments__avatar {

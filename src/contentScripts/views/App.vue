@@ -653,14 +653,16 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
         secondaryPage: 'player',
         targetTitleKey: 'settings.external_watch_later_button',
       },
-      {
-        key: 'video-sidebar-position',
-        labelKey: 'layout_editor.video_sidebar_position',
-        icon: 'mingcute:navigation-line',
-        menu: 'BewlyComponents',
-        secondaryPage: 'dock',
-        targetTitleKey: 'settings.sidebar_position',
-      },
+      ...(settings.value.enableDock && settings.value.enableSideBar && !settings.value.useOriginalBilibiliHomepage && !settings.value.alwaysUseDock
+        ? [{
+            key: 'video-sidebar-position',
+            labelKey: 'layout_editor.video_sidebar_position',
+            icon: 'mingcute:navigation-line',
+            menu: 'BewlyComponents' as const,
+            secondaryPage: 'dock',
+            targetTitleKey: 'settings.sidebar_position',
+          }]
+        : []),
       {
         key: 'video-topbar-auto-hide',
         labelKey: 'layout_editor.video_topbar_auto_hide',
@@ -928,11 +930,6 @@ watch(isLayoutEditing, (editing) => {
   }
 }, { immediate: true })
 
-watch(() => settings.value.showLayoutEditButton, (visible) => {
-  if (!visible && isLayoutEditing.value)
-    exitLayoutEditMode()
-})
-
 watch(() => settings.value.dockPosition, () => {
   nextTick(scheduleLayoutEditTargetsRefresh)
   window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
@@ -1185,6 +1182,18 @@ const showDock = computed((): boolean => {
     || Boolean(iframePageURL.value)
 })
 
+const showSideBar = computed((): boolean => {
+  return settings.value.enableDock && settings.value.enableSideBar && !showDock.value
+})
+
+watch(
+  () => settings.value.showLayoutEditButton && (showDock.value || showSideBar.value),
+  (canEditLayout) => {
+    if (!canEditLayout && isLayoutEditing.value)
+      exitLayoutEditMode()
+  },
+)
+
 // App outlives page components. Drop outgoing closures before the next page
 // registers its actions so evicted KeepAlive pages and their lists can be collected.
 watch([activatedPage, () => activatedPage.value === AppPage.Home ? homeActivatedPage.value : undefined, showBewlyPage], () => {
@@ -1200,7 +1209,7 @@ watch([activatedPage, () => activatedPage.value === AppPage.Home ? homeActivated
 // Keep the browser tab title in sync with the page selected from the Dock.
 // Search results manages its own keyword-aware title in SearchResults.vue.
 const dockPageTitle = computed<string | undefined>(() => {
-  if (activatedPage.value === AppPage.SearchResults)
+  if (settings.value.useOriginalBilibiliHomepage || activatedPage.value === AppPage.SearchResults)
     return undefined
 
   const titleKey = activatedPage.value === AppPage.Home
@@ -1282,6 +1291,9 @@ function focusScrollViewport(options: { force?: boolean } = {}) {
 
 const isFirstTimeActivatedPageChange = ref<boolean>(true)
 function syncNavigationUrl() {
+  if (settings.value.useOriginalBilibiliHomepage)
+    return
+
   const url = new URL(window.location.href)
   // 停留在默认首页及默认标签时不写入参数，切换后再记录 page/tab。
   const keepTab = activatedPage.value === AppPage.Home
@@ -1331,7 +1343,7 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-watch([() => showTopBar.value, () => activatedPage.value], () => {
+watch([() => showTopBar.value, () => activatedPage.value, () => settings.value.useOriginalBilibiliHomepage], () => {
   // Remove the original Bilibili top bar when using original bilibili page to avoid two top bars showing
   const biliHeader = document.querySelector('.bili-header') as HTMLElement | null
   if (biliHeader && isHomePage()) {
@@ -2078,7 +2090,7 @@ if (settings.value.cleanUrlArgument) {
         @dock-item-click="handleDockItemClick"
       />
       <SideBar
-        v-else-if="settings.enableSideBar"
+        v-else-if="showSideBar"
         pointer-events-auto
       />
     </div>
@@ -2201,7 +2213,7 @@ if (settings.value.cleanUrlArgument) {
 
 <style lang="scss" scoped>
 .top-bar-layer {
-  z-index: 1001;
+  z-index: var(--bew-z-top-bar);
 }
 
 .layout-edit-backdrop {

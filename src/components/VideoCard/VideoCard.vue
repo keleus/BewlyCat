@@ -583,7 +583,6 @@ provide('getVideoType', () => props.type!)
 :deep(.video-card-stats) {
   --video-card-stats-font-size: var(--bew-font-size-control);
   --video-card-stats-line-height: var(--bew-line-height-control);
-  --video-card-stats-overlay-scale: 1.4;
   --video-card-stats-icon-size: 0.825rem;
 }
 </style>

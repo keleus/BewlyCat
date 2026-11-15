@@ -11,7 +11,6 @@ import { useCardWindow } from '~/composables/useCardWindow'
 import { useGridLayout } from '~/composables/useGridLayout'
 import { useHomeTabViewState } from '~/composables/useHomeTabState'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
-import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
 import { originalSettings, settings } from '~/logic'
@@ -264,9 +263,6 @@ onBeforeUnmount(() => detachGridSnapshot?.())
 
 // 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
 const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
-
-// 获取 shadow 样式变量（避免依赖外部传入）
-const { shadowStyleVars } = useVideoCardShadowStyle()
 
 // 首屏骨架数量固定为目标数量，避免 ref 挂载后重新计算列数导致骨架数量变化。
 const dynamicSkeletonCount = computed(() => {
@@ -893,9 +889,8 @@ const horizontalCoverRatio = computed(() => {
   return normalizeVideoCardCoverRatio(value, fallback)
 })
 
-// 合并 shadow、grid 列数和横向卡片宽度分配变量。
+// 合并 grid 列数和横向卡片宽度分配变量。
 const gridContainerStyle = computed(() => ({
-  ...shadowStyleVars.value,
   ...gridCssVars.value,
   '--video-card-cover-flex': horizontalCoverRatio.value,
   '--video-card-info-flex': 100 - horizontalCoverRatio.value,
