@@ -161,14 +161,14 @@ settings:
     fps_30: 30 fps · Smooth
   local_loudness:
     gain_history: Levelling gain · Last 60 seconds
-    summary: Balance volume across videos to reduce loudness differences when switching videos.
+    summary: Balance loudness across videos while smoothing loud and quiet passages within a single video.
     title: Volume balance
     enable: Enable local volume balance
-    description: Balance volume across videos to reduce loudness differences when switching. Enabling this turns off Bilibili's native normalization (it is not restored when this is disabled). Maximum boost is 6 dB.
+    description: Balance loudness across videos and adjust gain in real time during playback, so loud and quiet passages within a single video are smoothed too. Higher strength affects the original dynamics more. Enabling this turns off Bilibili's native normalization (it is not restored when this is disabled). Maximum boost is 6 dB.
     target: Target loudness
     target_desc: Start at -18 LUFS. Lower values are quieter. The player volume remains independently adjustable.
     strength: Levelling strength
-    strength_desc: Higher strength reduces loudness differences but also changes the dynamics of music and films more.
+    strength_desc: Higher strength reduces loudness differences both across and within videos, but also changes the dynamics of music and films more.
     status: Status
     states:
       off: Off
@@ -234,7 +234,7 @@ settings:
   module_top_bar: Top bar
   module_top_bar_desc: "The extension's top bar and its management of the original one. When off, the extension no longer hides or changes any top bar, so pages show Bilibili's own. The Bewly homepage replaces the whole page and shows no top bar."
   module_dock: Dock
-  module_dock_desc: 'Page navigation. When Bewly pages are off, clicking an item goes straight to the original Bilibili page.'
+  module_dock_desc: 'Page navigation and floating sidebar. Required while Bewly pages are on; when Bewly pages are off, clicking an item goes straight to the original Bilibili page, and turning this module off leaves settings accessible from the browser toolbar icon.'
   module_sidebar: Floating sidebar
   module_sidebar_desc: 'Theme switch and settings entry, hidden while the Dock is shown. When off, open settings from the browser toolbar icon.'
   group_modules_enhancements: Enhancements
@@ -261,7 +261,7 @@ settings:
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
   category_bilibili_listen_video_desc: Hide the video picture and keep only the audio, shown as a cover-and-title audio player.
-  category_bilibili_volume_balance_desc: Level loudness across videos locally to reduce sudden volume changes.
+  category_bilibili_volume_balance_desc: Balance loudness across videos and smooth loudness within them, locally.
   category_bilibili_ambilight_desc: Cast soft ambient light around the player that follows the picture.
   category_advanced_compatibility_desc: Block ads, clean links, and configure compatibility with original pages and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
@@ -714,12 +714,6 @@ settings:
   video_card_author_font_size_desc: Controls the font size for uploader names shown on video cards.
   video_card_meta_font_size: Tag & timestamp font size
   video_card_meta_font_size_desc: Controls the font size for tags and timestamps shown below the title.
-  video_card_shadow_curve: Shadow gradient curve
-  video_card_shadow_curve_desc: Customize the gradient effect of the bottom shadow on video cards
-  video_card_shadow_curve_hint: Drag the line to create control points, right-click to delete
-  video_card_shadow_height: Shadow height
-  video_card_shadow_height_desc: Adjust the height ratio of the shadow covering the cover
-  video_card_shadow_reset: Reset shadow settings
   video_card_layout: Video card layout
   video_card_layout_desc: Switch between the redesigned card and the legacy layout.
   video_card_layout_option:

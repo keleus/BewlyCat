@@ -161,14 +161,14 @@ settings:
     fps_30: 30 fps · 流暢
   local_loudness:
     gain_history: 均衡增益變化 · 近 60 秒
-    summary: 平衡不同影片之間的音量，減少切換影片時的大小聲差異。
+    summary: 平衡不同影片之間的響度，同時平滑同一個影片內的大小聲。
     title: 音量均衡
     enable: 啟用局部音量均衡
-    description: 平衡不同影片之間的音量，減少切換影片時的大小聲差異。啟用後會關閉 B 站原生均衡（關閉本功能後不會自動恢復），最高提升 6 dB。
+    description: 平衡不同影片之間的響度，並在播放中即時調整增益，因此同一個影片內的大小聲也會被平滑；強度越高，對原有動態的影響越大。啟用後會關閉 B 站原生均衡（關閉本功能後不會自動恢復），最高提升 6 dB。
     target: 目標響度
     target_desc: 建議從 -18 LUFS 開始。數值越低越安靜；播放器音量仍可單獨調整。
     strength: 均衡強度
-    strength_desc: 強度越高，大小聲差異越小，也會更多改變音樂和電影的動態。
+    strength_desc: 強度越高，影片之間與影片內的大小聲差異越小，也會更多改變音樂和電影的動態。
     status: 執行狀態
     states:
       off: 已關閉
@@ -234,7 +234,7 @@ settings:
   module_top_bar: 頂欄
   module_top_bar_desc: 外掛提供的頂欄及原版頂欄託管。關閉後外掛不再隱藏或變更任何頂欄，頁面顯示 B 站自己的頂欄；Bewly 首頁整頁由外掛接管，不顯示頂欄。
   module_dock: Dock 欄
-  module_dock_desc: 頁面切換導覽。Bewly 頁面關閉時，點擊直接跳轉 B 站原站頁面。
+  module_dock_desc: 頁面切換導覽與懸浮側欄。Bewly 頁面開啟時需保持開啟；Bewly 頁面關閉時點擊直接跳轉 B 站原站頁面，關閉本模組後可從瀏覽器工具列圖示開啟設定。
   module_sidebar: 懸浮側欄
   module_sidebar_desc: 提供主題切換和設定入口，Dock 顯示時不顯示。關閉後可從瀏覽器工具列圖示開啟設定。
   group_modules_enhancements: 功能增強
@@ -261,7 +261,7 @@ settings:
   category_bilibili_comments_desc: 增強留言區的使用者資訊與內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關的提醒功能。
   category_bilibili_listen_video_desc: 隱藏影片畫面僅保留聲音，以封面和標題組成音訊播放介面。
-  category_bilibili_volume_balance_desc: 在本機平衡不同影片的響度，減少音量忽大忽小。
+  category_bilibili_volume_balance_desc: 在本機平衡不同影片的響度，並平滑影片內的大小聲。
   category_bilibili_ambilight_desc: 在播放器四周投射隨畫面變化的柔和環境光。
   category_advanced_compatibility_desc: 攔截廣告、淨化連結，並設定原版頁面和其他頁面的相容行為。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或還原 BewlyCat 預設配置。
@@ -591,12 +591,6 @@ settings:
   video_card_author_font_size_desc: 控制影片卡片上 UP 主名稱的字級。
   video_card_meta_font_size: 標籤與時間字級
   video_card_meta_font_size_desc: 控制標題下方標籤與時間資訊的字級。
-  video_card_shadow_curve: 陰影漸層曲線
-  video_card_shadow_curve_desc: 自訂影片卡片底部陰影的漸層效果
-  video_card_shadow_curve_hint: 拖曳線條建立控制點，右鍵刪除
-  video_card_shadow_height: 陰影高度
-  video_card_shadow_height_desc: 調整陰影覆蓋封面的高度比例
-  video_card_shadow_reset: 重設陰影設定
   video_card_layout: 影片卡片版型
   video_card_layout_desc: 在新版與舊版影片卡片呈現之間切換。
   video_card_layout_option:

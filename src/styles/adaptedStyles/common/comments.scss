@@ -94,6 +94,10 @@
     --bew-comment-tag-color: var(--bew-text-2);
     --bew-comment-tag-bg: var(--bew-fill-1);
     --bew-comment-box-border: var(--bew-border-color);
+    --bew-comment-vote-card-bg: var(--bew-fill-1);
+    --bew-comment-vote-card-bg-hover: var(--bew-fill-2);
+    --bew-comment-vote-card-border: var(--bew-border-color);
+    --bew-comment-vote-card-border-hover: var(--bew-border-color);
 
     // 評論人用戶名
     .reply-item .root-reply-container .content-warp .user-info .user-name,

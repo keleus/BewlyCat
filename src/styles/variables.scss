@@ -96,6 +96,8 @@
   --bew-z-original-top-bar: 1002;
   // 保留原站头像（2）高于下拉面板（1）的内部顺序。
   --bew-z-original-top-bar-popover: 1;
+  // 高于原站 .bili-header（1002）与自定义频道弹层（1003），低于全屏与模态层。
+  --bew-z-top-bar: 1004;
   // 首页沉浸式模式覆盖顶栏与 Dock，低于对话框和 Toast。
   --bew-z-immersive-feed: 10002;
   --bew-z-settings-host: 10003;
@@ -185,6 +187,9 @@
 
   // Use this in dialogs if you want to add a frosted glass effect
   --bew-filter-glass-2: blur(30px) saturate(180%);
+
+  // 叠在已有饱和毛玻璃底衬之上的吸顶/吸底局部模糊层，仅保留模糊避免二次叠乘饱和度
+  --bew-filter-glass-blur-1: blur(20px);
 
   // Apply this to the Bilibili icon if it is an image with the brand's original blue or pink color
   // Change it to glow effect to matches the user's theme color
@@ -487,6 +492,7 @@
   --bew-content-opacity: 1;
   --bew-filter-glass-1: none;
   --bew-filter-glass-2: none;
+  --bew-filter-glass-blur-1: none;
   --bew-shadow-edge-glow-1: 0 0 0 transparent;
   --bew-shadow-edge-glow-2: 0 0 0 transparent;
   --bew-fill-alt: var(--bew-content-solid);

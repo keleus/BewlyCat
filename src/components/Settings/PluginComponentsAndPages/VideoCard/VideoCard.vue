@@ -5,7 +5,7 @@ import Button from '~/components/Button.vue'
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
-import { originalSettings, settings } from '~/logic'
+import { settings } from '~/logic'
 import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
 import {
   defaultGridColumns,
@@ -18,7 +18,6 @@ import { normalizeListLayoutBreakpoint } from '~/utils/gridLayout'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
-import ShadowCurveEditor from '../../components/ShadowCurveEditor.vue'
 import VideoCardContentEditor from './VideoCardContentEditor.vue'
 import VideoCardContextMenuEditor from './VideoCardContextMenuEditor.vue'
 
@@ -36,13 +35,6 @@ const videoCardLayoutOptions = computed(() => videoCardLayoutOptionValues.map(va
   label: t(`settings.video_card_layout_option.${value}`),
   value,
 })))
-
-const isModernLayout = computed(() => settings.value.videoCardLayout === 'modern')
-
-function resetShadowSettings() {
-  settings.value.videoCardShadowCurve = [...originalSettings.videoCardShadowCurve]
-  settings.value.videoCardShadowHeight = originalSettings.videoCardShadowHeight
-}
 
 // Grid columns management - 固定断点，只修改列数
 const breakpointLabels: { key: keyof GridColumnsConfig, label: string }[] = [
@@ -268,39 +260,6 @@ function getCoverRatioProgress(value: number) {
     >
       <VideoCardContextMenuEditor />
     </SettingsItemGroup>
-
-    <!-- 阴影设置仅适用于现代布局 -->
-    <SettingsItemGroup
-      v-if="isModernLayout"
-      :title="$t('settings.video_card_shadow_curve')"
-      :desc="$t('settings.video_card_shadow_curve_desc')"
-    >
-      <SettingsItem :title="$t('settings.video_card_shadow_curve')" :desc="$t('settings.video_card_shadow_curve_desc')" right-width="auto">
-        <ShadowCurveEditor v-model="settings.videoCardShadowCurve" />
-      </SettingsItem>
-
-      <SettingsItem :title="$t('settings.video_card_shadow_height')" :desc="$t('settings.video_card_shadow_height_desc')" right-width="auto">
-        <div class="shadow-height-control" flex="~ items-center gap-2">
-          <input
-            v-model.number="settings.videoCardShadowHeight"
-            type="range"
-            :min="0"
-            :max="2"
-            :step="0.1"
-            flex-1
-            class="shadow-height-slider"
-            :style="{ '--shadow-height-progress': `${settings.videoCardShadowHeight * 50}%` }"
-          >
-          <span text-sm min-w-8 text-right>{{ settings.videoCardShadowHeight.toFixed(1) }}</span>
-        </div>
-      </SettingsItem>
-
-      <SettingsItem right-width="auto">
-        <Button type="secondary" center @click="resetShadowSettings">
-          {{ $t('settings.video_card_shadow_reset') }}
-        </Button>
-      </SettingsItem>
-    </SettingsItemGroup>
   </div>
 </template>
 
@@ -443,61 +402,6 @@ function getCoverRatioProgress(value: number) {
   &:focus-visible {
     outline: 2px solid var(--bew-theme-color);
     outline-offset: 4px;
-  }
-}
-
-.shadow-height-control {
-  width: 220px;
-}
-
-.shadow-height-slider {
-  height: 4px;
-  appearance: none;
-  background: linear-gradient(
-    to right,
-    var(--bew-theme-color) 0,
-    var(--bew-theme-color) var(--shadow-height-progress),
-    var(--bew-fill-2) var(--shadow-height-progress),
-    var(--bew-fill-2) 100%
-  );
-  border-radius: var(--bew-radius-full);
-  cursor: pointer;
-  accent-color: var(--bew-theme-color);
-
-  &::-webkit-slider-thumb {
-    width: 16px;
-    height: 16px;
-    appearance: none;
-    background: var(--bew-theme-color);
-    border: 2px solid var(--bew-elevated-solid);
-    border-radius: 50%;
-    box-shadow: var(--bew-shadow-1);
-  }
-
-  &::-moz-range-track {
-    height: 4px;
-    background: var(--bew-fill-2);
-    border-radius: var(--bew-radius-full);
-  }
-
-  &::-moz-range-progress {
-    height: 4px;
-    background: var(--bew-theme-color);
-    border-radius: var(--bew-radius-full);
-  }
-
-  &::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: var(--bew-theme-color);
-    border: 2px solid var(--bew-elevated-solid);
-    border-radius: 50%;
-    box-shadow: var(--bew-shadow-1);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--bew-theme-color-40);
-    outline-offset: var(--bew-space-1);
   }
 }
 </style>

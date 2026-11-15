@@ -54,7 +54,7 @@ export interface SettingsMenuDefinition extends MenuItem {
 const isBewlyPagesEnabled = () => !settings.value.useOriginalBilibiliHomepage
 const isTopBarModuleEnabled = () => settings.value.enableTopBarModule
 const isBewlyTopBarEnabled = () => shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
-const isDockOrSideBarEnabled = () => settings.value.enableDock || settings.value.enableSideBar
+const isDockModuleEnabled = () => settings.value.enableDock
 const isPlayerEnabled = () => settings.value.enablePlayerEnhancements
 const isCommentsEnabled = () => settings.value.enableCommentEnhancements
 
@@ -135,7 +135,7 @@ export const settingsMenus: SettingsMenuDefinition[] = [
         icon: 'i-mingcute:navigation-line',
         iconActivated: 'i-mingcute:navigation-fill',
         component: DockAndSidebar,
-        available: isDockOrSideBarEnabled,
+        available: isDockModuleEnabled,
       },
       {
         value: 'interaction',

@@ -837,12 +837,8 @@ onBeforeUnmount(deactivatePreview)
   left: 0;
   right: 0;
   bottom: 0;
-  /* 简化渐变：从6层减少到3层，提升性能 */
-  background: var(
-    --bew-video-card-shadow-gradient,
-    linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 100%)
-  );
-  height: var(--bew-video-card-shadow-height-multiplier, calc(var(--video-card-stats-overlay-scale, 1.4) * 100%));
+  background: linear-gradient(to top, rgb(0 0 0 / 80%) 0%, rgb(0 0 0 / 70%) 30%, rgb(0 0 0 / 0%) 100%);
+  height: 100%;
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
   pointer-events: none;

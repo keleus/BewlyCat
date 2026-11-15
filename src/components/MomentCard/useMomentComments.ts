@@ -114,11 +114,13 @@ export function useMomentComments(
     }
   }
 
-  async function changeSort(sort: CommentSort) {
+  async function changeSort(sort: CommentSort, persist = true) {
     if (disposed || state.loading || state.sort === sort)
       return
     state.sort = sort
-    momentCommentSort.value = sort
+    // 点击热评定位时临时切到热度排序，不覆盖用户手动选择的默认排序。
+    if (persist)
+      momentCommentSort.value = sort
     state.comments = []
     state.page = 0
     state.done = false
