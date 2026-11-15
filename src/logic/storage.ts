@@ -722,7 +722,7 @@ export const originalSettings: Settings = {
   localLoudnessTarget: -18,
   localLoudnessStrength: 75,
   touchScreenOptimization: false,
-  enableSettingsOverlay: false,
+  enableSettingsOverlay: true,
   showHomeButtonInTouchMode: true,
   openTopBarItemsInBewly: true,
   enableGridLayoutSwitcher: true,
