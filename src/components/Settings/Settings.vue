@@ -483,7 +483,9 @@ function navigateToSearchResult(entry: SettingsSearchEntry) {
 
   expandedMenus.value.add(entry.menu)
   activatedMenuItem.value = entry.menu
+  // 结果按钮以 mousedown.prevent 保住浮层，点击后由这里收起并归还焦点。
   searchQuery.value = ''
+  searchInputRef.value?.blur()
   const targetTitle = entry.targetTitleKey
     ? t(entry.targetTitleKey)
     : entry.targetTitle ?? getSearchEntryTitle(entry)
@@ -717,6 +719,7 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
             :aria-selected="index === activeSearchResultIndex"
             :class="{ active: index === activeSearchResultIndex }"
             @mouseenter="activeSearchResultIndex = index"
+            @mousedown.prevent
             @click="navigateToSearchResult(entry)"
           >
             <strong>{{ getSearchEntryTitle(entry) }}</strong>
