@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SettingsNavigationTarget } from '~/composables/useAppProvider'
-import { useBewlyApp } from '~/composables/useAppProvider'
 import { USAGE_GUIDE_URL } from '~/constants/usageGuide'
 import { settings } from '~/logic'
 import { openSettingsPage } from '~/utils/settingsPage'
 import { createTransformer } from '~/utils/transformer'
 
 import SettingsCategoryLayout from './components/SettingsCategoryLayout.vue'
+import SettingsSearchResults from './components/SettingsSearchResults.vue'
 import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
 import { useSettingsNavigation } from './composables/useSettingsNavigation'
 import { useSettingsSearch } from './composables/useSettingsSearch'
+import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilter'
 import { useSettingsSearchNavigation } from './composables/useSettingsSearchNavigation'
+import { useSettingsSearchResults } from './composables/useSettingsSearchResults'
 import { settingsMenus } from './settingsMenus'
 import type { MenuType } from './types'
 
@@ -58,24 +59,28 @@ const title = computed(() => t(activeMenu.value.titleKey))
 
 const search = useSettingsSearch({ visibleMenus })
 const {
-  getSearchEntryLocation,
   getSearchEntrySecondaryPage,
   getSearchEntryTitle,
+  isSearching,
+  matchedSearchTitles,
   searchQuery,
   searchResults,
+  searchResultsSummary,
 } = search
 
+provideSettingsSearchFilter(isSearching, matchedSearchTitles)
+const { searchResultSections } = useSettingsSearchResults({
+  visibleMenus,
+  isSearching,
+  searchResults,
+  getSearchEntrySecondaryPage,
+})
+
 const settingsWindow = ref<HTMLDivElement>()
-const settingsSearchRef = ref<HTMLElement>()
 const searchInputRef = ref<HTMLInputElement>()
-const searchPopoverStyle = ref<CSSProperties>({})
-const isSearchFocused = ref(false)
-const activeSearchResultIndex = ref(-1)
-const searchResultsRef = ref<HTMLElement>()
 const scrollViewportRef = ref<HTMLElement>()
 const settingsContentReady = ref(false)
 let settingsContentFrame: number | undefined
-const { mainAppRef } = useBewlyApp()
 
 const searchNavigation = useSettingsSearchNavigation({
   scrollViewportRef,
@@ -84,7 +89,6 @@ const searchNavigation = useSettingsSearchNavigation({
   getSearchEntrySecondaryPage,
   activateSettingsTarget,
 })
-const { navigateToSearchResult } = searchNavigation
 
 onDeactivated(() => {
   overlayActive.value = false
@@ -117,59 +121,13 @@ onMounted(() => {
   })
 })
 
-function handleSearchBlur() {
-  isSearchFocused.value = false
-}
-
-function handleSearchFocus() {
-  isSearchFocused.value = true
-}
-
-function updateSearchPopoverBounds() {
-  const searchElement = settingsSearchRef.value
-  const contentElement = searchElement?.closest<HTMLElement>('.settings-content')
-  if (!searchElement || !contentElement)
-    return
-
-  const searchRect = searchElement.getBoundingClientRect()
-  const contentRect = contentElement.getBoundingClientRect()
-  const edgeInset = 8
-  const popoverGap = 10
-  const narrowLayout = window.innerWidth <= 760
-  const bottomEdge = Math.min(window.innerHeight - edgeInset, contentRect.bottom - edgeInset)
-
-  // Fixed positioning so the popover can be teleported out of the settings
-  // window (which has its own backdrop-filter that would swallow ours).
-  searchPopoverStyle.value = {
-    position: 'fixed',
-    top: `${searchRect.bottom + popoverGap}px`,
-    right: narrowLayout ? 'auto' : `${window.innerWidth - searchRect.right}px`,
-    left: narrowLayout ? `${contentRect.left + edgeInset}px` : 'auto',
-    width: narrowLayout ? `${Math.max(0, contentRect.width - edgeInset * 2)}px` : `${searchRect.width}px`,
-    maxHeight: `${Math.max(0, bottomEdge - searchRect.bottom - popoverGap)}px`,
-  }
-}
-
-function focusSettingsSearch(event: MouseEvent) {
-  if (event.target instanceof Element && event.target.closest('.settings-search-results'))
-    return
-
+function focusSettingsSearch() {
   searchInputRef.value?.focus({ preventScroll: true })
-  nextTick(updateSearchPopoverBounds)
 }
 
 useEventListener(window, 'resize', () => {
   settingsWindowTransformer.applyPosition()
-  nextTick(updateSearchPopoverBounds)
 })
-
-// 滚动时关闭搜索弹窗（保留搜索词）
-useEventListener(() => scrollViewportRef.value, 'scroll', () => {
-  if (isSearchFocused.value) {
-    isSearchFocused.value = false
-    searchInputRef.value?.blur()
-  }
-}, { capture: true })
 
 provide('scrollSettingsContentToTop', () => {
   searchNavigation.cancelSearchNavigation()
@@ -183,43 +141,6 @@ watch(
     scrollViewportRef.value?.scrollTo({ top: 0 })
   },
 )
-
-watch(searchQuery, (query) => {
-  activeSearchResultIndex.value = -1
-  if (query)
-    nextTick(updateSearchPopoverBounds)
-})
-
-function moveSearchResultSelection(event: KeyboardEvent, direction: 1 | -1) {
-  if (event.isComposing)
-    return
-
-  const resultCount = searchResults.value.length
-  if (!resultCount)
-    return
-
-  event.preventDefault()
-  if (activeSearchResultIndex.value < 0)
-    activeSearchResultIndex.value = direction > 0 ? 0 : resultCount - 1
-  else
-    activeSearchResultIndex.value = (activeSearchResultIndex.value + direction + resultCount) % resultCount
-
-  // 键盘导航时让选中项滚动到可视区内
-  nextTick(() => {
-    searchResultsRef.value?.children[activeSearchResultIndex.value]?.scrollIntoView({ block: 'nearest' })
-  })
-}
-
-function activateSearchResult(event: KeyboardEvent) {
-  if (event.isComposing)
-    return
-
-  const entry = searchResults.value[activeSearchResultIndex.value] ?? searchResults.value[0]
-  if (entry) {
-    event.preventDefault()
-    searchNavigation.navigateToSearchResult(entry)
-  }
-}
 
 watch(() => props.pendingNavigation, (request) => {
   if (!request)
@@ -386,7 +307,6 @@ onBeforeUnmount(() => {
             </template>
           </nav>
           <div
-            ref="settingsSearchRef"
             class="settings-search"
             :class="{ 'has-query': Boolean(searchQuery) }"
             :style="{
@@ -400,17 +320,9 @@ onBeforeUnmount(() => {
               v-model="searchQuery"
               type="search"
               :placeholder="$t('settings.search.placeholder')"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-controls="settings-search-results"
-              :aria-expanded="Boolean(searchQuery)"
-              :aria-activedescendant="activeSearchResultIndex >= 0 ? `settings-search-result-${activeSearchResultIndex}` : undefined"
+              :aria-label="$t('settings.search.placeholder')"
+              :aria-describedby="isSearching ? 'settings-search-status' : undefined"
               @keydown.esc="searchQuery = ''"
-              @keydown.down="moveSearchResultSelection($event, 1)"
-              @keydown.up="moveSearchResultSelection($event, -1)"
-              @keydown.enter="activateSearchResult"
-              @focus="() => { handleSearchFocus(); updateSearchPopoverBounds() }"
-              @blur="handleSearchBlur"
             >
           </div>
           <button
@@ -472,7 +384,10 @@ onBeforeUnmount(() => {
           <main w-full min-h="[calc(100%-92px)]" p="x-12 b-20">
             <!-- <div h-80px mt--8 /> -->
 
-            <Transition name="page-fade">
+            <template v-if="isSearching">
+              <SettingsSearchResults :sections="searchResultSections" :summary="searchResultsSummary" />
+            </template>
+            <Transition v-else name="page-fade">
               <SettingsCategoryLayout
                 v-if="settingsContentReady && activeMenuDef.pages?.length"
                 :key="`layout-${activatedMenuItem}`"
@@ -512,44 +427,6 @@ onBeforeUnmount(() => {
         </Tooltip>
       </div>
     </div>
-
-    <Teleport :to="mainAppRef" :disabled="!mainAppRef">
-      <Transition name="settings-search-popover">
-        <div
-          v-if="searchQuery && isSearchFocused"
-          id="settings-search-results"
-          ref="searchResultsRef"
-          class="settings-search-results bew-popover-surface"
-          role="listbox"
-          :style="[
-            searchPopoverStyle,
-            {
-              backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-              zIndex: 'var(--bew-z-settings-popover)',
-            },
-          ]"
-        >
-          <button
-            v-for="(entry, index) in searchResults"
-            :id="`settings-search-result-${index}`"
-            :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
-            type="button"
-            role="option"
-            :aria-selected="index === activeSearchResultIndex"
-            :class="{ active: index === activeSearchResultIndex }"
-            @mouseenter="activeSearchResultIndex = index"
-            @mousedown.prevent
-            @click="navigateToSearchResult(entry)"
-          >
-            <strong>{{ getSearchEntryTitle(entry) }}</strong>
-            <span>{{ getSearchEntryLocation(entry) }}</span>
-          </button>
-          <p v-if="searchResults.length === 0">
-            {{ $t('settings.search.no_results') }}
-          </p>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -764,162 +641,6 @@ onBeforeUnmount(() => {
     &:focus-visible {
       outline: 0;
     }
-  }
-}
-
-.settings-search-results {
-  box-sizing: border-box;
-  padding: var(--bew-space-2);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-radius: calc(var(--bew-radius) + 4px);
-
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--bew-space-3);
-    width: 100%;
-    min-height: var(--bew-control-height);
-    padding: var(--bew-space-2) var(--bew-space-4);
-    text-align: left;
-    border-radius: var(--bew-radius);
-    transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
-
-    &:hover {
-      background: var(--bew-fill-2);
-    }
-
-    &.active {
-      background: var(--bew-fill-2);
-    }
-  }
-
-  strong {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--bew-text-1);
-    font-size: var(--bew-font-size-body);
-    font-weight: var(--bew-font-weight-semibold);
-    line-height: var(--bew-line-height-body);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  span,
-  p {
-    color: var(--bew-text-2);
-    font-size: var(--bew-font-size-control);
-    line-height: var(--bew-line-height-control);
-  }
-
-  span {
-    flex: 0 1 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  p {
-    padding: 12px;
-    text-align: center;
-  }
-}
-
-.settings-search-results {
-  transform-origin: top right;
-}
-
-.settings-search-popover-enter-active,
-.settings-search-popover-leave-active {
-  transition:
-    opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.settings-search-popover-enter-from,
-.settings-search-popover-leave-to {
-  opacity: 0;
-  transform: translateY(-4px) scale(0.98);
-}
-
-:deep(.settings-search-target) {
-  position: relative;
-  z-index: 2;
-  isolation: isolate;
-  border-radius: var(--bew-panel-radius);
-}
-
-:deep(.settings-search-target > *) {
-  position: relative;
-  z-index: 1;
-}
-
-:deep(.settings-search-target::before) {
-  position: absolute;
-  inset: 0 -12px;
-  z-index: 0;
-  background: var(--bew-theme-color);
-  border-radius: var(--bew-panel-radius);
-  content: "";
-  opacity: 0;
-  pointer-events: none;
-  animation: settings-search-target-flash 2.4s ease-in-out;
-}
-
-:deep(.settings-search-target::after) {
-  position: absolute;
-  top: -13px;
-  right: 12px;
-  z-index: 3;
-  padding: var(--bew-space-1) var(--bew-space-2);
-  color: white;
-  background: var(--bew-theme-color);
-  border-radius: var(--bew-badge-radius);
-  box-shadow: var(--bew-shadow-2);
-  content: attr(data-settings-search-highlight);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-  pointer-events: none;
-  white-space: nowrap;
-  animation: settings-search-target-label 2.4s ease-out;
-}
-
-@keyframes settings-search-target-flash {
-  0%,
-  100% {
-    opacity: 0;
-  }
-
-  18%,
-  48%,
-  78% {
-    opacity: 0.18;
-  }
-
-  33%,
-  63% {
-    opacity: 0;
-  }
-}
-
-@keyframes settings-search-target-label {
-  0% {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-
-  14%,
-  72% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-5px);
   }
 }
 
