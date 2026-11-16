@@ -2,7 +2,6 @@ import { createPinia } from 'pinia'
 import type { App } from 'vue'
 import Toast, { POSITION, TYPE } from 'vue-toastification'
 
-import components from '~/components'
 import { i18n } from '~/utils/i18n'
 
 const pinia = createPinia()
@@ -43,6 +42,5 @@ export async function setupApp(app: App) {
         [TYPE.ERROR]: { timeout: 6500 },
       },
     })
-  app.use(components)
   app.use(pinia)
 }

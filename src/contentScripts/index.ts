@@ -3,6 +3,7 @@ import 'uno.css'
 
 import { createApp } from 'vue'
 
+import components from '~/components'
 import { startIframeThemeListener, useDark } from '~/composables/useDark'
 import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
@@ -1608,6 +1609,7 @@ else if (shouldInitializeContentScript) {
 
     const app = createApp(App)
     setupApp(app)
+    app.use(components)
     app.mount(root)
 
     let appDisposed = false

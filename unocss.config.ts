@@ -1,6 +1,26 @@
+import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+
 import { defineConfig, presetAttributify, presetIcons, presetTypography, presetWind3, transformerDirectives } from 'unocss'
 
 const remRE = /(-?[.\d]+)rem/g
+
+// presetIcons 默认从 @iconify/json 按需加载图标集，但其缓存只在读取完成后才生效：生成 CSS 时
+// 同一图标集的图标并发请求，每个请求都会重新读取并解析整份 JSON（mingcute 曾被读取上百次），
+// 导致构建耗时数十秒、内存峰值达数 GB。这里为项目用到的图标集提供共享同一次加载的 loader；
+// 新增未列出的图标集仍会走默认加载，只是会重新出现上述开销。
+const ICON_COLLECTIONS = ['mingcute', 'tabler', 'solar', 'svg-spinners', 'line-md', 'uil', 'ph', 'mdi', 'ic', 'fluent']
+const requireFromConfig = createRequire(import.meta.url)
+const iconCollectionCache = new Map<string, Promise<any>>()
+
+function loadIconCollection(name: string) {
+  let collection = iconCollectionCache.get(name)
+  if (!collection) {
+    collection = readFile(requireFromConfig.resolve(`@iconify/json/json/${name}.json`), 'utf8').then(JSON.parse)
+    iconCollectionCache.set(name, collection)
+  }
+  return collection
+}
 
 export default defineConfig({
   content: {
@@ -70,6 +90,7 @@ export default defineConfig({
     presetWind3(),
     presetAttributify(),
     presetIcons({
+      collections: Object.fromEntries(ICON_COLLECTIONS.map(name => [name, () => loadIconCollection(name)])),
       extraProperties: {
         'display': 'inline-block',
         'vertical-align': 'middle',

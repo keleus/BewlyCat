@@ -6,7 +6,8 @@ import { defineConfig } from 'vite'
 
 import packageJson from './package.json'
 import { embedBundledStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
-import { isDev, isFirefox, isSafari, r } from './scripts/utils'
+import { isFirefox, isSafari, r } from './scripts/utils'
+import unoConfig from './unocss.config'
 import { sharedConfig } from './vite.config'
 
 function emitOptionsPageHtml(): Plugin {
@@ -31,16 +32,23 @@ function emitOptionsPageHtml(): Plugin {
 export default defineConfig({
   ...sharedConfig,
   plugins: [
-    UnoCSS(),
+    UnoCSS({
+      ...unoConfig,
+      configFile: false,
+      // 只从设置页实际打包的模块中提取类名，不像内容脚本那样扫描整个 src。
+      content: {
+        pipeline: {
+          include: [/\.(?:vue|[jt]sx?|html)(?:$|\?)/],
+          exclude: [/[\\/]node_modules[\\/]/, /\.(?:css|postcss|sass|scss|less|stylus|styl)(?:$|\?)/],
+        },
+      },
+    }),
     ...sharedConfig.plugins!,
     embedBundledStyles(),
     watchLocaleFiles(),
     emitOptionsPageHtml(),
   ],
   build: {
-    watch: isDev
-      ? { include: ['./**/*'] }
-      : undefined,
     outDir: r(isFirefox ? 'extension-firefox/dist/options' : isSafari ? 'extension-safari/dist/options' : 'extension/dist/options'),
     cssCodeSplit: false,
     emptyOutDir: false,
@@ -51,8 +59,6 @@ export default defineConfig({
       formats: ['iife'],
     },
     rollupOptions: {
-      // Disable Rollup cache in dev mode to ensure locale file changes are picked up
-      cache: isDev ? false : undefined,
       output: {
         entryFileNames: 'index.global.js',
         assetFileNames: 'style.css',

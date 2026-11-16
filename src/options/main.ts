@@ -18,6 +18,7 @@ import { setBilibiliCookieSnapshot } from '~/utils/main'
 import { SVG_ICONS } from '~/utils/svgIcons'
 
 import Options from './Options.vue'
+import { registerSettingsComponents } from './settingsComponents'
 
 const BILIBILI_URL = 'https://www.bilibili.com/'
 
@@ -54,6 +55,7 @@ function mountOptionsPage() {
 
   const app = createApp(Options)
   setupApp(app)
+  registerSettingsComponents(app)
   app.mount(root)
 }
 

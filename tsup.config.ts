@@ -22,7 +22,8 @@ export default defineConfig(() => ({
   outDir,
   format: ['esm'],
   target: 'esnext',
-  ignoreWatch: ['**/extension/**', '**/extension-firefox/**', '**/extension-safari/**'],
+  // auto-imports.d.ts 会在每次 Vite 构建时重写，类型声明不影响后台脚本产物。
+  ignoreWatch: ['**/extension/**', '**/extension-firefox/**', '**/extension-safari/**', '**/*.d.ts'],
   splitting: false,
   loader: { '.css': 'text' },
   // Stream players are loaded by content scripts and must be self-contained.

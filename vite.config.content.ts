@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import packageJson from './package.json'
 import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
 import { embedBundledStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
-import { isDev, isFirefox, isSafari, r } from './scripts/utils'
+import { isFirefox, isSafari, r } from './scripts/utils'
 import { sharedConfig } from './vite.config'
 
 // bundling the content script using Vite
@@ -18,9 +18,6 @@ export default defineConfig({
     thirdPartyLicensesVitePlugin('content'),
   ],
   build: {
-    watch: isDev
-      ? { include: ['./**/*'] }
-      : undefined,
     outDir: r(isFirefox ? 'extension-firefox/dist/contentScripts' : isSafari ? 'extension-safari/dist/contentScripts' : 'extension/dist/contentScripts'),
     cssCodeSplit: false,
     emptyOutDir: false,
@@ -31,8 +28,6 @@ export default defineConfig({
       formats: ['iife'],
     },
     rollupOptions: {
-      // Disable Rollup cache in dev mode to ensure locale file changes are picked up
-      cache: isDev ? false : undefined,
       output: {
         entryFileNames: 'index.global.js',
         assetFileNames: 'style.css',
