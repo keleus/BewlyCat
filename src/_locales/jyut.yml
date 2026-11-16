@@ -222,6 +222,8 @@ settings:
     placeholder: 搜尋設定
     no_results: 搵唔到相關設定
     located: 已定位到呢個設定
+    results_title: 搵嘢結果
+    results_count: 搵到 {count} 個設定
   category_general_desc: 設定語言同互動方式，並按需要開啟外掛嘅各個部分，可以淨係保留評論、大會員等單項功能。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式同其他頁面嘅適配。
   category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。

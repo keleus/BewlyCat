@@ -8,6 +8,7 @@ import { settings } from '~/logic'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
@@ -28,7 +29,7 @@ const filterOptions = computed(() => MOMENT_TYPE_FILTER_OPTIONS.map(option => ({
       :desc="$t('settings.moments_filtered_types_desc')"
     >
       <template #bottom>
-        <div class="moment-filter-tags" role="group" :aria-label="$t('settings.moments_filtered_types')">
+        <SettingsSearchContainer class="moment-filter-tags" role="group" :aria-label="$t('settings.moments_filtered_types')">
           <SettingsToggleTag
             v-for="option in filterOptions"
             :key="option.setting"
@@ -37,8 +38,9 @@ const filterOptions = computed(() => MOMENT_TYPE_FILTER_OPTIONS.map(option => ({
             :icon="option.icon"
             inverted
             :show-state-icon="false"
+            searchable
           />
-        </div>
+        </SettingsSearchContainer>
       </template>
     </SettingsItem>
     <SettingsItem

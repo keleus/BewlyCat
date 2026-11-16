@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
 
+import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
@@ -70,8 +71,8 @@ const groups = computed<ContentGroup[]>(() => [
 </script>
 
 <template>
-  <div class="video-card-content-editor">
-    <div v-for="group in groups" :key="group.id" class="content-row">
+  <SettingsSearchContainer class="video-card-content-editor">
+    <SettingsSearchContainer v-for="group in groups" :key="group.id" class="content-row">
       <span class="content-row__label">{{ group.label }}</span>
 
       <div class="content-row__elements">
@@ -81,10 +82,11 @@ const groups = computed<ContentGroup[]>(() => [
           v-model="settings[element.setting]"
           :label="element.label"
           :icon="element.icon"
+          searchable
         />
       </div>
-    </div>
-  </div>
+    </SettingsSearchContainer>
+  </SettingsSearchContainer>
 </template>
 
 <style lang="scss" scoped>

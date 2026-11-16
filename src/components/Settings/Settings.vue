@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import type { CSSProperties } from 'vue'
+import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SettingsMenu, SettingsNavigationTarget } from '~/composables/useAppProvider'
@@ -12,6 +12,7 @@ import { buildSettingsPageHash } from '~/utils/settingsPage'
 
 import SettingsSectionHeading from './components/SettingsSectionHeading.vue'
 import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
+import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilter'
 import { useSettingsUrlSync } from './composables/useSettingsUrlSync'
 import type { SettingsSearchEntry } from './searchCatalog'
 import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from './searchCatalog'
@@ -102,10 +103,7 @@ function toggleMenu(menu: MenuType) {
     expandedMenus.value.add(menu)
 }
 
-const settingsSearchRef = ref<HTMLElement>()
 const searchInputRef = ref<HTMLInputElement>()
-const searchPopoverStyle = ref<CSSProperties>({})
-const isSearchFocused = ref(false)
 const { mainAppRef } = useBewlyApp()
 
 // 鼠标点选后焦点仍留在控件上时，之后的任意按键（包括系统快捷键）都会让浏览器
@@ -121,58 +119,11 @@ useEventListener(mainAppRef, 'click', (event: MouseEvent) => {
     activeElement.blur()
 }, { capture: true })
 
-function handleSearchBlur() {
-  isSearchFocused.value = false
-}
-
-function handleSearchFocus() {
-  isSearchFocused.value = true
-}
-
-function updateSearchPopoverBounds() {
-  const searchElement = settingsSearchRef.value
-  const contentElement = searchElement?.closest<HTMLElement>('.settings-page')
-  if (!searchElement || !contentElement)
-    return
-
-  const searchRect = searchElement.getBoundingClientRect()
-  const contentRect = contentElement.getBoundingClientRect()
-  const edgeInset = 8
-  const popoverGap = 10
-  const narrowLayout = window.innerWidth <= 760
-  const bottomEdge = Math.min(window.innerHeight - edgeInset, contentRect.bottom - edgeInset)
-
-  // Fixed positioning so the popover can be teleported out of the settings
-  // window (which has its own backdrop-filter that would swallow ours).
-  searchPopoverStyle.value = {
-    position: 'fixed',
-    top: `${searchRect.bottom + popoverGap}px`,
-    right: narrowLayout ? 'auto' : `${window.innerWidth - searchRect.right}px`,
-    left: narrowLayout ? `${contentRect.left + edgeInset}px` : 'auto',
-    width: narrowLayout ? `${Math.max(0, contentRect.width - edgeInset * 2)}px` : `${searchRect.width}px`,
-    maxHeight: `${Math.max(0, bottomEdge - searchRect.bottom - popoverGap)}px`,
-  }
-}
-
-function focusSettingsSearch(event: MouseEvent) {
-  if (event.target instanceof Element && event.target.closest('.settings-search-results'))
-    return
-
+function focusSettingsSearch() {
   searchInputRef.value?.focus({ preventScroll: true })
-  nextTick(updateSearchPopoverBounds)
 }
-
-useEventListener(window, 'resize', () => nextTick(updateSearchPopoverBounds))
 
 const scrollViewportRef = ref<HTMLElement>()
-
-// 滚动时关闭搜索弹窗（保留搜索词）
-useEventListener(() => scrollViewportRef.value, 'scroll', () => {
-  if (isSearchFocused.value) {
-    isSearchFocused.value = false
-    searchInputRef.value?.blur()
-  }
-}, { capture: true })
 
 watch(activatedMenuItem, (menu) => {
   sessionStorage.setItem(settingsMenuStorageKey, menu)
@@ -193,16 +144,6 @@ const titleDetail = computed(() => activeSecondaryPage.value ? t(activeSecondary
 
 function getSearchEntryTitle(entry: SettingsSearchEntry) {
   return entry.titleKey ? t(entry.titleKey) : entry.title ?? ''
-}
-
-function getSearchEntryLocation(entry: SettingsSearchEntry) {
-  const primaryTitle = getMenuTitle(entry.menu)
-  const pageLocation = entry.secondaryTitleKey
-    ? `${primaryTitle} / ${t(entry.secondaryTitleKey)}`
-    : primaryTitle
-  return entry.contextTitleKey
-    ? `${t(entry.contextTitleKey)} · ${pageLocation}`
-    : pageLocation
 }
 
 function getTranslatedSearchTerms(key: string): string[] {
@@ -308,50 +249,125 @@ const searchResults = computed(() => {
   return matches.map(({ item }) => item.entry)
 })
 
-const activeSearchResultIndex = ref(-1)
-const searchResultsRef = ref<HTMLElement>()
+const isSearching = computed(() => searchQuery.value.trim().length > 0)
 
-watch(searchQuery, (query) => {
-  activeSearchResultIndex.value = -1
-  if (query)
-    nextTick(updateSearchPopoverBounds)
+const matchedSearchTitles = computed(() => {
+  const titles = new Set<string>()
+  for (const entry of searchResults.value) {
+    const title = getSearchEntryTitle(entry).trim()
+    if (title)
+      titles.add(title)
+    if (entry.fallbackTargetKey) {
+      const fallbackTitle = t(entry.fallbackTargetKey).trim()
+      if (fallbackTitle)
+        titles.add(fallbackTitle)
+    }
+  }
+  return titles
 })
 
-function moveSearchResultSelection(event: KeyboardEvent, direction: 1 | -1) {
-  if (event.isComposing)
-    return
+provideSettingsSearchFilter(isSearching, matchedSearchTitles)
 
-  const resultCount = searchResults.value.length
-  if (!resultCount)
-    return
-
-  event.preventDefault()
-  if (activeSearchResultIndex.value < 0)
-    activeSearchResultIndex.value = direction > 0 ? 0 : resultCount - 1
-  else
-    activeSearchResultIndex.value = (activeSearchResultIndex.value + direction + resultCount) % resultCount
-
-  // 键盘导航时让选中项滚动到可视区内
-  nextTick(() => {
-    searchResultsRef.value?.children[activeSearchResultIndex.value]?.scrollIntoView({ block: 'nearest' })
-  })
+function getSearchEntrySecondaryPage(entry: SettingsSearchEntry) {
+  const menu = settingsMenus.find(item => item.value === entry.menu)
+  return entry.storageValues?.find(({ key }) => key === menu?.storageKey)?.value
 }
 
-function activateSearchResult(event: KeyboardEvent) {
-  if (event.isComposing)
-    return
-
-  const entry = searchResults.value[activeSearchResultIndex.value] ?? searchResults.value[0]
-  if (entry) {
-    event.preventDefault()
-    navigateToSearchResult(entry)
+// 有命中的页面（菜单自身或二级页），结果页按菜单/页面顺序渲染这些页面的真实设置项。
+const searchResultPageKeys = computed(() => {
+  const keys = new Set<string>()
+  for (const entry of searchResults.value) {
+    const secondaryPage = getSearchEntrySecondaryPage(entry)
+    keys.add(secondaryPage ? `${entry.menu}:${secondaryPage}` : entry.menu)
   }
+  return keys
+})
+
+interface SearchResultSection {
+  key: string
+  menuTitleKey: string
+  page?: SettingsSecondaryPage
+  component: Component
 }
 
-function getMenuTitle(menu: MenuType) {
-  const menuItem = settingsMenus.find(item => item.value === menu)
-  return menuItem ? t(menuItem.titleKey) : t('settings.title')
-}
+// 搜索结果已按匹配度排序，取每个页面首次出现的位置作为结果页的分组顺序。
+const searchResultSectionOrder = computed(() => {
+  const order = new Map<string, number>()
+  for (const entry of searchResults.value) {
+    const secondaryPage = getSearchEntrySecondaryPage(entry)
+    const key = secondaryPage ? `${entry.menu}:${secondaryPage}` : entry.menu
+    if (!order.has(key))
+      order.set(key, order.size)
+  }
+  return order
+})
+
+const searchResultSections = computed<SearchResultSection[]>(() => {
+  if (!isSearching.value)
+    return []
+
+  const sections: SearchResultSection[] = []
+  for (const menu of visibleMenus.value) {
+    if (!menu.pages) {
+      if (menu.component && searchResultPageKeys.value.has(menu.value))
+        sections.push({ key: menu.value, menuTitleKey: menu.titleKey, component: menu.component })
+      continue
+    }
+
+    for (const page of menu.pages) {
+      const key = `${menu.value}:${page.value}`
+      if (page.component && searchResultPageKeys.value.has(key))
+        sections.push({ key, menuTitleKey: menu.titleKey, page, component: page.component })
+    }
+  }
+
+  return sections.sort((a, b) =>
+    (searchResultSectionOrder.value.get(a.key) ?? Number.MAX_SAFE_INTEGER)
+    - (searchResultSectionOrder.value.get(b.key) ?? Number.MAX_SAFE_INTEGER),
+  )
+})
+
+const searchResultCount = computed(() => {
+  const titles = new Set<string>()
+  for (const entry of searchResults.value) {
+    const title = getSearchEntryTitle(entry).trim()
+    if (title)
+      titles.add(title)
+  }
+  return titles.size
+})
+
+const searchResultsSummary = computed(() => {
+  if (!isSearching.value)
+    return ''
+  return searchResultCount.value
+    ? t('settings.search.results_count', { count: searchResultCount.value })
+    : t('settings.search.no_results')
+})
+
+// 搜索结果页和普通页面共用同一个滚动容器，切换模式时回到顶部。
+watch(isSearching, () => {
+  scrollViewportRef.value?.scrollTo({ top: 0 })
+})
+
+// 快捷键分组等 details 默认折叠，结果页里命中的项需要展开才能看到。
+watch(searchResults, async () => {
+  if (!isSearching.value)
+    return
+  await nextTick()
+  const viewport = scrollViewportRef.value
+  if (!viewport)
+    return
+
+  for (const match of Array.from(viewport.querySelectorAll('.settings-search-match'))) {
+    let ancestor = match.parentElement
+    while (ancestor && ancestor !== viewport) {
+      if (ancestor instanceof HTMLDetailsElement && !ancestor.open)
+        ancestor.open = true
+      ancestor = ancestor.parentElement
+    }
+  }
+}, { flush: 'post' })
 
 let highlightedSearchTarget: HTMLElement | undefined
 let searchTargetHighlightTimer: number | undefined
@@ -493,17 +509,25 @@ function scrollToSearchTarget(
   })
 }
 
+function activateSettingsTarget(target: SettingsNavigationTarget) {
+  const menu = settingsMenus.find(item => item.value === target.menu)
+  const secondaryPage = target.secondaryPage
+  if (secondaryPage && menu?.pages?.some(page => page.value === secondaryPage))
+    activeSecondaryPages[target.menu as MenuType] = secondaryPage
+
+  expandedMenus.value.add(target.menu as MenuType)
+  activatedMenuItem.value = target.menu as MenuType
+}
+
 function navigateToSearchResult(entry: SettingsSearchEntry) {
   cancelSearchNavigation()
   const navigationId = searchNavigationId
-  const menu = settingsMenus.find(item => item.value === entry.menu)
-  const secondaryPage = entry.storageValues?.find(({ key }) => key === menu?.storageKey)?.value
-  if (secondaryPage && menu?.pages?.some(page => page.value === secondaryPage))
-    activeSecondaryPages[entry.menu] = secondaryPage
-
-  expandedMenus.value.add(entry.menu)
-  activatedMenuItem.value = entry.menu
   searchQuery.value = ''
+  activateSettingsTarget({
+    menu: entry.menu,
+    secondaryPage: getSearchEntrySecondaryPage(entry),
+    targetTitleKey: entry.targetTitleKey,
+  })
   const targetTitle = entry.targetTitleKey
     ? t(entry.targetTitleKey)
     : entry.targetTitle ?? getSearchEntryTitle(entry)
@@ -522,6 +546,13 @@ function navigateToTarget(target: SettingsNavigationTarget) {
   })
 }
 
+function handleSidebarLinkClick(menu?: MenuType) {
+  if (menu)
+    expandedMenus.value.add(menu)
+  // 侧栏导航视为离开搜索结果页。
+  searchQuery.value = ''
+}
+
 watch(pendingNavigation, (target) => {
   if (!target)
     return
@@ -537,7 +568,9 @@ function getMenuHref(menu: (typeof visibleMenus.value)[number], secondaryPage = 
 useSettingsUrlSync(computed(() => getMenuHref(activeMenu.value)), navigateToTarget)
 
 watchEffect(() => {
-  document.title = `${titleDetail.value ?? title.value} - BewlyCat`
+  document.title = isSearching.value
+    ? `${t('settings.search.results_title')} - BewlyCat`
+    : `${titleDetail.value ?? title.value} - BewlyCat`
 })
 
 onBeforeUnmount(cancelSearchNavigation)
@@ -564,16 +597,16 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
                 class="settings-sidebar__item"
                 :class="{
                   'settings-sidebar__item--parent': menu.pages,
-                  'is-active': menu.value === activeMenu.value && (!menu.pages || !expandedMenus.has(menu.value)),
-                  'is-current': menu.value === activeMenu.value,
+                  'is-active': !isSearching && menu.value === activeMenu.value && (!menu.pages || !expandedMenus.has(menu.value)),
+                  'is-current': !isSearching && menu.value === activeMenu.value,
                 }"
                 :href="getMenuHref(menu)"
-                :aria-current="menu.value === activeMenu.value && !menu.pages ? 'page' : undefined"
-                @click="expandedMenus.add(menu.value)"
+                :aria-current="!isSearching && menu.value === activeMenu.value && !menu.pages ? 'page' : undefined"
+                @click="handleSidebarLinkClick(menu.value)"
               >
                 <span
                   class="settings-sidebar__icon"
-                  :class="menu.value === activeMenu.value ? menu.iconActivated : menu.icon"
+                  :class="!isSearching && menu.value === activeMenu.value ? menu.iconActivated : menu.icon"
                 />
                 <span>{{ $t(menu.titleKey) }}</span>
               </a>
@@ -607,13 +640,14 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
                     <li v-for="page in group.pages" :key="page.value">
                       <a
                         class="settings-sidebar__item settings-sidebar__item--child"
-                        :class="{ 'is-active': page === activeSecondaryPage }"
+                        :class="{ 'is-active': !isSearching && page === activeSecondaryPage }"
                         :href="getMenuHref(menu, page.value)"
-                        :aria-current="page === activeSecondaryPage ? 'page' : undefined"
+                        :aria-current="!isSearching && page === activeSecondaryPage ? 'page' : undefined"
+                        @click="handleSidebarLinkClick()"
                       >
                         <span
                           class="settings-sidebar__icon"
-                          :class="page === activeSecondaryPage ? page.iconActivated : page.icon"
+                          :class="!isSearching && page === activeSecondaryPage ? page.iconActivated : page.icon"
                         />
                         <span>{{ $t(page.titleKey) }}</span>
                       </a>
@@ -641,34 +675,22 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
         <nav class="settings-breadcrumb" :aria-label="$t('settings.breadcrumb')">
           <span>{{ $t('settings.title') }}</span>
           <i i-mingcute:right-line />
-          <strong>{{ title }}</strong>
-          <template v-if="titleDetail">
+          <strong>{{ isSearching ? $t('settings.search.results_title') : title }}</strong>
+          <template v-if="!isSearching && titleDetail">
             <i i-mingcute:right-line />
             <strong>{{ titleDetail }}</strong>
           </template>
         </nav>
-        <div
-          ref="settingsSearchRef"
-          class="settings-search"
-          @click="focusSettingsSearch"
-        >
+        <div class="settings-search" @click="focusSettingsSearch">
           <i i-mingcute:search-2-line />
           <input
             ref="searchInputRef"
             v-model="searchQuery"
             type="search"
             :placeholder="$t('settings.search.placeholder')"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-controls="settings-search-results"
-            :aria-expanded="Boolean(searchQuery)"
-            :aria-activedescendant="activeSearchResultIndex >= 0 ? `settings-search-result-${activeSearchResultIndex}` : undefined"
+            :aria-label="$t('settings.search.placeholder')"
+            :aria-describedby="isSearching ? 'settings-search-status' : undefined"
             @keydown.esc="searchQuery = ''"
-            @keydown.down="moveSearchResultSelection($event, 1)"
-            @keydown.up="moveSearchResultSelection($event, -1)"
-            @keydown.enter="activateSearchResult"
-            @focus="() => { handleSearchFocus(); updateSearchPopoverBounds() }"
-            @blur="handleSearchBlur"
           >
         </div>
       </header>
@@ -683,13 +705,14 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
           v-for="page in activeMenu.pages"
           :key="page.value"
           class="settings-sidebar__item settings-sidebar__item--child"
-          :class="{ 'is-active': page === activeSecondaryPage }"
+          :class="{ 'is-active': !isSearching && page === activeSecondaryPage }"
           :href="getMenuHref(activeMenu, page.value)"
-          :aria-current="page === activeSecondaryPage ? 'page' : undefined"
+          :aria-current="!isSearching && page === activeSecondaryPage ? 'page' : undefined"
+          @click="handleSidebarLinkClick()"
         >
           <span
             class="settings-sidebar__icon"
-            :class="page === activeSecondaryPage ? page.iconActivated : page.icon"
+            :class="!isSearching && page === activeSecondaryPage ? page.iconActivated : page.icon"
           />
           <span>{{ $t(page.titleKey) }}</span>
         </a>
@@ -698,56 +721,56 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
       <div ref="scrollViewportRef" class="settings-viewport">
         <!-- 按页面重建节点以重播入场动画；旧页立即移除，避免两页文字叠影。 -->
         <main
-          :key="`${activeMenu.value}/${activeSecondaryPage?.value ?? ''}`"
+          :key="isSearching ? 'search-results' : `${activeMenu.value}/${activeSecondaryPage?.value ?? ''}`"
           class="settings-main"
         >
-          <SettingsSectionHeading
-            v-if="activeSecondaryPage"
-            :title="$t(activeSecondaryPage.titleKey)"
-            :desc="activeSecondaryPage.descriptionKey ? $t(activeSecondaryPage.descriptionKey) : undefined"
-            :icon="activeSecondaryPage.iconActivated"
-          />
-          <Component :is="activeContent" />
+          <template v-if="isSearching">
+            <SettingsSectionHeading
+              :title="$t('settings.search.results_title')"
+              :desc="searchResultSections.length ? searchResultsSummary : undefined"
+              icon="i-mingcute:search-2-fill"
+            />
+            <div v-if="searchResultSections.length" class="settings-search-results">
+              <section
+                v-for="section in searchResultSections"
+                :key="section.key"
+                class="settings-search-result-section"
+              >
+                <header class="settings-search-result-source">
+                  <span class="settings-search-result-source__menu">{{ $t(section.menuTitleKey) }}</span>
+                  <template v-if="section.page">
+                    <i i-mingcute:right-line />
+                    <strong class="settings-search-result-source__page">{{ $t(section.page.titleKey) }}</strong>
+                  </template>
+                </header>
+                <Component :is="section.component" />
+              </section>
+            </div>
+            <div v-else class="settings-search-empty">
+              <div class="settings-search-empty__icon" i-mingcute:search-2-line />
+              <p class="settings-search-empty__title">
+                {{ $t('settings.search.no_results') }}
+              </p>
+            </div>
+            <span
+              id="settings-search-status"
+              class="settings-search-status"
+              role="status"
+              aria-live="polite"
+            >{{ searchResultsSummary }}</span>
+          </template>
+          <template v-else>
+            <SettingsSectionHeading
+              v-if="activeSecondaryPage"
+              :title="$t(activeSecondaryPage.titleKey)"
+              :desc="activeSecondaryPage.descriptionKey ? $t(activeSecondaryPage.descriptionKey) : undefined"
+              :icon="activeSecondaryPage.iconActivated"
+            />
+            <Component :is="activeContent" />
+          </template>
         </main>
       </div>
     </div>
-
-    <Teleport :to="mainAppRef" :disabled="!mainAppRef">
-      <Transition name="settings-search-popover">
-        <div
-          v-if="searchQuery && isSearchFocused"
-          id="settings-search-results"
-          ref="searchResultsRef"
-          class="settings-search-results bew-popover-surface"
-          role="listbox"
-          :style="[
-            searchPopoverStyle,
-            {
-              backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-              zIndex: 'var(--bew-z-settings-popover)',
-            },
-          ]"
-        >
-          <button
-            v-for="(entry, index) in searchResults"
-            :id="`settings-search-result-${index}`"
-            :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
-            type="button"
-            role="option"
-            :aria-selected="index === activeSearchResultIndex"
-            :class="{ active: index === activeSearchResultIndex }"
-            @mouseenter="activeSearchResultIndex = index"
-            @click="navigateToSearchResult(entry)"
-          >
-            <strong>{{ getSearchEntryTitle(entry) }}</strong>
-            <span>{{ getSearchEntryLocation(entry) }}</span>
-          </button>
-          <p v-if="searchResults.length === 0">
-            {{ $t('settings.search.no_results') }}
-          </p>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -1085,7 +1108,8 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
   }
 
   input {
-    width: 100%;
+    flex: 1 1 auto;
+    width: auto;
     min-width: 0;
     margin-left: var(--bew-space-2);
     color: var(--bew-text-1);
@@ -1102,81 +1126,89 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
   }
 }
 
-.settings-search-results {
-  box-sizing: border-box;
-  padding: var(--bew-space-2);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-radius: calc(var(--bew-radius) + 4px);
-
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--bew-space-3);
-    width: 100%;
-    min-height: var(--bew-control-height);
-    padding: var(--bew-space-2) var(--bew-space-4);
-    text-align: left;
-    border-radius: var(--bew-radius);
-    transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
-
-    &:hover {
-      background: var(--bew-fill-2);
-    }
-
-    &.active {
-      background: var(--bew-fill-2);
-    }
-  }
-
-  strong {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--bew-text-1);
-    font-size: var(--bew-font-size-body);
-    font-weight: var(--bew-font-weight-semibold);
-    line-height: var(--bew-line-height-body);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  span,
-  p {
-    color: var(--bew-text-2);
-    font-size: var(--bew-font-size-control);
-    line-height: var(--bew-line-height-control);
-  }
-
-  span {
-    flex: 0 1 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  p {
-    padding: 12px;
-    text-align: center;
-  }
+.settings-search-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0 0 0 0);
 }
 
 .settings-search-results {
-  transform-origin: top right;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bew-space-6);
 }
 
-.settings-search-popover-enter-active,
-.settings-search-popover-leave-active {
-  transition:
-    opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+// 结果页已经按来源页分组，隐藏各页面组件自带的标题，避免重复。
+.settings-search-results :deep(.settings-section-heading) {
+  display: none;
 }
 
-.settings-search-popover-enter-from,
-.settings-search-popover-leave-to {
-  opacity: 0;
-  transform: translateY(-4px) scale(0.98);
+.settings-search-result-section {
+  min-width: 0;
+}
+
+// 条件设置可能全部隐藏；没有任何可见命中项的分组不显示来源标题。
+.settings-search-result-section:not(:has(.settings-search-match)) {
+  display: none;
+}
+
+.settings-search-result-section + .settings-search-result-section {
+  padding-top: var(--bew-space-6);
+  border-top: 1px solid var(--bew-border-color);
+}
+
+.settings-search-result-source {
+  display: flex;
+  gap: var(--bew-space-1);
+  align-items: center;
+  margin-bottom: var(--bew-space-3);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+}
+
+.settings-search-result-source__menu {
+  color: var(--bew-text-2);
+}
+
+.settings-search-result-source__page {
+  color: var(--bew-text-1);
+  font-weight: var(--bew-font-weight-semibold);
+}
+
+.settings-search-result-source > i {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.settings-search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bew-space-2);
+  padding: var(--bew-space-12) var(--bew-space-4);
+  color: var(--bew-text-2);
+  text-align: center;
+}
+
+.settings-search-empty__icon {
+  color: var(--bew-text-3);
+  font-size: var(--bew-icon-size-xl);
+}
+
+.settings-search-empty__title {
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-heading);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-heading);
 }
 
 :deep(.settings-search-target) {

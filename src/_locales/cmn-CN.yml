@@ -222,6 +222,8 @@ settings:
     placeholder: 搜索设置
     no_results: 没有找到相关设置
     located: 已定位到此设置
+    results_title: 搜索结果
+    results_count: 找到 {count} 个设置
   category_general_desc: 配置语言和交互方式，并按需开启插件的各个部分，可以只保留评论、大会员等单项功能。
   category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。

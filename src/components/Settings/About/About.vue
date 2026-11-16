@@ -15,6 +15,7 @@ import licenseText from '../../../../LICENSE?raw'
 import { version } from '../../../../package.json'
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
+import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
 
 interface ThirdPartyLicense {
   name: string
@@ -38,6 +39,7 @@ const showThirdPartyLicenseDialog = ref(false)
 const thirdPartyLicenses = ref<ThirdPartyLicense[] | null>(null)
 const thirdPartyLicensesFailed = ref(false)
 const { t } = useI18n()
+const licenseSection = useSettingsSearchNode(() => t('settings.open_source_license'))
 const toast = useToast()
 
 const isDev = computed((): boolean => import.meta.env.DEV)
@@ -256,7 +258,13 @@ async function handleCopyEnvironmentInfo() {
             >
           </a>
         </section>
-        <section w-full data-settings-key="settings.open_source_license" :data-settings-title="$t('settings.open_source_license')">
+        <section
+          v-show="licenseSection.visible"
+          w-full
+          data-settings-key="settings.open_source_license"
+          :data-settings-title="$t('settings.open_source_license')"
+          :class="{ 'settings-search-match': licenseSection.selfMatch }"
+        >
           <h3 class="title">
             {{ $t('settings.open_source_license') }}
           </h3>

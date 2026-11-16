@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
+import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
 
 defineProps<{
   title: string
   defaultOpen?: boolean
 }>()
+
+const { visible } = useSettingsSearchNode(() => undefined)
 </script>
 
 <template>
-  <details class="shortcuts-group" :open="defaultOpen" :data-settings-title="title">
+  <details v-show="visible" class="shortcuts-group" :open="defaultOpen" :data-settings-title="title">
     <summary>{{ title }}</summary>
     <SettingsItemGroup>
       <slot />

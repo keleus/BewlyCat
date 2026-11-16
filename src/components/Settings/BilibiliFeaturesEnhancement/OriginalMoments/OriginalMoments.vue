@@ -6,6 +6,7 @@ import { settings } from '~/logic'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import MomentFilterSettings from '../../PluginComponentsAndPages/Moments/MomentFilterSettings.vue'
 
@@ -28,7 +29,7 @@ const componentOptions = computed(() => [
         :desc="$t('settings.moments_visible_components_original_desc')"
       >
         <template #bottom>
-          <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
+          <SettingsSearchContainer class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
             <SettingsToggleTag
               v-for="option in componentOptions"
               :key="option.setting"
@@ -36,8 +37,9 @@ const componentOptions = computed(() => [
               :label="option.label"
               :icon="option.icon"
               :data-settings-key="option.labelKey"
+              searchable
             />
-          </div>
+          </SettingsSearchContainer>
         </template>
       </SettingsItem>
       <SettingsItem

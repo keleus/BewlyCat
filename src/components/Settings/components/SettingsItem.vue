@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
+
 type RightWidth = 'default' | 'auto'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   title?: string
   desc?: string
   rightWidth?: RightWidth
@@ -9,10 +11,18 @@ withDefaults(defineProps<{
 }>(), {
   rightWidth: 'default',
 })
+
+const { visible, selfMatch } = useSettingsSearchNode(() => props.title)
 </script>
 
 <template>
-  <div class="b-settings-item" :data-settings-title="title" py-4>
+  <div
+    v-show="visible"
+    class="b-settings-item"
+    :class="{ 'settings-search-match': selfMatch }"
+    :data-settings-title="title"
+    py-4
+  >
     <div
       class="b-settings-item-row settings-item-content" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
     >

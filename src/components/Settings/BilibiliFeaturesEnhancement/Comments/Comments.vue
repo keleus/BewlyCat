@@ -10,6 +10,7 @@ import { COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT, COMMENT_REPLY_TREE_CONTAINER_M
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
@@ -61,7 +62,7 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
 
 <template>
   <SettingsItemGroup :title="$t('settings.group_comments')">
-    <div class="comment-setting-tags" role="group" :aria-label="$t('settings.group_comments')">
+    <SettingsSearchContainer class="comment-setting-tags" role="group" :aria-label="$t('settings.group_comments')">
       <SettingsToggleTag
         v-for="option in commentToggleOptions"
         :key="option.setting"
@@ -70,8 +71,9 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
         :description="option.description"
         :icon="option.icon"
         :show-state-icon="false"
+        searchable
       />
-    </div>
+    </SettingsSearchContainer>
 
     <SettingsItem
       :title="$t('settings.enable_comment_reply_tree_display')"

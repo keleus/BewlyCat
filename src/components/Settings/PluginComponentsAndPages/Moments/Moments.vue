@@ -9,6 +9,7 @@ import type { MomentsGridColumns, TabsPosition } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import MomentFilterSettings from './MomentFilterSettings.vue'
@@ -104,7 +105,7 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         :desc="$t('settings.moments_visible_components_plugin_desc')"
       >
         <template #bottom>
-          <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
+          <SettingsSearchContainer class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
             <SettingsToggleTag
               v-for="option in pluginComponentOptions"
               :key="option.setting"
@@ -112,8 +113,9 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
               :label="option.label"
               :icon="option.icon"
               :data-settings-key="option.labelKey"
+              searchable
             />
-          </div>
+          </SettingsSearchContainer>
         </template>
       </SettingsItem>
       <SettingsItem

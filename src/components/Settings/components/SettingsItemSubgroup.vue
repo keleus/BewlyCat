@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
+
 defineProps<{
   title: string
   desc?: string
 }>()
+
+const { visible } = useSettingsSearchNode(() => undefined)
 </script>
 
 <template>
-  <section class="settings-item-subgroup" :data-settings-title="title">
+  <section v-show="visible" class="settings-item-subgroup" :data-settings-title="title">
     <header class="subgroup-heading">
       <div class="subgroup-heading-main">
         <div class="subgroup-title">

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { settings } from '~/logic'
 import type { VideoCardContextMenuKey } from '~/logic/storage'
 
+import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
@@ -81,8 +82,8 @@ function setVisible(key: VideoCardContextMenuKey, visible: boolean) {
 </script>
 
 <template>
-  <div class="context-menu-editor">
-    <div v-for="group in groups" :key="group.id" class="context-menu-row">
+  <SettingsSearchContainer class="context-menu-editor">
+    <SettingsSearchContainer v-for="group in groups" :key="group.id" class="context-menu-row">
       <span class="context-menu-row__label">{{ group.label }}</span>
 
       <div class="context-menu-row__elements">
@@ -92,11 +93,12 @@ function setVisible(key: VideoCardContextMenuKey, visible: boolean) {
           :model-value="isVisible(element.key)"
           :label="element.label"
           :icon="element.icon"
+          searchable
           @update:model-value="setVisible(element.key, $event)"
         />
       </div>
-    </div>
-  </div>
+    </SettingsSearchContainer>
+  </SettingsSearchContainer>
 </template>
 
 <style lang="scss" scoped>

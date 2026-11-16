@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
+
 defineProps<{
   title?: string
   desc?: string
   warningDesc?: boolean
   icon?: string
 }>()
+
+const { visible } = useSettingsSearchNode(() => undefined)
 </script>
 
 <template>
-  <div class="b-settings-item-group" :data-settings-title="title">
+  <div v-show="visible" class="b-settings-item-group" :data-settings-title="title">
     <template v-if="title || desc || $slots.action">
       <div class="group-heading">
         <div class="group-heading-main">

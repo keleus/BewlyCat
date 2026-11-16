@@ -1,14 +1,20 @@
 <script setup lang="ts">
-const props = defineProps<{
+import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
+
+const props = withDefaults(defineProps<{
   label: string
   description?: string
   icon?: string
   inverted?: boolean
   showStateIcon?: boolean
-}>()
+  searchable?: boolean
+}>(), {
+  searchable: false,
+})
 
 const model = defineModel<boolean>({ required: true })
 const active = computed(() => props.inverted ? !model.value : model.value)
+const { visible, selfMatch } = useSettingsSearchNode(() => props.label, { searchable: props.searchable })
 
 function toggle() {
   model.value = !model.value
@@ -17,9 +23,10 @@ function toggle() {
 
 <template>
   <button
+    v-show="visible"
     type="button"
     class="settings-toggle-tag"
-    :class="{ 'is-active': active }"
+    :class="{ 'is-active': active, 'settings-search-match': selfMatch }"
     :data-settings-title="label"
     :aria-pressed="active"
     :aria-label="description ? `${label}：${description}` : label"

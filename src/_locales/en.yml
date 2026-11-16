@@ -222,6 +222,8 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
+    results_title: Search results
+    results_count: '{count} matching setting | {count} matching settings'
   category_general_desc: Configure language and interaction, and turn on only the parts of the extension you need, such as just comment or VIP features.
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
