@@ -118,10 +118,6 @@ player_screenshot:
   saved: 截圖已儲存
   failed: 截圖失敗
   video_unavailable: 而家嘅影片畫面用唔到
-player_listen:
-  enter: 聽影片
-  exit: 還原影片畫面
-  listening: 而家聽緊
 settings:
   ambilight:
     title: 影片環境光
@@ -245,7 +241,7 @@ settings:
   module_comments: 評論增強
   module_comments_desc: 回覆樹、IP 屬地、性別、樓主標識同評論圖片最佳化。
   module_player: 播放器增強
-  module_player_desc: 顯示模式、播放器掣、聽影片、音量均衡、環境光同連播控制。重新整理頁面後生效。
+  module_player_desc: 顯示模式、播放器掣、音量均衡、環境光同連播控制。重新整理頁面後生效。
   module_shortcuts: 鍵盤快捷鍵
   module_shortcuts_desc: 外掛提供嘅播放器同主頁快捷鍵。
   category_bilibili_moments_desc: 調整原版動態頁嘅模組同評論行為，並過濾動態。
@@ -263,7 +259,6 @@ settings:
   category_playback_autoplay_desc: 設定自動連播同自訂播放行為。
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
-  category_bilibili_listen_video_desc: 隱藏影片畫面淨係保留聲音，用封面同標題組成音訊播放介面。
   category_bilibili_volume_balance_desc: 喺本機平衡唔同影片嘅響度，並平滑影片內嘅大小聲。
   category_bilibili_ambilight_desc: 喺播放器四周投射跟住畫面變化嘅柔和環境光。
   category_advanced_compatibility_desc: 攔截廣告、淨化連結，同埋設定原版頁面同其他頁面嘅相容行為。
@@ -320,7 +315,6 @@ settings:
     auto_play: 播放行為
     vip_features: 大會員
     vip_features_placeholder: 大會員功能增強將喺未來版本加入。
-    listen_video: 聽影片
     volume_balance: 音量均衡
     ambilight: 影片環境光
 
@@ -1128,8 +1122,6 @@ settings:
     caption_desc: 顯示/隱藏字幕。
     video_screenshot: 影片截圖
     video_screenshot_desc: 將目前影片畫面儲存成 PNG 圖片，關咗播放器截圖按鈕之後仍然用得。
-    listen_video: 聽影片
-    listen_video_desc: 切換聽影片模式，收埋畫面淨係留低聲音。
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間。
     danmu_status: 顯示彈幕狀態
@@ -1307,28 +1299,6 @@ settings:
   show_video_screenshot_button_desc: 喺播放器控制欄顯示截圖按鈕。閂咗之後仍然可以用快捷鍵截圖。
   show_video_pip_button: 顯示播放器子母畫面按鈕
   show_video_pip_button_desc: 喺播放器控制欄顯示子母畫面按鈕。閂咗之後仍然可以用快捷鍵切換。
-  enable_listen_video: 啓用聽影片功能
-  enable_listen_video_desc: 開咗之後可以用播放器按鈕或者快捷鍵聽影片。只係收埋畫面，影片串流仍然會照常載入。
-  show_listen_video_button: 顯示播放器「聽影片」按鈕
-  show_listen_video_button_desc: 喺播放器控制欄顯示聽影片按鈕。閂咗之後仍然可以用快捷鍵切換。
-  listen_video_cover_shape: 聽影片封面樣式
-  listen_video_cover_shape_desc: 圓形唱片會跟住播放轉，正方形同長方形唔轉。
-  listen_video_cover_shape_circle: 圓形唱片
-  listen_video_cover_shape_square: 正方形
-  listen_video_cover_shape_rectangle: 長方形
-  listen_video_glow: 聽影片封面光暈
-  listen_video_glow_desc: 封面後面加層光暈；呼吸模式會跟住播放輕輕郁，暫停就一齊停。
-  listen_video_glow_none: 唔要
-  listen_video_glow_static: 常亮
-  listen_video_glow_breathe: 呼吸
-  listen_video_glow_color: 聽影片光暈顏色
-  listen_video_glow_color_desc: 跟封面會攞封面主色做光暈色，攞唔到色就用主題色。
-  listen_video_glow_color_theme: 主題色
-  listen_video_glow_color_cover: 跟封面
-  listen_video_background: 聽影片背景樣式
-  listen_video_background_desc: 封面模糊會將而家個封面高斯模糊之後鋪滿成個背景，純色就係深色底。
-  listen_video_background_solid: 純色
-  listen_video_background_blur: 封面模糊
   group_fonts: 字體
   group_visual_effects: 視覺效果
   group_search_results: 搜尋結果

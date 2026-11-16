@@ -142,12 +142,6 @@ const playerRoute: SearchRoute = {
   secondaryTitleKey: 'settings.bilibili_features.video_playback',
   storageKey: bilibiliStorageKey,
 }
-const listenVideoRoute: SearchRoute = {
-  menu: MenuType.Bilibili,
-  secondaryPage: 'listen-video',
-  secondaryTitleKey: 'settings.bilibili_features.listen_video',
-  storageKey: bilibiliStorageKey,
-}
 const volumeBalanceRoute: SearchRoute = {
   menu: MenuType.Bilibili,
   secondaryPage: 'volume-balance',
@@ -656,43 +650,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_video_screenshot_button',
     'settings.show_video_pip_button',
   ]),
-  ...createEntries(listenVideoRoute, [
-    'settings.enable_listen_video',
-    'settings.show_listen_video_button',
-  ]),
-  ...createEntries(listenVideoRoute, [
-    'settings.listen_video_cover_shape',
-  ], {
-    keywordKeys: [
-      'settings.listen_video_cover_shape_circle',
-      'settings.listen_video_cover_shape_square',
-      'settings.listen_video_cover_shape_rectangle',
-    ],
-  }),
-  ...createEntries(listenVideoRoute, [
-    'settings.listen_video_glow',
-  ], {
-    keywordKeys: [
-      'settings.listen_video_glow_static',
-      'settings.listen_video_glow_breathe',
-    ],
-  }),
-  ...createEntries(listenVideoRoute, [
-    'settings.listen_video_glow_color',
-  ], {
-    keywordKeys: [
-      'settings.listen_video_glow_color_theme',
-      'settings.listen_video_glow_color_cover',
-    ],
-  }),
-  ...createEntries(listenVideoRoute, [
-    'settings.listen_video_background',
-  ], {
-    keywordKeys: [
-      'settings.listen_video_background_solid',
-      'settings.listen_video_background_blur',
-    ],
-  }),
   ...createEntries(playerRoute, [
     'settings.video_player_scroll_mode.title',
   ], {
@@ -881,7 +838,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.turn_off_light',
     'settings.shortcuts.caption',
     'settings.shortcuts.video_screenshot',
-    'settings.shortcuts.listen_video',
     'settings.shortcuts.increase_playback_rate',
     'settings.shortcuts.decrease_playback_rate',
     'settings.shortcuts.reset_playback_rate',
@@ -962,10 +918,6 @@ const fallbackTargetKeysByTitleKey: Record<string, string> = {
   'settings.immersive_keyboard_switch': 'settings.show_immersive_mode_entry',
   'settings.immersive_preload_next': 'settings.show_immersive_mode_entry',
   'settings.immersive_wheel_switch': 'settings.show_immersive_mode_entry',
-  'settings.listen_video_background': 'settings.enable_listen_video',
-  'settings.listen_video_cover_shape': 'settings.enable_listen_video',
-  'settings.listen_video_glow': 'settings.enable_listen_video',
-  'settings.listen_video_glow_color': 'settings.enable_listen_video',
   'settings.local_loudness.strength': 'settings.local_loudness.enable',
   'settings.local_loudness.target': 'settings.local_loudness.enable',
   'settings.min_videos_for_random': 'settings.enable_random_play',
@@ -977,7 +929,6 @@ const fallbackTargetKeysByTitleKey: Record<string, string> = {
   'settings.search_page_mode_wallpaper_fixed': 'settings.use_search_page_mode',
   'settings.settings_shared_with_the_search_page': 'settings.use_search_page_mode',
   'settings.show_home_button_in_touch_mode': 'settings.topbar_logo_and_channels',
-  'settings.show_listen_video_button': 'settings.enable_listen_video',
   'settings.sidebar_position': 'settings.module_sidebar',
   'settings.theme_schedule': 'settings.theme',
   'settings.third_party_licenses': 'settings.open_source_license',

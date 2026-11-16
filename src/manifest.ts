@@ -74,7 +74,6 @@ export async function getManifest() {
       {
         resources: [
           'assets/*',
-          'dist/contentScripts/listenVideoControl.js',
           'dist/contentScripts/hlsPlayer.js',
           'dist/contentScripts/flvPlayer.js',
         ],

@@ -118,10 +118,6 @@ player_screenshot:
   saved: Screenshot saved
   failed: Failed to capture screenshot
   video_unavailable: The current video frame is unavailable
-player_listen:
-  enter: Listen to video
-  exit: Restore video picture
-  listening: Listening
 settings:
   ambilight:
     title: Video Ambient Light
@@ -245,7 +241,7 @@ settings:
   module_comments: Comment enhancements
   module_comments_desc: 'Reply trees, IP location, gender, original poster tags, and comment image improvements.'
   module_player: Player enhancements
-  module_player_desc: 'Display modes, player buttons, listen mode, volume balance, ambient light, and autoplay control. Takes effect after a page refresh.'
+  module_player_desc: 'Display modes, player buttons, volume balance, ambient light, and autoplay control. Takes effect after a page refresh.'
   module_shortcuts: Keyboard shortcuts
   module_shortcuts_desc: Player and home page shortcuts provided by the extension.
   category_bilibili_moments_desc: 'Adjust modules and comment behavior on the original moments page, and filter moments.'
@@ -263,7 +259,6 @@ settings:
   category_playback_autoplay_desc: Configure autoplay and custom playback behavior.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
-  category_bilibili_listen_video_desc: Hide the video picture and keep only the audio, shown as a cover-and-title audio player.
   category_bilibili_volume_balance_desc: Balance loudness across videos and smooth loudness within them, locally.
   category_bilibili_ambilight_desc: Cast soft ambient light around the player that follows the picture.
   category_advanced_compatibility_desc: Block ads, clean links, and configure compatibility with original pages and other pages.
@@ -320,7 +315,6 @@ settings:
     auto_play: Playback Behavior
     vip_features: VIP Features
     vip_features_placeholder: VIP feature enhancements will be added here in future updates.
-    listen_video: Listen to Video
     volume_balance: Volume Balance
     ambilight: Video Ambient Light
 
@@ -1278,8 +1272,6 @@ settings:
     caption_desc: Toggle captions
     video_screenshot: Video Screenshot
     video_screenshot_desc: Save the current video frame as a PNG image, even when the player screenshot button is hidden.
-    listen_video: Listen to video
-    listen_video_desc: Toggle listen-video mode, hiding the video picture and keeping only the audio.
     increase_playback_rate: Increase Speed
     increase_playback_rate_desc: Increase playback speed
     decrease_playback_rate: Decrease Speed
@@ -1371,28 +1363,6 @@ settings:
   show_video_screenshot_button_desc: Show a screenshot button in the player controls. The shortcut still works when the button is hidden.
   show_video_pip_button: Show player picture-in-picture button
   show_video_pip_button_desc: Show the picture-in-picture button in the player controls. The shortcut still works when the button is hidden.
-  enable_listen_video: Enable listen-video mode
-  enable_listen_video_desc: Use the player button or shortcut to listen to videos. Only the picture is hidden; the video stream still loads.
-  show_listen_video_button: Show player listen-video button
-  show_listen_video_button_desc: Show a listen-video toggle in the player controls. The shortcut still works when the button is hidden.
-  listen_video_cover_shape: Listen-video cover shape
-  listen_video_cover_shape_desc: The vinyl circle spins while playing; square and rectangle stay still.
-  listen_video_cover_shape_circle: Vinyl circle
-  listen_video_cover_shape_square: Square
-  listen_video_cover_shape_rectangle: Rectangle
-  listen_video_glow: Listen-video cover glow
-  listen_video_glow_desc: Adds a soft halo behind the cover. The breathe mode pulses gently with playback and freezes when paused.
-  listen_video_glow_none: Off
-  listen_video_glow_static: Static
-  listen_video_glow_breathe: Breathe
-  listen_video_glow_color: Listen-video glow color
-  listen_video_glow_color_desc: Cover mode uses the cover's dominant color for the glow, or the theme color if unavailable.
-  listen_video_glow_color_theme: Theme color
-  listen_video_glow_color_cover: Follow cover
-  listen_video_background: Listen-video background
-  listen_video_background_desc: Blur fills the background with a blurred copy of the cover; solid keeps the plain dark backdrop.
-  listen_video_background_solid: Solid
-  listen_video_background_blur: Cover blur
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show

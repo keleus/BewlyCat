@@ -10,7 +10,6 @@ import Ambilight from './BilibiliFeaturesEnhancement/Ambilight/Ambilight.vue'
 import AutoPlay from './BilibiliFeaturesEnhancement/AutoPlay/AutoPlay.vue'
 import Comments from './BilibiliFeaturesEnhancement/Comments/Comments.vue'
 import FavoriteOrganizer from './BilibiliFeaturesEnhancement/FavoriteOrganizer/Favorites.vue'
-import ListenVideo from './BilibiliFeaturesEnhancement/ListenVideo/ListenVideo.vue'
 import OriginalMoments from './BilibiliFeaturesEnhancement/OriginalMoments/OriginalMoments.vue'
 import VideoPlayback from './BilibiliFeaturesEnhancement/VideoPlayback/VideoPlayback.vue'
 import VipFeatures from './BilibiliFeaturesEnhancement/VipFeatures/VipFeatures.vue'
@@ -166,16 +165,6 @@ export const settingsMenus: SettingsMenuDefinition[] = [
         icon: 'i-mingcute:play-circle-line',
         iconActivated: 'i-mingcute:play-circle-fill',
         component: VideoPlayback,
-        available: isPlayerEnabled,
-      },
-      {
-        value: 'listen-video',
-        groupKey: 'settings.category_group_playback',
-        titleKey: 'settings.bilibili_features.listen_video',
-        descriptionKey: 'settings.category_bilibili_listen_video_desc',
-        icon: 'i-mingcute:headphone-line',
-        iconActivated: 'i-mingcute:headphone-fill',
-        component: ListenVideo,
         available: isPlayerEnabled,
       },
       {

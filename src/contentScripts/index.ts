@@ -62,7 +62,6 @@ import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
 import { initFullscreenWheelVolume } from './fullscreenWheelVolume'
 import { initImmersiveFeedFrame } from './immersiveFeedFrame'
 import { initKeyboardVolumeStep } from './keyboardVolumeStep'
-import { initListenVideoFeature } from './listenVideoFeature'
 import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
@@ -1513,7 +1512,6 @@ else if (shouldInitializeContentScript) {
       initVideoQualityMemory()
       initVideoScreenshotControl()
       initVideoPipButtonControl()
-      initListenVideoFeature()
       initLocalLoudnessControl()
       initAmbilightControl()
       runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)

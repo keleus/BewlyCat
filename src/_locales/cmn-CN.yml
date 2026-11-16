@@ -118,10 +118,6 @@ player_screenshot:
   saved: 截图已保存
   failed: 截图失败
   video_unavailable: 当前视频画面不可用
-player_listen:
-  enter: 听视频
-  exit: 恢复视频画面
-  listening: 正在收听
 settings:
   ambilight:
     title: 视频环境光
@@ -245,7 +241,7 @@ settings:
   module_comments: 评论增强
   module_comments_desc: 回复树、IP 属地、性别、楼主标识和评论图片优化。
   module_player: 播放器增强
-  module_player_desc: 显示模式、播放器按钮、听视频、音量均衡、环境光和连播控制。刷新页面后生效。
+  module_player_desc: 显示模式、播放器按钮、音量均衡、环境光和连播控制。刷新页面后生效。
   module_shortcuts: 键盘快捷键
   module_shortcuts_desc: 插件提供的播放器和首页快捷键。
   category_bilibili_moments_desc: 调整原版动态页的模块和评论行为，并过滤动态。
@@ -263,7 +259,6 @@ settings:
   category_playback_autoplay_desc: 配置自动连播与自定义播放行为。
   category_bilibili_comments_desc: 增强评论区的用户信息与内容显示。
   category_bilibili_vip_desc: 配置大会员权益相关的提醒功能。
-  category_bilibili_listen_video_desc: 隐藏视频画面仅保留声音，以封面和标题组成音频播放界面。
   category_bilibili_volume_balance_desc: 在本地平衡不同视频的响度，并平滑视频内的大小声。
   category_bilibili_ambilight_desc: 在播放器四周投射随画面变化的柔和环境光。
   category_advanced_compatibility_desc: 拦截广告、净化链接，并配置原版页面和其他页面的兼容行为。
@@ -320,7 +315,6 @@ settings:
     auto_play: 播放行为
     vip_features: 大会员
     vip_features_placeholder: 大会员功能增强将在未来版本中添加。
-    listen_video: 听视频
     volume_balance: 音量均衡
     ambilight: 视频环境光
 
@@ -630,28 +624,6 @@ settings:
   show_video_screenshot_button_desc: 在播放器控制栏显示截图按钮。关闭后仍可使用快捷键截图。
   show_video_pip_button: 显示播放器画中画按钮
   show_video_pip_button_desc: 在播放器控制栏显示画中画按钮。关闭后仍可使用快捷键切换。
-  enable_listen_video: 启用听视频功能
-  enable_listen_video_desc: 开启后可通过播放器按钮或快捷键进入听视频。仅隐藏画面，视频流仍会正常加载。
-  show_listen_video_button: 显示播放器「听视频」按钮
-  show_listen_video_button_desc: 在播放器控制栏显示听视频按钮。关闭后仍可使用快捷键切换。
-  listen_video_cover_shape: 听视频封面形状
-  listen_video_cover_shape_desc: 圆形唱片会随播放旋转，正方形与长方形保持静止。
-  listen_video_cover_shape_circle: 圆形唱片
-  listen_video_cover_shape_square: 正方形
-  listen_video_cover_shape_rectangle: 长方形
-  listen_video_glow: 听视频封面光晕
-  listen_video_glow_desc: 在封面背后叠加一层光晕；呼吸模式会随播放轻微脉动，暂停时一同静止。
-  listen_video_glow_none: 关闭
-  listen_video_glow_static: 常亮
-  listen_video_glow_breathe: 呼吸
-  listen_video_glow_color: 听视频光晕颜色
-  listen_video_glow_color_desc: 跟随封面时取封面主色作为光晕颜色，无法取色时使用主题色。
-  listen_video_glow_color_theme: 主题色
-  listen_video_glow_color_cover: 跟随封面
-  listen_video_background: 听视频背景样式
-  listen_video_background_desc: 封面模糊会将当前封面高斯模糊后铺满整个背景，纯色为深色背景。
-  listen_video_background_solid: 纯色
-  listen_video_background_blur: 封面模糊
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   keep_watch_later_video_default_mode: 稍后再看保持默认模式
@@ -1241,8 +1213,6 @@ settings:
     caption_desc: 打开/关闭字幕
     video_screenshot: 视频截图
     video_screenshot_desc: 将当前视频画面保存为 PNG 图片，关闭播放器截图按钮后仍可使用。
-    listen_video: 听视频
-    listen_video_desc: 切换听视频模式，隐藏视频画面、仅保留声音播放。
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 提高播放速度
     decrease_playback_rate: 减速播放

@@ -3,7 +3,6 @@
 const MANAGED_CONTROL_SELECTORS = [
   '.bewly-widescreen-control',
   '.bewly-video-screenshot-control',
-  '.bewly-listen-video-control',
   '.bewly-local-loudness-control',
 ]
 const COLLAPSED_CLASS = 'bewly-player-control-collapsed'
