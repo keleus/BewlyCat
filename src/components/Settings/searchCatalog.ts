@@ -504,7 +504,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.group_topbar_pinned_channels',
     'settings.topbar_pinned_channels_title',
-  ], { keywordKeys: ['settings.pinned_manager.add', 'settings.pinned_manager.search', 'settings.pinned_manager.undo', 'settings.pinned_manager.categories', 'settings.topbar_pinned_channels_hint'] }),
+  ], { keywordKeys: ['settings.pinned_manager.add', 'settings.pinned_manager.search', 'settings.pinned_manager.undo', 'settings.pinned_manager.categories'] }),
   ...createEntries(topBarRoute, [
     'settings.topbar_switchers',
     'settings.show_bewly_or_bili_page_switcher',
@@ -546,7 +546,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
       'settings.top_bar_mode',
       'settings.top_bar_mode_opt',
       'settings.use_original_bilibili_topbar',
-      'settings.use_original_bilibili_topbar_desc',
     ],
   }),
 

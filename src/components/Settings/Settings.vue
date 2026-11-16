@@ -16,6 +16,8 @@ import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilt
 import { useSettingsUrlSync } from './composables/useSettingsUrlSync'
 import type { SettingsSearchEntry } from './searchCatalog'
 import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from './searchCatalog'
+import type { SearchPartMatch } from './searchMatch'
+import { getSearchPartScore } from './searchMatch'
 import type { SettingsSecondaryPage } from './settingsMenus'
 import { settingsMenus } from './settingsMenus'
 import { MenuType } from './types'
@@ -161,8 +163,10 @@ function getTranslatedSearchTerms(key: string): string[] {
 }
 
 function getSearchEntryKeywordText(entry: SettingsSearchEntry) {
+  // 不索引 *_desc：描述文本容易让宽泛关键词命中大量设置。
+  // 仅保留选项/单位和目录中显式声明的检索词。
   const inferredKeywordKeys = entry.titleKey
-    ? [`${entry.titleKey}_desc`, `${entry.titleKey}_opt`, `${entry.titleKey}_option`, `${entry.titleKey}_unit`]
+    ? [`${entry.titleKey}_opt`, `${entry.titleKey}_option`, `${entry.titleKey}_unit`]
     : []
   const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
     .flatMap(getTranslatedSearchTerms)
@@ -175,7 +179,6 @@ interface SearchIndexEntry {
   entry: SettingsSearchEntry
   titleText: string
   keywordText: string
-  text: string
   order: number
 }
 
@@ -206,30 +209,19 @@ const searchIndex = computed<SearchIndexEntry[]>(() => settingsSearchEntries.fil
     entry,
     titleText,
     keywordText,
-    text: `${titleText} ${keywordText}`,
     order,
   }
 }))
 
-function getSearchMatchScore(item: SearchIndexEntry, query: string, queryParts: string[]) {
+function getSearchMatchScore(item: SearchIndexEntry, query: string, partMatches: SearchPartMatch[]) {
   let score = 0
   if (item.titleText === query)
     score += 200
   else if (item.titleText.includes(query))
     score += 40
 
-  for (const part of queryParts) {
-    if (item.titleText === part)
-      score += 120
-    else if (item.titleText.startsWith(part))
-      score += 80
-    else if (item.titleText.includes(part))
-      score += 50
-    else if (item.keywordText.startsWith(part))
-      score += 20
-    else
-      score += 10
-  }
+  for (const partMatch of partMatches)
+    score += partMatch.score
 
   return score
 }
@@ -240,11 +232,17 @@ const searchResults = computed(() => {
     return []
 
   const queryParts = query.split(/\s+/).filter(Boolean)
-  const matches = searchIndex.value
-    .filter(item => queryParts.every(part => item.text.includes(part)))
-    .map(item => ({ item, score: getSearchMatchScore(item, query, queryParts) }))
+  const matches: Array<{ item: SearchIndexEntry, score: number }> = []
+  for (const item of searchIndex.value) {
+    const partMatches = queryParts
+      .map(part => getSearchPartScore(item, part))
+      .filter((match): match is SearchPartMatch => match !== null)
+    if (partMatches.length !== queryParts.length)
+      continue
+    matches.push({ item, score: getSearchMatchScore(item, query, partMatches) })
+  }
 
-  // 标题精确/前缀命中优先于标题包含，再到关键词命中；同分保持目录顺序。
+  // 标题精确/前缀命中优先于标题包含，再到关键词命中与分隔匹配；同分保持目录顺序。
   matches.sort((a, b) => b.score - a.score || a.item.order - b.item.order)
   return matches.map(({ item }) => item.entry)
 })
