@@ -17,6 +17,16 @@ function writeManifest() {
   execSync('esno ./scripts/manifest.ts', { stdio: 'inherit' })
 }
 
+async function hasUsableImage(path: string): Promise<boolean> {
+  try {
+    const stats = await fs.stat(path)
+    return stats.isFile() && stats.size > 0
+  }
+  catch {
+    return false
+  }
+}
+
 async function downloadContributorsImage() {
   const temporaryPath = `${contributorsImageCachePath}.${process.pid}.tmp`
   const controller = new AbortController()
@@ -42,30 +52,44 @@ async function downloadContributorsImage() {
     await fs.ensureDir(r('.cache/bewlycat'))
     await fs.writeFile(temporaryPath, image)
     await fs.move(temporaryPath, contributorsImageCachePath, { overwrite: true })
-    await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
-    log('PRE', 'download contributors image')
+    return true
   }
   catch (error) {
     await fs.remove(temporaryPath)
 
-    if (await fs.pathExists(contributorsImageCachePath)) {
-      await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
-      log('PRE', 'use cached contributors image')
-      return
-    }
-
     const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[PRE] no cached contributors image available; use the cloud image at runtime: ${message}`)
+    console.warn(`[PRE] could not download contributors image; About page will use the cloud image: ${message}`)
+    return false
   }
   finally {
     clearTimeout(timeout)
   }
 }
 
+// 开发模式不联网：有缓存就直接用，没有则留给「关于」页在运行时回退到云端图片。
+// 生产构建只在本地没有可用图片时才下载，避免每次打包都等待网络。
+async function prepareContributorsImage() {
+  if (await hasUsableImage(contributorsImageCachePath)) {
+    await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
+    log('PRE', 'use cached contributors image')
+    return
+  }
+
+  if (isDev) {
+    log('PRE', 'skip contributors image download in dev; About page will use the cloud image')
+    return
+  }
+
+  if (await downloadContributorsImage()) {
+    await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
+    log('PRE', 'download contributors image')
+  }
+}
+
 async function prepare() {
   fs.ensureDirSync(r(extensionDirectory))
   fs.copySync(r('assets'), r(extensionDirectory, 'assets'))
-  await downloadContributorsImage()
+  await prepareContributorsImage()
   writeManifest()
 
   if (isDev) {
