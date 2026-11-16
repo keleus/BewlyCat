@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type flvjs from 'flv.js'
-import type Hls from 'hls.js'
-import type { ErrorData, Events } from 'hls.js'
 
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
@@ -12,7 +10,7 @@ import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useVideoPreviewSwipeSeek } from '~/composables/useVideoPreviewSwipeSeek'
 import { settings } from '~/logic'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { loadFlvjs, loadHls } from '~/utils/streamPlayers'
+import { loadFlvjs } from '~/utils/streamPlayers'
 import { getVideoWatchState } from '~/utils/videoVisitHistory'
 import { normalizeWatchLaterTarget } from '~/utils/watchLaterActions'
 
@@ -96,7 +94,6 @@ const isPreviewFullscreen = ref<boolean>(false)
 const showVideoControls = ref<boolean>(false)
 const shouldEnableVideoControls = computed(() => settings.value.enableVideoCtrlBarOnVideoCard && !props.video?.roomid)
 const shouldEnableSwipeSeek = computed(() => settings.value.enableVideoPreviewSwipeSeek && !props.video?.roomid)
-let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
 let previewGeneration = 0
 let previewEvents: AbortController | null = null
@@ -209,10 +206,6 @@ function cleanupPlayers() {
   previewGeneration++
   previewEvents?.abort()
   previewEvents = null
-  if (hls) {
-    hls.destroy()
-    hls = null
-  }
   if (flvPlayer) {
     flvPlayer.pause()
     flvPlayer.unload()
@@ -285,88 +278,6 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
     catch (error) {
       console.error('Failed to load flv.js:', error)
       isLoadingStream.value = false
-    }
-  }
-  // Check if URL is HLS stream (.m3u8)
-  else if (url.includes('.m3u8') || url.includes('m3u8')) {
-    const generation = ++previewGeneration
-    const HlsPlayer = await loadHls().catch((error) => {
-      console.error('Failed to load hls.js:', error)
-      return undefined
-    })
-    if (generation !== previewGeneration || !videoEl.isConnected)
-      return
-
-    if (HlsPlayer?.isSupported()) {
-      // Cleanup previous players and clear video src
-      cleanupPlayers()
-      resetVideoElement(videoEl)
-
-      isLoadingStream.value = true
-
-      hls = new HlsPlayer({
-        enableWorker: true,
-        lowLatencyMode: true,
-        // 优化配置以更快开始播放
-        maxBufferLength: 10, // 减少缓冲长度
-        maxMaxBufferLength: 20,
-        liveSyncDurationCount: 2, // 减少直播同步计数
-        liveMaxLatencyDurationCount: 5,
-        maxBufferSize: 60 * 1000 * 1000, // 60MB
-      })
-
-      hls.loadSource(url)
-      hls.attachMedia(videoEl)
-
-      hls.on(HlsPlayer.Events.MANIFEST_PARSED, () => {
-        isLoadingStream.value = false
-        videoEl.play().catch(() => {
-          // Ignore autoplay errors
-        })
-      })
-
-      hls.on(HlsPlayer.Events.ERROR, (_event: Events.ERROR, data: ErrorData) => {
-        if (data.fatal) {
-          isLoadingStream.value = false
-          switch (data.type) {
-            case HlsPlayer.ErrorTypes.MEDIA_ERROR:
-              // Try to recover from media errors
-              hls?.recoverMediaError()
-              break
-            default:
-              // For other fatal errors, cleanup
-              cleanupPlayers()
-              break
-          }
-        }
-      })
-
-      // 添加首帧加载事件
-      hls.on(HlsPlayer.Events.BUFFER_APPENDED, () => {
-        if (isLoadingStream.value) {
-          isLoadingStream.value = false
-        }
-      })
-    }
-    // cSpell:ignore mpegurl
-    else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      cleanupPlayers()
-      resetVideoElement(videoEl)
-      // Native HLS support (Safari)
-      isLoadingStream.value = true
-      videoEl.src = url
-
-      const handleCanPlay = () => {
-        isLoadingStream.value = false
-        videoEl.removeEventListener('canplay', handleCanPlay)
-      }
-
-      previewEvents = new AbortController()
-      videoEl.addEventListener('canplay', handleCanPlay, { once: true, signal: previewEvents.signal })
-      videoEl.play().catch(() => {
-        isLoadingStream.value = false
-        // Ignore autoplay errors
-      })
     }
   }
   else {

@@ -10,7 +10,6 @@ const outDir = isFirefox ? 'extension-firefox/dist' : isSafari ? 'extension-safa
 
 export default defineConfig(() => ({
   entry: {
-    'contentScripts/hlsPlayer': './src/contentScripts/hlsPlayer.ts',
     'contentScripts/flvPlayer': './src/contentScripts/flvPlayer.ts',
     'background/index': './src/background/index.ts',
     'contentScripts/pageLoading': './src/contentScripts/pageLoading.ts',
@@ -26,7 +25,7 @@ export default defineConfig(() => ({
   splitting: false,
   loader: { '.css': 'text' },
   // Stream players are loaded by content scripts and must be self-contained.
-  noExternal: ['md5', 'hls.js', 'flv.js'],
+  noExternal: ['md5', 'flv.js'],
   esbuildPlugins: [thirdPartyLicensesEsbuildPlugin('background')],
   sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
   define: {

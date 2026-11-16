@@ -1,4 +1,3 @@
-type HlsModule = typeof import('~/contentScripts/hlsPlayer')
 type FlvModule = typeof import('~/contentScripts/flvPlayer')
 
 const requests = new Map<string, Promise<unknown>>()
@@ -16,10 +15,6 @@ function loadExtensionModule<T>(path: string): Promise<T> {
     requests.set(path, request)
   }
   return request as Promise<T>
-}
-
-export async function loadHls() {
-  return (await loadExtensionModule<HlsModule>('dist/contentScripts/hlsPlayer.js')).Hls
 }
 
 export async function loadFlvjs() {

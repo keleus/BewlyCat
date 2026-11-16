@@ -45,7 +45,7 @@ import {
   isNewerDynamicId,
 } from '~/utils/momentsLastSeen'
 import { resolveVideoDialogPlayerModeOverride } from '~/utils/player'
-import { loadFlvjs, loadHls } from '~/utils/streamPlayers'
+import { loadFlvjs } from '~/utils/streamPlayers'
 import { openLinkInBackground } from '~/utils/tabs'
 import {
   DIALOG_SAFE_HEIGHT,
@@ -267,7 +267,6 @@ const coverRatios = reactive<Record<string, number>>({})
 
 let gridObserver: ResizeObserver | undefined
 let liveFlvPlayer: any = null
-let liveHlsPlayer: any = null
 let activePreviewVideo: { id: string, element: HTMLVideoElement } | null = null
 let previewPlaybackGeneration = 0
 const isLoading = ref(false)
@@ -2460,15 +2459,6 @@ function releasePreviewVideoElement(video: HTMLVideoElement | null | undefined) 
 
 function cleanupLivePreviewPlayer() {
   previewPlaybackGeneration += 1
-  if (liveHlsPlayer) {
-    try {
-      liveHlsPlayer.destroy()
-    }
-    catch {
-      // 即使播放器库销毁失败，也必须继续释放媒体元素引用。
-    }
-    liveHlsPlayer = null
-  }
   if (liveFlvPlayer) {
     try {
       liveFlvPlayer.pause()
@@ -2517,37 +2507,6 @@ async function setupStreamPreview(url: string, videoEl: HTMLVideoElement, moment
       liveFlvPlayer.attachMediaElement(videoEl)
       liveFlvPlayer.load()
       void videoEl.play().catch(() => {})
-    }
-    catch {
-      // 直播预览失败时保留封面
-    }
-    return
-  }
-
-  if (url.includes('m3u8')) {
-    try {
-      // A player module that fails to load still leaves native HLS (Safari).
-      const Hls = await loadHls().catch(() => undefined)
-      if (!isCurrentPreview())
-        return
-      if (Hls?.isSupported()) {
-        liveHlsPlayer = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          maxBufferLength: 10,
-        })
-        liveHlsPlayer.loadSource(url)
-        liveHlsPlayer.attachMedia(videoEl)
-        liveHlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
-          if (isCurrentPreview())
-            void videoEl.play().catch(() => {})
-        })
-        return
-      }
-      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        videoEl.src = url
-        void videoEl.play().catch(() => {})
-      }
     }
     catch {
       // 直播预览失败时保留封面
@@ -2752,7 +2711,7 @@ function bindPreviewVideo(el: Element | null, moment: DisplayMoment) {
   if (!url || hoveredMediaId.value !== moment.id)
     return
 
-  if (moment.isLive || url.includes('.flv') || url.includes('m3u8')) {
+  if (moment.isLive || url.includes('.flv')) {
     void setupStreamPreview(url, el, moment.id)
   }
   else {
