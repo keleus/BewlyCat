@@ -325,43 +325,49 @@ onBeforeUnmount(() => {
               @keydown.esc="searchQuery = ''"
             >
           </div>
-          <button
-            type="button"
-            class="settings-open-in-new-tab"
-            :aria-label="$t('settings.open_in_new_tab')"
-            :title="$t('settings.open_in_new_tab')"
-            style="
-              box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-            "
-            :style="{
-              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-            }"
-            text="!16px hover:$bew-theme-color" w="32px" h="32px"
-            flex="~ items-center justify-center shrink-0"
-            relative z-1
-            bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-            rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
-            duration-300
-            @click="openSettingsPageInNewTab"
-          >
-            <div i-mingcute:external-link-line />
-          </button>
-          <div
-            style="
-              box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-            "
-            :style="{
-              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-            }"
-            text="!16px hover:$bew-theme-color" w="32px" h="32px"
-            flex="~ items-center justify-center shrink-0"
-            relative z-1
-            bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-            rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
-            duration-300
-            @click="handleClose"
-          >
-            <div i-ic-baseline-clear />
+          <div class="settings-header-actions">
+            <button
+              type="button"
+              class="settings-header-action settings-open-in-new-tab"
+              :aria-label="$t('settings.open_in_new_tab')"
+              :title="$t('settings.open_in_new_tab')"
+              style="
+                box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
+              "
+              :style="{
+                backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+              }"
+              text="!16px hover:$bew-theme-color" w="32px" h="32px"
+              flex="~ items-center justify-center shrink-0"
+              relative z-1
+              bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
+              rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
+              duration-300
+              @click="openSettingsPageInNewTab"
+            >
+              <div class="settings-header-action__icon i-mingcute:external-link-line" />
+            </button>
+            <button
+              type="button"
+              class="settings-header-action"
+              :aria-label="$t('common.operation.close')"
+              :title="$t('common.operation.close')"
+              style="
+                box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
+              "
+              :style="{
+                backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+              }"
+              text="!16px hover:$bew-theme-color" w="32px" h="32px"
+              flex="~ items-center justify-center shrink-0"
+              relative z-1
+              bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
+              rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
+              duration-300
+              @click="handleClose"
+            >
+              <div class="settings-header-action__icon i-mingcute:close-line" />
+            </button>
           </div>
         </header>
         <div
@@ -582,6 +588,30 @@ onBeforeUnmount(() => {
 
 .dark .settings-content .settings-usage-guide a:not(:hover) {
   background: var(--bew-fill-1);
+}
+
+.settings-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--bew-space-2);
+  align-items: center;
+}
+
+.settings-header-action {
+  appearance: none;
+  padding: 0;
+  margin: 0;
+}
+
+.settings-header-action__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .settings-search {
