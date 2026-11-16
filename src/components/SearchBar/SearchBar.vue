@@ -660,7 +660,7 @@ function handleClearKeyword() {
         role="combobox"
         :value="keyword"
         :placeholder="placeholderText"
-        autocomplete="one-time-code"
+        autocomplete="off"
         autocapitalize="off"
         autocorrect="off"
         class="group"
@@ -918,7 +918,9 @@ function handleClearKeyword() {
       &[type="search"]::-webkit-search-decoration,
       &[type="search"]::-webkit-search-results-button,
       &[type="search"]::-webkit-search-results-decoration {
+        -webkit-appearance: none;
         appearance: none;
+        display: none;
       }
 
       color: var(--b-search-bar-normal-text-color);
