@@ -201,6 +201,7 @@ settings:
   following_sort_updated: 按更新时间
   following_sort_group: 按分组
   title: 设置
+  open_in_new_tab: 在新标签页打开设置
   menu_general: 通用
   menu_bewly_pages: Bewly 页面
   menu_bewly_components: Bewly 组件

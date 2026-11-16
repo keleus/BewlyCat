@@ -58,7 +58,7 @@ const isDockModuleEnabled = () => settings.value.enableDock
 const isPlayerEnabled = () => settings.value.enablePlayerEnhancements
 const isCommentsEnabled = () => settings.value.enableCommentEnhancements
 
-// 设置页只存在于独立页面中，组件都已打进同一个文件，同步引入可以避免切换时出现空白帧。
+// 独立设置页与页面内设置浮层共用这份菜单定义；组件同步引入，切换时不会出现空白帧。
 export const settingsMenus: SettingsMenuDefinition[] = [
   {
     value: MenuType.General,

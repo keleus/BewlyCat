@@ -116,6 +116,11 @@ export function useSettingsNavigation(options: UseSettingsNavigationOptions = {}
     activatedMenuItem.value = target.menu as MenuType
   }
 
+  function setActiveSecondaryPage(menu: MenuType, page: string) {
+    if (menus.find(item => item.value === menu)?.pages?.some(item => item.value === page))
+      activeSecondaryPages[menu] = page
+  }
+
   watch(activatedMenuItem, (menu) => {
     sessionStorage.setItem(SETTINGS_MENU_STORAGE_KEY, menu)
     expandedMenus.value.add(menu)
@@ -136,6 +141,7 @@ export function useSettingsNavigation(options: UseSettingsNavigationOptions = {}
     getSecondaryPage,
     secondaryGroups,
     settingsMenuItems,
+    setActiveSecondaryPage,
     toggleMenu,
     visibleMenus,
     activateSettingsTarget,

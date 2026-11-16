@@ -8,6 +8,7 @@ import ApiErrorDetailsDialog from '~/components/ApiErrorDetailsDialog.vue'
 import ConfirmDialogOverlay from '~/components/ConfirmDialogOverlay.vue'
 import FirefoxScrollbar from '~/components/FirefoxScrollbar.vue'
 import Icon from '~/components/Icon.vue'
+import SettingsOverlay from '~/components/Settings/SettingsOverlay.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
 import { useAccountSync } from '~/composables/useAccountSync'
 import { useActiveApiErrorSource } from '~/composables/useApiErrorDetails'
@@ -19,6 +20,7 @@ import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_SEARCH_NAVIGATION, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { isOriginalMomentsFeed } from '~/contentScripts/features/originalMomentsFeed'
 import { installScrollBridge } from '~/contentScripts/features/scrollBridge'
+import { openSettingsOverlay, settingsOverlayTarget, settingsOverlayVisible } from '~/contentScripts/features/settingsOverlay'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings, settingsReady } from '~/logic'
@@ -35,7 +37,6 @@ import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVide
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
-import { openSettingsPage } from '~/utils/settingsPage'
 import { isComponentVisible } from '~/utils/topBarBadge'
 import { canOpenInVideoDialog } from '~/utils/videoDialog'
 import { isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
@@ -49,6 +50,12 @@ useAccountSync()
 // Layout edit mode is UI-only; persistent choices continue to use `settings`.
 const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
 const { t } = useI18n()
+
+// The top-bar switcher is teleported to document.body, outside this Shadow DOM.
+// Raise the host while the settings overlay is open so the modal can stay above that layer.
+watch(settingsOverlayVisible, (visible) => {
+  document.getElementById('bewly')?.classList.toggle('settings-open', visible)
+}, { immediate: true })
 
 // Conditionally use dark mode. `useDark()` handles the video-page-only route gate;
 // lazily initialize in a persistent scope so toggling settings or SPA navigation takes effect immediately.
@@ -563,7 +570,7 @@ function blockOriginalLayoutInteraction(event: Event) {
   if (event.type === 'click' && directTarget) {
     const menu = directTarget.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined
     if (menu) {
-      openSettingsPage({
+      openSettingsOverlay({
         menu,
         secondaryPage: directTarget.dataset.layoutSettingsPage,
         targetTitleKey: directTarget.dataset.layoutSettingsTitleKey,
@@ -578,7 +585,7 @@ function blockOriginalLayoutInteraction(event: Event) {
 }
 
 function openLayoutTargetSettings(target: LayoutEditTargetProxy) {
-  openSettingsPage({
+  openSettingsOverlay({
     menu: target.menu,
     secondaryPage: target.secondaryPage,
     targetTitleKey: target.targetTitleKey,
@@ -859,7 +866,7 @@ function openLayoutEditPageModeSettings() {
   if (!dockPage)
     return
 
-  openSettingsPage({
+  openSettingsOverlay({
     menu: 'BewlyComponents',
     secondaryPage: 'dock',
     targetTitleKey: dockPage.i18nKey,
@@ -868,7 +875,7 @@ function openLayoutEditPageModeSettings() {
 
 function openLayoutEditGridSettings() {
   if (layoutEditGridActionKind.value === 'moments') {
-    openSettingsPage({
+    openSettingsOverlay({
       menu: 'BewlyPages',
       secondaryPage: 'moments',
       targetTitleKey: 'settings.moments_grid_columns',
@@ -877,7 +884,7 @@ function openLayoutEditGridSettings() {
   }
 
   if (layoutEditGridActionKind.value === 'video-card') {
-    openSettingsPage({
+    openSettingsOverlay({
       menu: 'BewlyComponents',
       secondaryPage: 'video-card',
       targetTitleKey: 'settings.grid_breakpoints',
@@ -886,7 +893,7 @@ function openLayoutEditGridSettings() {
 }
 
 function openLayoutEditDockPositionSettings() {
-  openSettingsPage({
+  openSettingsOverlay({
     menu: 'BewlyComponents',
     secondaryPage: 'dock',
     targetTitleKey: 'settings.dock_position',
@@ -894,7 +901,7 @@ function openLayoutEditDockPositionSettings() {
 }
 
 function openLayoutEditTopBarModeSettings() {
-  openSettingsPage({
+  openSettingsOverlay({
     menu: 'BewlyComponents',
     secondaryPage: 'topbar',
     targetTitleKey: 'topbar.top_bar_switcher',
@@ -902,7 +909,7 @@ function openLayoutEditTopBarModeSettings() {
 }
 
 function openLayoutEditSearchResultsSettings() {
-  openSettingsPage({
+  openSettingsOverlay({
     menu: 'BewlyPages',
     secondaryPage: 'search',
     targetTitleKey: 'settings.group_search_results',
@@ -910,7 +917,7 @@ function openLayoutEditSearchResultsSettings() {
 }
 
 function openLayoutEditContextSettings(action: LayoutEditQuickSettingsAction) {
-  openSettingsPage({
+  openSettingsOverlay({
     menu: action.menu,
     secondaryPage: action.secondaryPage,
     targetTitleKey: action.targetTitleKey,
@@ -1732,7 +1739,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   haveScrollbar,
   activeDrawer,
   setActiveDrawer,
-  openSettings: openSettingsPage,
+  openSettings: openSettingsOverlay,
 })
 
 if (settings.value.cleanUrlArgument) {
@@ -2200,6 +2207,16 @@ if (settings.value.cleanUrlArgument) {
       :source="activeApiErrorSource"
       @close="activeApiErrorSource = null"
     />
+
+    <KeepAlive>
+      <SettingsOverlay
+        v-if="settingsOverlayVisible"
+        style="z-index: var(--bew-z-settings);"
+        :pending-navigation="settingsOverlayTarget"
+        @update:pending-navigation="settingsOverlayTarget = $event"
+        @close="settingsOverlayVisible = false"
+      />
+    </KeepAlive>
 
     <!-- Static confirm overlay: no Transition/Teleport (see useConfirmDialogHost). -->
     <ConfirmDialogOverlay

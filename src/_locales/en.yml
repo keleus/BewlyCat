@@ -201,6 +201,7 @@ settings:
   following_sort_updated: By update time
   following_sort_group: By group
   title: Settings
+  open_in_new_tab: Open settings in a new tab
   menu_general: General
   menu_bewly_pages: Bewly Pages
   menu_bewly_components: Bewly Components

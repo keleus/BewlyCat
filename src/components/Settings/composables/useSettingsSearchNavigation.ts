@@ -99,7 +99,8 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
       }, 100)
     }
     const viewport = options.scrollViewportRef.value
-    if (!viewport) {
+    // 异步页面挂载及离场节点都会影响布局，等待过渡结束后再测量。
+    if (!viewport || viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
       retry()
       return
     }
@@ -144,6 +145,10 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
         searchTargetFrame = undefined
         if (navigationId !== searchNavigationId || !viewport.contains(target))
           return
+        if (viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
+          retry()
+          return
+        }
         if (!target.getClientRects().length) {
           retry()
           return
