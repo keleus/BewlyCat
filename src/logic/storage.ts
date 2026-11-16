@@ -635,7 +635,6 @@ export interface Settings {
   enableVideoPlayerModeOverrides: boolean // 启用按场景覆盖播放器显示模式
   videoPlayerModeOverrides: VideoPlayerModeOverrides // 不同播放场景的显示模式覆盖
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
-  showVerticalVideoZoomButton: boolean // 显示竖屏视频放大按钮
   showBewlyWidescreenButton: boolean // 显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
   showVideoPipButton: boolean // 显示播放器画中画按钮
@@ -1009,7 +1008,6 @@ export const originalSettings: Settings = {
     momentsDialog: 'inherit',
   },
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
-  showVerticalVideoZoomButton: true, // 默认显示竖屏视频放大按钮
   showBewlyWidescreenButton: true, // 默认显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
   showVideoPipButton: true, // 默认显示播放器画中画按钮
@@ -1442,6 +1440,9 @@ export const settings = useSettingsStorage(originalSettings, {
     }
     if (record.shortcuts)
       Reflect.deleteProperty(record.shortcuts, 'listenVideo')
+
+    // 竖屏放大功能已移除，清理旧版本保存的显示开关。
+    Reflect.deleteProperty(record, 'showVerticalVideoZoomButton')
 
     const legacyRandomPlayOrder = record.randomPlayOrder
     if (

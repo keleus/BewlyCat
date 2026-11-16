@@ -1837,8 +1837,8 @@ function injectLayoutStyle() {
     }
 
     /* 播放器容器延伸到侧栏边缘：控件贴齐侧栏不被遮挡，同时保住整块区域给
-       进度条、点击暂停与「竖屏放大」的方形画面使用。子代 id 选择器用于压过
-       下方「width: 100%」的双 id 特异性规则（移动根节点可能没有 #playerWrap）。 */
+       进度条与点击暂停使用。子代 id 选择器用于压过下方「width: 100%」的
+       双 id 特异性规则（移动根节点可能没有 #playerWrap）。 */
     #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame {
       justify-content: flex-start;
     }
@@ -1857,9 +1857,7 @@ function injectLayoutStyle() {
       width: min(calc(100vw - var(--bewly-widescreen-sidebar-column-width)), 100%) !important;
     }
 
-    /* 未放大时把视频层与弹幕层平移半个侧栏宽，使画面在视口居中；
-       「竖屏放大」的方形裁切激活时改为受限位移——在不越出播放器容器
-       （不被侧栏遮挡、不额外裁切）的前提下尽量靠拢视口中心。 */
+    /* 把视频层与弹幕层平移半个侧栏宽，使画面在视口居中。 */
     #${ROOT_ID}[data-center-layout="true"] .bpx-player-video-wrap,
     #${ROOT_ID}[data-center-layout="true"] .bilibili-player-video-wrap,
     #${ROOT_ID}[data-center-layout="true"] .bpx-player-dm-wrap {
@@ -1870,39 +1868,6 @@ function injectLayoutStyle() {
     #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bilibili-player-video-wrap,
     #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-dm-wrap {
       transform: translateX(calc(-1 * var(--bewly-widescreen-sidebar-column-width) / 2)) !important;
-    }
-
-    #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
-    #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
-    #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
-      transform: translateX(max(0px, min(
-        calc(var(--bewly-widescreen-sidebar-column-width) / 2),
-        calc((100vw - var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-player-available-height)) / 2)
-      ))) !important;
-    }
-
-    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
-    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
-    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
-      transform: translateX(calc(-1 * max(0px, min(
-        calc(var(--bewly-widescreen-sidebar-column-width) / 2),
-        calc((100vw - var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-player-available-height)) / 2)
-      )))) !important;
-    }
-
-    /* 竖屏放大后画面可能贴近侧栏，将按钮与预览图放在另一侧的黑边。 */
-    #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
-    #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
-      --bewly-vertical-video-controls-side: left;
-      left: var(--bew-space-3, 12px) !important;
-      right: auto !important;
-    }
-
-    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
-    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
-      --bewly-vertical-video-controls-side: right;
-      left: auto !important;
-      right: var(--bew-space-3, 12px) !important;
     }
 
     /* 居中布局的播放器列横跨视口，因此发送栏需显式扣除当前可见侧栏列。

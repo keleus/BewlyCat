@@ -39,7 +39,6 @@ import { getPluginSearchResultsUrl, navigateToPluginSearchResultsInPlace, openSe
 import { installShortcutListener, setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
-import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
 import { applyBewlyDesignClasses, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
@@ -564,10 +563,6 @@ else if (shouldInitializeContentScript) {
     applyDefaultCaptionState()
     applyRememberedPlaybackRate()
     startPlaybackRateMonitoring()
-    if (settings.value.showVerticalVideoZoomButton)
-      initVerticalVideoZoom()
-    else
-      resetVerticalVideoZoom()
 
     schedulePlaybackBehaviorApply()
     scheduleAddWatchLaterButton()
@@ -1149,7 +1144,6 @@ else if (shouldInitializeContentScript) {
         // 视为当前导航已完成的播放器模式，只重新应用伴随设置。
         if (!videoCommentIdentifier || !refreshBewlyWidescreenForNavigation())
           exitBewlyWidescreen()
-        resetVerticalVideoZoom()
         resetPlayerModeReadinessForNavigation()
         document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
@@ -1681,16 +1675,6 @@ else if (shouldInitializeContentScript) {
 
     runWhenNativeVideoHeaderStable(registerCustomPlaybackSettingsWatcher)
   })
-
-  watch(
-    () => settings.value.showVerticalVideoZoomButton,
-    (enabled) => {
-      if (enabled && isVideoOrBangumiPage())
-        initVerticalVideoZoom()
-      else
-        resetVerticalVideoZoom()
-    },
-  )
 
   watch(
     () => settings.value.language,
