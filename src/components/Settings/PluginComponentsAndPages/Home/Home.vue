@@ -191,6 +191,80 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
 
 <template>
   <div>
+    <SettingsItemGroup :title="$t('settings.group_search_page_mode')">
+      <SettingsItem :title="$t('settings.use_search_page_mode')" right-width="auto">
+        <Radio v-model="settings.useSearchPageModeOnHomePage" />
+      </SettingsItem>
+      <template v-if="settings.useSearchPageModeOnHomePage">
+        <SettingsItem :title="$t('settings.settings_shared_with_the_search_page')" right-width="auto">
+          <template #desc>
+            <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
+          </template>
+          <Button type="secondary" center @click="openSearchPageSettings">
+            {{ $t('settings.btn.open_settings') }}
+          </Button>
+        </SettingsItem>
+
+        <SettingsItem :title="$t('settings.search_page_mode_wallpaper_fixed')" right-width="auto">
+          <Radio v-model="settings.searchPageModeWallpaperFixed" />
+        </SettingsItem>
+      </template>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.group_home_tabs')"
+    >
+      <SettingsItem
+        :title="$t('settings.home_tabs_adjustment')"
+        :desc="$t('settings.home_tabs_adjustment_desc')"
+        right-width="auto"
+      >
+        <template #title>
+          <div flex="~ gap-4 items-center">
+            {{ $t('settings.home_tabs_adjustment') }}
+            <Button size="small" type="secondary" @click="resetHomeTabs">
+              <template #left>
+                <div i-mingcute:back-line />
+              </template>
+              {{ $t('common.operation.reset') }}
+            </Button>
+          </div>
+        </template>
+
+        <template #bottom>
+          <draggable
+            v-model="settings.homePageTabVisibilityList"
+            item-key="page"
+            class="settings-draggable-tags"
+            :force-fallback="true"
+            role="group"
+            :aria-label="$t('settings.home_tabs_adjustment')"
+          >
+            <template #item="{ element }">
+              <SettingsToggleTag
+                :model-value="element.visible"
+                :label="getHomeTabLabel(element.page)"
+                @update:model-value="handleToggleHomeTab(element, $event)"
+              />
+            </template>
+          </draggable>
+        </template>
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.home_tabs_position')" right-width="auto">
+        <SettingsSegmentedControl
+          v-model="settings.homeTabsPosition"
+          :label="$t('settings.home_tabs_position')"
+          :options="homeTabsPositionOptions"
+        />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.fixed_home_tabs_on_home_page')" right-width="auto">
+        <Radio v-model="settings.fixedHomeTabsOnHomePage" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.enable_grid_layout_switcher')" right-width="auto">
+        <Radio v-model="settings.enableGridLayoutSwitcher" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <SettingsItemGroup :title="$t('settings.group_recommendation_mode')">
       <SettingsItem :title="$t('settings.recommendation_mode')" right-width="auto">
         <template #desc>
@@ -331,80 +405,6 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
           right-width="auto"
         >
           <Radio v-model="settings.immersivePreloadNext" />
-        </SettingsItem>
-      </template>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup
-      :title="$t('settings.group_home_tabs')"
-    >
-      <SettingsItem
-        :title="$t('settings.home_tabs_adjustment')"
-        :desc="$t('settings.home_tabs_adjustment_desc')"
-        right-width="auto"
-      >
-        <template #title>
-          <div flex="~ gap-4 items-center">
-            {{ $t('settings.home_tabs_adjustment') }}
-            <Button size="small" type="secondary" @click="resetHomeTabs">
-              <template #left>
-                <div i-mingcute:back-line />
-              </template>
-              {{ $t('common.operation.reset') }}
-            </Button>
-          </div>
-        </template>
-
-        <template #bottom>
-          <draggable
-            v-model="settings.homePageTabVisibilityList"
-            item-key="page"
-            class="settings-draggable-tags"
-            :force-fallback="true"
-            role="group"
-            :aria-label="$t('settings.home_tabs_adjustment')"
-          >
-            <template #item="{ element }">
-              <SettingsToggleTag
-                :model-value="element.visible"
-                :label="getHomeTabLabel(element.page)"
-                @update:model-value="handleToggleHomeTab(element, $event)"
-              />
-            </template>
-          </draggable>
-        </template>
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.home_tabs_position')" right-width="auto">
-        <SettingsSegmentedControl
-          v-model="settings.homeTabsPosition"
-          :label="$t('settings.home_tabs_position')"
-          :options="homeTabsPositionOptions"
-        />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.fixed_home_tabs_on_home_page')" right-width="auto">
-        <Radio v-model="settings.fixedHomeTabsOnHomePage" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.enable_grid_layout_switcher')" right-width="auto">
-        <Radio v-model="settings.enableGridLayoutSwitcher" />
-      </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup :title="$t('settings.group_search_page_mode')">
-      <SettingsItem :title="$t('settings.use_search_page_mode')" right-width="auto">
-        <Radio v-model="settings.useSearchPageModeOnHomePage" />
-      </SettingsItem>
-      <template v-if="settings.useSearchPageModeOnHomePage">
-        <SettingsItem :title="$t('settings.settings_shared_with_the_search_page')" right-width="auto">
-          <template #desc>
-            <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
-          </template>
-          <Button type="secondary" center @click="openSearchPageSettings">
-            {{ $t('settings.btn.open_settings') }}
-          </Button>
-        </SettingsItem>
-
-        <SettingsItem :title="$t('settings.search_page_mode_wallpaper_fixed')" right-width="auto">
-          <Radio v-model="settings.searchPageModeWallpaperFixed" />
         </SettingsItem>
       </template>
     </SettingsItemGroup>
