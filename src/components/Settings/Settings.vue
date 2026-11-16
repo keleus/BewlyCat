@@ -7,20 +7,18 @@ import type { SettingsMenu, SettingsNavigationTarget } from '~/composables/useAp
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { USAGE_GUIDE_URL } from '~/constants/usageGuide'
 import { settings } from '~/logic'
-import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 import { buildSettingsPageHash } from '~/utils/settingsPage'
 
 import SettingsSectionHeading from './components/SettingsSectionHeading.vue'
 import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
+import { useSettingsNavigation } from './composables/useSettingsNavigation'
+import { useSettingsSearch } from './composables/useSettingsSearch'
 import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilter'
+import { useSettingsSearchNavigation } from './composables/useSettingsSearchNavigation'
 import { useSettingsUrlSync } from './composables/useSettingsUrlSync'
-import type { SettingsSearchEntry } from './searchCatalog'
-import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from './searchCatalog'
-import type { SearchPartMatch } from './searchMatch'
-import { getSearchPartScore } from './searchMatch'
 import type { SettingsSecondaryPage } from './settingsMenus'
 import { settingsMenus } from './settingsMenus'
-import { MenuType } from './types'
+import type { MenuType } from './types'
 
 const pendingNavigation = defineModel<SettingsNavigationTarget | undefined>('pendingNavigation')
 
@@ -30,80 +28,20 @@ const pinnedChannelHistory = createPinnedChannelHistory(computed({
 }))
 provide(pinnedChannelHistoryKey, pinnedChannelHistory)
 
-const { t, tm, rt } = useI18n()
-const searchQuery = ref('')
+const { t } = useI18n()
 
-const settingsMenuStorageKey = 'bewly-settings-active-menu'
-const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey) as MenuType | null
-const activatedMenuItem = ref<MenuType>(
-  storedMenuItem && settingsMenus.some(menu => menu.value === storedMenuItem)
-    ? storedMenuItem
-    : MenuType.General,
-)
-// 每个一级菜单各自记住当前二级页，切换回来时保持原位。
-const activeSecondaryPages = reactive<Partial<Record<MenuType, string>>>(Object.fromEntries(
-  settingsMenus.flatMap((menu) => {
-    if (!menu.pages)
-      return []
-    const stored = sessionStorage.getItem(menu.storageKey!)
-    return [[menu.value, menu.pages.some(page => page.value === stored) ? stored : menu.pages[0].value]]
-  }),
-))
-// 依赖的模块关闭后，对应菜单和二级页一并隐藏。
-const visibleMenus = computed(() => settingsMenus.flatMap((menu) => {
-  if (menu.available && !menu.available())
-    return []
-  if (!menu.pages)
-    return [menu]
-  const pages = menu.pages.filter(page => !page.available || page.available())
-  return pages.length ? [{ ...menu, pages }] : []
-}))
-// 当前页面被隐藏时回到通用页，用户可以在那里重新开启对应模块。
-const activeMenu = computed(() => visibleMenus.value.find(menu => menu.value === activatedMenuItem.value)
-  ?? visibleMenus.value.find(menu => menu.value === MenuType.General)!)
-function getSecondaryPage(menu: typeof activeMenu.value) {
-  return menu.pages?.find(page => page.value === activeSecondaryPages[menu.value]) ?? menu.pages?.[0]
-}
-const activeSecondaryPage = computed(() => getSecondaryPage(activeMenu.value))
-const activeContent = computed(() => activeSecondaryPage.value?.component ?? activeMenu.value.component)
-const expandedMenusStorageKey = 'bewly-settings-expanded-menus'
-const defaultExpandedMenus = settingsMenus.filter(menu => menu.pages?.length).map(menu => menu.value)
-
-function readExpandedMenus(): MenuType[] {
-  try {
-    const stored = JSON.parse(localStorage.getItem(expandedMenusStorageKey) ?? 'null')
-    return Array.isArray(stored) ? stored : defaultExpandedMenus
-  }
-  catch {
-    return defaultExpandedMenus
-  }
-}
-
-// 展开与页面选中分别管理，浏览其他分类时保留已展开的菜单，下次打开设置页时也保持。
-const expandedMenus = ref(new Set<MenuType>([...readExpandedMenus(), activatedMenuItem.value]))
-watch(expandedMenus, (menus) => {
-  localStorage.setItem(expandedMenusStorageKey, JSON.stringify([...menus]))
-}, { deep: true })
-
-const secondaryGroups = computed(() => new Map(visibleMenus.value.map((menu) => {
-  const groups: Array<{ key: string | null, pages: SettingsSecondaryPage[] }> = []
-  for (const page of menu.pages ?? []) {
-    const groupKey = page.groupKey ?? null
-    const lastGroup = groups[groups.length - 1]
-    if (lastGroup?.key === groupKey)
-      lastGroup.pages.push(page)
-    else
-      groups.push({ key: groupKey, pages: [page] })
-  }
-  return [menu.value, groups] as const
-})))
-
-function toggleMenu(menu: MenuType) {
-  if (expandedMenus.value.has(menu))
-    expandedMenus.value.delete(menu)
-  else
-    expandedMenus.value.add(menu)
-}
+const navigation = useSettingsNavigation()
+const {
+  activatedMenuItem,
+  activeContent,
+  activeMenu,
+  activeSecondaryPage,
+  expandedMenus,
+  getSecondaryPage,
+  secondaryGroups,
+  toggleMenu,
+  visibleMenus,
+} = navigation
 
 const searchInputRef = ref<HTMLInputElement>()
 const { mainAppRef } = useBewlyApp()
@@ -127,16 +65,6 @@ function focusSettingsSearch() {
 
 const scrollViewportRef = ref<HTMLElement>()
 
-watch(activatedMenuItem, (menu) => {
-  sessionStorage.setItem(settingsMenuStorageKey, menu)
-  expandedMenus.value.add(menu)
-})
-watch(activeSecondaryPages, (pages) => {
-  for (const menu of settingsMenus) {
-    if (menu.storageKey && pages[menu.value])
-      sessionStorage.setItem(menu.storageKey, pages[menu.value]!)
-  }
-})
 watch([activatedMenuItem, activeSecondaryPage], () => {
   scrollViewportRef.value?.scrollTo({ top: 0 })
 })
@@ -144,132 +72,18 @@ watch([activatedMenuItem, activeSecondaryPage], () => {
 const title = computed(() => t(activeMenu.value.titleKey))
 const titleDetail = computed(() => activeSecondaryPage.value ? t(activeSecondaryPage.value.titleKey) : undefined)
 
-function getSearchEntryTitle(entry: SettingsSearchEntry) {
-  return entry.titleKey ? t(entry.titleKey) : entry.title ?? ''
-}
-
-function getTranslatedSearchTerms(key: string): string[] {
-  const collectTerms = (message: unknown): string[] => {
-    if (typeof message === 'string' || typeof message === 'function')
-      return [rt(message as Parameters<typeof rt>[0])]
-    if (Array.isArray(message))
-      return message.flatMap(collectTerms)
-    if (message && typeof message === 'object')
-      return Object.values(message).flatMap(collectTerms)
-    return []
-  }
-
-  return collectTerms(tm(key))
-}
-
-function getSearchEntryKeywordText(entry: SettingsSearchEntry) {
-  // 不索引 *_desc：描述文本容易让宽泛关键词命中大量设置。
-  // 仅保留选项/单位和目录中显式声明的检索词。
-  const inferredKeywordKeys = entry.titleKey
-    ? [`${entry.titleKey}_opt`, `${entry.titleKey}_option`, `${entry.titleKey}_unit`]
-    : []
-  const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
-    .flatMap(getTranslatedSearchTerms)
-
-  // 菜单路径只用于结果定位，避免输入分类名时命中整组设置。
-  return [...translatedKeywords, ...(entry.keywords ?? [])].join(' ').toLocaleLowerCase()
-}
-
-interface SearchIndexEntry {
-  entry: SettingsSearchEntry
-  titleText: string
-  keywordText: string
-  order: number
-}
-
-// 搜索文本只随 locale/目录变化重算，输入时复用，避免每次击键重复翻译全部条目。
-function isSearchEntryVisible(entry: SettingsSearchEntry) {
-  const menu = visibleMenus.value.find(item => item.value === entry.menu)
-  if (!menu)
-    return false
-  const usedByVideoPageGlassStyle = settings.value.videoPageGlassStyle
-    && entry.menu === MenuType.Appearance
-    && entry.titleKey !== undefined
-    && videoPageBackgroundTitleKeys.has(entry.titleKey)
-  if (settings.value.useOriginalBilibiliHomepage && entry.titleKey && bewlyPagesOnlyTitleKeys.has(entry.titleKey) && !usedByVideoPageGlassStyle)
-    return false
-  if (entry.titleKey && bewlyTopBarOnlyTitleKeys.has(entry.titleKey)
-    && !shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
-    return false
-  }
-
-  const secondaryPage = entry.storageValues?.find(({ key }) => key === menu.storageKey)?.value
-  return !secondaryPage || !menu.pages || menu.pages.some(page => page.value === secondaryPage)
-}
-
-const searchIndex = computed<SearchIndexEntry[]>(() => settingsSearchEntries.filter(isSearchEntryVisible).map((entry, order) => {
-  const titleText = getSearchEntryTitle(entry).toLocaleLowerCase()
-  const keywordText = getSearchEntryKeywordText(entry)
-  return {
-    entry,
-    titleText,
-    keywordText,
-    order,
-  }
-}))
-
-function getSearchMatchScore(item: SearchIndexEntry, query: string, partMatches: SearchPartMatch[]) {
-  let score = 0
-  if (item.titleText === query)
-    score += 200
-  else if (item.titleText.includes(query))
-    score += 40
-
-  for (const partMatch of partMatches)
-    score += partMatch.score
-
-  return score
-}
-
-const searchResults = computed(() => {
-  const query = searchQuery.value.trim().toLocaleLowerCase()
-  if (!query)
-    return []
-
-  const queryParts = query.split(/\s+/).filter(Boolean)
-  const matches: Array<{ item: SearchIndexEntry, score: number }> = []
-  for (const item of searchIndex.value) {
-    const partMatches = queryParts
-      .map(part => getSearchPartScore(item, part))
-      .filter((match): match is SearchPartMatch => match !== null)
-    if (partMatches.length !== queryParts.length)
-      continue
-    matches.push({ item, score: getSearchMatchScore(item, query, partMatches) })
-  }
-
-  // 标题精确/前缀命中优先于标题包含，再到关键词命中与分隔匹配；同分保持目录顺序。
-  matches.sort((a, b) => b.score - a.score || a.item.order - b.item.order)
-  return matches.map(({ item }) => item.entry)
-})
-
-const isSearching = computed(() => searchQuery.value.trim().length > 0)
-
-const matchedSearchTitles = computed(() => {
-  const titles = new Set<string>()
-  for (const entry of searchResults.value) {
-    const title = getSearchEntryTitle(entry).trim()
-    if (title)
-      titles.add(title)
-    if (entry.fallbackTargetKey) {
-      const fallbackTitle = t(entry.fallbackTargetKey).trim()
-      if (fallbackTitle)
-        titles.add(fallbackTitle)
-    }
-  }
-  return titles
-})
+const search = useSettingsSearch({ visibleMenus })
+const {
+  getSearchEntrySecondaryPage,
+  getSearchEntryTitle,
+  isSearching,
+  matchedSearchTitles,
+  searchQuery,
+  searchResults,
+  searchResultsSummary,
+} = search
 
 provideSettingsSearchFilter(isSearching, matchedSearchTitles)
-
-function getSearchEntrySecondaryPage(entry: SettingsSearchEntry) {
-  const menu = settingsMenus.find(item => item.value === entry.menu)
-  return entry.storageValues?.find(({ key }) => key === menu?.storageKey)?.value
-}
 
 // 有命中的页面（菜单自身或二级页），结果页按菜单/页面顺序渲染这些页面的真实设置项。
 const searchResultPageKeys = computed(() => {
@@ -325,24 +139,6 @@ const searchResultSections = computed<SearchResultSection[]>(() => {
   )
 })
 
-const searchResultCount = computed(() => {
-  const titles = new Set<string>()
-  for (const entry of searchResults.value) {
-    const title = getSearchEntryTitle(entry).trim()
-    if (title)
-      titles.add(title)
-  }
-  return titles.size
-})
-
-const searchResultsSummary = computed(() => {
-  if (!isSearching.value)
-    return ''
-  return searchResultCount.value
-    ? t('settings.search.results_count', { count: searchResultCount.value })
-    : t('settings.search.no_results')
-})
-
 // 搜索结果页和普通页面共用同一个滚动容器，切换模式时回到顶部。
 watch(isSearching, () => {
   scrollViewportRef.value?.scrollTo({ top: 0 })
@@ -367,175 +163,17 @@ watch(searchResults, async () => {
   }
 }, { flush: 'post' })
 
-let highlightedSearchTarget: HTMLElement | undefined
-let searchTargetHighlightTimer: number | undefined
-let searchNavigationId = 0
-let searchTargetRetryTimer: number | undefined
-let searchTargetFrame: number | undefined
-
-function cancelSearchNavigation() {
-  searchNavigationId++
-  if (searchTargetRetryTimer !== undefined)
-    window.clearTimeout(searchTargetRetryTimer)
-  if (searchTargetFrame !== undefined)
-    window.cancelAnimationFrame(searchTargetFrame)
-  searchTargetRetryTimer = undefined
-  searchTargetFrame = undefined
-  clearSearchTargetHighlight()
-}
-
-function clearSearchTargetHighlight() {
-  if (searchTargetHighlightTimer)
-    window.clearTimeout(searchTargetHighlightTimer)
-
-  highlightedSearchTarget?.classList.remove('settings-search-target')
-  highlightedSearchTarget?.removeAttribute('data-settings-search-highlight')
-  highlightedSearchTarget = undefined
-  searchTargetHighlightTimer = undefined
-}
-
-function highlightSearchTarget(target: HTMLElement) {
-  clearSearchTargetHighlight()
-  const visualTarget = target.matches('.b-settings-item-group')
-    ? target.querySelector<HTMLElement>(':scope > .group-title') ?? target
-    : target
-
-  highlightedSearchTarget = visualTarget
-  visualTarget.dataset.settingsSearchHighlight = t('settings.search.located')
-  visualTarget.classList.add('settings-search-target')
-  searchTargetHighlightTimer = window.setTimeout(clearSearchTargetHighlight, 2400)
-}
-
-function isVisibleTarget(element: HTMLElement) {
-  return element.getClientRects().length > 0
-}
-
-function hasClosedDetailsAncestor(element: HTMLElement, viewport: HTMLElement) {
-  let ancestor = element.parentElement
-  while (ancestor && ancestor !== viewport) {
-    if (ancestor instanceof HTMLDetailsElement && !ancestor.open)
-      return true
-    ancestor = ancestor.parentElement
-  }
-  return false
-}
-
-function isUsableTarget(element: HTMLElement | null, viewport: HTMLElement): element is HTMLElement {
-  return Boolean(element && (isVisibleTarget(element) || hasClosedDetailsAncestor(element, viewport)))
-}
-
-function scrollToSearchTarget(
-  targetKey: string | undefined,
-  expectedTitle: string | undefined,
-  fallbackTargetKey: string | undefined,
-  navigationId: number,
-  attempts = 0,
-) {
-  if ((!targetKey && !expectedTitle) || navigationId !== searchNavigationId || attempts > 30)
-    return
-
-  const retry = () => {
-    searchTargetRetryTimer = window.setTimeout(() => {
-      searchTargetRetryTimer = undefined
-      scrollToSearchTarget(targetKey, expectedTitle, fallbackTargetKey, navigationId, attempts + 1)
-    }, 100)
-  }
-  const viewport = scrollViewportRef.value
-  if (!viewport) {
-    retry()
-    return
-  }
-
-  const queryByKey = (key: string) => Array.from(
-    viewport.querySelectorAll<HTMLElement>(`[data-settings-key="${CSS.escape(key)}"]`),
-  ).find(element => isUsableTarget(element, viewport)) ?? null
-  const queryByTitle = (title: string | undefined) => title
-    ? Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]'))
-      .find(element => element.dataset.settingsTitle === title && isUsableTarget(element, viewport)) ?? null
-    : null
-
-  const keyedTarget = targetKey ? queryByKey(targetKey) : null
-  const titleTarget = expectedTitle ? queryByTitle(expectedTitle) : null
-  // 条件目标可能不存在；给它两轮挂载时间后落到始终可见的父项。
-  const fallbackTarget = fallbackTargetKey && attempts >= 2
-    ? queryByKey(fallbackTargetKey) ?? queryByTitle(t(fallbackTargetKey))
-    : null
-  // 未配置父项时至少把用户带到当前页面，避免点击完全无反馈。
-  const pageTarget = attempts >= 10
-    ? Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]')).find(isVisibleTarget) ?? null
-    : null
-  const target = keyedTarget ?? titleTarget ?? fallbackTarget ?? pageTarget
-  const usedPageFallback = !keyedTarget && !titleTarget && !fallbackTarget && Boolean(pageTarget)
-  if (!target) {
-    retry()
-    return
-  }
-
-  // 展开所有祖先分组，但不启用功能或改写配置。
-  let ancestor: HTMLElement | null = target
-  while (ancestor && ancestor !== viewport) {
-    if (ancestor instanceof HTMLDetailsElement)
-      ancestor.open = true
-    ancestor = ancestor.parentElement
-  }
-
-  nextTick(() => {
-    if (navigationId !== searchNavigationId)
-      return
-    searchTargetFrame = window.requestAnimationFrame(() => {
-      searchTargetFrame = undefined
-      if (navigationId !== searchNavigationId || !viewport.contains(target))
-        return
-      if (!target.getClientRects().length) {
-        retry()
-        return
-      }
-
-      const targetRect = target.getBoundingClientRect()
-      const viewportRect = viewport.getBoundingClientRect()
-      const headerInset = Number.parseFloat(window.getComputedStyle(viewport).paddingTop) || 0
-      const centerOffset = Math.max(0, (viewport.clientHeight - headerInset - targetRect.height) / 2)
-      // 只滚动设置容器，避免 scrollIntoView 连带滚动外层页面；避开固定顶栏。
-      viewport.scrollTo({
-        top: Math.max(0, viewport.scrollTop + targetRect.top - viewportRect.top - viewport.clientTop - headerInset - centerOffset),
-        behavior: 'smooth',
-      })
-      // 页面级兜底只负责把用户带到正确页面，避免把“已定位”标注到无关设置上。
-      if (!usedPageFallback)
-        highlightSearchTarget(target)
-    })
-  })
-}
-
-function activateSettingsTarget(target: SettingsNavigationTarget) {
-  const menu = settingsMenus.find(item => item.value === target.menu)
-  const secondaryPage = target.secondaryPage
-  if (secondaryPage && menu?.pages?.some(page => page.value === secondaryPage))
-    activeSecondaryPages[target.menu as MenuType] = secondaryPage
-
-  expandedMenus.value.add(target.menu as MenuType)
-  activatedMenuItem.value = target.menu as MenuType
-}
-
-function navigateToSearchResult(entry: SettingsSearchEntry) {
-  cancelSearchNavigation()
-  const navigationId = searchNavigationId
-  searchQuery.value = ''
-  activateSettingsTarget({
-    menu: entry.menu,
-    secondaryPage: getSearchEntrySecondaryPage(entry),
-    targetTitleKey: entry.targetTitleKey,
-  })
-  const targetTitle = entry.targetTitleKey
-    ? t(entry.targetTitleKey)
-    : entry.targetTitle ?? getSearchEntryTitle(entry)
-  const targetKey = entry.targetTitleKey ?? entry.titleKey
-  nextTick(() => scrollToSearchTarget(targetKey, targetTitle, entry.fallbackTargetKey, navigationId))
-}
+const searchNavigation = useSettingsSearchNavigation({
+  scrollViewportRef,
+  searchQuery,
+  getSearchEntryTitle,
+  getSearchEntrySecondaryPage,
+  activateSettingsTarget: navigation.activateSettingsTarget,
+})
 
 function navigateToTarget(target: SettingsNavigationTarget) {
   const storageKey = settingsMenus.find(menu => menu.value === target.menu)?.storageKey
-  navigateToSearchResult({
+  searchNavigation.navigateToSearchResult({
     menu: target.menu as MenuType,
     targetTitleKey: target.targetTitleKey,
     storageValues: target.secondaryPage && storageKey
@@ -570,8 +208,6 @@ watchEffect(() => {
     ? `${t('settings.search.results_title')} - BewlyCat`
     : `${titleDetail.value ?? title.value} - BewlyCat`
 })
-
-onBeforeUnmount(cancelSearchNavigation)
 
 const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
 </script>
