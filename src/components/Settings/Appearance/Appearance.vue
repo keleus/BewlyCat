@@ -335,8 +335,6 @@ function changeWallpaper(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <ChangeWallpaper v-if="showGlobalBackgroundSettings" type="global" />
-
     <SettingsItemGroup :title="$t('settings.group_page_style')">
       <SettingsItem
         v-if="!settings.useOriginalBilibiliHomepage"
@@ -365,6 +363,8 @@ function changeWallpaper(url: string) {
         <Radio v-model="settings.roundedVideoPlayer" />
       </SettingsItem>
     </SettingsItemGroup>
+
+    <ChangeWallpaper v-if="showGlobalBackgroundSettings" type="global" />
 
     <SettingsItemGroup :title="$t('settings.group_fonts')">
       <SettingsItem :title="$t('settings.customize_font')" right-width="auto">
