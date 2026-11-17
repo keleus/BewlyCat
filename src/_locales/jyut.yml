@@ -510,11 +510,6 @@ settings:
   moments_video_card_open_mode_desc: 獨立控制影片投稿動態卡片嘅打開位置；揀「跟隨動態卡片」時使用上面嘅設定。
   moments_video_card_open_mode_opt:
     inherit: 跟隨動態卡片
-  group_moments_wanted_users: 想睇分組
-  group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
-  moments_enable_wanted_filter: 顯示「想睇」按鈕
-  moments_enable_wanted_filter_desc: 喺動態頁橫向欄顯示「想睇」按鈕，用嚟淨係睇名單內 UP 主嘅動態。
-  moments_wanted_users: 想睇嘅 UP 主
   group_moments_pinned_users: 固定 UP 主
   group_moments_pinned_users_desc: 管理固定喺動態欄右側嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
   moments_pinned_users: 固定嘅 UP 主
@@ -918,7 +913,7 @@ settings:
     title_keyword_placeholder: 輸入關鍵字之後按 Enter，唔分大細階
     triple_synced: 已經同步去收藏夾：{folders}
     triple_sync_failed: 三連之後同步收藏夾失敗
-  wanted_users:
+  up_picker:
     no_results: 搵唔到相關 UP 主，試下其他暱稱
     search_failed: 搜尋 UP 主失敗，請遲啲再試
     invalid_uid: 請輸入有效嘅 UP 主 UID
@@ -927,19 +922,12 @@ settings:
     info_failed: 攞唔到 UP 主資料，請遲啲再試
     placeholder: 輸入 UP 主 UID 或暱稱
     pinned_already: 呢位 UP 主已經固定咗
-    wanted_already: 呢位 UP 主已經喺「想睇」分組
     pinned_need_follow: 要先關注 {name}，先可以固定佢
-    wanted_need_follow: 要先關注 {name}，先可以加佢入「想睇」
     pinned_added: 已經將 {name} 固定到動態欄
-    wanted_added: 已經將 {name} 加入「想睇」
     pinned_removed: 已經取消固定 {name}
-    wanted_removed: 已經將 {name} 移出「想睇」
     remove_pinned: 取消固定 {name}
-    remove_wanted: 將 {name} 移出想睇
     remove_pinned_title: 取消固定
-    remove_wanted_title: 移出想睇
     pinned_empty: 仲未固定 UP 主。加咗之後會顯示喺動態欄右邊。
-    wanted_empty: 仲未加 UP 主。加咗之後可以喺 Bewly 動態頁用「想睇」篩選。
   authorization_success: 授權成功
   filter_by_title: 根據標題篩選
   filter_by_title_desc: >
@@ -1840,19 +1828,12 @@ moments:
   live_now: 直播緊
   group_label: 動態分組
   all_posts: 全部動態
-  wanted_only: 只睇想睇嘅 UP 主
-  cancel_wanted_only: 唔再只睇想睇嘅 UP 主
-  wanted_scope_hint: 只適用於全部同影片投稿
-  wanted: 想睇
   scroll_left: 向左捲動經常瀏覽列表
   scroll_right: 向右捲動經常瀏覽列表
   frequent_uploaders: 經常瀏覽嘅 UP 主
   has_updates: 有更新
   pin_uploader: 固定 UP 主
-  no_recent_updates: 最近冇更新
-  add_wanted_first: 請先喺設定加入想睇嘅 UP 主
   empty: 暫時冇可以顯示嘅動態
-  recheck: 再檢查
   reload: 重新載入
   loading_more: 載入緊並準備更多動態…
   new_tab: 喺新分頁開啟

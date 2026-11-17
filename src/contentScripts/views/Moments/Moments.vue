@@ -29,7 +29,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, OVERLAY_SCROLL_BAR_REBASE, VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
-import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
+import { momentsPinnedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
 import { ensureWatchLaterState } from '~/logic/watchLaterState'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
@@ -60,8 +60,6 @@ import {
 } from '~/utils/videoDialog'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
-import type { MomentFilter, MomentsFeedCacheEntry } from './momentsFeedCache'
-import { useMomentsFeedCache } from './momentsFeedCache'
 import MomentsFilterEntry from './MomentsFilterEntry.vue'
 import MomentsHotSearch from './MomentsHotSearch.vue'
 
@@ -135,6 +133,8 @@ const MOMENT_FEED_FEATURES = 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVo
 const toast = useToast()
 const { t } = useI18n()
 
+type MomentFilter = 'all' | 'video' | 'pgc' | 'article'
+
 const moments = ref<DisplayMoment[]>([])
 const momentFilters = computed<Array<{ value: MomentFilter, label: string }>>(() => [
   { value: 'all', label: t('moments.filter_all') },
@@ -143,17 +143,6 @@ const momentFilters = computed<Array<{ value: MomentFilter, label: string }>>(()
   { value: 'article', label: t('moments.filter_article') },
 ])
 const activeMomentFilter = ref<MomentFilter>('all')
-// 缓存可达数 MB，存于后台 IndexedDB 并按动态增量写入，避免每页都序列化整份缓存。
-const {
-  data: momentsFeedCache,
-  ready: momentsFeedCacheReady,
-  flush: flushMomentsCacheWrite,
-  markItemsDirty: markMomentsCacheItemsDirty,
-} = useMomentsFeedCache({ writeDelay: 500 })
-type MomentGroup = 'all' | 'wanted'
-const activeMomentGroup = ref<MomentGroup>('all')
-/** 只保留“想看”尚未扫描的缓存段；已展示数据交给虚拟列表管理。 */
-let wantedFeedBuffer: MomentsFeedCacheEntry | undefined
 const portalUser = ref<MomentsPortalUser | null>(null)
 const portalLiveUsers = ref<MomentsPortalLiveUser[]>([])
 const portalLiveCount = ref(0)
@@ -271,7 +260,7 @@ const hasNewerMoments = ref(false)
 const isLoadingNewerMoments = ref(false)
 /** 已加载原始条目中最新的动态 ID，用作向上加载的衔接点 */
 let newestLoadedMomentId = ''
-/** 本轮从中段开始加载，列表不是 feed 头部，不能写入全部动态缓存 */
+/** 本轮从中段开始加载，列表不是 feed 头部 */
 let isLastSeenSession = false
 /** “回到最新”后的下一次重置跳过定位，直接从顶部加载 */
 let skipLastSeenOnce = false
@@ -291,7 +280,7 @@ const isNearTrimmedHead = ref(false)
 let headTrimTimer: ReturnType<typeof setTimeout> | null = null
 /** 分页后正在等待恢复滚动位置，此时回收会被恢复覆盖 */
 let pendingPaginationScrollRestores = 0
-const { handlePageRefresh, handleReachBottom, mainAppRef, openSettings, scrollViewportRef } = useBewlyApp()
+const { handlePageRefresh, handleReachBottom, mainAppRef, scrollViewportRef } = useBewlyApp()
 // Shadow DOM 内的滚动不会传播到 window，直接监听页面实际的滚动容器。
 useEventListener(scrollViewportRef, 'scroll', updateSidebarBounds, { passive: true })
 
@@ -305,11 +294,8 @@ const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
 /** 首屏最多再补 1 页把视口填满；之后只随滚动请求 */
 const MAX_POST_LOAD_AUTOFILL_PAGES = 1
-const WANTED_SCAN_LIMIT = 100
 /** 开启类型过滤时单次最多请求的原始动态页数 */
 const FILTERED_MAX_REQUEST_PAGES = 2
-/** 仅限制持久化缓存，不能作为动态浏览或“想看”扫描的上限。 */
-const MOMENTS_CACHE_MAX_ITEMS = 1000
 /**
  * 页面内存中最多保留的动态条数。超过后回收视口上方很远处的早期卡片，
  * 不限制继续向下浏览；回收量留出余量，避免每加载一页都触发回收。
@@ -318,7 +304,6 @@ const MOMENTS_MEMORY_MAX_ITEMS = 600
 const MOMENTS_MEMORY_TRIM_TARGET = 500
 /** 只回收底边高于视口顶部至少这么多屏的卡片 */
 const MOMENTS_TRIM_KEEP_SCREENS = 3
-const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 未读超过该数量时才从上次看到的位置开始加载，否则分界点就在首屏 */
 const MOMENTS_LAST_SEEN_MIN_UNREAD = 8
 /** 定位后保留在分界点上方的未读条数 */
@@ -347,7 +332,6 @@ let detailImageViewerDragOriginY = 0
 /** 高度已稳定的卡片，避免反复 Resize 微抖动 */
 const settledHeights = new Set<string>()
 
-const wantedUserMids = computed(() => new Set(momentsWantedUsers.value.map(user => user.mid)))
 const pinnedUserMids = computed(() => new Set(momentsPinnedUsers.value.map(user => user.mid)))
 const visiblePortalUpList = computed(() =>
   portalUpList.value.filter(up => !pinnedUserMids.value.has(up.mid)),
@@ -358,7 +342,6 @@ const showMomentsUpList = computed(() =>
     isPortalLoading.value
     || portalUpList.value.length > 0
     || momentsPinnedUsers.value.length > 0
-    || settings.value.momentsEnableWantedFilter
   ),
 )
 
@@ -404,7 +387,6 @@ function handlePinnedListFocusOut(event: FocusEvent) {
 onBeforeUnmount(() => {
   if (pinnedListCollapseTimer)
     clearTimeout(pinnedListCollapseTimer)
-  flushMomentsCacheWrite()
 })
 
 function getDetailImageUrlKey(url: string) {
@@ -1240,39 +1222,8 @@ function handleMomentFilterChange(filter: MomentFilter) {
   Object.keys(previewUrls).forEach(key => delete previewUrls[key])
   visibleMomentIds.clear()
   activeMomentFilter.value = filter
-  if (filter !== 'all' && filter !== 'video')
-    activeMomentGroup.value = 'all'
   resetMomentsScroll()
   void loadMoments(true)
-}
-
-function handleMomentGroupChange(group: MomentGroup) {
-  if (
-    group === 'wanted'
-    && (
-      !settings.value.momentsEnableWantedFilter
-      || (activeMomentFilter.value !== 'all' && activeMomentFilter.value !== 'video')
-    )
-  ) {
-    return
-  }
-  if (activeMomentGroup.value === group && (group !== 'wanted' || !selectedHostMid.value))
-    return
-
-  prepareMomentListTransition()
-  if (group === 'wanted')
-    selectedHostMid.value = ''
-  activeMomentGroup.value = group
-  void loadMoments(true)
-}
-
-/** 打开设置并定位到「想看分组」，供想看列表为空时的引导按钮使用 */
-function openWantedUsersSettings() {
-  openSettings({
-    menu: 'BewlyPages',
-    secondaryPage: 'moments',
-    targetTitleKey: 'settings.group_moments_wanted_users',
-  })
 }
 
 function clearUpUpdateDot(mid: string) {
@@ -1294,12 +1245,11 @@ function prepareMomentListTransition() {
 /** 选择“全部动态”或某个经常访问的 UP 主；切换时 reset 列表与分页 */
 function handleUpFilterChange(mid = '') {
   const nextMid = mid ? String(mid) : ''
-  if (selectedHostMid.value === nextMid && activeMomentGroup.value === 'all')
+  if (selectedHostMid.value === nextMid)
     return
 
   prepareMomentListTransition()
   selectedHostMid.value = nextMid
-  activeMomentGroup.value = 'all'
   if (nextMid)
     clearUpUpdateDot(nextMid)
   void loadMoments(true)
@@ -1355,23 +1305,17 @@ function setupUpListScrollerObserver() {
   updateUpListScrollState()
 }
 
-type UpNavTargetKey = 'all' | 'wanted' | `mid:${string}`
+type UpNavTargetKey = 'all' | `mid:${string}`
 interface UpNavTarget {
   key: UpNavTargetKey
   activate: () => void
 }
 
-/** 键盘左右切换时按视觉顺序遍历：全部 → 想看 → 经常访问 UP → 固定 UP */
+/** 键盘左右切换时按视觉顺序遍历：全部 → 经常访问 UP → 固定 UP */
 const upNavTargets = computed<UpNavTarget[]>(() => {
   const targets: UpNavTarget[] = [
     { key: 'all', activate: () => handleUpFilterChange('') },
   ]
-  if (
-    settings.value.momentsEnableWantedFilter
-    && (activeMomentFilter.value === 'all' || activeMomentFilter.value === 'video')
-  ) {
-    targets.push({ key: 'wanted', activate: () => handleMomentGroupChange('wanted') })
-  }
   for (const up of visiblePortalUpList.value) {
     targets.push({ key: `mid:${up.mid}`, activate: () => handleUpFilterChange(up.mid) })
   }
@@ -1381,11 +1325,9 @@ const upNavTargets = computed<UpNavTarget[]>(() => {
   return targets
 })
 
-const activeUpNavKey = computed<UpNavTargetKey>(() => {
-  if (activeMomentGroup.value === 'wanted')
-    return 'wanted'
-  return selectedHostMid.value ? `mid:${selectedHostMid.value}` : 'all'
-})
+const activeUpNavKey = computed<UpNavTargetKey>(() =>
+  selectedHostMid.value ? `mid:${selectedHostMid.value}` : 'all',
+)
 
 function isEditableFocusTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement))
@@ -1398,7 +1340,7 @@ function isEditableFocusTarget(target: EventTarget | null): boolean {
 }
 
 function findUpNavButton(key: UpNavTargetKey) {
-  const selector = key === 'all' || key === 'wanted'
+  const selector = key === 'all'
     ? `[data-up-nav="${key}"]`
     : `[data-up-nav-mid="${CSS.escape(key.slice(4))}"]`
   return pageRef.value?.querySelector<HTMLElement>(selector) ?? null
@@ -1479,154 +1421,11 @@ function handleUpNavKeydown(event: KeyboardEvent) {
 function isFeedRequestCurrent(
   requestToken: number,
   requestType: MomentFilter,
-  requestGroup: MomentGroup,
   requestHostMid: string,
 ) {
   return requestToken === feedRequestToken
     && requestType === activeMomentFilter.value
-    && requestGroup === activeMomentGroup.value
     && requestHostMid === selectedHostMid.value
-}
-
-function matchesMomentFilter(moment: DisplayMoment) {
-  if (activeMomentFilter.value === 'all')
-    return true
-  if (activeMomentFilter.value === 'video')
-    return moment.isVideo && !moment.isPgc
-  if (activeMomentFilter.value === 'pgc')
-    return moment.isPgc
-  return moment.isArticle
-}
-
-function getValidMomentsCache(filter: MomentFilter) {
-  const entry = momentsFeedCache.value[filter]
-  if (!entry)
-    return undefined
-  const usesCurrentVideoShape = entry.items.every(moment => (
-    typeof moment.videoPlay === 'string'
-    && typeof moment.videoDanmaku === 'string'
-    && !(moment.isForward && moment.isVideo)
-  ))
-  const usesCurrentVoteShape = entry.items.every(moment => (
-    !moment.additional?.isVote
-    || (Boolean(moment.additional.voteId) && !moment.additional.url)
-  ))
-  if (
-    usesCurrentVideoShape
-    && usesCurrentVoteShape
-    && Date.now() - entry.updatedAt < MOMENTS_CACHE_TTL_MS
-  ) {
-    return entry
-  }
-
-  const { [filter]: _expired, ...validEntries } = momentsFeedCache.value
-  momentsFeedCache.value = validEntries
-  return undefined
-}
-
-function mergeCachedMoments(primary: DisplayMoment[], secondary: DisplayMoment[]) {
-  const result: DisplayMoment[] = []
-  const ids = new Set<string>()
-  for (const moment of [...primary, ...secondary]) {
-    if (ids.has(moment.id))
-      continue
-    ids.add(moment.id)
-    result.push(moment)
-  }
-  return result
-}
-
-function saveMomentsCache(filter: MomentFilter, entry: MomentsFeedCacheEntry) {
-  // offset 对应当前段的末尾。裁掉头部才能保证恢复缓存后继续分页时不跳过动态。
-  const items = entry.items.slice(-MOMENTS_CACHE_MAX_ITEMS)
-  const continuationLimit = Math.max(0, MOMENTS_CACHE_MAX_ITEMS - items.length)
-  const continuation = entry.continuation && continuationLimit > 0
-    ? { ...entry.continuation, items: entry.continuation.items.slice(-continuationLimit) }
-    : undefined
-  momentsFeedCache.value = {
-    ...momentsFeedCache.value,
-    [filter]: {
-      ...entry,
-      items,
-      continuation,
-      updatedAt: Date.now(),
-    },
-  }
-}
-
-function cacheRegularMomentPage(
-  filter: MomentFilter,
-  pageItems: DisplayMoment[],
-  pageOffset: string,
-  pageUpdateBaseline: string,
-  pageHasMore: boolean,
-  reset: boolean,
-) {
-  if ((filter !== 'all' && filter !== 'video') || !pageItems.length)
-    return
-
-  const existing = getValidMomentsCache(filter)
-  if (!existing) {
-    saveMomentsCache(filter, {
-      items: pageItems,
-      offset: pageOffset,
-      updateBaseline: pageUpdateBaseline,
-      hasMore: pageHasMore,
-      updatedAt: Date.now(),
-    })
-    return
-  }
-
-  const existingIds = new Set(existing.items.map(moment => moment.id))
-  const overlapsCache = pageItems.some(moment => existingIds.has(moment.id))
-  // 顶部刷新若尚未追上旧缓存，保留旧段，后续按每批 100 条继续寻找衔接点。
-  if (reset && !overlapsCache) {
-    saveMomentsCache(filter, {
-      items: pageItems,
-      offset: pageOffset,
-      updateBaseline: pageUpdateBaseline,
-      hasMore: pageHasMore,
-      updatedAt: Date.now(),
-      continuation: {
-        items: existing.items,
-        offset: existing.offset,
-        updateBaseline: existing.updateBaseline,
-        hasMore: existing.hasMore,
-      },
-    })
-    return
-  }
-
-  const continuationIds = new Set(existing.continuation?.items.map(moment => moment.id) || [])
-  const reachesContinuation = pageItems.some(moment => continuationIds.has(moment.id))
-  if (reachesContinuation && existing.continuation) {
-    saveMomentsCache(filter, {
-      items: mergeCachedMoments(existing.items, mergeCachedMoments(pageItems, existing.continuation.items))
-        .sort((a, b) => b.publishedAt - a.publishedAt),
-      offset: existing.continuation.offset,
-      updateBaseline: existing.continuation.updateBaseline,
-      hasMore: existing.continuation.hasMore,
-      updatedAt: Date.now(),
-    })
-    return
-  }
-
-  const existingOldest = Math.min(...existing.items.map(moment => moment.publishedAt || Infinity))
-  const pageOldest = Math.min(...pageItems.map(moment => moment.publishedAt || Infinity))
-  const extendsCachedTail = pageOldest < existingOldest
-  const items = mergeCachedMoments(
-    reset ? pageItems : existing.items,
-    reset ? existing.items : pageItems,
-  )
-    .sort((a, b) => b.publishedAt - a.publishedAt)
-  saveMomentsCache(filter, {
-    items,
-    offset: extendsCachedTail ? pageOffset : existing.offset,
-    updateBaseline: extendsCachedTail ? pageUpdateBaseline : existing.updateBaseline,
-    hasMore: extendsCachedTail ? pageHasMore : existing.hasMore,
-    updatedAt: Date.now(),
-    continuation: existing.continuation,
-  })
 }
 
 function loadMoreMoments() {
@@ -1662,7 +1461,7 @@ function matchesBlockedMomentKeyword(moment: DisplayMoment) {
   return blockedMomentKeywords.value.some(keyword => searchableText.includes(keyword))
 }
 
-/** 想看分组和任一动态过滤都只允许通过按钮继续分页。 */
+/** 任一动态过滤开启时都只允许通过按钮继续分页。 */
 function hasActiveMomentFilters() {
   return settings.value.momentsFilterUpRecommendation
     || settings.value.momentsHideChargeExclusive
@@ -1904,8 +1703,8 @@ const lastSeenMomentId = computed(() => {
   return lastSeenId
 })
 
-function canLocateLastSeen(filter: MomentFilter, group: MomentGroup, hostMid: string) {
-  return group === 'all' && !hostMid && (filter === 'all' || filter === 'video')
+function canLocateLastSeen(filter: MomentFilter, hostMid: string) {
+  return !hostMid && (filter === 'all' || filter === 'video')
 }
 
 function jumpToLatestMoments() {
@@ -1920,7 +1719,7 @@ const canJumpToLastSeen = computed(() => !hasNewerMoments.value
   && !hasTrimmedHead.value
   && unreadMomentIds.value.length > MOMENTS_LAST_SEEN_MIN_UNREAD
   && !lastSeenMomentId.value
-  && canLocateLastSeen(activeMomentFilter.value, activeMomentGroup.value, selectedHostMid.value))
+  && canLocateLastSeen(activeMomentFilter.value, selectedHostMid.value))
 
 /** 滚回已回收区域附近时提示较早的动态已释放 */
 const showTrimmedHeadNotice = computed(() => hasTrimmedHead.value && isNearTrimmedHead.value)
@@ -2129,9 +1928,8 @@ async function loadNewerMoments() {
 
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
-  const requestGroup = activeMomentGroup.value
   const requestHostMid = selectedHostMid.value
-  const isCurrent = () => isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+  const isCurrent = () => isFeedRequestCurrent(requestToken, requestType, requestHostMid)
   isLoadingNewerMoments.value = true
   try {
     // 本地过滤可能把一批全部滤掉；列表停在顶部时无法再触发滚动，因此继续向上直到有内容可插入
@@ -2900,7 +2698,7 @@ function playPreview(event: Event) {
   void video.play().catch(() => {})
 }
 
-/** 删除动态后就地移除卡片，不重新分配列，并同步清理缓存避免恢复时再次出现。 */
+/** 删除动态后就地移除卡片，不重新分配列。 */
 function removeMoment(moment: DisplayMoment) {
   const keep = (item: DisplayMoment) => item.id !== moment.id
   handleMediaLeave(moment)
@@ -2908,17 +2706,6 @@ function removeMoment(moment: DisplayMoment) {
   momentColumns.value = momentColumns.value.map(column => column.filter(keep))
   rebuildColumnMetrics()
   updateVirtualColumns()
-
-  if (wantedFeedBuffer)
-    wantedFeedBuffer = { ...wantedFeedBuffer, items: wantedFeedBuffer.items.filter(keep) }
-  const cache = momentsFeedCache.value
-  if (Object.values(cache).some(entry => entry?.items.some(item => !keep(item)) || entry?.continuation?.items.some(item => !keep(item)))) {
-    momentsFeedCache.value = Object.fromEntries(Object.entries(cache).map(([filter, entry]) => [filter, entry && {
-      ...entry,
-      items: entry.items.filter(keep),
-      continuation: entry.continuation && { ...entry.continuation, items: entry.continuation.items.filter(keep) },
-    }]))
-  }
 }
 
 async function toggleMomentLike(moment: DisplayMoment) {
@@ -2947,7 +2734,6 @@ async function toggleMomentLike(moment: DisplayMoment) {
     })
     if (response.code !== 0)
       throw new Error(response.message || t('moments.like_failed'))
-    markMomentsCacheItemsDirty([moment.id])
   }
   catch (error) {
     // 请求失败时恢复接口返回前的状态，避免界面与服务端不一致
@@ -2989,7 +2775,6 @@ async function toggleMomentReservation(moment: DisplayMoment) {
         additional.reservationTotal + (additional.isReserved ? 1 : -1),
       )
     }
-    markMomentsCacheItemsDirty([moment.id])
     toast.success(additional.isReserved ? t('moments.reserve_succeeded') : t('moments.reserve_cancelled'))
   }
   catch (error) {
@@ -3009,7 +2794,7 @@ function handleDocumentVisibilityChange() {
 }
 
 async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = false) {
-  // “想看”或低保留率类型过滤开启时只允许按钮触发后续批次，避免滚动自动连刷。
+  // 低保留率类型过滤开启时只允许按钮触发后续批次，避免滚动自动连刷。
   if (!reset && requiresManualMomentPaging() && !manualPaging)
     return
   if ((!reset && isLoading.value) || (!reset && noMoreContent.value))
@@ -3017,7 +2802,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
   if (reset) {
     feedRequestToken += 1
-    wantedFeedBuffer = undefined
     moments.value = []
     momentColumns.value = []
     columnMetrics = []
@@ -3043,7 +2827,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
   }
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
-  const requestGroup = activeMomentGroup.value
   const requestHostMid = selectedHostMid.value
   let pageApplied = false
   let preservedPaginationScrollTop: number | null = null
@@ -3067,19 +2850,18 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
   try {
     let rawItems: DataItem[] = []
-    let cachedBatch: DisplayMoment[] | undefined
     let hasMore = false
     let nextOffset = ''
     let nextUpdateBaseline = ''
 
-    if (reset && canLocateLastSeen(requestType, requestGroup, requestHostMid)) {
+    if (reset && canLocateLastSeen(requestType, requestHostMid)) {
       // 先取未读 ID 再请求列表：首页请求会推进服务端已读位置，之后就拿不到分界点了
       const reusedIds = pendingLastSeenIds
       const useLastSeen = Boolean(reusedIds) || (settings.value.momentsStartFromLastSeen && !skipLastSeenOnce)
       skipLastSeenOnce = false
       pendingLastSeenIds = null
       const unreadIds = reusedIds ?? await fetchUnreadMomentIds()
-      if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid))
+      if (!isFeedRequestCurrent(requestToken, requestType, requestHostMid))
         return
       unreadMomentIds.value = unreadIds || []
       if (useLastSeen && unreadMomentIds.value.length > MOMENTS_LAST_SEEN_MIN_UNREAD) {
@@ -3090,7 +2872,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     }
 
     if (requestHostMid) {
-      // 按 UP 主筛选：走 feed/all + host_mid，不写入全局全部动态缓存
+      // 按 UP 主筛选：走 feed/all + host_mid
       let nextPage = momentsFeedPage.value
       if (hasActiveMomentFilters()) {
         let scanOffset = offset.value
@@ -3111,7 +2893,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
             web_location: '333.1365',
           }) as MomentResult
           if (
-            !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+            !isFeedRequestCurrent(requestToken, requestType, requestHostMid)
             || response.code !== 0
           ) {
             return
@@ -3146,7 +2928,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           web_location: '333.1365',
         }) as MomentResult
         if (
-          !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+          !isFeedRequestCurrent(requestToken, requestType, requestHostMid)
           || response.code !== 0
         ) {
           return
@@ -3158,159 +2940,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
         nextPage += 1
       }
       momentsFeedPage.value = nextPage
-    }
-    else if (requestGroup === 'wanted') {
-      await momentsFeedCacheReady
-      if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid))
-        return
-      // 类型过滤开启时，首批缓存刷新与后续填充共用两页请求预算。
-      const maxRequestPages = hasActiveMomentFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
-      let requestPages = 0
-      let cacheEntry = wantedFeedBuffer ?? getValidMomentsCache(requestType) ?? {
-        items: [],
-        offset: '',
-        updateBaseline: '',
-        hasMore: true,
-        updatedAt: Date.now(),
-      }
-
-      if (!momentsWantedUsers.value.length) {
-        wantedFeedBuffer = undefined
-        cachedBatch = []
-      }
-      else {
-        let cacheChanged = false
-        if (reset) {
-          const existingCache = cacheEntry
-          const existingIds = new Set(existingCache.items.map(moment => moment.id))
-          const freshItems: DisplayMoment[] = []
-          let scanOffset = ''
-          let scanUpdateBaseline = ''
-          let canContinue = true
-          let reachedCache = false
-
-          while (
-            canContinue
-            && freshItems.length < WANTED_SCAN_LIMIT
-            && !reachedCache
-            && requestPages < maxRequestPages
-          ) {
-            const response = await api.moment.getMoments({
-              type: requestType,
-              offset: scanOffset || undefined,
-              update_baseline: scanUpdateBaseline || undefined,
-              features: MOMENT_FEED_FEATURES,
-            }) as MomentResult
-            if (
-              !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
-              || response.code !== 0
-            ) {
-              return
-            }
-
-            const pageItems = (response.data?.items || []).map(mapMoment)
-            requestPages += 1
-            reachedCache = pageItems.some(moment => existingIds.has(moment.id))
-            freshItems.push(...pageItems)
-            const responseOffset = response.data?.offset || ''
-            scanUpdateBaseline = response.data?.update_baseline || ''
-            canContinue = Boolean(response.data?.has_more)
-              && pageItems.length > 0
-              && responseOffset !== scanOffset
-            scanOffset = responseOffset
-          }
-
-          cacheEntry = reachedCache
-            ? {
-                ...existingCache,
-                items: mergeCachedMoments(freshItems, existingCache.items),
-              }
-            : {
-                items: mergeCachedMoments(freshItems, []),
-                offset: scanOffset,
-                updateBaseline: scanUpdateBaseline,
-                hasMore: canContinue,
-                updatedAt: Date.now(),
-                continuation: canContinue && existingCache.items.length
-                  ? {
-                      items: existingCache.items,
-                      offset: existingCache.offset,
-                      updateBaseline: existingCache.updateBaseline,
-                      hasMore: existingCache.hasMore,
-                    }
-                  : undefined,
-              }
-          cacheChanged = true
-        }
-
-        const batchEnd = WANTED_SCAN_LIMIT
-        while (
-          cacheEntry.items.length < batchEnd
-          && cacheEntry.hasMore
-          && requestPages < maxRequestPages
-        ) {
-          const response = await api.moment.getMoments({
-            type: requestType,
-            offset: cacheEntry.offset || undefined,
-            update_baseline: cacheEntry.updateBaseline || undefined,
-            features: MOMENT_FEED_FEATURES,
-          }) as MomentResult
-          if (
-            !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
-            || response.code !== 0
-          ) {
-            return
-          }
-
-          const pageItems = (response.data?.items || []).map(mapMoment)
-          requestPages += 1
-          const responseOffset = response.data?.offset || ''
-          const continuationIds = new Set(cacheEntry.continuation?.items.map(moment => moment.id) || [])
-          const reachesContinuation = pageItems.some(moment => continuationIds.has(moment.id))
-          if (reachesContinuation && cacheEntry.continuation) {
-            cacheEntry = {
-              items: mergeCachedMoments(
-                cacheEntry.items,
-                mergeCachedMoments(pageItems, cacheEntry.continuation.items),
-              ),
-              offset: cacheEntry.continuation.offset,
-              updateBaseline: cacheEntry.continuation.updateBaseline,
-              hasMore: cacheEntry.continuation.hasMore,
-              updatedAt: Date.now(),
-            }
-          }
-          else {
-            cacheEntry = {
-              items: mergeCachedMoments(cacheEntry.items, pageItems),
-              offset: responseOffset,
-              updateBaseline: response.data?.update_baseline || '',
-              hasMore: Boolean(response.data?.has_more)
-                && pageItems.length > 0
-                && responseOffset !== cacheEntry.offset,
-              updatedAt: Date.now(),
-              continuation: response.data?.has_more && pageItems.length > 0 && responseOffset !== cacheEntry.offset
-                ? cacheEntry.continuation
-                : undefined,
-            }
-          }
-          cacheChanged = true
-          if (reachesContinuation)
-            break
-        }
-
-        if (cacheChanged)
-          saveMomentsCache(requestType, cacheEntry)
-        // 连续缓存可一次全部展示；存在缺口时仍按 API 原始条数每批推进 100 条。
-        const displayEnd = cacheEntry.continuation ? batchEnd : cacheEntry.items.length
-        cachedBatch = cacheEntry.items.slice(0, displayEnd)
-        wantedFeedBuffer = {
-          ...cacheEntry,
-          items: cacheEntry.items.slice(cachedBatch.length),
-        }
-        nextOffset = cacheEntry.offset
-        nextUpdateBaseline = cacheEntry.updateBaseline
-        hasMore = wantedFeedBuffer.items.length > 0 || cacheEntry.hasMore
-      }
     }
     else if (hasActiveMomentFilters()) {
       // 过滤开启：单次最多请求两页原始动态，再交给本地过滤
@@ -3328,7 +2957,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           features: MOMENT_FEED_FEATURES,
         }) as MomentResult
         if (
-          !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+          !isFeedRequestCurrent(requestToken, requestType, requestHostMid)
           || response.code !== 0
         ) {
           return
@@ -3359,7 +2988,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
         features: MOMENT_FEED_FEATURES,
       }) as MomentResult
       if (
-        !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+        !isFeedRequestCurrent(requestToken, requestType, requestHostMid)
         || response.code !== 0
       ) {
         return
@@ -3370,7 +2999,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       nextUpdateBaseline = response.data?.update_baseline || ''
     }
 
-    const normalizedItems = cachedBatch ?? rawItems.map(mapMoment)
+    const normalizedItems = rawItems.map(mapMoment)
     if (reset && rawItems[0]?.id_str)
       newestLoadedMomentId = rawItems[0].id_str
     void recordUploaderLatestVideoTimes(
@@ -3385,23 +3014,10 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       ],
       'moments-page',
     )
-    // 按 UP 主请求、从上次看到的位置开始的中段数据都不写入全局全部动态缓存
-    if (requestGroup === 'all' && !requestHostMid && !isLastSeenSession) {
-      cacheRegularMomentPage(
-        requestType,
-        normalizedItems,
-        nextOffset,
-        nextUpdateBaseline,
-        hasMore,
-        reset,
-      )
-    }
     const items = normalizedItems
-      .filter(moment => requestGroup !== 'wanted' || wantedUserMids.value.has(moment.author.mid))
-      .filter(moment => requestGroup !== 'wanted' || matchesMomentFilter(moment))
       .filter(passesMomentSettings)
       .sort((a, b) => b.publishedAt - a.publishedAt)
-    if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
+    if (!isFeedRequestCurrent(requestToken, requestType, requestHostMid)) {
       return
     }
     filterScanRawCount.value += normalizedItems.length
@@ -3422,7 +3038,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     pageApplied = true
   }
   finally {
-    if (isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
+    if (isFeedRequestCurrent(requestToken, requestType, requestHostMid)) {
       isLoading.value = false
       isInitialLoading.value = false
     }
@@ -3430,7 +3046,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
   if (
     preservedPaginationScrollTop !== null
-    && isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+    && isFeedRequestCurrent(requestToken, requestType, requestHostMid)
   ) {
     // 等卡片、虚拟 spacer 和底部加载提示完成更新后，恢复分页前的滚动位置
     pendingPaginationScrollRestores += 1
@@ -3452,7 +3068,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     pageApplied
     && reset
     && hasNewerMoments.value
-    && isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+    && isFeedRequestCurrent(requestToken, requestType, requestHostMid)
   ) {
     await nextTick()
     void loadNewerMoments()
@@ -3465,7 +3081,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     || noMoreContent.value
     || requiresManualMomentPaging()
     || autoFillDepth >= MAX_POST_LOAD_AUTOFILL_PAGES
-    || !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+    || !isFeedRequestCurrent(requestToken, requestType, requestHostMid)
   ) {
     return
   }
@@ -3597,7 +3213,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   isMomentsDisposed = true
   feedRequestToken += 1
-  wantedFeedBuffer = undefined
   gridObserver?.disconnect()
   cardMeasureObserver?.disconnect()
   visibilityObserver?.disconnect()
@@ -3695,7 +3310,6 @@ watch(upListScrollerRef, async () => {
 watch(
   [
     () => visiblePortalUpList.value.map(up => up.mid).join(','),
-    () => settings.value.momentsEnableWantedFilter,
     () => isPortalLoading.value,
   ],
   async () => {
@@ -3705,30 +3319,10 @@ watch(
 )
 
 watch(
-  () => momentsWantedUsers.value.map(user => user.mid).join(','),
-  () => {
-    if (activeMomentGroup.value === 'wanted')
-      void loadMoments(true)
-  },
-)
-
-watch(
   () => momentsPinnedUsers.value.map(user => user.mid).join(','),
   async () => {
     await nextTick()
     updateUpListScrollState()
-  },
-)
-
-watch(
-  () => settings.value.momentsEnableWantedFilter,
-  (enabled) => {
-    if (enabled || activeMomentGroup.value !== 'wanted')
-      return
-
-    activeMomentGroup.value = 'all'
-    resetMomentsScroll()
-    void loadMoments(true)
   },
 )
 
@@ -3974,9 +3568,9 @@ watch(
             <button
               type="button"
               class="moments-up-list__item"
-              :class="{ 'moments-up-list__item--active': !selectedHostMid && activeMomentGroup === 'all' }"
+              :class="{ 'moments-up-list__item--active': !selectedHostMid }"
               role="listitem"
-              :aria-pressed="!selectedHostMid && activeMomentGroup === 'all'"
+              :aria-pressed="!selectedHostMid"
               data-up-nav="all"
               :title="t('moments.all_posts')"
               @click="handleUpFilterChange('')"
@@ -3984,37 +3578,10 @@ watch(
               <span class="moments-up-list__avatar moments-up-list__avatar--all" aria-hidden="true">
                 <span
                   class="moments-up-list__all-icon"
-                  :class="!selectedHostMid && activeMomentGroup === 'all' ? 'i-tabler-windmill-filled' : 'i-tabler-windmill'"
+                  :class="!selectedHostMid ? 'i-tabler-windmill-filled' : 'i-tabler-windmill'"
                 />
               </span>
               <span class="moments-up-list__name">{{ t('moments.all_posts') }}</span>
-            </button>
-            <button
-              v-if="settings.momentsEnableWantedFilter"
-              type="button"
-              class="moments-up-list__item"
-              data-layout-edit-target="moments-wanted-users"
-              data-layout-settings-menu="BewlyPages"
-              data-layout-settings-page="moments"
-              data-layout-settings-title-key="settings.group_moments_wanted_users"
-              :class="{ 'moments-up-list__item--active': activeMomentGroup === 'wanted' }"
-              role="listitem"
-              :aria-pressed="activeMomentGroup === 'wanted'"
-              data-up-nav="wanted"
-              :disabled="activeMomentFilter !== 'all' && activeMomentFilter !== 'video'"
-              :aria-label="activeMomentGroup === 'wanted' ? t('moments.cancel_wanted_only') : t('moments.wanted_only')"
-              :title="activeMomentFilter === 'all' || activeMomentFilter === 'video'
-                ? (activeMomentGroup === 'wanted' ? t('moments.cancel_wanted_only') : t('moments.wanted_only'))
-                : t('moments.wanted_scope_hint')"
-              @click="handleMomentGroupChange(activeMomentGroup === 'wanted' ? 'all' : 'wanted')"
-            >
-              <span class="moments-up-list__avatar moments-up-list__avatar--wanted" aria-hidden="true">
-                <span
-                  class="moments-up-list__wanted-icon"
-                  :class="activeMomentGroup === 'wanted' ? 'i-tabler-star-filled' : 'i-tabler-star'"
-                />
-              </span>
-              <span class="moments-up-list__name">{{ t('moments.wanted') }}</span>
             </button>
           </div>
 
@@ -4075,9 +3642,9 @@ watch(
                 type="button"
                 class="moments-up-list__item"
                 :data-up-nav-mid="up.mid"
-                :class="{ 'moments-up-list__item--active': selectedHostMid === up.mid && activeMomentGroup === 'all' }"
+                :class="{ 'moments-up-list__item--active': selectedHostMid === up.mid }"
                 role="listitem"
-                :aria-pressed="selectedHostMid === up.mid && activeMomentGroup === 'all'"
+                :aria-pressed="selectedHostMid === up.mid"
                 :title="up.uname"
                 @click="handleUpFilterChange(up.mid)"
               >
@@ -4129,9 +3696,9 @@ watch(
               type="button"
               class="moments-up-list__item"
               :data-up-nav-mid="user.mid"
-              :class="{ 'moments-up-list__item--active': selectedHostMid === user.mid && activeMomentGroup === 'all' }"
+              :class="{ 'moments-up-list__item--active': selectedHostMid === user.mid }"
               role="listitem"
-              :aria-pressed="selectedHostMid === user.mid && activeMomentGroup === 'all'"
+              :aria-pressed="selectedHostMid === user.mid"
               :title="user.name"
               @click="handleUpFilterChange(user.mid)"
             >
@@ -4250,26 +3817,18 @@ watch(
             </div>
           </div>
           <div v-else-if="!isInitialLoading" class="moments-page__empty">
-            <span i-tabler-windmill text="size-$bew-icon-size-xl" /><p>{{ activeMomentGroup === 'wanted' ? (momentsWantedUsers.length ? t('moments.no_recent_updates') : t('moments.add_wanted_first')) : t('moments.empty') }}</p><Button
-              v-if="activeMomentGroup !== 'wanted' || momentsWantedUsers.length"
+            <span i-tabler-windmill text="size-$bew-icon-size-xl" /><p>{{ t('moments.empty') }}</p><Button
               type="secondary"
               :disabled="isLoading"
               @click="requiresManualMomentPaging() && !noMoreContent ? loadMoreMoments() : refresh()"
             >
-              {{ isLoading ? t('common.loading') : requiresManualMomentPaging() ? (!noMoreContent ? t('common.load_more') : (activeMomentGroup === 'wanted' ? t('moments.recheck') : t('moments.reload'))) : t('moments.reload') }}
-            </Button>
-            <Button
-              v-else
-              type="primary"
-              @click="openWantedUsersSettings"
-            >
-              {{ t('settings.btn.open_settings') }}
+              {{ isLoading ? t('common.loading') : requiresManualMomentPaging() ? (!noMoreContent ? t('common.load_more') : t('moments.reload')) : t('moments.reload') }}
             </Button>
           </div>
           <button
             v-if="requiresManualMomentPaging() && moments.length && !isLoading && !noMoreContent"
             type="button"
-            class="moments-wanted-load-more"
+            class="moments-load-more"
             @click="loadMoreMoments()"
           >
             <span i-tabler-arrow-down />
@@ -4718,15 +4277,13 @@ watch(
   }
 
   .moments-up-list__avatar > img,
-  .moments-up-list__avatar--all,
-  .moments-up-list__avatar--wanted {
+  .moments-up-list__avatar--all {
     box-shadow:
       0 0 0 2px var(--bew-elevated),
       0 0 0 4px var(--bew-theme-color);
   }
 
-  .moments-up-list__avatar--all,
-  .moments-up-list__avatar--wanted {
+  .moments-up-list__avatar--all {
     border-color: var(--bew-theme-color);
     color: #fff;
     background: var(--bew-theme-color);
@@ -4756,8 +4313,7 @@ watch(
   background: var(--bew-fill-1);
   transition: box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 }
-.moments-up-list__avatar--all,
-.moments-up-list__avatar--wanted {
+.moments-up-list__avatar--all {
   display: grid;
   place-items: center;
   width: 48px;
@@ -4777,8 +4333,7 @@ watch(
   opacity: 0.45;
   cursor: not-allowed;
 }
-.moments-up-list__all-icon,
-.moments-up-list__wanted-icon {
+.moments-up-list__all-icon {
   display: block;
   width: 22px;
   height: 22px;
@@ -5388,7 +4943,7 @@ watch(
   visibility: visible;
   opacity: 1;
 }
-.moments-wanted-load-more {
+.moments-load-more {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5412,7 +4967,7 @@ watch(
     border-color var(--bew-duration-normal) var(--bew-ease-standard),
     opacity var(--bew-duration-normal) var(--bew-ease-standard);
 }
-.moments-wanted-load-more:hover {
+.moments-load-more:hover {
   color: #fff;
   border-color: var(--bew-theme-color);
   background: var(--bew-theme-color);

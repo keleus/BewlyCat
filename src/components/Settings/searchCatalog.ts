@@ -392,9 +392,6 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_filter_live_reservation',
     'settings.moments_filter_live_dynamic',
     'settings.moments_keyword_filter',
-    'settings.group_moments_wanted_users',
-    'settings.moments_enable_wanted_filter',
-    'settings.moments_wanted_users',
     'settings.group_moments_pinned_users',
     'settings.moments_pinned_users',
   ], {

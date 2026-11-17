@@ -482,11 +482,6 @@ settings:
   moments_video_card_open_mode_desc: 单独控制视频投稿动态卡片的打开位置；选择“跟随动态卡片”时使用上方设置。
   moments_video_card_open_mode_opt:
     inherit: 跟随动态卡片
-  group_moments_wanted_users: 想看分组
-  group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
-  moments_enable_wanted_filter: 显示“想看”按钮
-  moments_enable_wanted_filter_desc: 在动态页横向栏显示“想看”按钮，用于只查看名单内 UP 主的动态。
-  moments_wanted_users: 想看的 UP 主
   group_moments_pinned_users: 固定 UP 主
   group_moments_pinned_users_desc: 管理固定在动态栏右侧的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
   moments_pinned_users: 固定的 UP 主
@@ -1040,7 +1035,7 @@ settings:
     title_keyword_placeholder: 输入关键词后按回车，不区分大小写
     triple_synced: 已同步到收藏夹：{folders}
     triple_sync_failed: 三连后同步收藏夹失败
-  wanted_users:
+  up_picker:
     no_results: 没有找到相关 UP 主，请尝试其他昵称
     search_failed: 搜索 UP 主失败，请稍后重试
     invalid_uid: 请输入有效的 UP 主 UID
@@ -1049,19 +1044,12 @@ settings:
     info_failed: 获取 UP 主信息失败，请稍后重试
     placeholder: 输入 UP 主 UID 或昵称
     pinned_already: 该 UP 主已经在“固定 UP”中
-    wanted_already: 该 UP 主已经在“想看”分组中
     pinned_need_follow: 必须先关注 {name}，才能将其加入“固定 UP”
-    wanted_need_follow: 必须先关注 {name}，才能将其加入“想看”分组
     pinned_added: 已将 {name} 固定到动态栏
-    wanted_added: 已将 {name} 加入“想看”
     pinned_removed: 已取消固定 {name}
-    wanted_removed: 已将 {name} 移出“想看”
     remove_pinned: 取消固定 {name}
-    remove_wanted: 将 {name} 移出想看
     remove_pinned_title: 取消固定
-    remove_wanted_title: 移出想看
     pinned_empty: 尚未添加固定 UP 主。添加后会显示在动态栏右侧。
-    wanted_empty: 尚未添加 UP 主。添加后可在 Bewly 动态页的“想看”中筛选。
   authorization_success: 授权成功
   filter_by_title: 按标题筛选
   filter_by_title_desc: >
@@ -1825,19 +1813,12 @@ moments:
   live_now: 直播中
   group_label: 动态分组
   all_posts: 全部动态
-  wanted_only: 只看想看的 UP 主
-  cancel_wanted_only: 取消只看想看的 UP 主
-  wanted_scope_hint: 仅适用于全部和视频投稿
-  wanted: 想看
   scroll_left: 向左滚动经常访问列表
   scroll_right: 向右滚动经常访问列表
   frequent_uploaders: 经常访问的 UP 主
   has_updates: 有更新
   pin_uploader: 固定 UP 主
-  no_recent_updates: 近期无更新
-  add_wanted_first: 请先在设置中添加想看的 UP 主
   empty: 暂时没有可展示的动态
-  recheck: 重新检查
   reload: 重新加载
   loading_more: 正在加载并准备更多动态…
   new_tab: 新建标签页打开

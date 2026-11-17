@@ -481,11 +481,6 @@ settings:
   moments_video_card_open_mode_desc: 單獨控制影片投稿動態卡片的開啟位置；選擇「跟隨動態卡片」時使用上方設定。
   moments_video_card_open_mode_opt:
     inherit: 跟隨動態卡片
-  group_moments_wanted_users: 想看分組
-  group_moments_wanted_users_desc: 管理想看的 UP 主；支援輸入 UID 或暱稱，名單僅儲存在本機。
-  moments_enable_wanted_filter: 顯示「想看」按鈕
-  moments_enable_wanted_filter_desc: 在動態頁橫向欄顯示「想看」按鈕，用來只查看名單內 UP 主的動態。
-  moments_wanted_users: 想看的 UP 主
   group_moments_pinned_users: 固定 UP 主
   group_moments_pinned_users_desc: 管理固定在動態欄右側的 UP 主；支援輸入 UID 或暱稱，名單僅儲存在本機。
   moments_pinned_users: 固定的 UP 主
@@ -889,7 +884,7 @@ settings:
     title_keyword_placeholder: 輸入關鍵字後按 Enter，不區分大小寫
     triple_synced: 已同步到收藏夾：{folders}
     triple_sync_failed: 三連後同步收藏夾失敗
-  wanted_users:
+  up_picker:
     no_results: 找不到相關 UP 主，請嘗試其他暱稱
     search_failed: 搜尋 UP 主失敗，請稍後再試
     invalid_uid: 請輸入有效的 UP 主 UID
@@ -898,19 +893,12 @@ settings:
     info_failed: 取得 UP 主資訊失敗，請稍後再試
     placeholder: 輸入 UP 主 UID 或暱稱
     pinned_already: 此 UP 主已在「固定 UP」中
-    wanted_already: 此 UP 主已在「想看」分組中
     pinned_need_follow: 必須先關注 {name}，才能將其加入「固定 UP」
-    wanted_need_follow: 必須先關注 {name}，才能將其加入「想看」分組
     pinned_added: 已將 {name} 固定到動態欄
-    wanted_added: 已將 {name} 加入「想看」
     pinned_removed: 已取消固定 {name}
-    wanted_removed: 已將 {name} 移出「想看」
     remove_pinned: 取消固定 {name}
-    remove_wanted: 將 {name} 移出想看
     remove_pinned_title: 取消固定
-    remove_wanted_title: 移出想看
     pinned_empty: 尚未加入固定 UP 主。加入後會顯示在動態欄右側。
-    wanted_empty: 尚未加入 UP 主。加入後可在 Bewly 動態頁的「想看」中篩選。
   authorization_success: 授權成功
   filter_by_title: 依標題篩選
   filter_by_title_desc: >
@@ -1840,19 +1828,12 @@ moments:
   live_now: 直播中
   group_label: 動態分組
   all_posts: 全部動態
-  wanted_only: 只看想看的 UP 主
-  cancel_wanted_only: 取消只看想看的 UP 主
-  wanted_scope_hint: 僅適用於全部和影片投稿
-  wanted: 想看
   scroll_left: 向左捲動經常造訪列表
   scroll_right: 向右捲動經常造訪列表
   frequent_uploaders: 經常造訪的 UP 主
   has_updates: 有更新
   pin_uploader: 固定 UP 主
-  no_recent_updates: 近期無更新
-  add_wanted_first: 請先在設定中加入想看的 UP 主
   empty: 暫時沒有可顯示的動態
-  recheck: 重新檢查
   reload: 重新載入
   loading_more: 正在載入並準備更多動態…
   new_tab: 在新分頁開啟

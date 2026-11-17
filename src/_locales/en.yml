@@ -485,11 +485,6 @@ settings:
   moments_video_card_open_mode_desc: Controls where video post dynamic cards open independently. Choose "Follow dynamic cards" to use the setting above.
   moments_video_card_open_mode_opt:
     inherit: Follow dynamic cards
-  group_moments_wanted_users: Watchlist
-  group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
-  moments_enable_wanted_filter: Show Watchlist button
-  moments_enable_wanted_filter_desc: Show the Watchlist button in the Moments horizontal bar to display only posts from watchlisted uploaders.
-  moments_wanted_users: Watchlisted uploaders
   group_moments_pinned_users: Pinned uploaders
   group_moments_pinned_users_desc: Manage uploaders pinned to the right side of the Moments bar by UID or name. The list is stored only on this device.
   moments_pinned_users: Pinned uploaders
@@ -968,7 +963,7 @@ settings:
     title_keyword_placeholder: Enter a keyword and press Enter (case-insensitive)
     triple_synced: 'Synced to folders: {folders}'
     triple_sync_failed: Failed to sync favorites after triple action
-  wanted_users:
+  up_picker:
     no_results: No uploader found. Try another name.
     search_failed: Failed to search uploaders. Please try again later.
     invalid_uid: Enter a valid uploader UID
@@ -977,19 +972,12 @@ settings:
     info_failed: Failed to get uploader information. Please try again later.
     placeholder: Uploader UID or name
     pinned_already: This uploader is already pinned
-    wanted_already: This uploader is already in Wanted
     pinned_need_follow: Follow {name} before pinning them
-    wanted_need_follow: Follow {name} before adding them to Wanted
     pinned_added: Pinned {name} to the dynamic feed
-    wanted_added: Added {name} to Wanted
     pinned_removed: Unpinned {name}
-    wanted_removed: Removed {name} from Wanted
     remove_pinned: Unpin {name}
-    remove_wanted: Remove {name} from Wanted
     remove_pinned_title: Unpin
-    remove_wanted_title: Remove from Wanted
     pinned_empty: No uploaders pinned. Pinned uploaders appear on the right of the dynamic feed.
-    wanted_empty: No uploaders added. Add one to filter by Wanted on the Bewly dynamic feed.
   authorization_success: Authorization successful
   filter_by_title: Filter by title
   filter_by_title_desc: >-
@@ -1908,19 +1896,12 @@ moments:
   live_now: Live
   group_label: Post groups
   all_posts: All posts
-  wanted_only: Wanted uploaders only
-  cancel_wanted_only: Stop showing wanted uploaders only
-  wanted_scope_hint: Available only for All and Videos
-  wanted: Wanted
   scroll_left: Scroll frequently visited list left
   scroll_right: Scroll frequently visited list right
   frequent_uploaders: Frequently visited uploaders
   has_updates: Has updates
   pin_uploader: Pin uploader
-  no_recent_updates: No recent updates
-  add_wanted_first: Add wanted uploaders in Settings first
   empty: No posts to display
-  recheck: Check again
   reload: Reload
   loading_more: Loading and preparing more posts…
   new_tab: Open in new tab

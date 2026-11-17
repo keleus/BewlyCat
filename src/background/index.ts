@@ -7,7 +7,6 @@ import { onMessage } from '~/utils/messaging'
 
 import { isAppClientRequestUrl, setupAppClient } from './appClient'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
-import { setupExtensionCacheStore } from './extensionCacheStore'
 import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
@@ -184,7 +183,6 @@ if (isFirefoxBuild) {
 setupSettingsPage()
 setupSettingsStorageCoordinator()
 setupSettingsCloudSync()
-setupExtensionCacheStore()
 setupApiMsgListeners()
 setupAppClient()
 setupTabMsgListeners()
@@ -193,3 +191,6 @@ setupWatchLaterStateBroker()
 setupContentScriptRefreshPrompt()
 setupLoginStateWatcher()
 onMessage(GET_BROWSER_INFO_MESSAGE, getExtensionBrowserInfo)
+
+// 动态列表缓存已随「想看」移除，清理旧版本留在 IndexedDB 中的缓存。
+indexedDB.deleteDatabase('bewlycat-cache').onerror = () => {}

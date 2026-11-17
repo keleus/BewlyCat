@@ -30,21 +30,14 @@ export const noCookieForYouRecommendationState = useStorageLocal<NoCookieForYouR
   { mergeDefaults: true, writeDefaults: false },
 )
 
-export interface MomentsWantedUser {
+export interface MomentsPinnedUser {
   mid: string
   name: string
   face: string
 }
 
-/** Bewly 动态页“想看”分组；缓存用户资料以避免每次进入页面重复请求。 */
-export const momentsWantedUsers = useStorageLocal<MomentsWantedUser[]>(
-  'momentsWantedUsers',
-  [],
-  { writeDefaults: false },
-)
-
-/** Bewly 动态页横向栏右侧“固定 UP”；与想看名单独立存储。 */
-export const momentsPinnedUsers = useStorageLocal<MomentsWantedUser[]>(
+/** Bewly 动态页横向栏右侧“固定 UP”名单；缓存用户资料以避免每次进入页面重复请求。 */
+export const momentsPinnedUsers = useStorageLocal<MomentsPinnedUser[]>(
   'momentsPinnedUsers',
   [],
   { writeDefaults: false },
@@ -456,7 +449,6 @@ export interface Settings {
   momentsOnlyCoverVideoPreview: boolean
   /** Bewly 动态页期望列数；窄屏会自动降列 */
   momentsGridColumns: MomentsGridColumns
-  momentsEnableWantedFilter: boolean
   /** Bewly 动态页标签栏右侧显示动态过滤入口 */
   momentsShowFilterEntry: boolean
   momentsFilterUpRecommendation: boolean
@@ -842,7 +834,6 @@ export const originalSettings: Settings = {
   momentsVideoPreviewDelayed: false,
   momentsOnlyCoverVideoPreview: true,
   momentsGridColumns: '2',
-  momentsEnableWantedFilter: true,
   momentsShowFilterEntry: true,
   momentsFilterUpRecommendation: false,
   momentsHideChargeExclusive: false,
@@ -1444,6 +1435,9 @@ export const settings = useSettingsStorage(originalSettings, {
     // 竖屏放大功能已移除，清理旧版本保存的显示开关。
     Reflect.deleteProperty(record, 'showVerticalVideoZoomButton')
 
+    // 「想看」分组已移除，清理旧版本保存的开关。
+    Reflect.deleteProperty(record, 'momentsEnableWantedFilter')
+
     const legacyRandomPlayOrder = record.randomPlayOrder
     if (
       record.customPlayDefaultEnabled === true
@@ -1640,7 +1634,7 @@ export const settings = useSettingsStorage(originalSettings, {
   },
 })
 
-void browser.storage.local.remove(['gridBreakpoints']).catch(() => {})
+void browser.storage.local.remove(['gridBreakpoints', 'momentsWantedUsers', 'momentsFeedCache']).catch(() => {})
 
 export type GridLayoutType = 'adaptive' | 'twoColumns' | 'oneColumn'
 
