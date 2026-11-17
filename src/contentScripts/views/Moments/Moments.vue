@@ -26,9 +26,8 @@ import {
   shouldUseMomentImageGrid,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useExtensionCache } from '~/composables/useExtensionCache'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
+import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, OVERLAY_SCROLL_BAR_REBASE, VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
@@ -38,6 +37,7 @@ import api from '~/utils/api'
 import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF } from '~/utils/main'
 import { MasonryColumnMetrics } from '~/utils/masonryColumnMetrics'
+import emitter from '~/utils/mitt'
 import {
   fetchNewerMoments,
   fetchUnreadMomentIds,
@@ -60,6 +60,8 @@ import {
 } from '~/utils/videoDialog'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
+import type { MomentFilter, MomentsFeedCacheEntry } from './momentsFeedCache'
+import { useMomentsFeedCache } from './momentsFeedCache'
 import MomentsFilterEntry from './MomentsFilterEntry.vue'
 import MomentsHotSearch from './MomentsHotSearch.vue'
 
@@ -134,7 +136,6 @@ const toast = useToast()
 const { t } = useI18n()
 
 const moments = ref<DisplayMoment[]>([])
-type MomentFilter = 'all' | 'video' | 'pgc' | 'article'
 const momentFilters = computed<Array<{ value: MomentFilter, label: string }>>(() => [
   { value: 'all', label: t('moments.filter_all') },
   { value: 'video', label: t('moments.filter_video') },
@@ -142,26 +143,13 @@ const momentFilters = computed<Array<{ value: MomentFilter, label: string }>>(()
   { value: 'article', label: t('moments.filter_article') },
 ])
 const activeMomentFilter = ref<MomentFilter>('all')
-interface MomentsFeedCacheEntry {
-  items: DisplayMoment[]
-  offset: string
-  updateBaseline: string
-  hasMore: boolean
-  updatedAt: number
-  continuation?: {
-    items: DisplayMoment[]
-    offset: string
-    updateBaseline: string
-    hasMore: boolean
-  }
-}
-type MomentsFeedCache = Partial<Record<MomentFilter, MomentsFeedCacheEntry>>
-// 缓存可达数 MB，存于后台 IndexedDB，避免 storage.local 把每次写入广播给所有标签页。
+// 缓存可达数 MB，存于后台 IndexedDB 并按动态增量写入，避免每页都序列化整份缓存。
 const {
   data: momentsFeedCache,
   ready: momentsFeedCacheReady,
   flush: flushMomentsCacheWrite,
-} = useExtensionCache<MomentsFeedCache>('momentsFeedCache', {}, { writeDelay: 500 })
+  markItemsDirty: markMomentsCacheItemsDirty,
+} = useMomentsFeedCache({ writeDelay: 500 })
 type MomentGroup = 'all' | 'wanted'
 const activeMomentGroup = ref<MomentGroup>('all')
 /** 只保留“想看”尚未扫描的缓存段；已展示数据交给虚拟列表管理。 */
@@ -291,6 +279,18 @@ let skipLastSeenOnce = false
 let pendingLastSeenIds: string[] | null = null
 /** 向上插入的卡片按估算高度排布，实测高度变化时据此补偿滚动位置 */
 const prependedCardIds = new Set<string>()
+/**
+ * 各列顶部已回收卡片占据的高度（含间距），即当前首张卡片在列内的顶部位置。
+ * 回收时按各列共同的部分整体收起并补偿滚动，剩余部分以顶部 spacer 保持布局不变。
+ */
+let columnHeadOffsets: number[] = []
+/** 本轮浏览已回收过列表顶部的动态 */
+const hasTrimmedHead = ref(false)
+/** 视口已接近被回收区域，显示重新加载入口 */
+const isNearTrimmedHead = ref(false)
+let headTrimTimer: ReturnType<typeof setTimeout> | null = null
+/** 分页后正在等待恢复滚动位置，此时回收会被恢复覆盖 */
+let pendingPaginationScrollRestores = 0
 const { handlePageRefresh, handleReachBottom, mainAppRef, openSettings, scrollViewportRef } = useBewlyApp()
 // Shadow DOM 内的滚动不会传播到 window，直接监听页面实际的滚动容器。
 useEventListener(scrollViewportRef, 'scroll', updateSidebarBounds, { passive: true })
@@ -310,6 +310,14 @@ const WANTED_SCAN_LIMIT = 100
 const FILTERED_MAX_REQUEST_PAGES = 2
 /** 仅限制持久化缓存，不能作为动态浏览或“想看”扫描的上限。 */
 const MOMENTS_CACHE_MAX_ITEMS = 1000
+/**
+ * 页面内存中最多保留的动态条数。超过后回收视口上方很远处的早期卡片，
+ * 不限制继续向下浏览；回收量留出余量，避免每加载一页都触发回收。
+ */
+const MOMENTS_MEMORY_MAX_ITEMS = 600
+const MOMENTS_MEMORY_TRIM_TARGET = 500
+/** 只回收底边高于视口顶部至少这么多屏的卡片 */
+const MOMENTS_TRIM_KEEP_SCREENS = 3
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 未读超过该数量时才从上次看到的位置开始加载，否则分界点就在首屏 */
 const MOMENTS_LAST_SEEN_MIN_UNREAD = 8
@@ -1723,6 +1731,18 @@ function getColumnStackHeight(column: DisplayMoment[]) {
   }, 0)
 }
 
+function getColumnHeadOffset(columnIndex: number) {
+  return columnHeadOffsets[columnIndex] || 0
+}
+
+/** 列底部在网格内的位置，包含顶部已回收区域 */
+function getColumnBottom(column: DisplayMoment[], columnIndex: number) {
+  const headOffset = getColumnHeadOffset(columnIndex)
+  if (!column.length)
+    return Math.max(0, headOffset - GRID_ROW_GAP)
+  return headOffset + getColumnStackHeight(column)
+}
+
 function findShortestColumnIndex(columns: DisplayMoment[][], heights?: number[]) {
   let minIdx = 0
   let minHeight = Infinity
@@ -1750,7 +1770,7 @@ function balanceColumnBottoms(columns: DisplayMoment[][]) {
   const maxMoves = Math.min(moments.value.length, 24)
 
   for (let moveCount = 0; moveCount < maxMoves; moveCount++) {
-    const heights = next.map(column => getColumnStackHeight(column))
+    const heights = next.map((column, columnIndex) => getColumnBottom(column, columnIndex))
     const currentSpread = Math.max(...heights) - Math.min(...heights)
     let bestMove: { sourceIndex: number, targetIndex: number, itemIndex: number, spread: number } | null = null
 
@@ -1768,7 +1788,7 @@ function balanceColumnBottoms(columns: DisplayMoment[][]) {
 
           const candidateHeights = [...heights]
           candidateHeights[sourceIndex] -= itemHeight + GRID_ROW_GAP
-          candidateHeights[targetIndex] += itemHeight + (target.length ? GRID_ROW_GAP : 0)
+          candidateHeights[targetIndex] += itemHeight + (heights[targetIndex] > 0 ? GRID_ROW_GAP : 0)
           const spread = Math.max(...candidateHeights) - Math.min(...candidateHeights)
           if (spread >= currentSpread - 4 || (bestMove && spread >= bestMove.spread))
             return
@@ -1803,6 +1823,8 @@ function redistributeColumns() {
     heights[columnIndex] += (heights[columnIndex] > 0 ? GRID_ROW_GAP : 0) + getCardHeight(item)
   })
 
+  // 整体重排从网格顶部开始，已回收区域不再保留
+  columnHeadOffsets = []
   momentColumns.value = balanceColumnBottoms(next).columns
   rebuildColumnMetrics()
   updateVirtualColumns()
@@ -1895,9 +1917,13 @@ function jumpToLatestMoments() {
 
 /** 从顶部加载且分界点尚未加载出来时，提供跳到上次看到的位置的入口 */
 const canJumpToLastSeen = computed(() => !hasNewerMoments.value
+  && !hasTrimmedHead.value
   && unreadMomentIds.value.length > MOMENTS_LAST_SEEN_MIN_UNREAD
   && !lastSeenMomentId.value
   && canLocateLastSeen(activeMomentFilter.value, activeMomentGroup.value, selectedHostMid.value))
+
+/** 滚回已回收区域附近时提示较早的动态已释放 */
+const showTrimmedHeadNotice = computed(() => hasTrimmedHead.value && isNearTrimmedHead.value)
 
 function jumpToLastSeenMoments() {
   pendingLastSeenIds = [...unreadMomentIds.value]
@@ -1911,6 +1937,9 @@ function jumpToLastSeenMoments() {
  * 任一列的偏移都不超过列差的一半。
  */
 function prependMoments(items: DisplayMoment[]) {
+  // 顶部已回收时列首不再是最新内容，不能在其上方插入。
+  if (hasTrimmedHead.value)
+    return
   const existingIds = new Set(moments.value.map(moment => moment.id))
   const fresh = items.filter((moment) => {
     if (existingIds.has(moment.id))
@@ -1936,9 +1965,7 @@ function prependMoments(items: DisplayMoment[]) {
   moments.value = [...fresh, ...moments.value]
   momentColumns.value = momentColumns.value.map((column, index) => [...prefixColumns[index], ...column])
   rebuildColumnMetrics()
-  const viewport = scrollViewportRef.value
-  if (viewport)
-    viewport.scrollTop += (Math.max(...shifts) + Math.min(...shifts)) / 2
+  adjustViewportScrollTop((Math.max(...shifts) + Math.min(...shifts)) / 2)
   updateVirtualColumns()
 }
 
@@ -1949,7 +1976,7 @@ function appendMoments(items: DisplayMoment[]) {
     momentColumns.value = Array.from({ length: Math.max(1, gridColumnCount.value) }, () => [])
 
   const existingIds = new Set(moments.value.map(moment => moment.id))
-  const columnHeights = momentColumns.value.map(column => getColumnStackHeight(column))
+  const columnHeights = momentColumns.value.map((column, columnIndex) => getColumnBottom(column, columnIndex))
 
   items.forEach((item) => {
     if (existingIds.has(item.id))
@@ -1968,6 +1995,7 @@ function appendMoments(items: DisplayMoment[]) {
   rebuildColumnMetrics()
   updateVirtualColumns()
   scheduleBottomRebalance()
+  scheduleHeadTrim()
   return appended
 }
 
@@ -2003,7 +2031,7 @@ function scheduleBottomRebalance() {
       if (distanceFromBottom < viewport.clientHeight * 1.25)
         return
     }
-    const heights = momentColumns.value.map(column => getColumnStackHeight(column))
+    const heights = momentColumns.value.map((column, columnIndex) => getColumnBottom(column, columnIndex))
     const maxH = Math.max(...heights)
     const minH = Math.min(...heights)
     // 空闲时对列尾做小范围补位，让追加数据后的底边也保持相对平整
@@ -2033,7 +2061,7 @@ function commitCardHeight(id: string, next: number, options?: { force?: boolean 
     const metrics = columnMetrics[position.column]
     // 视口上方向上插入的卡片从估算高度变为实测高度时，补偿滚动位置避免内容跳动
     if (metrics && prependedCardIds.has(id))
-      compensatePrependedCardHeight(metrics.offsetOf(position.index), metrics.heightOf(position.index), next)
+      compensatePrependedCardHeight(getColumnHeadOffset(position.column) + metrics.offsetOf(position.index), metrics.heightOf(position.index), next)
     metrics?.set(position.index, next)
   }
   // 连续两次接近的高度视为稳定，后续忽略小幅 Resize 抖动
@@ -2045,6 +2073,17 @@ function commitCardHeight(id: string, next: number, options?: { force?: boolean 
   return true
 }
 
+function adjustViewportScrollTop(delta: number) {
+  const viewport = scrollViewportRef.value
+  if (!viewport || !Number.isFinite(delta) || delta === 0)
+    return
+  const previous = viewport.scrollTop
+  viewport.scrollTop = Math.max(0, previous + delta)
+  const actualDelta = viewport.scrollTop - previous
+  if (actualDelta !== 0)
+    emitter.emit(OVERLAY_SCROLL_BAR_REBASE, actualDelta)
+}
+
 function compensatePrependedCardHeight(cardTop: number, previousHeight: number, nextHeight: number) {
   const viewport = scrollViewportRef.value
   if (!viewport || previousHeight <= 0)
@@ -2052,7 +2091,7 @@ function compensatePrependedCardHeight(cardTop: number, previousHeight: number, 
   const viewTop = viewport.scrollTop - getGridOffsetTop()
   if (cardTop + previousHeight > viewTop)
     return
-  viewport.scrollTop += (nextHeight - previousHeight) / Math.max(1, momentColumns.value.length)
+  adjustViewportScrollTop((nextHeight - previousHeight) / Math.max(1, momentColumns.value.length))
 }
 
 function scheduleVirtualUpdate() {
@@ -2208,10 +2247,15 @@ function updateVirtualColumns() {
   const viewEnd = scrollTop - gridOffsetTop + viewportHeight + OVERSCAN_PX
 
   const previous = virtualColumns.value
+  let maxHeadOffset = 0
   const next = momentColumns.value.map((column, columnIndex) => {
-    const { start, end, topPad, bottomPad } = columnMetrics[columnIndex].getWindow(viewStart, viewEnd)
-    return { topPad, bottomPad, items: column.slice(start, end) }
+    const headOffset = getColumnHeadOffset(columnIndex)
+    maxHeadOffset = Math.max(maxHeadOffset, headOffset)
+    const { start, end, topPad, bottomPad } = columnMetrics[columnIndex].getWindow(viewStart - headOffset, viewEnd - headOffset)
+    return { topPad: getVirtualTopPad(headOffset, start, topPad), bottomPad, items: column.slice(start, end) }
   })
+  isNearTrimmedHead.value = hasTrimmedHead.value
+    && scrollTop - gridOffsetTop < maxHeadOffset + viewportHeight
   // 滚动尚未跨卡片边界时复用窗口，避免每帧触发卡片 patch / ref 回调与测量。
   if (next.length !== previous.length || next.some((column, index) => {
     const old = previous[index]
@@ -2245,6 +2289,134 @@ function prunePreviewCache() {
       delete previewUrls[id]
     })
   }
+}
+
+/**
+ * 顶部 spacer 高度。spacer 与卡片之间由 CSS 提供一个行间距，
+ * 因此回收区域的 spacer 要扣除该间距，首张卡片才能停在原位置。
+ */
+function getVirtualTopPad(headOffset: number, start: number, topPad: number) {
+  if (headOffset <= 0)
+    return topPad
+  return start > 0 ? headOffset + topPad : headOffset - GRID_ROW_GAP
+}
+
+function scheduleHeadTrim() {
+  if (headTrimTimer || moments.value.length <= MOMENTS_MEMORY_MAX_ITEMS)
+    return
+  headTrimTimer = setTimeout(() => {
+    headTrimTimer = null
+    if (isMomentsDisposed)
+      return
+    // 加载、分页恢复滚动或滚动中回收都会让补偿后的位置被覆盖或打断惯性滚动。
+    // 后台标签页不轮询，回到前台时再安排。
+    if (document.hidden)
+      return
+    if (
+      isLoading.value
+      || pendingPaginationScrollRestores > 0
+      || Date.now() - lastScrollAt < 480
+    ) {
+      scheduleHeadTrim()
+      return
+    }
+    trimMomentsHead()
+  }, 720)
+}
+
+function cancelHeadTrim() {
+  if (headTrimTimer)
+    clearTimeout(headTrimTimer)
+  headTrimTimer = null
+}
+
+function releaseTrimmedMomentState(ids: Set<string>) {
+  ids.forEach((id) => {
+    delete cardHeights[id]
+    delete coverRatios[id]
+    delete previewUrls[id]
+    settledHeights.delete(id)
+    revealedCardIds.delete(id)
+    prependedCardIds.delete(id)
+    readyCardIds.delete(id)
+    enteringCardIds.delete(id)
+    visibleMomentIds.delete(id)
+    const enterTimer = cardEnterTimers.get(id)
+    if (enterTimer)
+      clearTimeout(enterTimer)
+    cardEnterTimers.delete(id)
+  })
+  if (ids.has(hoveredMediaId.value)) {
+    hoveredMediaId.value = ''
+    cleanupLivePreviewPlayer()
+  }
+}
+
+/**
+ * 动态超过内存上限时，回收视口上方很远处的早期卡片。
+ * 各列只移除列首连续的一段，按底边从上到下选取；各列共同的回收高度整体收起并补偿滚动，
+ * 其余部分保留为顶部 spacer，因此可见内容与各列相对位置都不变。
+ */
+function trimMomentsHead() {
+  if (isMomentsDisposed || moments.value.length <= MOMENTS_MEMORY_MAX_ITEMS)
+    return
+  const viewport = scrollViewportRef.value
+  const columns = momentColumns.value
+  if (!viewport || !columns.length || columnMetrics.length !== columns.length)
+    return
+
+  const viewTop = viewport.scrollTop - getGridOffsetTop()
+  const cutoff = viewTop - Math.max(OVERSCAN_PX, viewport.clientHeight * MOMENTS_TRIM_KEEP_SCREENS)
+  if (cutoff <= 0)
+    return
+
+  const candidates: Array<{ column: number, bottom: number }> = []
+  columns.forEach((column, columnIndex) => {
+    const metrics = columnMetrics[columnIndex]
+    const headOffset = getColumnHeadOffset(columnIndex)
+    // 每列至少保留一张卡片，后续追加仍以它为基准排布。
+    for (let index = 0; index < column.length - 1; index++) {
+      const bottom = headOffset + metrics.offsetOf(index) + metrics.heightOf(index)
+      if (bottom >= cutoff)
+        break
+      candidates.push({ column: columnIndex, bottom })
+    }
+  })
+  if (!candidates.length)
+    return
+
+  // 同列卡片底边随下标递增，取全局最靠上的若干张即为各列的列首前缀。
+  candidates.sort((a, b) => a.bottom - b.bottom)
+  const removeCounts = columns.map(() => 0)
+  candidates
+    .slice(0, moments.value.length - MOMENTS_MEMORY_TRIM_TARGET)
+    .forEach(candidate => removeCounts[candidate.column]++)
+
+  const removedIds = new Set<string>()
+  const nextOffsets = columns.map((column, columnIndex) => {
+    const count = removeCounts[columnIndex]
+    column.slice(0, count).forEach(moment => removedIds.add(moment.id))
+    return getColumnHeadOffset(columnIndex) + (count ? columnMetrics[columnIndex].offsetOf(count) : 0)
+  })
+  if (!removedIds.size)
+    return
+
+  // 剩余回收高度要么为 0，要么大于行间距，否则 spacer 无法表达该位置。
+  let collapse = Math.min(...nextOffsets)
+  if (nextOffsets.some(offset => offset - collapse > 0 && offset - collapse <= GRID_ROW_GAP))
+    collapse = Math.max(0, collapse - GRID_ROW_GAP * 2)
+
+  columnHeadOffsets = nextOffsets.map(offset => offset - collapse)
+  momentColumns.value = columns.map((column, columnIndex) => column.slice(removeCounts[columnIndex]))
+  moments.value = moments.value.filter(moment => !removedIds.has(moment.id))
+  releaseTrimmedMomentState(removedIds)
+  // 列首已不是本轮加载的最新内容，停止向上衔接更新的动态。
+  hasNewerMoments.value = false
+  hasTrimmedHead.value = true
+  rebuildColumnMetrics()
+  if (collapse > 0)
+    adjustViewportScrollTop(-collapse)
+  updateVirtualColumns()
 }
 
 /** 卡片仅在第一次完成测量时播放入场动画，虚拟列表重新挂载不重复播放 */
@@ -2775,6 +2947,7 @@ async function toggleMomentLike(moment: DisplayMoment) {
     })
     if (response.code !== 0)
       throw new Error(response.message || t('moments.like_failed'))
+    markMomentsCacheItemsDirty([moment.id])
   }
   catch (error) {
     // 请求失败时恢复接口返回前的状态，避免界面与服务端不一致
@@ -2816,6 +2989,7 @@ async function toggleMomentReservation(moment: DisplayMoment) {
         additional.reservationTotal + (additional.isReserved ? 1 : -1),
       )
     }
+    markMomentsCacheItemsDirty([moment.id])
     toast.success(additional.isReserved ? t('moments.reserve_succeeded') : t('moments.reserve_cancelled'))
   }
   catch (error) {
@@ -2828,8 +3002,10 @@ async function toggleMomentReservation(moment: DisplayMoment) {
 
 function handleDocumentVisibilityChange() {
   // 动态接口不返回稍后再看状态；回到本页时按共享缓存的有效期重新比对
-  if (document.visibilityState === 'visible')
+  if (document.visibilityState === 'visible') {
     void ensureWatchLaterState()
+    scheduleHeadTrim()
+  }
 }
 
 async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = false) {
@@ -2883,6 +3059,10 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     newestLoadedMomentId = ''
     isLastSeenSession = false
     prependedCardIds.clear()
+    cancelHeadTrim()
+    columnHeadOffsets = []
+    hasTrimmedHead.value = false
+    isNearTrimmedHead.value = false
   }
 
   try {
@@ -3253,12 +3433,18 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     && isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
   ) {
     // 等卡片、虚拟 spacer 和底部加载提示完成更新后，恢复分页前的滚动位置
-    await nextTick()
-    updateVirtualColumns()
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-    const viewport = scrollViewportRef.value
-    if (viewport)
-      viewport.scrollTop = preservedPaginationScrollTop
+    pendingPaginationScrollRestores += 1
+    try {
+      await nextTick()
+      updateVirtualColumns()
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+      const viewport = scrollViewportRef.value
+      if (viewport)
+        viewport.scrollTop = preservedPaginationScrollTop
+    }
+    finally {
+      pendingPaginationScrollRestores -= 1
+    }
   }
 
   // 定位到上次看到的位置后先向上预取一批：页面停在顶部时无法再触发向上滚动
@@ -3427,6 +3613,8 @@ onBeforeUnmount(() => {
   visibleMomentIds.clear()
   cardElements.clear()
   columnMetrics = []
+  columnHeadOffsets = []
+  cancelHeadTrim()
   cardMetricPositions.clear()
   cardEnterTimers.forEach(timer => clearTimeout(timer))
   cardEnterTimers.clear()
@@ -3961,9 +4149,18 @@ watch(
         </section>
         <div class="moments-feed">
           <!-- 零高度容器内的悬浮按钮，不参与布局，避免影响向上插入时的滚动补偿 -->
-          <div v-if="!isInitialLoading && (hasNewerMoments || canJumpToLastSeen)" class="moments-newer-bar">
+          <div v-if="!isInitialLoading && (showTrimmedHeadNotice || hasNewerMoments || canJumpToLastSeen)" class="moments-newer-bar">
             <button
-              v-if="hasNewerMoments"
+              v-if="showTrimmedHeadNotice"
+              type="button"
+              class="moments-newer-bar__button"
+              @click="jumpToLatestMoments"
+            >
+              <span i-tabler-arrow-up />
+              {{ t('moments.released_above') }} · {{ t('moments.jump_to_latest') }}
+            </button>
+            <button
+              v-else-if="hasNewerMoments"
               type="button"
               class="moments-newer-bar__button"
               @click="jumpToLatestMoments"

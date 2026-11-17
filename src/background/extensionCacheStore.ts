@@ -1,7 +1,15 @@
 import browser from 'webextension-polyfill'
 
-import type { ExtensionCacheKey, ExtensionCacheRead, ExtensionCacheWrite } from '~/constants/extensionCache'
-import { EXTENSION_CACHE_MESSAGE, isExtensionCacheKey } from '~/constants/extensionCache'
+import type {
+  ExtensionCacheKey,
+  ExtensionCacheRead,
+  ExtensionCacheRecordKey,
+  ExtensionCacheRecords,
+  ExtensionCacheRecordsPatch,
+  ExtensionCacheRecordsRead,
+  ExtensionCacheWrite,
+} from '~/constants/extensionCache'
+import { EXTENSION_CACHE_MESSAGE, isExtensionCacheKey, isExtensionCacheRecordKey } from '~/constants/extensionCache'
 import { onMessage } from '~/utils/messaging'
 
 const DB_NAME = 'bewlycat-cache'
@@ -97,7 +105,74 @@ async function writeEntry(data: ExtensionCacheWrite): Promise<void> {
     await runRequest('readwrite', store => store.put(value, key))
 }
 
+/** 集合的子记录与整份缓存共用同一个 object store，以 `集合键/子记录 ID` 区分。 */
+function getRecordRange(key: ExtensionCacheRecordKey) {
+  const prefix = `${key}/`
+  // '/' 的下一个 UTF-16 码元是 '0'，半开区间覆盖所有以 `${key}/` 开头的键。
+  return { prefix, range: IDBKeyRange.bound(prefix, `${key}0`, false, true) }
+}
+
+async function readRecords(data: ExtensionCacheRecordsRead): Promise<ExtensionCacheRecords> {
+  if (!isExtensionCacheRecordKey(data?.key))
+    throw new TypeError('Invalid extension cache record key')
+
+  const { prefix, range } = getRecordRange(data.key)
+  const database = await openDatabase()
+  return new Promise<ExtensionCacheRecords>((resolve, reject) => {
+    const transaction = database.transaction(STORE_NAME, 'readonly')
+    const store = transaction.objectStore(STORE_NAME)
+    // 同一只读事务内的键与值按相同顺序返回。
+    const keysRequest = store.getAllKeys(range)
+    const valuesRequest = store.getAll(range)
+    transaction.oncomplete = () => {
+      const records: ExtensionCacheRecords = {}
+      keysRequest.result.forEach((recordKey, index) => {
+        const value = valuesRequest.result[index]
+        if (typeof recordKey === 'string' && typeof value === 'string')
+          records[recordKey.slice(prefix.length)] = value
+      })
+      resolve(records)
+    }
+    transaction.onerror = () => reject(transaction.error)
+    transaction.onabort = () => reject(transaction.error ?? new DOMException('Transaction aborted', 'AbortError'))
+  })
+}
+
+function isRecordsPatch(data: unknown): data is ExtensionCacheRecordsPatch {
+  if (!data || typeof data !== 'object')
+    return false
+  const patch = data as Partial<ExtensionCacheRecordsPatch>
+  return isExtensionCacheRecordKey(patch.key)
+    && !!patch.set && typeof patch.set === 'object' && !Array.isArray(patch.set)
+    && Object.values(patch.set).every(value => typeof value === 'string')
+    && Array.isArray(patch.remove) && patch.remove.every(id => typeof id === 'string')
+    && (patch.replace === undefined || typeof patch.replace === 'boolean')
+}
+
+async function patchRecords(data: ExtensionCacheRecordsPatch): Promise<void> {
+  if (!isRecordsPatch(data))
+    throw new TypeError('Invalid extension cache record patch')
+
+  const { prefix, range } = getRecordRange(data.key)
+  const database = await openDatabase()
+  await new Promise<void>((resolve, reject) => {
+    // 同一事务内完成清空、删除与写入，失败时整批回滚。
+    const transaction = database.transaction(STORE_NAME, 'readwrite')
+    const store = transaction.objectStore(STORE_NAME)
+    if (data.replace)
+      store.delete(range)
+    else
+      data.remove.forEach(id => store.delete(`${prefix}${id}`))
+    Object.entries(data.set).forEach(([id, value]) => store.put(value, `${prefix}${id}`))
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error)
+    transaction.onabort = () => reject(transaction.error ?? new DOMException('Transaction aborted', 'AbortError'))
+  })
+}
+
 export function setupExtensionCacheStore() {
   onMessage(EXTENSION_CACHE_MESSAGE.READ, readEntry)
   onMessage(EXTENSION_CACHE_MESSAGE.WRITE, writeEntry)
+  onMessage(EXTENSION_CACHE_MESSAGE.READ_RECORDS, readRecords)
+  onMessage(EXTENSION_CACHE_MESSAGE.PATCH_RECORDS, patchRecords)
 }

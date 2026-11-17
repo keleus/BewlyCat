@@ -5,7 +5,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { BEWLY_IFRAME_DRAWER_HOST_CLASS, OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { BEWLY_IFRAME_DRAWER_HOST_CLASS, OVERLAY_SCROLL_BAR_REBASE, OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -194,6 +194,15 @@ const TOP_BAR_SHOW_SCROLL_THRESHOLD = 20
 
 // 保存overlay scroll的handler引用，用于正确移除监听器
 let overlayScrollHandler: ((scrollTop: number) => void) | null = null
+let overlayScrollRebaseHandler: ((delta: number) => void) | null = null
+
+function rebaseScrollTracking(delta: number) {
+  if (!Number.isFinite(delta) || delta === 0)
+    return
+  scrollTop.value = Math.max(0, scrollTop.value + delta)
+  oldScrollTop.value = Math.max(0, oldScrollTop.value + delta)
+  topBarVisibilityAnchorScrollTop.value = Math.max(0, topBarVisibilityAnchorScrollTop.value + delta)
+}
 
 function handleScroll(arg?: number | Event): void {
   // ✅ 性能优化：优先使用传入的 scrollTop 值，避免重复 DOM 读取
@@ -360,7 +369,9 @@ function setupScrollListeners() {
     overlayScrollHandler = (payloadScrollTop: number) => {
       handleScroll(payloadScrollTop)
     }
+    overlayScrollRebaseHandler = rebaseScrollTracking
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, overlayScrollHandler)
+    emitter.on(OVERLAY_SCROLL_BAR_REBASE, overlayScrollRebaseHandler)
   }
   else {
     window.addEventListener('scroll', handleScroll)
@@ -373,6 +384,10 @@ function cleanupScrollListeners() {
   if (overlayScrollHandler) {
     emitter.off(OVERLAY_SCROLL_BAR_SCROLL, overlayScrollHandler)
     overlayScrollHandler = null
+  }
+  if (overlayScrollRebaseHandler) {
+    emitter.off(OVERLAY_SCROLL_BAR_REBASE, overlayScrollRebaseHandler)
+    overlayScrollRebaseHandler = null
   }
 }
 

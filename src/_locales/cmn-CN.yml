@@ -1765,6 +1765,7 @@ moments:
   filter_article: 专栏
   last_seen: 上次看到这里
   newer_above: 上方还有更新的动态
+  released_above: 上方部分动态已释放
   jump_to_latest: 回到最新
   jump_to_last_seen: 跳到上次看到的位置
   emoji: 表情

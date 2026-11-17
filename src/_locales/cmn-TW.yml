@@ -1780,6 +1780,7 @@ moments:
   filter_article: 專欄
   last_seen: 上次看到這裡
   newer_above: 上方還有更新的動態
+  released_above: 上方部分動態已釋放
   jump_to_latest: 回到最新
   jump_to_last_seen: 跳到上次看到的位置
   emoji: 表情

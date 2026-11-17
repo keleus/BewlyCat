@@ -1,6 +1,8 @@
 export const TOP_BAR_VISIBILITY_CHANGE = 'topBarVisibilityChange'
 export const TOP_BAR_SCROLL_VISIBILITY_CHANGE = 'topBarScrollVisibilityChange'
 export const OVERLAY_SCROLL_BAR_SCROLL = 'overlayScrollBarScroll'
+/** 视口上方增删内容并同步补偿 scrollTop 时，平移顶栏滚动基准，避免误判为用户滚动。 */
+export const OVERLAY_SCROLL_BAR_REBASE = 'overlayScrollBarRebase'
 export const OVERLAY_SCROLL_STATE_CHANGE = 'overlayScrollStateChange'
 export const BEWLY_MOUNTED = 'bewlyMounted'
 export const BEWLY_IFRAME_DRAWER_HOST_CLASS = 'bewly-iframe-drawer-host'
