@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementBounding, useEventListener } from '@vueuse/core'
+import { useElementBounding, useEventListener, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
@@ -29,10 +29,12 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, OVERLAY_SCROLL_BAR_REBASE, VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
+import { parseDedeUserID } from '~/logic/loginStatus'
 import { momentsPinnedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
 import { ensureWatchLaterState } from '~/logic/watchLaterState'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF, isProgrammaticScrollActive } from '~/utils/main'
@@ -85,13 +87,21 @@ interface MomentsPortalUser {
   }
 }
 
-interface MomentsPortalLiveUser {
-  mid: string
-  room_id: string
-  jump_url: string
+interface MomentsSidebarLiveUser {
+  roomid: number
+  link?: string
   face: string
   uname: string
   title: string
+}
+
+interface MomentsSidebarLiveResult {
+  code: number
+  data?: {
+    results?: number | string
+    pagesize?: number | string
+    list?: MomentsSidebarLiveUser[] | null
+  }
 }
 
 interface MomentsPortalUpItem {
@@ -119,10 +129,6 @@ interface MomentsPortalResult {
   code: number
   data?: {
     my_info?: MomentsPortalUser
-    live_users?: {
-      count?: number
-      items?: MomentsPortalLiveUser[]
-    }
     /** 真实接口为 { has_more, items }；兼容历史数组形态 */
     up_list?: MomentsPortalUpList | MomentsPortalUpListItem[]
   }
@@ -130,8 +136,10 @@ interface MomentsPortalResult {
 
 /** 动态流 features：补齐 opus 图文与充电列表字段 */
 const MOMENT_FEED_FEATURES = 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard'
+const SIDEBAR_LIVE_PAGE_SIZE = 10
 const toast = useToast()
 const { t } = useI18n()
+const topBarStore = useTopBarStore()
 
 type MomentFilter = 'all' | 'video' | 'pgc' | 'article'
 
@@ -144,8 +152,18 @@ const momentFilters = computed<Array<{ value: MomentFilter, label: string }>>(()
 ])
 const activeMomentFilter = ref<MomentFilter>('all')
 const portalUser = ref<MomentsPortalUser | null>(null)
-const portalLiveUsers = ref<MomentsPortalLiveUser[]>([])
-const portalLiveCount = ref(0)
+const sidebarLiveUsers = shallowRef<MomentsSidebarLiveUser[]>([])
+const sidebarLiveViewportRef = ref<HTMLElement | null>(null)
+const sidebarLiveTotal = ref<number>()
+const nextSidebarLivePage = ref<number>()
+const sidebarLiveLoadFailed = ref(false)
+const sidebarLiveRequest = shallowRef<AbortController>()
+const isSidebarLiveLoading = computed(() => Boolean(sidebarLiveRequest.value))
+const sidebarLiveAccount = computed(() => topBarStore.isLogin
+  ? topBarStore.userInfo.mid ?? parseDedeUserID(document.cookie)
+  : undefined)
+const showSidebarLiveCard = computed(() => settings.value.momentsSidebarShowLive
+  && (sidebarLiveUsers.value.length > 0 || isSidebarLiveLoading.value || sidebarLiveLoadFailed.value))
 const portalUpList = ref<MomentsPortalUpItem[]>([])
 /** 选中的经常访问 UP 主 mid；空字符串表示“全部动态” */
 const selectedHostMid = ref('')
@@ -3051,8 +3069,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
 function clearMomentsPortalState() {
   portalUser.value = null
-  portalLiveUsers.value = []
-  portalLiveCount.value = 0
   portalUpList.value = []
 }
 
@@ -3070,8 +3086,6 @@ async function loadMomentsPortal() {
     }
 
     portalUser.value = response.data?.my_info || null
-    portalLiveUsers.value = response.data?.live_users?.items || []
-    portalLiveCount.value = response.data?.live_users?.count ?? portalLiveUsers.value.length
     portalUpList.value = normalizePortalUpList(response.data)
   }
   catch {
@@ -3084,10 +3098,99 @@ async function loadMomentsPortal() {
   }
 }
 
+function reloadSidebarLive() {
+  sidebarLiveRequest.value?.abort()
+  sidebarLiveRequest.value = undefined
+  sidebarLiveUsers.value = []
+  sidebarLiveTotal.value = undefined
+  sidebarLiveLoadFailed.value = false
+  nextSidebarLivePage.value = 1
+  void loadSidebarLivePage()
+}
+
+async function loadSidebarLivePage() {
+  const page = nextSidebarLivePage.value
+  const account = sidebarLiveAccount.value
+  if (page === undefined || account === undefined || isMomentsDisposed
+    || !settings.value.momentsSidebarShowLive || isSidebarLiveLoading.value) {
+    return
+  }
+
+  const request = new AbortController()
+  sidebarLiveRequest.value = request
+  sidebarLiveLoadFailed.value = false
+  try {
+    const response: MomentsSidebarLiveResult | undefined = await api.moment.getTopBarLiveMoments({
+      page,
+      pagesize: SIDEBAR_LIVE_PAGE_SIZE,
+    }, { signal: request.signal })
+    if (request.signal.aborted || account !== sidebarLiveAccount.value)
+      return
+
+    if (response?.code === -101) {
+      sidebarLiveUsers.value = []
+      sidebarLiveTotal.value = undefined
+      nextSidebarLivePage.value = undefined
+      return
+    }
+
+    if (response?.code !== 0 || !response.data) {
+      sidebarLiveLoadFailed.value = true
+      return
+    }
+
+    const items = response.data.list ?? []
+    const reportedTotal = Number(response.data.results)
+    const total = Number.isSafeInteger(reportedTotal) && reportedTotal >= items.length ? reportedTotal : undefined
+    const reportedPageSize = Number(response.data.pagesize)
+    const pageSize = Number.isSafeInteger(reportedPageSize) && reportedPageSize > 0 ? reportedPageSize : SIDEBAR_LIVE_PAGE_SIZE
+
+    // 开播状态变化会让房间跨页移动，按房间号合并以免重复。
+    const loadedCount = sidebarLiveUsers.value.length
+    const usersByRoom = new Map(sidebarLiveUsers.value.map(user => [user.roomid, user]))
+    for (const user of items)
+      usersByRoom.set(user.roomid, user)
+    sidebarLiveUsers.value = [...usersByRoom.values()]
+    sidebarLiveTotal.value = total ?? sidebarLiveTotal.value
+
+    const hasMore = items.length > 0 && (total === undefined
+      ? items.length >= pageSize && usersByRoom.size > loadedCount
+      : page * pageSize < total)
+    nextSidebarLivePage.value = hasMore ? page + 1 : undefined
+  }
+  catch {
+    if (!request.signal.aborted && account === sidebarLiveAccount.value)
+      sidebarLiveLoadFailed.value = true
+  }
+  finally {
+    if (sidebarLiveRequest.value === request)
+      sidebarLiveRequest.value = undefined
+  }
+}
+
+function fillSidebarLiveViewport() {
+  const viewport = sidebarLiveViewportRef.value
+  if (!viewport?.clientHeight || !sidebarLiveUsers.value.length || isLayoutEditing.value || sidebarLiveLoadFailed.value)
+    return
+
+  if (viewport.scrollHeight <= viewport.clientHeight)
+    void loadSidebarLivePage()
+}
+
+function handleSidebarLiveScroll(event: Event) {
+  if (isLayoutEditing.value || sidebarLiveLoadFailed.value)
+    return
+
+  const viewport = event.currentTarget as HTMLElement
+  if (viewport.scrollTop > 0 && viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 1)
+    void loadSidebarLivePage()
+}
+
 function refresh() {
   isInitialLoading.value = moments.value.length === 0
   void loadMoments(true)
   void loadMomentsPortal()
+  reloadSidebarLive()
   void ensureWatchLaterState()
 }
 
@@ -3165,6 +3268,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   isMomentsDisposed = true
   feedRequestToken += 1
+  sidebarLiveRequest.value?.abort()
   gridObserver?.disconnect()
   cardMeasureObserver?.disconnect()
   visibilityObserver?.disconnect()
@@ -3239,6 +3343,12 @@ watch(
     updateGridColumnCount()
   },
 )
+
+watch([sidebarLiveAccount, () => settings.value.momentsSidebarShowLive], reloadSidebarLive)
+
+// 等新一页渲染后检查滚动高度，窗口尺寸变化时也重新检查。
+watch([sidebarLiveViewportRef, nextSidebarLivePage, isLayoutEditing], fillSidebarLiveViewport, { flush: 'post' })
+useResizeObserver(sidebarLiveViewportRef, fillSidebarLiveViewport)
 
 watch(
   () => settings.value.momentsGridColumns,
@@ -3323,7 +3433,7 @@ watch(
         v-if="showMomentsSidebar || isLayoutEditing"
         ref="sidebarRef"
         class="moments-sidebar"
-        :class="{ 'moments-sidebar--with-live': !isLayoutEditing && !isPortalLoading && settings.momentsSidebarShowLive && portalLiveUsers.length }"
+        :class="{ 'moments-sidebar--with-live': !isLayoutEditing && !isPortalLoading && showSidebarLiveCard }"
         :style="{ '--moments-sidebar-top': `${sidebarTop}px` }"
         :aria-label="t('moments.user_info')"
       >
@@ -3419,7 +3529,7 @@ watch(
           </a>
 
           <section
-            v-if="isLayoutEditing || (settings.momentsSidebarShowLive && portalLiveUsers.length)"
+            v-if="isLayoutEditing || showSidebarLiveCard"
             class="moments-live-card"
             data-layout-edit-target="moments-sidebar-live"
             data-layout-settings-menu="BewlyPages"
@@ -3427,13 +3537,22 @@ watch(
             data-layout-settings-title-key="settings.moments_show_live"
           >
             <header>
-              <strong>{{ t('moments.live_now') }} <span>{{ portalLiveCount }}</span></strong>
+              <strong>
+                {{ t('moments.live_now') }}
+                <span v-if="sidebarLiveTotal !== undefined || sidebarLiveUsers.length">{{ sidebarLiveTotal ?? sidebarLiveUsers.length }}</span>
+              </strong>
             </header>
-            <div v-if="portalLiveUsers.length" class="moments-live-card__list">
+            <div
+              v-if="sidebarLiveUsers.length || !isLayoutEditing"
+              ref="sidebarLiveViewportRef"
+              class="moments-live-card__list"
+              :aria-busy="isSidebarLiveLoading"
+              @scroll.passive="handleSidebarLiveScroll"
+            >
               <a
-                v-for="liveUser in isLayoutEditing ? portalLiveUsers.slice(0, 1) : portalLiveUsers"
-                :key="liveUser.room_id"
-                :href="liveUser.jump_url || `https://live.bilibili.com/${liveUser.room_id}`"
+                v-for="liveUser in isLayoutEditing ? sidebarLiveUsers.slice(0, 1) : sidebarLiveUsers"
+                :key="liveUser.roomid"
+                :href="liveUser.link || `https://live.bilibili.com/${liveUser.roomid}`"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -3445,6 +3564,21 @@ watch(
                   <small>{{ liveUser.title }}</small>
                 </span>
               </a>
+              <p v-if="!isLayoutEditing && isSidebarLiveLoading" class="moments-live-card__status" role="status">
+                {{ t('common.loading') }}
+              </p>
+              <Button
+                v-else-if="!isLayoutEditing && sidebarLiveLoadFailed"
+                class="shrink-0"
+                type="tertiary"
+                size="small"
+                block
+                center
+                :title="t('common.load_failed')"
+                @click="loadSidebarLivePage()"
+              >
+                {{ t('moments.reload') }}
+              </Button>
             </div>
           </section>
         </template>
@@ -4518,8 +4652,18 @@ watch(
   flex-direction: column;
   gap: var(--bew-space-1);
   overflow-y: auto;
+  overflow-anchor: none;
   overscroll-behavior: contain;
   padding-inline: var(--bew-space-4);
+}
+.moments-live-card__status {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--bew-space-1) 0;
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  text-align: center;
 }
 .moments-live-card__list > a {
   display: flex;
