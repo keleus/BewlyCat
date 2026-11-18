@@ -35,7 +35,7 @@ import { ensureWatchLaterState } from '~/logic/watchLaterState'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { numFormatter } from '~/utils/dataFormatter'
-import { getCSRF } from '~/utils/main'
+import { getCSRF, isProgrammaticScrollActive } from '~/utils/main'
 import { MasonryColumnMetrics } from '~/utils/masonryColumnMetrics'
 import emitter from '~/utils/mitt'
 import {
@@ -218,14 +218,13 @@ function cancelPendingPreview() {
 watch(hoveredMediaId, cancelPendingPreview, { flush: 'sync' })
 onBeforeUnmount(cancelPendingPreview)
 
-const previewUrls = reactive<Record<string, string>>({})
+const previewUrl = ref('')
 const likingMomentIds = reactive(new Set<string>())
 const reservationLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
 const videoCidRequests = new Map<string, Promise<number | undefined>>()
 const videoAspectRatios = reactive<Record<string, number>>({})
 const cardHeights = reactive<Record<string, number>>({})
-const visibleMomentIds = reactive(new Set<string>())
 const readyCardIds = reactive(new Set<string>())
 const enteringCardIds = reactive(new Set<string>())
 const revealedCardIds = new Set<string>()
@@ -289,21 +288,19 @@ function resetMomentsScroll() {
     scrollViewportRef.value.scrollTop = 0
 }
 
-const OVERSCAN_PX = 1200
-const MAX_PREVIEW_CACHE = 12
+/** 挂载窗口留半屏缓冲，已挂载卡片留一屏缓冲，减少小幅往返滚动时的重挂载。 */
+const MOMENTS_RENDER_BUFFER_PX = 480
+const MOMENTS_RETAIN_BUFFER_PX = 720
 const MAX_VIDEO_CID_CACHE = 80
 /** 首屏最多再补 1 页把视口填满；之后只随滚动请求 */
 const MAX_POST_LOAD_AUTOFILL_PAGES = 1
 /** 开启类型过滤时单次最多请求的原始动态页数 */
 const FILTERED_MAX_REQUEST_PAGES = 2
-/**
- * 页面内存中最多保留的动态条数。超过后回收视口上方很远处的早期卡片，
- * 不限制继续向下浏览；回收量留出余量，避免每加载一页都触发回收。
- */
-const MOMENTS_MEMORY_MAX_ITEMS = 600
-const MOMENTS_MEMORY_TRIM_TARGET = 500
+/** 超过阈值后回收视口上方的早期动态，留出余量避免每加载一页都回收。 */
+const MOMENTS_MEMORY_MAX_ITEMS = 160
+const MOMENTS_MEMORY_TRIM_TARGET = 120
 /** 只回收底边高于视口顶部至少这么多屏的卡片 */
-const MOMENTS_TRIM_KEEP_SCREENS = 3
+const MOMENTS_TRIM_KEEP_SCREENS = 2
 /** 未读超过该数量时才从上次看到的位置开始加载，否则分界点就在首屏 */
 const MOMENTS_LAST_SEEN_MIN_UNREAD = 8
 /** 定位后保留在分界点上方的未读条数 */
@@ -913,10 +910,7 @@ function openMomentExternally(moment: DisplayMoment, openMode: Exclude<ResolvedM
   if (!url)
     return
 
-  hoveredMediaId.value = ''
-  cleanupLivePreviewPlayer()
-  if (previewUrls[moment.id])
-    delete previewUrls[moment.id]
+  clearMomentPreview()
   if (openMode === 'background')
     void openLinkInBackground(url)
   else if (openMode === 'currentTab')
@@ -998,10 +992,7 @@ function openMomentDialog(moment: DisplayMoment) {
   detailFrameLoaded.value = false
   setDetailPlayerImmersive(false)
   // 打开详情时释放悬停预览资源
-  if (previewUrls[hoveredMediaId.value])
-    delete previewUrls[hoveredMediaId.value]
-  hoveredMediaId.value = ''
-  cleanupLivePreviewPlayer()
+  clearMomentPreview()
   clearDetailLoadTimer()
   destroyDetailIframe()
   // 转发原页直接展示；图文等待布局 ready，超时后解除加载遮罩。
@@ -1217,10 +1208,7 @@ function handleMomentFilterChange(filter: MomentFilter) {
   if (activeMomentFilter.value === filter)
     return
 
-  hoveredMediaId.value = ''
-  cleanupLivePreviewPlayer()
-  Object.keys(previewUrls).forEach(key => delete previewUrls[key])
-  visibleMomentIds.clear()
+  clearMomentPreview()
   activeMomentFilter.value = filter
   resetMomentsScroll()
   void loadMoments(true)
@@ -1235,10 +1223,7 @@ function clearUpUpdateDot(mid: string) {
 }
 
 function prepareMomentListTransition() {
-  hoveredMediaId.value = ''
-  cleanupLivePreviewPlayer()
-  Object.keys(previewUrls).forEach(key => delete previewUrls[key])
-  visibleMomentIds.clear()
+  clearMomentPreview()
   resetMomentsScroll()
 }
 
@@ -1766,6 +1751,7 @@ function prependMoments(items: DisplayMoment[]) {
   rebuildColumnMetrics()
   adjustViewportScrollTop((Math.max(...shifts) + Math.min(...shifts)) / 2)
   updateVirtualColumns()
+  scheduleHeadTrim()
 }
 
 function appendMoments(items: DisplayMoment[]) {
@@ -2038,22 +2024,30 @@ function updateVirtualColumns() {
   }
 
   const viewport = scrollViewportRef.value
-  const scrollTop = viewport?.scrollTop ?? 0
   const viewportHeight = viewport?.clientHeight ?? window.innerHeight
-  const gridOffsetTop = getGridOffsetTop()
-  const viewStart = scrollTop - gridOffsetTop - OVERSCAN_PX
-  const viewEnd = scrollTop - gridOffsetTop + viewportHeight + OVERSCAN_PX
+  const viewTop = (viewport?.scrollTop ?? 0) - getGridOffsetTop()
+  const viewBottom = viewTop + viewportHeight
+  const renderBuffer = Math.min(viewportHeight / 2, MOMENTS_RENDER_BUFFER_PX)
+  const retainBuffer = Math.min(viewportHeight, MOMENTS_RETAIN_BUFFER_PX)
 
   const previous = virtualColumns.value
   let maxHeadOffset = 0
   const next = momentColumns.value.map((column, columnIndex) => {
     const headOffset = getColumnHeadOffset(columnIndex)
     maxHeadOffset = Math.max(maxHeadOffset, headOffset)
-    const { start, end, topPad, bottomPad } = columnMetrics[columnIndex].getWindow(viewStart - headOffset, viewEnd - headOffset)
+    const { start, end, topPad, bottomPad } = columnMetrics[columnIndex].getWindow(
+      viewTop - renderBuffer - headOffset,
+      viewBottom + renderBuffer - headOffset,
+      {
+        start: viewTop - retainBuffer - headOffset,
+        end: viewBottom + retainBuffer - headOffset,
+        isMounted: index => cardElements.has(column[index].id),
+      },
+    )
     return { topPad: getVirtualTopPad(headOffset, start, topPad), bottomPad, items: column.slice(start, end) }
   })
   isNearTrimmedHead.value = hasTrimmedHead.value
-    && scrollTop - gridOffsetTop < maxHeadOffset + viewportHeight
+    && viewTop < maxHeadOffset + viewportHeight
   // 滚动尚未跨卡片边界时复用窗口，避免每帧触发卡片 patch / ref 回调与测量。
   if (next.length !== previous.length || next.some((column, index) => {
     const old = previous[index]
@@ -2062,30 +2056,6 @@ function updateVirtualColumns() {
       || column.items.some((moment, itemIndex) => moment !== old.items[itemIndex])
   })) {
     virtualColumns.value = next
-  }
-
-  prunePreviewCache()
-}
-
-function prunePreviewCache() {
-  const keys = Object.keys(previewUrls)
-  if (keys.length <= MAX_PREVIEW_CACHE)
-    return
-
-  keys.forEach((id) => {
-    if (id === hoveredMediaId.value)
-      return
-    if (visibleMomentIds.has(id))
-      return
-    delete previewUrls[id]
-  })
-
-  // 仍过多时淘汰更早的非悬停项
-  const remain = Object.keys(previewUrls).filter(id => id !== hoveredMediaId.value)
-  if (remain.length > MAX_PREVIEW_CACHE) {
-    remain.slice(0, remain.length - MAX_PREVIEW_CACHE).forEach((id) => {
-      delete previewUrls[id]
-    })
   }
 }
 
@@ -2100,7 +2070,7 @@ function getVirtualTopPad(headOffset: number, start: number, topPad: number) {
 }
 
 function scheduleHeadTrim() {
-  if (headTrimTimer || moments.value.length <= MOMENTS_MEMORY_MAX_ITEMS)
+  if (isMomentsDisposed || document.hidden || headTrimTimer || moments.value.length <= MOMENTS_MEMORY_MAX_ITEMS)
     return
   headTrimTimer = setTimeout(() => {
     headTrimTimer = null
@@ -2112,6 +2082,7 @@ function scheduleHeadTrim() {
       return
     if (
       isLoading.value
+      || isLoadingNewerMoments.value
       || pendingPaginationScrollRestores > 0
       || Date.now() - lastScrollAt < 480
     ) {
@@ -2128,26 +2099,22 @@ function cancelHeadTrim() {
   headTrimTimer = null
 }
 
-function releaseTrimmedMomentState(ids: Set<string>) {
+function releaseMomentState(ids: Set<string>) {
   ids.forEach((id) => {
     delete cardHeights[id]
     delete coverRatios[id]
-    delete previewUrls[id]
     settledHeights.delete(id)
     revealedCardIds.delete(id)
     prependedCardIds.delete(id)
     readyCardIds.delete(id)
     enteringCardIds.delete(id)
-    visibleMomentIds.delete(id)
     const enterTimer = cardEnterTimers.get(id)
     if (enterTimer)
       clearTimeout(enterTimer)
     cardEnterTimers.delete(id)
   })
-  if (ids.has(hoveredMediaId.value)) {
-    hoveredMediaId.value = ''
-    cleanupLivePreviewPlayer()
-  }
+  if (ids.has(hoveredMediaId.value))
+    clearMomentPreview()
 }
 
 /**
@@ -2160,11 +2127,11 @@ function trimMomentsHead() {
     return
   const viewport = scrollViewportRef.value
   const columns = momentColumns.value
-  if (!viewport || !columns.length || columnMetrics.length !== columns.length)
+  if (!viewport?.clientHeight || isProgrammaticScrollActive(viewport) || !columns.length || columnMetrics.length !== columns.length)
     return
 
   const viewTop = viewport.scrollTop - getGridOffsetTop()
-  const cutoff = viewTop - Math.max(OVERSCAN_PX, viewport.clientHeight * MOMENTS_TRIM_KEEP_SCREENS)
+  const cutoff = viewTop - viewport.clientHeight * MOMENTS_TRIM_KEEP_SCREENS
   if (cutoff <= 0)
     return
 
@@ -2207,7 +2174,7 @@ function trimMomentsHead() {
   columnHeadOffsets = nextOffsets.map(offset => offset - collapse)
   momentColumns.value = columns.map((column, columnIndex) => column.slice(removeCounts[columnIndex]))
   moments.value = moments.value.filter(moment => !removedIds.has(moment.id))
-  releaseTrimmedMomentState(removedIds)
+  releaseMomentState(removedIds)
   // 列首已不是本轮加载的最新内容，停止向上衔接更新的动态。
   hasNewerMoments.value = false
   hasTrimmedHead.value = true
@@ -2272,19 +2239,14 @@ function bindCardEl(el: Element | null, moment: DisplayMoment) {
       visibilityObserver?.unobserve(previous)
       cardElements.delete(moment.id)
     }
-    visibleMomentIds.delete(moment.id)
     readyCardIds.delete(moment.id)
     enteringCardIds.delete(moment.id)
     const enterTimer = cardEnterTimers.get(moment.id)
     if (enterTimer)
       clearTimeout(enterTimer)
     cardEnterTimers.delete(moment.id)
-    if (hoveredMediaId.value === moment.id) {
-      hoveredMediaId.value = ''
-      cleanupLivePreviewPlayer()
-    }
-    if (previewUrls[moment.id])
-      delete previewUrls[moment.id]
+    if (hoveredMediaId.value === moment.id)
+      clearMomentPreview()
     return
   }
 
@@ -2324,7 +2286,7 @@ function setupVirtualObservers() {
     entries.forEach((entry) => {
       const card = entry.target as HTMLElement
       const id = card.dataset.momentId
-      if (!id)
+      if (!id || cardElements.get(id) !== card)
         return
       fitVideoCardDescription(card)
       const next = Math.round(entry.contentRect.height)
@@ -2341,24 +2303,14 @@ function setupVirtualObservers() {
   })
 
   visibilityObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      const id = (entry.target as HTMLElement).dataset.momentId
-      if (!id)
-        return
-      if (entry.isIntersecting)
-        visibleMomentIds.add(id)
-      else
-        visibleMomentIds.delete(id)
-
-      // 离开视口时释放该卡预览资源
-      if (!entry.isIntersecting && hoveredMediaId.value !== id && previewUrls[id])
-        delete previewUrls[id]
-    })
-    prunePreviewCache()
+    const hoveredCard = cardElements.get(hoveredMediaId.value)
+    if (!hoveredCard || activePreviewVideo?.element.matches(':fullscreen'))
+      return
+    // 卡片仍在挂载缓冲区内时，滑出视口也立即释放预览。
+    if (entries.findLast(entry => entry.target === hoveredCard)?.isIntersecting === false)
+      clearMomentPreview()
   }, {
     root: scrollViewportRef.value,
-    rootMargin: '200px 0px',
-    threshold: 0.01,
   })
 
   // 观察器重建后重新绑定当前虚拟窗口内的卡片
@@ -2372,6 +2324,7 @@ function handleViewportScroll() {
   hasFeedScrollSinceReset = true
   lastScrollAt = Date.now()
   scheduleVirtualUpdate()
+  scheduleHeadTrim()
 }
 
 function attachViewportScroll() {
@@ -2397,12 +2350,14 @@ function handleCoverLoad(event: Event, momentId: string) {
   if (!ratio)
     return
   const moment = moments.value.find(item => item.id === momentId)
+  if (!moment)
+    return
   const prevRatio = coverRatios[momentId]
   coverRatios[momentId] = ratio
 
   // 封面比例变化会改估算高度；若尚未实测稳定，用估算高度更新并补偿滚动
   if (!settledHeights.has(momentId) && (!prevRatio || Math.abs(prevRatio - ratio) > 0.01)) {
-    if (moment && !cardHeights[momentId]) {
+    if (!cardHeights[momentId]) {
       commitCardHeight(momentId, estimateCardHeight(moment), { force: true })
       scheduleVirtualUpdate()
     }
@@ -2443,6 +2398,12 @@ function cleanupLivePreviewPlayer() {
   }
   releasePreviewVideoElement(activePreviewVideo?.element)
   activePreviewVideo = null
+}
+
+function clearMomentPreview() {
+  hoveredMediaId.value = ''
+  previewUrl.value = ''
+  cleanupLivePreviewPlayer()
 }
 
 async function setupStreamPreview(url: string, videoEl: HTMLVideoElement, momentId: string) {
@@ -2504,14 +2465,8 @@ function cacheVideoCid(bvid: string, cid: number) {
     if (!oldestBvid)
       break
     videoCidCache.delete(oldestBvid)
+    delete videoAspectRatios[oldestBvid]
   }
-}
-
-function cacheVideoAspectRatio(bvid: string, dimension: any) {
-  const ratio = getDimensionAspectRatio(dimension)
-  if (ratio)
-    videoAspectRatios[bvid] = ratio
-  return ratio
 }
 
 async function getVideoCid(bvid: string) {
@@ -2527,11 +2482,12 @@ async function getVideoCid(bvid: string) {
 
   const request = api.video.getVideoPageList({ bvid })
     .then((response) => {
-      if (response.code === 0)
-        cacheVideoAspectRatio(bvid, response.data?.[0]?.dimension)
       const cid = Number(response.code === 0 ? response.data?.[0]?.cid : 0)
-      if (!cid)
+      if (!cid || isMomentsDisposed)
         return undefined
+      const ratio = getDimensionAspectRatio(response.data?.[0]?.dimension)
+      if (ratio)
+        videoAspectRatios[bvid] = ratio
       cacheVideoCid(bvid, cid)
       return cid
     })
@@ -2542,9 +2498,12 @@ async function getVideoCid(bvid: string) {
 }
 
 function handleMediaEnter(moment: DisplayMoment) {
-  if (!isMomentPreviewEnabled(moment) || hoveredMediaId.value === moment.id)
+  if (document.hidden || !isMomentPreviewEnabled(moment) || hoveredMediaId.value === moment.id
+    || activePreviewVideo?.element.matches(':fullscreen')) {
     return
+  }
 
+  clearMomentPreview()
   hoveredMediaId.value = moment.id
   const generation = previewRequestGeneration
   const delay = moment.isLive ? 0 : (settings.value.momentsVideoPreviewDelayed ? 1200 : 500)
@@ -2555,9 +2514,9 @@ function handleMediaEnter(moment: DisplayMoment) {
 }
 
 async function loadMomentPreview(moment: DisplayMoment, generation: number) {
-  const isCurrentRequest = () => generation === previewRequestGeneration
+  const isCurrentRequest = () => !document.hidden && generation === previewRequestGeneration
     && hoveredMediaId.value === moment.id && isMomentPreviewEnabled(moment)
-  if (!isCurrentRequest() || previewUrls[moment.id])
+  if (!isCurrentRequest() || previewUrl.value)
     return
 
   try {
@@ -2570,7 +2529,7 @@ async function loadMomentPreview(moment: DisplayMoment, generation: number) {
       if (!isCurrentRequest())
         return
       if (res.code === 0 && res.data?.durl?.[0]?.url)
-        previewUrls[moment.id] = httpsUrl(res.data.durl[0].url)
+        previewUrl.value = httpsUrl(res.data.durl[0].url)
       return
     }
 
@@ -2588,7 +2547,7 @@ async function loadMomentPreview(moment: DisplayMoment, generation: number) {
       && preview.data?.durl?.[0]?.url
       && isCurrentRequest()
     ) {
-      previewUrls[moment.id] = httpsUrl(preview.data.durl[0].url)
+      previewUrl.value = httpsUrl(preview.data.durl[0].url)
     }
   }
   catch {
@@ -2597,15 +2556,8 @@ async function loadMomentPreview(moment: DisplayMoment, generation: number) {
 }
 
 function handleMediaLeave(moment: DisplayMoment) {
-  if (activePreviewVideo?.id === moment.id && activePreviewVideo.element.matches(':fullscreen'))
-    return
-  if (hoveredMediaId.value !== moment.id)
-    return
-  hoveredMediaId.value = ''
-  cleanupLivePreviewPlayer()
-  // 悬停结束即释放预览地址，避免缓存堆积
-  if (previewUrls[moment.id])
-    delete previewUrls[moment.id]
+  if (hoveredMediaId.value === moment.id && !activePreviewVideo?.element.matches(':fullscreen'))
+    clearMomentPreview()
 }
 
 function openClassifiedLink(url: string, kind: MomentLinkKind, video?: DisplayForwardVideo) {
@@ -2657,8 +2609,7 @@ function openClassifiedLink(url: string, kind: MomentLinkKind, video?: DisplayFo
     return
   }
 
-  hoveredMediaId.value = ''
-  cleanupLivePreviewPlayer()
+  clearMomentPreview()
   if (mode === 'background')
     void openLinkInBackground(url)
   else if (mode === 'currentTab')
@@ -2677,8 +2628,8 @@ function bindPreviewVideo(el: Element | null, moment: DisplayMoment) {
       cleanupLivePreviewPlayer()
     return
   }
-  const url = previewUrls[moment.id]
-  if (!url || hoveredMediaId.value !== moment.id)
+  const url = previewUrl.value
+  if (document.hidden || !url || hoveredMediaId.value !== moment.id)
     return
 
   if (moment.isLive || url.includes('.flv')) {
@@ -2695,15 +2646,16 @@ function bindPreviewVideo(el: Element | null, moment: DisplayMoment) {
 
 function playPreview(event: Event) {
   const video = event.target as HTMLVideoElement
-  void video.play().catch(() => {})
+  if (!document.hidden && activePreviewVideo?.element === video)
+    void video.play().catch(() => {})
 }
 
 /** 删除动态后就地移除卡片，不重新分配列。 */
 function removeMoment(moment: DisplayMoment) {
   const keep = (item: DisplayMoment) => item.id !== moment.id
-  handleMediaLeave(moment)
   moments.value = moments.value.filter(keep)
   momentColumns.value = momentColumns.value.map(column => column.filter(keep))
+  releaseMomentState(new Set([moment.id]))
   rebuildColumnMetrics()
   updateVirtualColumns()
 }
@@ -2786,11 +2738,14 @@ async function toggleMomentReservation(moment: DisplayMoment) {
 }
 
 function handleDocumentVisibilityChange() {
-  // 动态接口不返回稍后再看状态；回到本页时按共享缓存的有效期重新比对
-  if (document.visibilityState === 'visible') {
-    void ensureWatchLaterState()
-    scheduleHeadTrim()
+  if (document.hidden) {
+    clearMomentPreview()
+    cancelHeadTrim()
+    return
   }
+  // 动态接口不返回稍后再看状态；回到本页时按共享缓存的有效期重新比对
+  void ensureWatchLaterState()
+  scheduleHeadTrim()
 }
 
 async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = false) {
@@ -2808,7 +2763,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     cardMetricPositions.clear()
     virtualColumns.value = []
     Object.keys(cardHeights).forEach(key => delete cardHeights[key])
-    Object.keys(previewUrls).forEach(key => delete previewUrls[key])
     Object.keys(coverRatios).forEach(key => delete coverRatios[key])
     readyCardIds.clear()
     enteringCardIds.clear()
@@ -2816,10 +2770,8 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     cardEnterTimers.forEach(timer => clearTimeout(timer))
     cardEnterTimers.clear()
     settledHeights.clear()
-    visibleMomentIds.clear()
     likingMomentIds.clear()
-    cleanupLivePreviewPlayer()
-    hoveredMediaId.value = ''
+    clearMomentPreview()
     isInitialLoading.value = true
     hasFeedScrollSinceReset = false
     filterScanRawCount.value = 0
@@ -3219,13 +3171,11 @@ onBeforeUnmount(() => {
   upListResizeObserver?.disconnect()
   upListResizeObserver = undefined
   detachViewportScroll()
-  cleanupLivePreviewPlayer()
+  clearMomentPreview()
   closeMomentDetail()
-  Object.keys(previewUrls).forEach(key => delete previewUrls[key])
   videoCidCache.clear()
   videoCidRequests.clear()
   Object.keys(videoAspectRatios).forEach(key => delete videoAspectRatios[key])
-  visibleMomentIds.clear()
   cardElements.clear()
   columnMetrics = []
   columnHeadOffsets = []
@@ -3355,16 +3305,7 @@ watch(
     () => settings.value.momentsVideoPreviewDelayed,
     () => settings.value.momentsOnlyCoverVideoPreview,
   ],
-  () => {
-    const activeMoment = moments.value.find(moment => moment.id === hoveredMediaId.value)
-    if (!activeMoment)
-      return
-
-    hoveredMediaId.value = ''
-    cleanupLivePreviewPlayer()
-    if (previewUrls[activeMoment.id])
-      delete previewUrls[activeMoment.id]
-  },
+  clearMomentPreview,
 )
 </script>
 
@@ -3793,8 +3734,8 @@ watch(
                 :image-ratio="coverRatios[moment.id]"
                 :ready="readyCardIds.has(moment.id)"
                 :entering="enteringCardIds.has(moment.id)"
-                :preview-active="Boolean(hoveredMediaId === moment.id && previewUrls[moment.id])"
-                :preview-url="previewUrls[moment.id]"
+                :preview-active="hoveredMediaId === moment.id && Boolean(previewUrl)"
+                :preview-url="hoveredMediaId === moment.id ? previewUrl : undefined"
                 :is-like-loading="likingMomentIds.has(moment.id)"
                 :is-reservation-loading="reservationLoadingMomentIds.has(moment.id)"
                 :last-seen="moment.id === lastSeenMomentId"
