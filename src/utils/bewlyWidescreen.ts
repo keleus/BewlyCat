@@ -1214,6 +1214,16 @@ function injectLayoutStyle() {
         calc(100vw - var(--bewly-widescreen-player-target-width)),
         min(var(--bewly-widescreen-sidebar-narrow-width), var(--bewly-widescreen-sidebar-max))
       );
+      /* 侧栏的可用空间等于窗口宽度减去全高视频所需的宽度。 */
+      --bewly-widescreen-sidebar-available-width: max(
+        0px,
+        calc(100vw - var(--bewly-widescreen-player-target-width))
+      );
+      --bewly-widescreen-sidebar-full-width: min(
+        var(--bewly-widescreen-sidebar-expanded-width),
+        var(--bewly-widescreen-sidebar-available-width),
+        var(--bewly-widescreen-sidebar-max)
+      );
       --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-narrow-width), var(--bewly-widescreen-sidebar-max));
       --bewly-widescreen-sidebar-panel-width: var(--bewly-widescreen-sidebar-column-width);
       --bewly-widescreen-sidebar-offset: 0px;
@@ -1252,8 +1262,9 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-offset: 0px;
     }
 
-    /* 超宽窗口最多保留 96px 侧栏入口，但不能挤占全高视频所需的宽度。
-       视频占满窗口时入口收至零宽，通过窗口边缘触发展开。 */
+    /* 超宽窗口且剩余空间不足以完整显示侧栏时，最多保留 96px 侧栏入口，
+       但不能挤占全高视频所需的宽度。视频占满窗口时入口收至零宽，通过窗口
+       边缘触发展开。 */
     #${ROOT_ID}[data-wide-video-priority="true"] {
       --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-collapsed-width), var(--bewly-widescreen-sidebar-fit-width));
       --bewly-widescreen-sidebar-panel-width: min(
@@ -1267,6 +1278,13 @@ function injectLayoutStyle() {
 
     #${ROOT_ID}[data-wide-video-priority="true"][data-sidebar-expanded="true"] {
       --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-panel-width);
+      --bewly-widescreen-sidebar-offset: 0px;
+    }
+
+    /* 空间足够时，侧栏在可用宽度内完整显示。 */
+    #${ROOT_ID}[data-sidebar-full="true"] {
+      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-full-width);
+      --bewly-widescreen-sidebar-panel-width: var(--bewly-widescreen-sidebar-full-width);
       --bewly-widescreen-sidebar-offset: 0px;
     }
 
@@ -3202,41 +3220,52 @@ function updateSidebarLayoutState() {
   const availableHeight = state.playerFrame.getBoundingClientRect().height
   const layoutAspect = Number.parseFloat(state.root.style.getPropertyValue('--bewly-widescreen-layout-aspect')) || 16 / 9
   const targetWidth = availableHeight * layoutAspect
+  const availableWidth = Math.max(window.innerWidth - targetWidth, 0)
   const narrowWidth = Math.min(
     Math.max(SIDEBAR_NARROW_MIN_WIDTH, window.innerWidth * 0.26),
     SIDEBAR_NARROW_MAX_WIDTH,
     window.innerWidth * 0.4,
   )
-  const fitWidth = Math.min(
-    Math.max(window.innerWidth - targetWidth, 0),
-    narrowWidth,
-  )
-  const gapWidth = Math.max((window.innerWidth - targetWidth) / 2, 0)
+  const expandedWidth = Math.min(Math.max(480, window.innerWidth * 0.32), 600, window.innerWidth * 0.4)
+  const fitWidth = Math.min(availableWidth, narrowWidth)
+  const gapWidth = availableWidth / 2
   const hasCustomWidth = state.customSidebarWidth > 0
+  const autoFit = !hasCustomWidth && state.sidebarMode === 'fit'
+  // 剩余空间达到侧栏的最小宽度时，直接完整显示侧栏。
+  const showFullSidebar = autoFit && availableWidth >= SIDEBAR_NARROW_MIN_WIDTH - 0.5
   // 只根据窗口能否同时容纳 16:9 全高视频与正常侧栏判断超宽余量，避免把
   // 普通 16:9 窗口播放 4:3 或竖屏视频时产生的空白误判成超宽屏。
   const ultrawideSpareWidth = Math.max(window.innerWidth - availableHeight * (16 / 9), 0)
-  const wideVideoPriority = !hasCustomWidth
-    && state.sidebarMode === 'fit'
+  const wideVideoPriority = autoFit
+    && !showFullSidebar
     && ultrawideSpareWidth >= SIDEBAR_NARROW_MIN_WIDTH
   state.root.dataset.wideVideoPriority = String(wideVideoPriority)
+  state.root.dataset.sidebarFull = String(showFullSidebar)
+  if (showFullSidebar)
+    delete state.root.dataset.sidebarExpanded
   state.root.dataset.sidebarEdgeReveal = String(
     !settings.value.enableBewlyWidescreenSidebarResize
-    && !hasCustomWidth
-    && state.sidebarMode === 'fit'
+    && autoFit
     && fitWidth <= 1,
   )
 
   const { minWidth, maxWidth } = getSidebarResizeBounds()
   const customWidth = Math.min(Math.max(state.customSidebarWidth, minWidth), maxWidth)
-  const expandedWidth = Math.min(Math.max(480, window.innerWidth * 0.32), 600, window.innerWidth * 0.4)
-  const visibleSidebarWidth = hasCustomWidth
-    ? customWidth
-    : state.sidebarMode === 'narrow'
-      ? narrowWidth
-      : wideVideoPriority
-        ? state.root.dataset.sidebarExpanded === 'true' ? expandedWidth : Math.min(SIDEBAR_VIDEO_PRIORITY_COLLAPSED_WIDTH, fitWidth)
-        : fitWidth
+  let visibleSidebarWidth = fitWidth
+  if (hasCustomWidth) {
+    visibleSidebarWidth = customWidth
+  }
+  else if (state.sidebarMode === 'narrow') {
+    visibleSidebarWidth = narrowWidth
+  }
+  else if (showFullSidebar) {
+    visibleSidebarWidth = Math.min(availableWidth, expandedWidth)
+  }
+  else if (wideVideoPriority) {
+    visibleSidebarWidth = state.root.dataset.sidebarExpanded === 'true'
+      ? expandedWidth
+      : Math.min(SIDEBAR_VIDEO_PRIORITY_COLLAPSED_WIDTH, fitWidth)
+  }
 
   // 视频居中基准与侧栏策略相互独立：只有当前可见侧栏确实能放入单侧空白时
   // 才使用视口居中，否则安全回退到侧栏外区域居中。
@@ -3247,6 +3276,7 @@ function updateSidebarLayoutState() {
 
   // 展开入口只由自动侧栏布局决定，视频居中方式不再改变侧栏状态。
   const showToggle = !settings.value.enableBewlyWidescreenSidebarResize && !hasCustomWidth
+    && !showFullSidebar
     && (state.sidebarMode === 'narrow' || wideVideoPriority || narrowWidth - fitWidth > 1)
   state.root.dataset.sidebarToggleVisible = String(showToggle)
 
@@ -3455,6 +3485,9 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
 
   function expandSidebar(event?: PointerEvent) {
     if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
+      return
+    // 侧栏已按可用宽度完整显示时没有可展开的抽屉，无需悬停或点击展开。
+    if (currentState.root.dataset.sidebarFull === 'true')
       return
     if (currentState.root.dataset.sidebarExpanded === 'true')
       return

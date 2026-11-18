@@ -594,7 +594,7 @@ settings:
     bewly_widescreen_sidebar_position_left: 左侧
     bewly_widescreen_sidebar_position_right: 右侧
     bewly_widescreen_auto_collapse_sidebar: 自动收起 Bewly 宽屏侧栏
-    bewly_widescreen_auto_collapse_sidebar_desc: 优先保持视频完整高度：空间不足时自动收起侧栏，超宽窗口显示为窄条，悬停展开。关闭后侧栏完整显示并压缩视频。与手动调整侧栏宽度互斥。
+    bewly_widescreen_auto_collapse_sidebar_desc: 优先保持视频完整高度。空间足够时侧栏完整显示，空间不足时自动收起，悬停时展开。关闭后侧栏完整显示并压缩视频。与手动调整侧栏宽度互斥。
     bewly_widescreen_video_alignment: 视频居中基准
     bewly_widescreen_video_alignment_desc: 选择视频在侧栏以外的区域居中，或在空间允许时相对整个窗口居中。
     bewly_widescreen_video_alignment_sidebar: 侧栏外区域（默认）

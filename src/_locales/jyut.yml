@@ -1233,7 +1233,7 @@ settings:
     bewly_widescreen_sidebar_position_left: 左側
     bewly_widescreen_sidebar_position_right: 右側
     bewly_widescreen_auto_collapse_sidebar: 自動收起 Bewly 闊螢幕側欄
-    bewly_widescreen_auto_collapse_sidebar_desc: 優先保持影片完整高度：空間唔夠時自動收起側欄，超闊視窗顯示做窄條，懸停展開。閂咗之後側欄完整顯示並壓縮影片。同手動調整側欄闊度互斥。
+    bewly_widescreen_auto_collapse_sidebar_desc: 優先保持影片完整高度。空間夠嘅時候側欄完整顯示，唔夠就自動收起，懸停時展開。閂咗之後側欄完整顯示並壓縮影片。同手動調整側欄闊度互斥。
     bewly_widescreen_video_alignment: 影片置中基準
     bewly_widescreen_video_alignment_desc: 揀影片喺側欄以外嘅區域置中，或者空間容許時相對成個視窗置中。
     bewly_widescreen_video_alignment_sidebar: 側欄外區域（預設）

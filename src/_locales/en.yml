@@ -609,7 +609,7 @@ settings:
     bewly_widescreen_sidebar_position_left: Left
     bewly_widescreen_sidebar_position_right: Right
     bewly_widescreen_auto_collapse_sidebar: Auto-collapse Bewly Widescreen sidebar
-    bewly_widescreen_auto_collapse_sidebar_desc: 'Keep the video at full height: the sidebar collapses when space is short and shows as a narrow strip in ultrawide windows, expanding on hover. When off, the full sidebar stays visible and the video shrinks. Cannot be used with manual sidebar resizing.'
+    bewly_widescreen_auto_collapse_sidebar_desc: Keeps the video at full height. The sidebar stays fully visible when there is enough space. When space is limited, it collapses and expands on hover. When off, the full sidebar stays visible and the video shrinks. Cannot be used with manual sidebar resizing.
     bewly_widescreen_video_alignment: Video centering reference
     bewly_widescreen_video_alignment_desc: Center the video within the area outside the sidebar, or relative to the whole window when space permits.
     bewly_widescreen_video_alignment_sidebar: Area outside sidebar (default)
