@@ -50,9 +50,10 @@ useUserRelationScope(() => {
   const mid = getAuthorMid()
   return mid ? [mid] : []
 })
-const videoOptions = computed(() => [
-  { id: 1, key: 'notInterested' as const, name: t('video_card.operation.not_interested') },
-  { id: 2, key: 'notInterestedUploader' as const, name: t('video_card.operation.not_interested_uploader') },
+// B 站 Web 首页的上报原因独立于菜单序号。
+const webVideoOptions = computed(() => [
+  { id: 1, reasonId: 1, key: 'notInterested' as const, name: t('video_card.operation.not_interested') },
+  { id: 2, reasonId: 4, key: 'notInterestedUploader' as const, name: t('video_card.operation.not_interested_uploader') },
 ].filter(option => isOptionVisible(option.key)))
 const appVideoOptions = computed(() => (props.video.threePointV2 ?? []).filter(option =>
   option.type !== ThreePointV2Type.WatchLater
@@ -69,11 +70,11 @@ const recommendationGroup = computed((): ContextMenuPanelItem[] => {
     }))
   }
   if (getVideoType() === 'rcmd') {
-    return videoOptions.value.map(option => ({
+    return webVideoOptions.value.map(option => ({
       key: `rcmd-${option.id}`,
       name: option.name,
       icon: 'i-solar:confounded-circle-bold-duotone',
-      select: () => handleMoreCommand(option.id),
+      select: () => handleWebMoreCommand(option.reasonId),
     }))
   }
   return []
@@ -243,7 +244,7 @@ function getAuthorMid() {
     : props.video.author.mid
 }
 
-async function submitWebDislike(command: number) {
+async function submitWebDislike(reasonId: number) {
   const csrf = getCSRF()
   const authorMid = getAuthorMid()
 
@@ -261,7 +262,7 @@ async function submitWebDislike(command: number) {
       id: props.video.id,
       mid: authorMid,
       track_id: props.video.trackId || '',
-      reason_id: command,
+      reason_id: reasonId,
       csrf,
     })
 
@@ -276,9 +277,9 @@ async function submitWebDislike(command: number) {
   }
 }
 
-function handleMoreCommand(command: number) {
+function handleWebMoreCommand(reasonId: number) {
   handleRemoved()
-  void submitWebDislike(command)
+  void submitWebDislike(reasonId)
 }
 
 function handleAppMoreCommand(command: ThreePointV2Type) {
