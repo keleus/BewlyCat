@@ -62,7 +62,8 @@ function mountOptionsPage() {
 async function bootstrap() {
   setBilibiliCookieSnapshot(new Map())
   browser.cookies.onChanged.addListener(({ cookie }) => {
-    if (cookie.domain.endsWith('bilibili.com'))
+    const normalizedDomain = cookie.domain.trim().toLowerCase().replace(/^\.+/, '')
+    if (normalizedDomain === 'bilibili.com' || normalizedDomain.endsWith('.bilibili.com'))
       void syncBilibiliCookies()
   })
 
