@@ -1289,7 +1289,7 @@ export function resetPlaybackRate() {
   }
 }
 
-// 应用记住的倍速
+// 静默恢复记住的倍速，播放器初始化时可能多次调用。
 export function applyRememberedPlaybackRate() {
   if (applyRateRetryTimer !== undefined)
     window.clearTimeout(applyRateRetryTimer)
@@ -1324,10 +1324,6 @@ function tryApplyRememberedPlaybackRate() {
     // 媒体加载会将 playbackRate 恢复为 defaultPlaybackRate，因此两者都要同步。
     video.defaultPlaybackRate = savedRate
     video.playbackRate = savedRate
-    // 只在倍速不是1时显示状态
-    if (savedRate !== 1) {
-      showState(t('player_state.speed', { rate: savedRate }))
-    }
   }
 }
 
