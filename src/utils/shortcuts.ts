@@ -1,3 +1,5 @@
+import { watch } from 'vue'
+
 import { settings } from '~/logic'
 import type { BaseShortcutSetting } from '~/logic/storage'
 import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
@@ -20,7 +22,7 @@ import {
   webFullscreenClick,
   widescreenClick,
 } from '~/utils/player'
-import { getShortcutKeyCandidates, normalizeShortcutKey } from '~/utils/shortcutKeys'
+import { getShortcutKeyCandidates, normalizeShortcutKey, resolveEffectiveShortcutSetting } from '~/utils/shortcutKeys'
 import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 
 // 定义快捷键处理器类型
@@ -81,20 +83,11 @@ export function getShortcutHandler(id: string): ShortcutHandler | undefined {
   return shortcutHandlers[id]
 }
 
-// 放大视频旧默认为 Shift++ 并启用，现已默认未绑定。按新格式 Shift++ 等同 +，会在关闭倍速快捷键后抢占 + 键。
-// 新录制不会产生 Shift++，仍是该值即为未改动的旧默认，运行时按未绑定处理，不改写用户设置。
-const LEGACY_DEFAULT_SHORTCUT_KEYS: Record<string, string> = {
-  increaseVideoSize: 'Shift++',
-}
-
 /**
  * 实际生效的快捷键配置；未改动的旧默认绑定视为未绑定。
  */
 export function getEffectiveShortcutSetting(id: string): BaseShortcutSetting | undefined {
-  const shortcutConfig = settings.value.shortcuts?.[id]
-  if (shortcutConfig && LEGACY_DEFAULT_SHORTCUT_KEYS[id] === shortcutConfig.key)
-    return { key: '', enabled: false }
-  return shortcutConfig
+  return resolveEffectiveShortcutSetting(id, settings.value.shortcuts)
 }
 
 // 缓存快捷键配置：标准化后的按键 -> 快捷键 ID，配置靠前的快捷键优先
@@ -236,6 +229,14 @@ export function installShortcutListener() {
   window.addEventListener('keydown', handleShortcutKeydown, true)
   window.addEventListener('keypress', handleShortcutKeypress, true)
   window.addEventListener('keyup', handleShortcutKeyup, true)
+  watch(
+    () => settings.value.shortcuts,
+    () => {
+      lastSettingsUpdate = 0
+      cachedShortcutIds = null
+    },
+    { deep: true },
+  )
 }
 
 export function setupShortcutHandlers() {

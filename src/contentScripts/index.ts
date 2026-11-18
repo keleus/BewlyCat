@@ -235,6 +235,32 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializeContentScript) {
+  function ensureHostBundledStyles() {
+    const attach = () => {
+      const root = document.documentElement
+      if (!root)
+        return false
+      for (const stale of Array.from(root.querySelectorAll(':scope > style[data-bewly-host-styles]')))
+        stale.remove()
+      const hostStyleEl = document.createElement('style')
+      hostStyleEl.setAttribute('data-bewly-host-styles', '')
+      hostStyleEl.textContent = bundledShadowStyleText
+      root.prepend(hostStyleEl)
+      return true
+    }
+
+    if (attach())
+      return
+
+    const observer = new MutationObserver(() => {
+      if (attach())
+        observer.disconnect()
+    })
+    observer.observe(document, { childList: true })
+  }
+
+  ensureHostBundledStyles()
+
   const playerModeLoadSettleDelay = 200
   const playerModeReadinessRetryInterval = 200
   const playerModeLoadFallbackTimeout = 4000
@@ -1583,11 +1609,13 @@ else if (shouldInitializeContentScript) {
     const shadowDOM = container.attachShadow?.({ mode: 'open' }) || container
     const resetStyleEl = document.createElement('style')
     resetStyleEl.textContent = `${RESET_BEWLY_CSS}`
-    const styleEl = document.createElement('style')
-    styleEl.setAttribute('data-bewly-bundled-styles', '')
-    styleEl.textContent = bundledShadowStyleText
     shadowDOM.appendChild(resetStyleEl)
-    shadowDOM.appendChild(styleEl)
+    if ((shadowDOM as Node) !== container) {
+      const styleEl = document.createElement('style')
+      styleEl.setAttribute('data-bewly-bundled-styles', '')
+      styleEl.textContent = bundledShadowStyleText
+      shadowDOM.appendChild(styleEl)
+    }
     shadowDOM.appendChild(root)
 
     // startShadowDOMStyleInjection()
@@ -1679,6 +1707,14 @@ else if (shouldInitializeContentScript) {
   watch(
     () => settings.value.language,
     () => syncRandomPlayUI(),
+  )
+
+  watch(
+    () => settings.value.keyboard,
+    () => {
+      if (isVideoPlaybackPage() || isVideoOrBangumiPage())
+        setupShortcutHandlers()
+    },
   )
 
   // 只追踪网页脚本实际使用的字段，避免无关设置更新触发通信及评论重新处理。

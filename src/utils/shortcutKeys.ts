@@ -214,3 +214,27 @@ export function formatShortcutKey(value: string): string {
   const { modifiers, mainKey } = splitShortcutKey(normalized)
   return [...modifiers.map(modifier => modifier === 'Meta' ? 'Cmd' : modifier === 'Alt' ? 'Option' : modifier), mainKey].join('+')
 }
+
+export interface ShortcutBindingLike {
+  key: string
+  enabled: boolean
+}
+
+// 放大视频旧默认为 Shift++ 并启用，现已默认未绑定。按新格式 Shift++ 等同 +，会在关闭倍速快捷键后抢占 + 键。
+// 新录制不会产生 Shift++，仍是该值即为未改动的旧默认，运行时按未绑定处理，不改写用户设置。
+const LEGACY_DEFAULT_SHORTCUT_KEYS: Record<string, string> = {
+  increaseVideoSize: 'Shift++',
+}
+
+/**
+ * 实际生效的快捷键配置；未改动的旧默认绑定视为未绑定。
+ */
+export function resolveEffectiveShortcutSetting<T extends ShortcutBindingLike>(
+  id: string,
+  shortcuts?: Record<string, T | undefined>,
+): T | { key: string, enabled: false } | undefined {
+  const shortcutConfig = shortcuts?.[id]
+  if (shortcutConfig && LEGACY_DEFAULT_SHORTCUT_KEYS[id] === shortcutConfig.key)
+    return { key: '', enabled: false }
+  return shortcutConfig
+}

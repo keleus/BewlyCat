@@ -26,6 +26,11 @@ const bundledStyleText = (globalThis as typeof globalThis & {
   __BEWLYCAT_BUNDLED_STYLE_TEXT__: string
 }).__BEWLYCAT_BUNDLED_STYLE_TEXT__
 
+const hostStyle = document.createElement('style')
+hostStyle.setAttribute('data-bewly-host-styles', '')
+hostStyle.textContent = bundledStyleText
+document.head.appendChild(hostStyle)
+
 // 扩展页的 document.cookie 读不到 B 站登录态，收藏夹整理等功能依赖这份快照。
 async function syncBilibiliCookies() {
   try {

@@ -13,14 +13,14 @@ export function embedBundledStyles(): Plugin {
     apply: 'build',
     enforce: 'post',
     generateBundle(_options, bundle) {
-      const styleAsset = Object.values(bundle).find(
-        output => output.type === 'asset' && output.fileName === 'style.css',
+      const styleEntry = Object.entries(bundle).find(
+        ([, output]) => output.type === 'asset' && output.fileName === 'style.css',
       )
       const entryChunk = Object.values(bundle).find(
         output => output.type === 'chunk' && output.fileName === 'index.global.js',
       )
 
-      if (!styleAsset || styleAsset.type !== 'asset') {
+      if (!styleEntry || styleEntry[1].type !== 'asset') {
         this.error('Unable to embed bundled styles: style.css was not emitted.')
         return
       }
@@ -29,10 +29,13 @@ export function embedBundledStyles(): Plugin {
         return
       }
 
+      const [styleKey, styleAsset] = styleEntry
       const css = typeof styleAsset.source === 'string'
         ? styleAsset.source
         : new TextDecoder().decode(styleAsset.source)
       entryChunk.code = `globalThis.${BUNDLED_STYLE_GLOBAL}=${JSON.stringify(css)};\n${entryChunk.code}`
+      // 样式已内联到 JS，不再向磁盘写出重复的 style.css。
+      delete bundle[styleKey]
     },
   }
 }

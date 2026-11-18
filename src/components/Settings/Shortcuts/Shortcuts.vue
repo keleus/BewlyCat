@@ -10,8 +10,7 @@ import type {
   BaseShortcutSetting,
   ShortcutsSettings,
 } from '~/logic/storage'
-import { formatShortcutKey, getShortcutKeyFromEvent, isSameShortcutKey } from '~/utils/shortcutKeys'
-import { getEffectiveShortcutSetting, setupShortcutHandlers } from '~/utils/shortcuts'
+import { formatShortcutKey, getShortcutKeyFromEvent, isSameShortcutKey, resolveEffectiveShortcutSetting } from '~/utils/shortcutKeys'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
@@ -119,7 +118,7 @@ const vFocusShortcutEditor = {
 
 // --- Helper Functions ---
 function getShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSetting | undefined {
-  return getEffectiveShortcutSetting(String(id))
+  return resolveEffectiveShortcutSetting(String(id), settings.value.shortcuts)
 }
 
 function getDefaultShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSetting | undefined {
@@ -180,14 +179,6 @@ function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
   // Exit editing mode
   editingShortcutId.value = null
   currentKeyCombo.value = '' // 重置当前按键组合
-
-  // Re-register shortcuts to ensure the new shortcut is immediately available
-  try {
-    setupShortcutHandlers()
-  }
-  catch (error) {
-    console.error('Failed to re-register shortcuts:', error)
-  }
 }
 
 function cancelEdit() {
@@ -255,7 +246,6 @@ function resetToDefault(shortcutDef: ConfigurableShortcutDefinition) {
   if (!settings.value.shortcuts)
     settings.value.shortcuts = {}
   settings.value.shortcuts[shortcutDef.id] = { ...defaultSetting }
-  setupShortcutHandlers()
 }
 
 // 只保存最近一次重置前的配置，撤销时整体恢复。
@@ -274,8 +264,6 @@ function resetAllShortcuts() {
         settings.value.shortcuts[shortcutDef.id] = JSON.parse(JSON.stringify(defaultSetting))
     })
   })
-
-  setupShortcutHandlers()
 }
 
 function undoResetAllShortcuts() {
@@ -284,7 +272,6 @@ function undoResetAllShortcuts() {
   cancelEdit()
   settings.value.shortcuts = shortcutResetSnapshot.value
   shortcutResetSnapshot.value = undefined
-  setupShortcutHandlers()
 }
 </script>
 
@@ -302,7 +289,7 @@ function undoResetAllShortcuts() {
         <template #desc>
           <div v-html="t('settings.shortcuts.enable_all_shortcuts_toggle_desc')" />
         </template>
-        <Radio v-model="settings.keyboard" @update:model-value="setupShortcutHandlers" />
+        <Radio v-model="settings.keyboard" />
       </SettingsItem>
       <SettingsItem :title="t('settings.shortcuts.reset_all_ext_shortcuts')" right-width="auto">
         <template #desc>

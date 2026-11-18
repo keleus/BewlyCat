@@ -4,6 +4,7 @@ import process from 'node:process'
 import chokidar from 'chokidar'
 import fs from 'fs-extra'
 
+import { compressContributorsSvg, isCompressedContributorsSvg } from './compressContributorsSvg'
 import { isDev, isFirefox, isSafari, log, r } from './utils'
 
 const extensionDirectory = isFirefox
@@ -66,11 +67,33 @@ async function downloadContributorsImage() {
   }
 }
 
+async function syncCompressedContributorsImage() {
+  let svg = await fs.readFile(contributorsImageCachePath, 'utf-8')
+  if (!isCompressedContributorsSvg(svg)) {
+    const temporaryPath = `${contributorsImageCachePath}.${process.pid}.tmp`
+    try {
+      const compressed = compressContributorsSvg(svg)
+      if (compressed.length > 0 && compressed.length <= svg.length) {
+        await fs.writeFile(temporaryPath, compressed, 'utf-8')
+        await fs.move(temporaryPath, contributorsImageCachePath, { overwrite: true })
+        svg = compressed
+      }
+    }
+    catch (error) {
+      await fs.remove(temporaryPath)
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[PRE] could not compress contributors image, using original: ${message}`)
+    }
+  }
+
+  await fs.outputFile(contributorsImagePath, svg, 'utf-8')
+}
+
 // 开发模式不联网：有缓存就直接用，没有则留给「关于」页在运行时回退到云端图片。
 // 生产构建只在本地没有可用图片时才下载，避免每次打包都等待网络。
 async function prepareContributorsImage() {
   if (await hasUsableImage(contributorsImageCachePath)) {
-    await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
+    await syncCompressedContributorsImage()
     log('PRE', 'use cached contributors image')
     return
   }
@@ -81,7 +104,7 @@ async function prepareContributorsImage() {
   }
 
   if (await downloadContributorsImage()) {
-    await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
+    await syncCompressedContributorsImage()
     log('PRE', 'download contributors image')
   }
 }

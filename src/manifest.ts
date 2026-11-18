@@ -57,7 +57,6 @@ export async function getManifest() {
         matches: [...CONTENT_SCRIPT_MATCHES],
         exclude_matches: [...CONTENT_SCRIPT_EXCLUDE_MATCHES],
         js: ['./dist/contentScripts/pageLoading.js', './dist/contentScripts/index.global.js'],
-        css: ['./dist/contentScripts/style.css'],
         run_at: 'document_start',
         all_frames: true,
       },
