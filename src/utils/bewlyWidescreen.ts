@@ -3232,13 +3232,13 @@ function updateSidebarLayoutState() {
   const hasCustomWidth = state.customSidebarWidth > 0
   const autoFit = !hasCustomWidth && state.sidebarMode === 'fit'
   // 剩余空间达到侧栏的最小宽度时，直接完整显示侧栏。
-  const showFullSidebar = autoFit && availableWidth >= SIDEBAR_NARROW_MIN_WIDTH - 0.5
+  const canShowFullSidebar = availableWidth >= SIDEBAR_NARROW_MIN_WIDTH - 0.5
+  const showFullSidebar = autoFit && canShowFullSidebar
   // 只根据窗口能否同时容纳 16:9 全高视频与正常侧栏判断超宽余量，避免把
   // 普通 16:9 窗口播放 4:3 或竖屏视频时产生的空白误判成超宽屏。
   const ultrawideSpareWidth = Math.max(window.innerWidth - availableHeight * (16 / 9), 0)
-  const wideVideoPriority = autoFit
-    && !showFullSidebar
-    && ultrawideSpareWidth >= SIDEBAR_NARROW_MIN_WIDTH
+  const canUltrawideCollapse = !canShowFullSidebar && ultrawideSpareWidth >= SIDEBAR_NARROW_MIN_WIDTH
+  const wideVideoPriority = autoFit && canUltrawideCollapse
   state.root.dataset.wideVideoPriority = String(wideVideoPriority)
   state.root.dataset.sidebarFull = String(showFullSidebar)
   if (showFullSidebar)
@@ -3274,10 +3274,10 @@ function updateSidebarLayoutState() {
     && gapWidth >= visibleSidebarWidth
   state.root.dataset.centerLayout = String(centerLayout)
 
-  // 展开入口只由自动侧栏布局决定，视频居中方式不再改变侧栏状态。
+  // 仅在空间不足且自动布局确实存在收起态时提供切换入口，视频居中方式不再改变侧栏状态。
   const showToggle = !settings.value.enableBewlyWidescreenSidebarResize && !hasCustomWidth
-    && !showFullSidebar
-    && (state.sidebarMode === 'narrow' || wideVideoPriority || narrowWidth - fitWidth > 1)
+    && !canShowFullSidebar
+    && (canUltrawideCollapse || narrowWidth - fitWidth > 1)
   state.root.dataset.sidebarToggleVisible = String(showToggle)
 
   // 自动布局也要提供可访问的当前值，双击恢复后仍可继续用键盘调宽。
