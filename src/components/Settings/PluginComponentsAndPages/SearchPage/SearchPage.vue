@@ -127,9 +127,6 @@ function changeSearchBarFocusCharacter(url: string) {
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.search_results_pagination_mode')" right-width="auto">
-        <template #desc>
-          <span>{{ $t('settings.search_results_pagination_mode_desc') }}</span>
-        </template>
         <SettingsSegmentedControl
           v-model="settings.searchResultsPaginationMode"
           :label="$t('settings.search_results_pagination_mode')"

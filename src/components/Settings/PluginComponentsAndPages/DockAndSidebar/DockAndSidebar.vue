@@ -92,7 +92,7 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_dock')">
-      <SettingsItem :title="$t('settings.dock_position')" :desc="$t('settings.dock_position_desc')" right-width="auto">
+      <SettingsItem :title="$t('settings.dock_position')" right-width="auto">
         <Select
           v-model="settings.dockPosition"
           :options="dockPositions"

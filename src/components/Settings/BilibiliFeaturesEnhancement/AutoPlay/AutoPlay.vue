@@ -231,7 +231,6 @@ const randomPlayActivationModeOptions = computed(() => {
       <SettingsItem
         v-if="settings.randomPlayMode === 'auto'"
         :title="t('settings.min_videos_for_random')"
-        :desc="t('settings.min_videos_for_random_desc')"
         right-width="auto"
       >
         <Input

@@ -286,9 +286,6 @@ function undoResetAllShortcuts() {
     <!-- General Keyboard Toggle -->
     <SettingsItemGroup>
       <SettingsItem :title="t('settings.shortcuts.enable_all_shortcuts_toggle')" right-width="auto">
-        <template #desc>
-          <div v-html="t('settings.shortcuts.enable_all_shortcuts_toggle_desc')" />
-        </template>
         <Radio v-model="settings.keyboard" />
       </SettingsItem>
       <SettingsItem :title="t('settings.shortcuts.reset_all_ext_shortcuts')" right-width="auto">

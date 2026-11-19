@@ -183,7 +183,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 
       <SettingsItem
         :title="t('settings.video_player_scroll')"
-        :desc="t('settings.video_player_scroll_desc')"
         right-width="auto"
       >
         <Radio v-model="settings.videoPlayerScroll" />
@@ -232,7 +231,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
     >
       <SettingsItem
         :title="t('settings.show_bewly_widescreen_button')"
-        :desc="t('settings.show_bewly_widescreen_button_desc')"
         right-width="auto"
       >
         <Radio v-model="settings.showBewlyWidescreenButton" />

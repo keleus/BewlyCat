@@ -40,7 +40,7 @@ import SettingsItemGroup from '../components/SettingsItemGroup.vue'
       <SettingsItem :title="$t('settings.block_top_search_page_ads')" :desc="$t('settings.block_top_search_page_ads_desc')" right-width="auto">
         <Radio v-model="settings.blockTopSearchPageAds" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.clean_url_argument')" :desc="$t('settings.clean_url_argument_desc')" right-width="auto">
+      <SettingsItem :title="$t('settings.clean_url_argument')" right-width="auto">
         <Radio v-model="settings.cleanUrlArgument" />
       </SettingsItem>
     </SettingsItemGroup>

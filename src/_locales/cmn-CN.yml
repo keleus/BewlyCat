@@ -162,7 +162,7 @@ settings:
     summary: 平衡不同视频之间的响度，同时平滑同一个视频内的大小声。
     title: 音量均衡
     enable: 启用局部音量均衡
-    description: 平衡不同视频之间的响度，并在播放中实时调整增益，因此同一个视频内的大小声也会被平滑；强度越高，对原有动态的影响越大。启用后会关闭 B 站原生均衡（关闭本功能后不会自动恢复），最高提升 6 dB。
+    description: 实时平衡不同视频及视频内的音量差异（最高提升 6 dB）。开启后会关闭 B 站原生均衡，关闭本功能后不会自动恢复。
     target: 目标响度
     target_desc: 建议从 -18 LUFS 开始。数值越低越安静；播放器音量仍可单独调整。
     strength: 均衡强度
@@ -224,7 +224,7 @@ settings:
     results_title: 搜索结果
     results_count: 找到 {count} 个设置
   category_general_desc: 配置语言和交互方式，并按需开启插件的各个部分，可以只保留评论、大会员等单项功能。
-  category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
+  category_appearance_desc: 配置视觉效果、主题颜色、页面样式、壁纸、字体和自定义样式。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
   breadcrumb: 设置位置
   usage_guide: 使用帮助
@@ -249,21 +249,21 @@ settings:
   category_bilibili_moments_desc: 调整原版动态页的模块和评论行为，并过滤动态。
   group_interaction: 交互
   category_browsing_home_desc: 配置首页推荐、内容过滤、关注页和首页标签。
-  category_browsing_video_card_desc: 配置视频卡片的布局、预览、信息展示与打开方式。
+  category_browsing_video_card_desc: 配置视频卡片的布局、预览、网格、信息展示与更多菜单。
   category_browsing_favorites_desc: 按规则整理收藏夹，并在一键三连后自动同步到对应收藏夹。
   category_navigation_link_opening_desc: 统一配置顶栏、视频卡片与搜索栏链接的打开位置和抽屉行为。
   category_navigation_topbar_desc: 统一调整顶栏布局、组件、频道、搜索入口和通知显示。
   category_navigation_dock_desc: 配置 Dock 栏与侧栏的位置、显隐和快捷操作。
   category_navigation_interaction_desc: 配置链接打开方式、抽屉行为和列表滚动。
   category_navigation_search_desc: 配置搜索页外观、搜索建议、历史、热搜与结果页。
-  category_navigation_moments_desc: 配置插件动态页的左侧组件和动态卡片打开方式。
+  category_navigation_moments_desc: 配置插件动态页的组件布局、悬停预览、打开方式、动态过滤与固定 UP 主。
   category_playback_player_desc: 配置播放器模式、滚动行为、弹幕、字幕和播放状态。
   category_playback_autoplay_desc: 配置自动连播与自定义播放行为。
   category_bilibili_comments_desc: 增强评论区的用户信息与内容显示。
-  category_bilibili_vip_desc: 配置大会员权益相关的提醒功能。
-  category_bilibili_volume_balance_desc: 在本地平衡不同视频的响度，并平滑视频内的大小声。
+  category_bilibili_vip_desc: 配置大会员 B 币券与每日经验的提醒及自动领取。
+  category_bilibili_volume_balance_desc: 在本地平衡视频响度，并配置播放器画面旋转、镜像与音画同步。
   category_bilibili_ambilight_desc: 在播放器四周投射随画面变化的柔和环境光。
-  category_advanced_compatibility_desc: 拦截广告、净化链接，并配置原版页面和其他页面的兼容行为。
+  category_advanced_compatibility_desc: 拦截广告、净化链接与分享文本，并配置搜索去个性化与页面兼容选项。
   category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。
   category_data_desc: 开启浏览器云同步，导出备份、导入设置或恢复 BewlyCat 默认配置。
   maintenance:
@@ -375,7 +375,7 @@ settings:
   topbar_switchers: BewlyCat/Bilibili 页面切换器
   topbar_switchers_desc: 控制 BewlyCat 与 Bilibili 原版页面切换器是否显示。
   topbar_actions: 顶栏功能图标
-  topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标和相关提醒。
+  topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标样式与顶栏模式。
   topbar_user_menu: 顶栏用户菜单
   topbar_display_settings: 顶栏显示与行为
   topbar_display_settings_desc: 调整顶栏在不同页面和交互场景下的显示方式。
@@ -446,7 +446,7 @@ settings:
   moments_show_filter_entry: 显示动态过滤入口
   moments_show_filter_entry_desc: 在 Bewly 动态页标签栏右侧显示过滤按钮，可直接调整显示的动态类型与屏蔽关键词；关闭面板后按新条件刷新动态。
   moments_filtered_types: 过滤动态
-  moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中，选中表示显示。过滤较多时可能需要手动加载更多。
+  moments_filtered_types_desc: 控制动态流中显示的动态类型，选中表示显示。过滤较多时可能需要手动加载更多。
   moments_enable_live_preview: 直播动态悬停预览
   moments_enable_live_preview_desc: 鼠标悬停直播动态封面时播放直播预览。
   moments_enable_video_preview: 视频动态悬停预览
@@ -496,9 +496,9 @@ settings:
     open_settings: 打开设置...
   touch_screen_optimization: 触屏体验改进
   touch_screen_optimization_desc: |
-    启用后，如顶栏，你可能需要点击项目以查看更多信息，而不是鼠标直接悬停查看。视频页支持双击播放、暂停或快进快退，按住左右滑动调整播放进度，以及从播放器左右边缘上下滑动调节音量。（旧版顶栏不支持此功能）
+    启用后，顶栏项目需点击而非悬停展开（仅适用于 Bewly 顶栏）。视频页支持双击播放/暂停或快进快退、左右滑动调进度，以及从左右边缘上下滑动调音量。
   show_home_button_in_touch_mode: 显示 Home 按钮
-  show_home_button_in_touch_mode_desc: 在触屏优化开启时，在顶栏 Logo 旁边显示一个可以直接跳转到首页的按钮。
+  show_home_button_in_touch_mode_desc: 在顶栏 Logo 旁显示直接跳转首页的按钮。
   open_top_bar_items_in_bewly: 点击顶栏图标打开 Bewly 页面
   open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将按“顶栏链接打开行为”打开 Dock 中对应的页面。
   show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
@@ -511,7 +511,7 @@ settings:
   visibility: 显示
   enable_grid_layout_switcher: 启用页面网格布局切换器
   enable_horizontal_scrolling: 启用横向滚动
-  enable_horizontal_scrolling_desc: 启用后，鼠标滚动时将直接滚动横向滚动列表。
+  enable_horizontal_scrolling_desc: 在 Bewly 番剧页的横向列表中，直接用鼠标滚轮横向滚动。
   select_language: 界面语言
   select_language_opt:
     english: 英文
@@ -599,7 +599,7 @@ settings:
     bewly_widescreen_sidebar_position_left: 左侧
     bewly_widescreen_sidebar_position_right: 右侧
     bewly_widescreen_auto_collapse_sidebar: 自动收起 Bewly 宽屏侧栏
-    bewly_widescreen_auto_collapse_sidebar_desc: 优先保持视频完整高度。空间足够时侧栏完整显示，空间不足时自动收起，悬停时展开。关闭后侧栏完整显示并压缩视频。与手动调整侧栏宽度互斥。
+    bewly_widescreen_auto_collapse_sidebar_desc: 空间足够时显示侧栏，不足时自动收起（悬停展开），以保持视频完整高度；关闭则始终显示侧栏。与手动调整宽度互斥。
     bewly_widescreen_video_alignment: 视频居中基准
     bewly_widescreen_video_alignment_desc: 选择视频在侧栏以外的区域居中，或在空间允许时相对整个窗口居中。
     bewly_widescreen_video_alignment_sidebar: 侧栏外区域（默认）
@@ -613,9 +613,9 @@ settings:
     sending_bar: 保持弹幕栏可见
     player_center: 播放器居中
   enlarge_favorite_dialog: 放大收藏弹窗
-  enlarge_favorite_dialog_desc: 启用后，视频页收藏弹窗将以更大的尺寸显示，方便查看和管理收藏夹。
+  enlarge_favorite_dialog_desc: 以更大尺寸显示视频页收藏弹窗，方便查看和管理收藏夹。
   external_watch_later_button: 稍后再看按钮外置
-  external_watch_later_button_desc: 启用后，视频页工具栏会显示独立的稍后再看按钮；按钮会显示当前视频状态，可点击添加或移除。
+  external_watch_later_button_desc: 在视频页工具栏显示独立的稍后再看按钮，可查看状态并点击添加或移除。
   show_bewly_widescreen_button: 显示播放器 Bewly 宽屏按钮
   show_bewly_widescreen_button_desc: 启用后，在视频播放器控制栏中显示 Bewly 宽屏按钮。
   show_video_screenshot_button: 显示播放器截图按钮
@@ -651,7 +651,7 @@ settings:
   remember_video_aspect_ratio: 记住视频比例
   remember_video_aspect_ratio_desc: 启用后，播放器会记住您上次选择的视频比例，并在下次打开视频时自动应用
   auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出
-  auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束且没有单集循环、随机播放、自动连播等后续播放行为时，会自动退出全屏模式
+  auto_exit_fullscreen_on_end_desc: 视频播完且无单集循环、随机播放或自动连播时，自动退出全屏或网页全屏。
   use_bilibili_default_auto_play: 使用 Bilibili 默认自动播放行为
   use_bilibili_default_auto_play_desc: 启用后由 Bilibili 决定播放结束行为，不应用下方按视频类型设置。
   auto_play_watch_later: 稍后再看
@@ -726,7 +726,7 @@ settings:
   other_page_top_bar_config: 其他页面顶栏配置
   other_page_top_bar_config_desc: 控制视频页以外页面（如首页、动态）顶栏的显示时机。“鼠标显示”表示鼠标移入页面顶部时显示；“滚动显示”表示向下滚动时隐藏、向上滚动时显示。
   video_page_top_bar_config: 视频页顶栏配置
-  video_page_top_bar_config_desc: 控制视频页顶栏的显示时机。“鼠标显示”表示鼠标移入页面顶部时显示；“滚动显示”表示页面滚动时显示。
+  video_page_top_bar_config_desc: 控制视频页顶栏的显示时机。“鼠标显示”为鼠标移入顶部时显示（仅适用于 Bewly 顶栏）；“滚动显示”为向下滚动时隐藏、向上滚动时显示。
   video_page_top_bar_config_opt:
     alwaysShow: 总是显示
     alwaysHide: 总是隐藏
@@ -745,9 +745,9 @@ settings:
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器
   filter_articles_in_moments: 过滤专栏
-  filter_articles_in_moments_desc: 在动态列表中过滤掉专栏内容，仅显示视频
+  filter_articles_in_moments_desc: 在顶栏动态下拉菜单中过滤专栏内容，仅显示视频。
   enable_settings_sync: 启用设置同步
-  enable_settings_sync_desc: 开启后同时保存到本地和浏览器云端；壁纸背景与设备播放状态不会同步（需要登录浏览器账号）
+  enable_settings_sync_desc: 开启后同步到浏览器云端（需登录浏览器账号）；壁纸、自定义 CSS 与本机播放状态不同步。
   sync_cloud_conflict_title: 检测到云端设置备份
   sync_cloud_conflict_desc: 云端已有一份设置备份。两侧都存在的设置将以你所选的一侧为准。
   sync_cloud_use_cloud: 下载：以云端设置为准
@@ -888,7 +888,7 @@ settings:
   dark_mode_base_color: 深色模式基准颜色
   gradient_theme_color_background: 在暗色模式下使用渐变主题颜色作为背景
   wallpaper_mode: 背景图片模式
-  wallpaper_mode_desc: '使用网址: 直接用网上图片的网址来设置背景图片。'
+  wallpaper_mode_desc: 选择内置/本地上传图片，或直接填写网络图片链接。
   wallpaper_mode_opt:
     build_in: 内置
     by_url: 使用网址
@@ -901,14 +901,14 @@ settings:
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/green-white-mountains.jpg
   enable_wallpaper_masking: 启用背景遮罩效果
   wallpaper_cache_time: 背景图片缓存时间
-  wallpaper_cache_time_desc: 设置URL壁纸的缓存时间(小时)。0表示不缓存,每次都重新加载。本地上传的图片不受此设置影响。
+  wallpaper_cache_time_desc: 设置 URL 壁纸的缓存时间（小时），0 表示不缓存；本地上传的图片不受影响。
   no_cache: 不缓存
   wallpaper_mask_opacity: 背景遮罩透明度调整
   wallpaper_blur_intensity: 背景模糊强度调整
   customize_css: 自定义 CSS
   customize_css_desc: |-
-    如果你不熟悉 CSS，请不要修改 CSS。否则可能会导致意外的显示问题。
-    如果在你修改 CSS 后遇到任何问题，请重新安装 BewlyCat。
+    不熟悉 CSS 请勿修改，否则可能导致页面显示异常。
+    如遇问题，可通过浏览器扩展图标打开设置页关闭此项。
   logo_color: Logo 颜色
   logo_color_opt:
     white: 白
@@ -922,9 +922,9 @@ settings:
   bg_blurs_when_the_search_bar_is_focused: 当搜索栏聚焦时背景模糊
   choose_search_bar_focused_character: 选择搜索栏聚焦时出现的人物
   show_hot_search_in_top_bar: 在顶栏显示热搜
-  show_hot_search_in_top_bar_desc: 在顶栏搜索框中显示热搜列表
+  show_hot_search_in_top_bar_desc: 同时控制顶栏搜索框与搜索页的热搜显示。
   show_hot_search_in_search_page: 在搜索页显示热搜
-  show_hot_search_in_search_page_desc: 在搜索页面显示热搜排行榜
+  show_hot_search_in_search_page_desc: 同时控制搜索页与顶栏搜索框的热搜显示。
   show_search_recommendation: 显示搜索推荐
   show_search_recommendation_desc: 在搜索框中显示推荐的搜索词作为占位符，空白输入时按回车将搜索该推荐词
   enable_search_history: 启用搜索历史
@@ -960,7 +960,7 @@ settings:
   recommendation_mode_app_single: App 单列
   recommendation_mode_app_double: App 双列
   remember_no_cookie_recommendation_state: 减少 Web 游客模式推荐重复
-  remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐进度，减少重复推荐。仅 Web 游客模式生效。
+  remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐进度，减少重复推荐。
   auto_switch_recommendation_mode: 自动切换推荐模式
   auto_switch_recommendation_mode_desc: |
     当 App 推荐失败时自动切换至 Web 模式。
@@ -981,7 +981,7 @@ settings:
   filter_by_view_count_desc: 筛选掉播放数小于您设置的视频。
   filter_by_view_count_unit: 次
   filter_by_like_count: 按点赞数筛选
-  filter_by_like_count_desc: 筛选掉点赞数小于您设置的视频。
+  filter_by_like_count_desc: 筛选掉点赞数小于设定值的视频（仅在 Web 推荐模式下生效）。
   filter_by_like_count_unit: 次
   filter_by_duration: 按时长筛选
   filter_by_duration_desc: 筛选掉时长小于您设置的视频。
@@ -1243,8 +1243,7 @@ settings:
   group_clean_share_link: 分享链接净化
   enable_clean_share_link: 启用分享链接净化
   enable_clean_share_link_desc: >
-    启用后，分享链接将自动移除追踪参数，并可选择是否包含视频标题。
-    此功能适用于 BewlyCat 的复制链接功能，同时也会拦截 Bilibili 原生分享按钮的复制内容。
+    净化 BewlyCat 复制链接与 Bilibili 原生分享按钮复制的内容，可按需移除追踪参数或附带视频标题。
   clean_share_link_include_title: 分享时包含视频标题
   clean_share_link_include_title_desc: >
     分享时在链接前添加视频标题，例如 "视频标题 https://www.bilibili.com/video/BVxxx"
@@ -1262,25 +1261,25 @@ settings:
   enable_comment_reply_tree_display_desc: 开启后根据回复关系以树状结构整理楼中楼。
   comment_reply_tree_mode:
     title: 评论回复树样式
-    desc: 根据回复关系和发布时间整理楼中楼。线条模式下可折叠任意父级评论的回复；「收起主评论」会折叠父评论本体，「不收起主评论」则保留父评论正文仅隐藏子回复
+    desc: 线条模式可折叠任意父级评论的回复：「收起主评论」连同父评论一起折叠，「不收起主评论」仅隐藏子回复。
     line_collapse_main: 线条-收起主评论
     line_keep_main: 线条-不收起主评论
     indent_only: 缩进-无收起功能
   comment_reply_pagination_mode:
     title: 树状评论模式
-    desc: 选择树状评论的回复展示方式。「更多」会在保持当前阅读位置的同时向下累计回复；「分页」保留 B 站原生分页，只显示当前页
+    desc: 「更多」在保持当前阅读位置的同时向下累计回复；「分页」沿用 B 站原生分页。
     load_more: 更多
     pagination: 分页
   enable_comment_reply_tree_container: 固定高度回复容器
-  enable_comment_reply_tree_container_desc: 展开楼中楼后在固定高度的容器内滚动查看回复，避免整层评论把页面撑得过长；仅在开启评论区树状显示时生效
+  enable_comment_reply_tree_container_desc: 展开楼中楼后在固定高度的容器内滚动查看回复，避免整层评论把页面撑得过长。
   comment_reply_tree_container_height: 回复容器高度
   comment_reply_tree_container_height_desc: 容器的最大高度，回复较少时自动收缩。
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
   hide_comment_image_scrollbar: 评论图片预览时隐藏页面滚动条
-  hide_comment_image_scrollbar_desc: 打开评论区图片预览时隐藏页面右侧滚动条，避免滚动条显示在遮罩右侧
+  hide_comment_image_scrollbar_desc: 避免页面滚动条显示在预览遮罩右侧。
   image_viewer_close_at_bottom: 图片查看器关闭按钮置于底部居中
-  image_viewer_close_at_bottom_desc: 将评论区和动态图片查看器的关闭按钮从顶部移到底部居中
+  image_viewer_close_at_bottom_desc: 作用于评论区和动态图片查看器。
   group_fonts: 字体
   group_visual_effects: 视觉效果
 auth:
