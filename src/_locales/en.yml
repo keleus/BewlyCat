@@ -177,7 +177,7 @@ settings:
       unsupported: This audio source cannot be safely processed. Audio is unchanged.
   player_adjustment:
     title: Picture & sound adjustments
-    desc: Shows an adjustment button in the player controls that opens a panel on hover. The two items below can be turned off separately, and the volume balance item follows "Enable local volume balance" above; the button is hidden when all three are off.
+    desc: Shows an adjustment button in the player controls that opens a panel on hover. The two items below can be turned off separately, and the volume balance item can also be hidden under Player → Video Page Features; the button is hidden when all three are hidden.
     show_picture: Rotate & mirror picture
     show_picture_desc: Rotate or mirror the picture from the panel. Applies only to the current video; turning this off resets the current picture adjustment.
     show_audio_delay: Audio sync
@@ -352,6 +352,9 @@ settings:
   group_player_display_mode_desc: Set a base display mode and override it for specific playback contexts when needed.
   group_bewly_widescreen: Bewly Widescreen
   group_bewly_widescreen_desc: Adjust the sidebar and video layout in Bewly Widescreen. Toggle it anytime with the player button or shortcut.
+  group_danmaku_and_captions: Danmaku & Captions
+  group_playback_rate: Playback Rate
+  group_volume_control: Volume Control
   group_playback_memory: Playback Memory
   group_playback_memory_desc: Choose whether to remember playback rate, video quality, and video aspect ratio.
   group_video_page_actions: Video Page Features
@@ -1353,6 +1356,8 @@ settings:
   show_video_screenshot_button_desc: Show a screenshot button in the player controls. The shortcut still works when the button is hidden.
   show_video_pip_button: Show player picture-in-picture button
   show_video_pip_button_desc: Show the picture-in-picture button in the player controls. The shortcut still works when the button is hidden.
+  show_video_loudness_button: Show player volume balance button
+  show_video_loudness_button_desc: Show the volume balance section in the player adjustment panel. Local volume balance keeps running when turned off; if Rotate & mirror picture and Audio sync are also off, the player control icon is hidden.
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show

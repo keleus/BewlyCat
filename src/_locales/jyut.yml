@@ -177,7 +177,7 @@ settings:
       unsupported: 目前音源無法安全接入，保持原聲。
   player_adjustment:
     title: 畫面同聲音調整
-    desc: 喺影片控制列顯示調整按鈕，滑鼠移上去開面板。下面兩項可以分開關閉，音量均衡項跟上面「啟用局部音量均衡」顯示；三項都關閉嗰陣唔顯示按鈕。
+    desc: 喺影片控制列顯示調整按鈕，滑鼠移上去開面板。下面兩項可以分開關閉，音量均衡項亦都可以喺「播放器 → 影片頁功能」入面關閉顯示；三項都唔顯示嗰陣唔顯示按鈕。
     show_picture: 畫面旋轉同鏡像
     show_picture_desc: 喺面板度旋轉、鏡像畫面，只對目前影片生效；關閉之後會重設目前畫面調整。
     show_audio_delay: 音畫同步
@@ -352,6 +352,9 @@ settings:
   group_player_display_mode_desc: 設定基礎顯示模式，再按需要覆寫特定播放情況。
   group_bewly_widescreen: Bewly 闊螢幕
   group_bewly_widescreen_desc: 調整 Bewly 闊螢幕模式下嘅側欄同影片版面，可以用播放器按鈕或者快捷鍵隨時切換。
+  group_danmaku_and_captions: 彈幕同字幕
+  group_playback_rate: 播放倍速
+  group_volume_control: 音量控制
   group_playback_memory: 播放狀態記憶
   group_playback_memory_desc: 揀選係咪記住倍速、畫質同影片比例。
   group_video_page_actions: 影片頁功能
@@ -1289,6 +1292,8 @@ settings:
   show_video_screenshot_button_desc: 喺播放器控制欄顯示截圖按鈕。閂咗之後仍然可以用快捷鍵截圖。
   show_video_pip_button: 顯示播放器子母畫面按鈕
   show_video_pip_button_desc: 喺播放器控制欄顯示子母畫面按鈕。閂咗之後仍然可以用快捷鍵切換。
+  show_video_loudness_button: 顯示播放器音量均衡按鈕
+  show_video_loudness_button_desc: 喺播放器控制欄嘅調整面板入面顯示音量均衡項。閂咗唔會影響局部音量均衡生效；同時閂埋「畫面旋轉同鏡像」同「音畫同步」就會隱藏呢個控制欄圖示。
   group_fonts: 字體
   group_visual_effects: 視覺效果
   group_search_results: 搜尋結果

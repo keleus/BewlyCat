@@ -255,7 +255,7 @@ onBeforeUnmount(() => {
       id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group" popover="manual"
       :aria-label="t('settings.player_adjustment.title')"
     >
-      <!-- 三项分别由设置页开关控制：画面、音画同步，以及跟随「启用局部音量均衡」的音量均衡 -->
+      <!-- 三项分别由设置页开关控制：画面、音画同步，以及同时受「启用局部音量均衡」和「显示播放器音量均衡按钮」控制的音量均衡 -->
       <div v-if="settings.playerPictureAdjustmentEnabled" class="panel-section">
         <div class="section-heading">
           <span>{{ t('settings.player_adjustment.picture') }}</span>
@@ -304,7 +304,7 @@ onBeforeUnmount(() => {
           {{ delayNotice }}
         </div>
       </div>
-      <div v-if="settings.localLoudnessEnabled" class="panel-section">
+      <div v-if="settings.localLoudnessEnabled && settings.showLocalLoudnessControl" class="panel-section">
         <div class="section-heading">
           {{ t('settings.local_loudness.title') }}
         </div>

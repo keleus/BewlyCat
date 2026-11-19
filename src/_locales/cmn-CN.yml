@@ -177,7 +177,7 @@ settings:
       unsupported: 当前音源无法安全接入，保持原声。
   player_adjustment:
     title: 画面与声音调整
-    desc: 在视频控制栏显示调整按钮，悬停打开面板。以下两项可单独关闭，音量均衡项随上方「启用局部音量均衡」显示；三项都关闭时不显示按钮。
+    desc: 在视频控制栏显示调整按钮，悬停打开面板。以下两项可单独关闭，音量均衡项也可在「播放器 → 视频页功能」中关闭显示；三项均不显示时隐藏按钮。
     show_picture: 画面旋转与镜像
     show_picture_desc: 在面板中旋转、镜像画面，仅对当前视频生效；关闭后会重置当前画面调整。
     show_audio_delay: 音画同步
@@ -352,6 +352,9 @@ settings:
   group_player_display_mode_desc: 设置基础显示模式，并按需覆盖特定播放场景。
   group_bewly_widescreen: Bewly 宽屏
   group_bewly_widescreen_desc: 调整 Bewly 宽屏模式下的侧栏与视频布局，可通过播放器按钮或快捷键随时切换。
+  group_danmaku_and_captions: 弹幕与字幕
+  group_playback_rate: 播放倍速
+  group_volume_control: 音量控制
   group_playback_memory: 播放状态记忆
   group_playback_memory_desc: 选择是否记住倍速、清晰度和视频比例。
   group_video_page_actions: 视频页功能
@@ -619,6 +622,8 @@ settings:
   show_video_screenshot_button_desc: 在播放器控制栏显示截图按钮。关闭后仍可使用快捷键截图。
   show_video_pip_button: 显示播放器画中画按钮
   show_video_pip_button_desc: 在播放器控制栏显示画中画按钮。关闭后仍可使用快捷键切换。
+  show_video_loudness_button: 显示播放器音量均衡按钮
+  show_video_loudness_button_desc: 在播放器控制栏的调节面板中显示音量均衡项。关闭后不影响局部音量均衡生效；同时关闭「画面旋转与镜像」和「音画同步」时将隐藏该控制栏图标。
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   keep_watch_later_video_default_mode: 稍后再看保持默认模式

@@ -9,7 +9,7 @@ import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playba
 import { requestBilibiliTab } from '~/utils/settingsPage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
-import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
+import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -37,7 +37,7 @@ async function applyRate() {
 </script>
 
 <template>
-  <SettingsItemSubgroup :title="t('settings.custom_playback_rate')">
+  <SettingsItemGroup :title="t('settings.group_playback_rate')">
     <SettingsItem
       :title="t('settings.custom_playback_rate')"
       :desc="t('settings.custom_playback_rate_desc')"
@@ -61,5 +61,5 @@ async function applyRate() {
         :aria-label="t('settings.playback_rate_step')" @blur="saveStep" @enter="saveStep"
       />
     </SettingsItem>
-  </SettingsItemSubgroup>
+  </SettingsItemGroup>
 </template>
