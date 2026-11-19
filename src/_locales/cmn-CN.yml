@@ -34,9 +34,11 @@ common:
   load_more: 加载更多
   api_error:
     request_failed: 请求失败，请稍后刷新重试
+    host_permission_denied: 扩展的 B 站站点访问权限未开启或被限制，请在浏览器扩展管理页允许 BewlyCat 访问 *.bilibili.com 后刷新重试
     details: 查看错误详情
     title: 错误详情
     desc: 登录信息和签名已替换为 *，可复制后用于反馈问题
+    host_permission_hint: 检测到 BewlyCat 缺少 B 站站点访问权限。请在浏览器扩展管理页将「站点访问权限 / 网站访问权限」设为允许访问 *.bilibili.com，然后刷新页面重试。
     risk_hint: 检测到疑似风控响应。可以稍后再试、降低刷新频率，或检查下方诊断信息中的请求方式和过滤设置。
     no_records: 没有捕获到失败的接口请求，可能是扩展刚刚更新或后台暂时不可用。
     copy: 复制错误信息
@@ -1510,6 +1512,7 @@ home:
   app_recommendation_failed: App 推荐数据加载失败：{reason}
   recommendation_failure_reason:
     background: 扩展后台连接已中断，请刷新页面；仍然失败时请在扩展管理页重新启用 BewlyCat
+    host_permission: 扩展的 B 站站点访问权限未开启或被限制，请在浏览器扩展管理页允许访问 *.bilibili.com 后刷新重试
     offline: 网络已断开，请恢复联网后刷新重试
     timeout: 请求超时，可能是网络较慢，或代理、IPv6 线路异常，请检查网络后刷新重试
     network: 无法连接 B 站服务器，请检查网络和代理设置，并确认广告拦截等扩展没有拦截 B 站接口

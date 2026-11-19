@@ -1,9 +1,11 @@
+import { ref } from 'vue'
 import browser from 'webextension-polyfill'
 
-import type { ApiFailureRecord } from '~/constants/apiDiagnostics'
-import { API_FAILURE_DIAGNOSTIC_MESSAGE } from '~/constants/apiDiagnostics'
+import type { ApiFailureRecord, HostPermissionsStatus, HostPermissionsStatusRequest } from '~/constants/apiDiagnostics'
+import { API_FAILURE_DIAGNOSTIC_MESSAGE, GET_HOST_PERMISSIONS_STATUS_MESSAGE } from '~/constants/apiDiagnostics'
 import { settings } from '~/logic'
 import { sanitizeDiagnosticText, sanitizeDiagnosticValue } from '~/utils/apiDiagnosticSanitizer'
+import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import type { BrowserInfo } from '~/utils/browserInfo'
 import { GET_BROWSER_INFO_MESSAGE, getBrowserInfo } from '~/utils/browserInfo'
 import { getCookie } from '~/utils/main'
@@ -14,6 +16,7 @@ const MAX_REPORTED_REQUESTS = 6
 
 // 排查只需要当前状态：每个接口只保留最新一次失败，重试和轮询不会堆积成历史。
 const latestRecords = new Map<string, ApiFailureRecord>()
+const recordsVersion = ref(0)
 
 export type ApiErrorReportItems = Record<string, string | number | boolean>
 
@@ -27,6 +30,7 @@ export interface ApiErrorReportSource {
 }
 
 export interface ApiErrorReport {
+  missingHostPermission: boolean
   likelyRiskControl: boolean
   hasRequestRecords: boolean
   text: string
@@ -37,6 +41,46 @@ function addRecord(record: ApiFailureRecord) {
   latestRecords.set(record.query, record)
   if (latestRecords.size > MAX_RECORDS)
     latestRecords.delete(latestRecords.keys().next().value!)
+  recordsVersion.value++
+}
+
+function clearApiFailureRecord(query: string) {
+  if (latestRecords.delete(query))
+    recordsVersion.value++
+}
+
+/** 接口成功返回且不含风控标记时清除旧失败，避免已恢复的接口继续触发权限提示。 */
+export function clearApiFailureIfSucceeded(query: string, response: unknown) {
+  if (typeof response !== 'object' || response === null)
+    return
+  const record = response as Record<string, any>
+  if (record.code !== 0)
+    return
+  if (isBilibiliRiskControl(record) || Boolean(record.data?.is_risk || record.data?.gaia_res_type))
+    return
+  clearApiFailureRecord(query)
+}
+
+/** 检查页面关联接口的最近失败是否由扩展站点访问权限关闭引起。 */
+export function hasMissingHostPermissionFailure(queries?: readonly string[]): boolean {
+  // 订阅记录版本，后台异步推送诊断记录后视图会自动更新提示文案。
+  void recordsVersion.value
+  if (!latestRecords.size)
+    return false
+
+  if (queries?.length) {
+    for (const query of queries) {
+      if (latestRecords.get(query)?.missingHostPermission)
+        return true
+    }
+    return false
+  }
+
+  for (const record of latestRecords.values()) {
+    if (record.missingHostPermission)
+      return true
+  }
+  return false
 }
 
 export function setupApiFailureDiagnostics() {
@@ -104,6 +148,36 @@ function formatWbi({ signed, refreshedKeys, fellBackToUnsigned }: NonNullable<Ap
   ].filter(Boolean).join('，')
 }
 
+function extractRecordOrigin(record: ApiFailureRecord): string | undefined {
+  if (record.missingHostOrigin)
+    return record.missingHostOrigin
+  if (!record.url)
+    return undefined
+  try {
+    return new URL(record.url).origin
+  }
+  catch {
+    return undefined
+  }
+}
+
+function formatHostPermissionsSummary(status?: HostPermissionsStatus): string {
+  if (!status)
+    return '无法检测（后台不可用）'
+  if (!status.supported)
+    return '浏览器不支持检测'
+  if (status.deniedOrigins.length > 0)
+    return `未开启（缺少 ${status.deniedOrigins.join('、')}）`
+
+  const missingWildcards = [
+    status.bilibiliWildcard ? '' : '*.bilibili.com',
+    status.hdslbWildcard ? '' : '*.hdslb.com',
+  ].filter(Boolean)
+  if (missingWildcards.length > 0)
+    return `部分开启（未授予 ${missingWildcards.join('、')}）`
+  return '正常（*.bilibili.com、*.hdslb.com）'
+}
+
 function formatRecord(record: ApiFailureRecord, index: number): string {
   const result = [
     record.status === undefined ? '' : `HTTP ${record.status}`,
@@ -112,11 +186,19 @@ function formatRecord(record: ApiFailureRecord, index: number): string {
     record.errorName ?? '',
   ].filter(Boolean).join(' / ')
 
+  const titleTag = record.missingHostPermission
+    ? '（缺少站点访问权限）'
+    : record.likelyRiskControl
+      ? '（疑似风控）'
+      : ''
+
   const lines = [
-    `${index + 1}. ${record.query}${record.likelyRiskControl ? '（疑似风控）' : ''}`,
+    `${index + 1}. ${record.query}${titleTag}`,
     `时间: ${new Date(record.time).toLocaleString()}${record.durationMs === undefined ? '' : `，耗时 ${record.durationMs} ms`}`,
     `结果: ${result || '未知'}`,
   ]
+  if (record.missingHostPermission)
+    lines.push(`站点访问权限: 未授予${record.missingHostOrigin ? `（${record.missingHostOrigin}）` : ''}`)
   if (record.url)
     lines.push(`请求: ${record.method ?? ''} ${record.url}`.trim())
   if (record.credentials)
@@ -144,10 +226,20 @@ export async function buildApiErrorReport(source: ApiErrorReportSource): Promise
   const related = records.filter(record => relatedQueries.has(record.query))
   // 找不到相关接口时可能是接口清单没覆盖到，展示其余接口比留空更有用。
   const requests = (related.length ? related : records).slice(-MAX_REPORTED_REQUESTS).reverse()
+  const failedOrigins = [...new Set(requests.map(extractRecordOrigin).filter((origin): origin is string => Boolean(origin)))]
 
-  const browserInfo = await sendMessage<undefined, BrowserInfo>(GET_BROWSER_INFO_MESSAGE)
-    .catch(() => getBrowserInfo())
-  const likelyRiskControl = requests.some(record => record.likelyRiskControl)
+  const [browserInfo, hostPermissions] = await Promise.all([
+    sendMessage<undefined, BrowserInfo>(GET_BROWSER_INFO_MESSAGE)
+      .catch(() => getBrowserInfo()),
+    sendMessage<HostPermissionsStatusRequest, HostPermissionsStatus>(
+      GET_HOST_PERMISSIONS_STATUS_MESSAGE,
+      { origins: failedOrigins },
+    ).catch(() => undefined),
+  ])
+  const missingHostPermission = hostPermissions?.supported
+    ? hostPermissions.deniedOrigins.length > 0
+    : requests.some(record => record.missingHostPermission)
+  const likelyRiskControl = !missingHostPermission && requests.some(record => record.likelyRiskControl)
 
   const sections = [
     [
@@ -158,6 +250,7 @@ export async function buildApiErrorReport(source: ApiErrorReportSource): Promise
       `浏览器: ${browserInfo.name ?? '未知'} ${browserInfo.version ?? ''}`.trim(),
       `语言: ${settings.value.language}`,
       `登录状态: ${getCookie('DedeUserID') ? '已登录' : '未登录'}`,
+      `站点访问权限: ${formatHostPermissionsSummary(hostPermissions)}`,
       `疑似风控: ${likelyRiskControl ? '是' : '否'}`,
     ].join('\n'),
     ...Object.entries(context).map(([title, items]) => [
@@ -168,6 +261,7 @@ export async function buildApiErrorReport(source: ApiErrorReportSource): Promise
   ]
 
   return {
+    missingHostPermission,
     likelyRiskControl,
     hasRequestRecords: requests.length > 0,
     text: sections.join('\n\n'),

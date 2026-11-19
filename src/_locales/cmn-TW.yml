@@ -34,9 +34,11 @@ common:
   load_more: 載入更多
   api_error:
     request_failed: 請求失敗，請稍後重新整理再試
+    host_permission_denied: 擴充功能的 B 站網站存取權限未開啟或受限，請在瀏覽器擴充功能管理頁允許 BewlyCat 存取 *.bilibili.com 後重新整理再試
     details: 查看錯誤詳情
     title: 錯誤詳情
     desc: 登入資訊和簽名已替換為 *，可複製後用於回報問題
+    host_permission_hint: 偵測到 BewlyCat 缺少 B 站網站存取權限。請在瀏覽器擴充功能管理頁將「網站存取權限」設為允許存取 *.bilibili.com，然後重新整理頁面再試。
     risk_hint: 偵測到疑似風控回應。可以稍後再試、降低重新整理頻率，或檢查下方診斷資訊中的請求方式和過濾設定。
     no_records: 沒有擷取到失敗的介面請求，可能是擴充功能剛更新或背景服務暫時無法使用。
     copy: 複製錯誤資訊
@@ -1525,6 +1527,7 @@ home:
   app_recommendation_failed: App 推薦資料載入失敗：{reason}
   recommendation_failure_reason:
     background: 擴充功能背景連線已中斷，請重新整理頁面；仍然失敗時請在擴充功能管理頁重新啟用 BewlyCat
+    host_permission: 擴充功能的 B 站網站存取權限未開啟或受限，請在瀏覽器擴充功能管理頁允許存取 *.bilibili.com 後重新整理再試
     offline: 網路已中斷，請恢復連線後重新整理再試
     timeout: 請求逾時，可能是網路較慢，或代理、IPv6 線路異常，請檢查網路後重新整理再試
     network: 無法連線至 B 站伺服器，請檢查網路和代理設定，並確認廣告攔截等擴充功能沒有攔截 B 站介面

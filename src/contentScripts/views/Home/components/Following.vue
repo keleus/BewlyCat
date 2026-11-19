@@ -61,6 +61,7 @@ import { BadgeText } from '~/models/moment/moment'
 import type { UserVideo, UserVideosResult } from '~/models/video/userVideos'
 import api from '~/utils/api'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
+import { hasMissingHostPermissionFailure } from '~/utils/apiDiagnostics'
 import { getFollowingSettingsDiagnostics } from '~/utils/apiDiagnosticSettings'
 import { calcTimeSince, parseStatNumber } from '~/utils/dataFormatter'
 import type { FollowingGroup, FollowingGroupsResult, FollowingRelationUser } from '~/utils/followingGroups'
@@ -1718,8 +1719,9 @@ function getItemKey(item: VideoElement) {
         :no-more-content="noMoreContent"
         :need-to-login-first="needToLoginFirst"
         :request-failed="gridRequestFailed"
+        :request-failed-description="videoSearchKeyword && !hasMissingHostPermissionFailure(errorReportSource.queries) ? $t('search.search_failed') : undefined"
         :error-report-source="errorReportSource"
-        :empty-description="videoSearchKeyword ? (requestFailed ? $t('search.search_failed') : $t('home.following_no_search_results')) : undefined"
+        :empty-description="videoSearchKeyword && !requestFailed ? $t('home.following_no_search_results') : undefined"
         :show-loading-more-skeleton="selectedUploader === null"
         :transform-item="transformVideoItem"
         :get-item-key="getItemKey"
@@ -1735,7 +1737,7 @@ function getItemKey(item: VideoElement) {
         class="video-search-pagination"
       >
         <p v-if="requestFailed && videoList.length > 0" role="status">
-          {{ $t('search.search_failed') }}
+          {{ $t(hasMissingHostPermissionFailure(errorReportSource.queries) ? 'common.api_error.host_permission_denied' : 'search.search_failed') }}
         </p>
         <div class="video-search-actions">
           <Button v-if="videoList.length > 0 || !requestFailed" type="secondary" @click="loadMoreSearchVideos">

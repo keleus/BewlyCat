@@ -11,6 +11,8 @@ import {
 } from '~/utils/apiDiagnosticSanitizer'
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 
+import { getMissingHostPermissionOrigin } from './hostPermissions'
+
 const BODY_PREVIEW_LENGTH = 2000
 
 export interface ApiRequestAttempt {
@@ -22,6 +24,8 @@ export interface ApiRequestAttempt {
   status?: number
   contentType?: string
   preview?: Promise<string>
+  missingHostPermission?: boolean
+  missingHostOrigin?: string
 }
 
 function isRecord(value: unknown): value is Record<string, any> {
@@ -66,7 +70,14 @@ export async function reportApiFailure(
     const { response, error } = failure
     const responseRecord = isRecord(response) ? response : undefined
     const errorRecord = isRecord(error) ? error : undefined
-    const preview = await attempt.preview
+    const [preview, detectedMissingOrigin] = await Promise.all([
+      attempt.preview,
+      attempt.missingHostPermission === undefined
+        ? getMissingHostPermissionOrigin(attempt.url)
+        : Promise.resolve(attempt.missingHostOrigin),
+    ])
+    const missingHostPermission = attempt.missingHostPermission ?? Boolean(detectedMissingOrigin)
+    const missingHostOrigin = attempt.missingHostOrigin ?? detectedMissingOrigin
     const message = responseRecord?.message ?? errorRecord?.message ?? (error === undefined ? undefined : String(error))
     const record: ApiFailureRecord = {
       time: Date.now(),
@@ -83,7 +94,9 @@ export async function reportApiFailure(
       code: responseRecord?.code ?? errorRecord?.code,
       message: typeof message === 'string' ? sanitizeDiagnosticText(message) : undefined,
       errorName: errorRecord?.name,
-      likelyRiskControl: attempt.status === 412 || isBilibiliRiskControl(response) || isBilibiliRiskControl(error),
+      likelyRiskControl: !missingHostPermission && (attempt.status === 412 || isBilibiliRiskControl(response) || isBilibiliRiskControl(error)),
+      missingHostPermission: missingHostPermission || undefined,
+      missingHostOrigin,
       response: sanitizeDiagnosticValue(response),
       bodyPreview: preview ? sanitizeDiagnosticText(preview, BODY_PREVIEW_LENGTH) : undefined,
     }

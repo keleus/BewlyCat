@@ -1,4 +1,17 @@
 export const API_FAILURE_DIAGNOSTIC_MESSAGE = 'bewly-api-failure-diagnostic'
+export const GET_HOST_PERMISSIONS_STATUS_MESSAGE = 'bewly-get-host-permissions-status'
+
+export interface HostPermissionsStatusRequest {
+  /** 额外需要检查的接口 origin（如失败请求的域名），后台会校验并去重。 */
+  origins?: string[]
+}
+
+export interface HostPermissionsStatus {
+  supported: boolean
+  bilibiliWildcard: boolean
+  hdslbWildcard: boolean
+  deniedOrigins: string[]
+}
 
 /** 一次失败请求的诊断记录。离开产生记录的上下文前必须已完成脱敏和截断。 */
 export interface ApiFailureRecord {
@@ -23,6 +36,8 @@ export interface ApiFailureRecord {
   message?: string
   errorName?: string
   likelyRiskControl: boolean
+  missingHostPermission?: boolean
+  missingHostOrigin?: string
   response?: unknown
   /** 非 JSON 响应的正文开头，如风控 HTML 页面 */
   bodyPreview?: string

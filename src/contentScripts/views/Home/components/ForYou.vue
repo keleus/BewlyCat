@@ -392,6 +392,8 @@ function getRecommendFailureReason(failure: RequestFailure | null | undefined): 
   switch (failure?.kind) {
     case 'background':
       return t('home.recommendation_failure_reason.background')
+    case 'hostPermission':
+      return t('home.recommendation_failure_reason.host_permission')
     case 'offline':
       return t('home.recommendation_failure_reason.offline')
     case 'timeout':
@@ -1619,8 +1621,11 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           })
         }
 
-        if (attempt >= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY || response?.code === 62011)
+        if (attempt >= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY
+          || response?.code === 62011
+          || requestFailure?.kind === 'hostPermission') {
           break
+        }
 
         const remainingWindowMs = retryDeadline - Date.now()
         const retryDelayMs = getRecommendRetryDelay(attempt, WEB_REQUEST_RETRY_BASE_DELAY_MS, remainingWindowMs)
@@ -1631,7 +1636,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           return
       }
 
-      if (successfulIdentity)
+      if (successfulIdentity || requestFailure?.kind === 'hostPermission')
         break
     }
 
@@ -1646,8 +1651,10 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
       requestFailed.value = true
       noMoreContent.value = true
-      // 后台断开、断网时请求根本没有到达 B 站，即使另一次尝试像风控也不进入风控冷却。
-      const isLocalFailure = requestFailure?.kind === 'background' || requestFailure?.kind === 'offline'
+      // 后台断开、缺少站点访问权限或断网时请求根本没有到达 B 站，即使另一次尝试像风控也不进入风控冷却。
+      const isLocalFailure = requestFailure?.kind === 'background'
+        || requestFailure?.kind === 'hostPermission'
+        || requestFailure?.kind === 'offline'
       if (hadRiskControlFailure && !isLocalFailure) {
         // 风控冷却有单独的提示
         lastRecommendFailure.value = null
@@ -1945,7 +1952,7 @@ async function getAppRecommendVideos(
           })
         }
 
-        if (attempt >= APP_REQUEST_MAX_ATTEMPTS)
+        if (attempt >= APP_REQUEST_MAX_ATTEMPTS || requestFailure?.kind === 'hostPermission')
           break
 
         const remainingWindowMs = retryDeadline - Date.now()

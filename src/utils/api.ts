@@ -1,7 +1,7 @@
 import type { API_COLLECTION } from '~/background/messageListeners/api'
 import { isSearchResultApiMethod } from '~/constants/searchApi'
 import { settings } from '~/logic'
-import { recordBackgroundUnavailable } from '~/utils/apiDiagnostics'
+import { clearApiFailureIfSucceeded, recordBackgroundUnavailable } from '~/utils/apiDiagnostics'
 import { applyBilibiliTranslatedTitles, getBilibiliLocaleRequestParam } from '~/utils/bilibiliLocale'
 import { sendAbortableApiMessage, sendMessage } from '~/utils/messaging'
 
@@ -89,7 +89,10 @@ export class APIClient {
                 const response = (request?.signal
                   ? sendAbortableApiMessage(p as string, message, request.signal)
                   : sendMessage(p as string, message)
-                ).catch((error) => {
+                ).then((result) => {
+                  clearApiFailureIfSucceeded(p as string, result)
+                  return result
+                }).catch((error) => {
                   recordBackgroundUnavailable(p as string, requestOptions, error)
                   throw error
                 })

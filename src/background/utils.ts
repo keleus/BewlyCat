@@ -10,6 +10,7 @@ import { waitWithSignal } from '~/utils/abort'
 import type { ApiRequestAttempt } from './apiDiagnostics'
 import { captureApiResponse, isApiResponseFailure, reportApiFailure } from './apiDiagnostics'
 import { createApiResponseCache } from './apiResponseCache'
+import { ApiHostPermissionError, getMissingHostPermissionOrigin } from './hostPermissions'
 import { withRequestTimeout } from './requestTimeout'
 import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, parseBilibiliApiUrl, storeWbiKeys } from './wbiSign'
 
@@ -129,7 +130,32 @@ function apiListenerFactory(API_MAP: APIMAP) {
       const storeId = tab.cookieStoreId || 'default'
       // Only copy cookies that the API target would receive naturally. Filtering
       // by store alone can mix cookies from unrelated permitted Bilibili hosts.
-      const cookies = await browser.cookies.getAll({ url: api.url, storeId })
+      let cookies: Browser.Cookies.Cookie[]
+      try {
+        cookies = await browser.cookies.getAll({ url: api.url, storeId })
+      }
+      catch (error) {
+        const missingOrigin = await getMissingHostPermissionOrigin(api.url)
+        if (missingOrigin) {
+          const permissionError = new ApiHostPermissionError(missingOrigin)
+          void reportApiFailure(
+            sender,
+            'web',
+            contentScriptQuery,
+            {
+              url: api.url,
+              method: api._fetch.method,
+              credentials: api._fetch.credentials ?? 'include',
+              missingHostPermission: true,
+              missingHostOrigin: missingOrigin,
+            },
+            Date.now(),
+            { error: permissionError },
+          )
+          throw permissionError
+        }
+        throw error
+      }
       return await doCachedRequest(typedMessage, api, sender, tab, cookies, signal)
     }
 
@@ -181,10 +207,15 @@ function doRequest(message: Message, api: API, sender?: Browser.Runtime.MessageS
 async function performApiRequest(message: Message, api: API, sender?: Browser.Runtime.MessageSender, cookies?: Browser.Cookies.Cookie[], signal?: AbortSignal) {
   const startedAt = Date.now()
   const attempt: ApiRequestAttempt = { url: api.url, method: api._fetch.method }
+  let hasReportedFailure = false
   const reportFailure = (failure: { response?: unknown, error?: unknown }) => {
+    if (hasReportedFailure)
+      return
     // 主动取消不是接口故障；超时同样经 signal 结束，但仍需要记录。
-    if (!signal?.aborted || signal.reason?.name === 'TimeoutError')
+    if (!signal?.aborted || signal.reason?.name === 'TimeoutError') {
+      hasReportedFailure = true
       void reportApiFailure(sender, 'web', message.contentScriptQuery, attempt, startedAt, failure)
+    }
   }
 
   try {
@@ -395,6 +426,16 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
       catch (error) {
         // 用户取消和总超时不能触发无签名重试。
         signal?.throwIfAborted()
+        if (error instanceof ApiHostPermissionError)
+          throw error
+
+        const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+        if (missingOrigin) {
+          attempt.missingHostPermission = true
+          attempt.missingHostOrigin = missingOrigin
+          throw new ApiHostPermissionError(missingOrigin)
+        }
+
         // 如果使用了 WBI 签名且失败，尝试不带 WBI 签名重试
         if (needsWbi && !hasTriedWithoutWbi) {
           hasTriedWithoutWbi = true
@@ -417,16 +458,41 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
     }
 
     // 执行请求并进行统一错误处理
-    return executeRequestWithRetry().then((response) => {
-      if (isApiResponseFailure(response))
+    return executeRequestWithRetry().then(async (response) => {
+      if (isApiResponseFailure(response)) {
+        const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+        if (missingOrigin) {
+          attempt.missingHostPermission = true
+          attempt.missingHostOrigin = missingOrigin
+          const permissionError = new ApiHostPermissionError(missingOrigin)
+          reportFailure({ response, error: permissionError })
+          throw permissionError
+        }
         reportFailure({ response })
+      }
       return response
-    }).catch((error) => {
-      reportFailure({ error })
+    }).catch(async (error) => {
+      let resolvedError = error
+      if (
+        !(resolvedError instanceof ApiHostPermissionError)
+        && attempt.missingHostPermission === undefined
+        && !signal?.aborted
+      ) {
+        const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+        if (missingOrigin) {
+          attempt.missingHostPermission = true
+          attempt.missingHostOrigin = missingOrigin
+          resolvedError = new ApiHostPermissionError(missingOrigin)
+        }
+      }
+      reportFailure({ error: resolvedError })
       signal?.throwIfAborted()
-      if (error instanceof ApiRiskControlError) {
+      if (resolvedError instanceof ApiHostPermissionError) {
+        throw resolvedError
+      }
+      if (resolvedError instanceof ApiRiskControlError) {
         // 返回统一的风控错误格式
-        const riskError = new Error(error.message)
+        const riskError = new Error(resolvedError.message)
         Object.assign(riskError, {
           code: -412,
           isRiskControl: true,
@@ -434,10 +500,10 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
         throw riskError
       }
       // 其他错误也返回统一格式
-      const apiError = new Error(error.message || '请求失败')
+      const apiError = new Error(resolvedError.message || '请求失败')
       Object.assign(apiError, {
         code: -1,
-        originalError: error.toString(),
+        originalError: resolvedError.toString(),
       })
       throw apiError
     })

@@ -17,6 +17,7 @@ import { originalSettings, settings } from '~/logic'
 import { normalizeVideoCardCoverRatio } from '~/logic/storage'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
+import { hasMissingHostPermissionFailure } from '~/utils/apiDiagnostics'
 import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
@@ -917,6 +918,12 @@ const showListEndState = computed(() => {
     && !props.needToLoginFirst
 })
 
+const hasHostPermissionFailure = computed(() => {
+  return props.requestFailed
+    && Boolean(props.errorReportSource)
+    && hasMissingHostPermissionFailure(props.errorReportSource?.queries)
+})
+
 function normalizePositiveInt(value: unknown, fallback: number): number {
   const normalized = Number(value)
   if (!Number.isFinite(normalized) || normalized <= 0)
@@ -1379,7 +1386,7 @@ function getUniqueKey(item: T, index: number): string | number {
     <Empty
       v-else-if="showEmptyState"
       mt-6
-      :description="emptyDescription || (requestFailed ? requestFailedDescription || $t('common.api_error.request_failed') : $t('common.no_more_content'))"
+      :description="emptyDescription || (requestFailed ? requestFailedDescription || $t(hasHostPermissionFailure ? 'common.api_error.host_permission_denied' : 'common.api_error.request_failed') : $t('common.no_more_content'))"
     >
       <div class="grid-state-actions">
         <Button type="primary" @click="handleRefresh">
@@ -1438,7 +1445,7 @@ function getUniqueKey(item: T, index: number): string | number {
     />
 
     <!-- 无更多内容或请求失败提示（仅在有数据时显示，避免与空列表提示重复） -->
-    <Empty v-if="showListEndState" class="pb-4" :description="requestFailed ? requestFailedDescription || $t('common.api_error.request_failed') : $t('common.no_more_content')">
+    <Empty v-if="showListEndState" class="pb-4" :description="requestFailed ? requestFailedDescription || $t(hasHostPermissionFailure ? 'common.api_error.host_permission_denied' : 'common.api_error.request_failed') : $t('common.no_more_content')">
       <div class="grid-state-actions">
         <Button type="primary" @click="handleRefresh">
           {{ refreshButtonText || $t('common.operation.refresh') }}

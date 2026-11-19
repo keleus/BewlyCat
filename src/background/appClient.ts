@@ -8,6 +8,7 @@ import { onMessage } from '~/utils/messaging'
 
 import type { ApiRequestAttempt } from './apiDiagnostics'
 import { captureApiResponse, isApiResponseFailure, reportApiFailure } from './apiDiagnostics'
+import { ApiHostPermissionError, getMissingHostPermissionOrigin } from './hostPermissions'
 
 // APP 接口（扫码授权、token 刷新、推荐流、不感兴趣）统一由后台按 PiliPlus 的请求构造发出：
 // 不带网页 Cookie，使用 PiliPlus 的 User-Agent 与 APP 请求头，避免把浏览器信息透传给 B 站。
@@ -213,15 +214,55 @@ async function requestAppClient({ endpoint, params, mid }: AppClientRequest, sen
 
     if (!response.ok) {
       const failure = { code: -response.status, message: `HTTP ${response.status}` }
+      const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+      if (missingOrigin) {
+        attempt.missingHostPermission = true
+        attempt.missingHostOrigin = missingOrigin
+        const permissionError = new ApiHostPermissionError(missingOrigin)
+        reportFailure({ response: failure, error: permissionError })
+        return {
+          code: -1,
+          message: permissionError.message,
+          isHostPermissionMissing: true,
+          missingHostOrigin: missingOrigin,
+        }
+      }
       reportFailure({ response: failure })
       return failure
     }
     const data = await response.json()
-    if (isApiResponseFailure(data))
+    if (isApiResponseFailure(data)) {
+      const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+      if (missingOrigin) {
+        attempt.missingHostPermission = true
+        attempt.missingHostOrigin = missingOrigin
+        const permissionError = new ApiHostPermissionError(missingOrigin)
+        reportFailure({ response: data, error: permissionError })
+        return {
+          code: -1,
+          message: permissionError.message,
+          isHostPermissionMissing: true,
+          missingHostOrigin: missingOrigin,
+        }
+      }
       reportFailure({ response: data })
+    }
     return data
   }
   catch (error) {
+    const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+    if (missingOrigin) {
+      attempt.missingHostPermission = true
+      attempt.missingHostOrigin = missingOrigin
+      const permissionError = new ApiHostPermissionError(missingOrigin)
+      reportFailure({ error: permissionError })
+      return {
+        code: -1,
+        message: permissionError.message,
+        isHostPermissionMissing: true,
+        missingHostOrigin: missingOrigin,
+      }
+    }
     reportFailure({ error })
     return { code: -1, message: error instanceof Error ? error.message : String(error) }
   }

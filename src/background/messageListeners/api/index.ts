@@ -89,6 +89,8 @@ export function setupApiMsgListeners() {
             message: error?.message || String(error),
             code: error?.code,
             isRiskControl: error?.isRiskControl,
+            isHostPermissionMissing: error?.isHostPermissionMissing,
+            missingHostOrigin: error?.missingHostOrigin,
           },
         }),
       ).catch(() => {

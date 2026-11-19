@@ -9,6 +9,7 @@ import { isBackgroundUnavailableError } from './messaging'
  */
 export type RequestFailureKind
   = | 'background'
+    | 'hostPermission'
     | 'offline'
     | 'riskControl'
     | 'http'
@@ -21,6 +22,8 @@ export type RequestFailureKind
 
 export interface RequestFailure {
   kind: RequestFailureKind
+  /** 缺少站点访问权限的域名，仅 `hostPermission` 类型 */
+  origin?: string
   /** HTTP 状态码，仅 `http` 类型 */
   status?: number
   /** B 站接口返回的 code，仅 `api` 类型 */
@@ -32,6 +35,7 @@ export interface RequestFailure {
 // 本地环境问题优先于服务端响应，明确的响应优先于含糊的连接失败。
 const KIND_PRIORITY: Record<RequestFailureKind, number> = {
   background: 100,
+  hostPermission: 95,
   offline: 90,
   riskControl: 80,
   http: 70,
@@ -45,6 +49,7 @@ const KIND_PRIORITY: Record<RequestFailureKind, number> = {
 
 // 匹配 timeout、timed out
 const TIMEOUT_PATTERN = /timed?\s*out/i
+const HOST_PERMISSION_PATTERN = /missing host permission(?: for (https?:\/\/[^\s/]+))?/i
 const NETWORK_PATTERN = /failed to fetch|networkerror|network error|load failed|net::|err_[a-z_]+/i
 const INVALID_JSON_PATTERN = /json|unexpected (?:token|end|character)|invalid response/i
 const HTTP_STATUS_PATTERN = /\bHTTP (\d{3})\b/
@@ -62,7 +67,23 @@ function isBrowserOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false
 }
 
+function extractHostPermissionFailure(value: Record<string, unknown>): RequestFailure | undefined {
+  const message = typeof value.message === 'string' ? value.message : undefined
+  const match = message ? HOST_PERMISSION_PATTERN.exec(message) : null
+  if (value.isHostPermissionMissing === true || value.name === 'ApiHostPermissionError' || match) {
+    const origin = typeof value.missingHostOrigin === 'string' && value.missingHostOrigin
+      ? value.missingHostOrigin
+      : match?.[1]
+    return { kind: 'hostPermission', origin, message }
+  }
+  return undefined
+}
+
 function classifyErrorMessage(message: string, name?: string): RequestFailure {
+  const hostPermissionMatch = HOST_PERMISSION_PATTERN.exec(message)
+  if (name === 'ApiHostPermissionError' || hostPermissionMatch)
+    return { kind: 'hostPermission', origin: hostPermissionMatch?.[1], message }
+
   if (name === 'TimeoutError' || TIMEOUT_PATTERN.test(message))
     return { kind: isBrowserOffline() ? 'offline' : 'timeout', message }
 
@@ -83,6 +104,12 @@ function classifyError(error: unknown): RequestFailure {
   if (isBackgroundUnavailableError(error))
     return { kind: 'background', message: error instanceof Error ? error.message : String(error) }
 
+  if (isRecord(error)) {
+    const hostPermissionFailure = extractHostPermissionFailure(error)
+    if (hostPermissionFailure)
+      return hostPermissionFailure
+  }
+
   if (isBilibiliRiskControl(error))
     return { kind: 'riskControl', message: isRecord(error) ? String(error.message ?? '') : undefined }
 
@@ -94,6 +121,10 @@ function classifyError(error: unknown): RequestFailure {
 }
 
 function classifyResponse(response: Record<string, unknown>, listKey: string): RequestFailure {
+  const hostPermissionFailure = extractHostPermissionFailure(response)
+  if (hostPermissionFailure)
+    return hostPermissionFailure
+
   if (isBilibiliRiskControl(response))
     return { kind: 'riskControl', code: toFiniteNumber(response.code), message: String(response.message ?? '') }
 

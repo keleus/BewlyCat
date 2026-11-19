@@ -34,9 +34,11 @@ common:
   load_more: Load more
   api_error:
     request_failed: Request failed. Please refresh and try again later
+    host_permission_denied: Site access permission for Bilibili is turned off or restricted. Allow BewlyCat to access *.bilibili.com in your browser's extension settings, then refresh and try again
     details: View error details
     title: Error details
     desc: Login data and signatures are replaced with *. You can copy this to report the issue
+    host_permission_hint: BewlyCat is missing site access permission for Bilibili. Enable site access for *.bilibili.com in your browser's extension settings, then refresh the page and try again.
     risk_hint: This looks like a risk-control response. Try again later, refresh less often, or check the request mode and filter settings in the diagnostics below.
     no_records: No failed API requests were captured. The extension may have just updated, or its background service may be temporarily unavailable.
     copy: Copy error info
@@ -1589,6 +1591,7 @@ home:
   app_recommendation_failed: 'App recommendations failed to load: {reason}'
   recommendation_failure_reason:
     background: The extension's background connection was lost. Refresh the page; if it still fails, re-enable BewlyCat on the extensions page.
+    host_permission: Site access permission for Bilibili is disabled or restricted. Allow BewlyCat to access *.bilibili.com in your browser's extension settings, then refresh and try again.
     offline: You're offline. Reconnect, then refresh and try again.
     timeout: The request timed out. The network may be slow, or a proxy or IPv6 route may be misbehaving. Check your network, then refresh.
     network: Couldn't reach Bilibili's servers. Check your network and proxy settings, and make sure ad blockers or other extensions aren't blocking Bilibili's API.

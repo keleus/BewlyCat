@@ -49,7 +49,10 @@ async function copyReport() {
     @confirm="copyReport"
     @close="emit('close')"
   >
-    <p v-if="report?.likelyRiskControl" class="api-error-note api-error-note--risk">
+    <p v-if="report?.missingHostPermission" class="api-error-note api-error-note--permission">
+      {{ $t('common.api_error.host_permission_hint') }}
+    </p>
+    <p v-else-if="report?.likelyRiskControl" class="api-error-note api-error-note--risk">
       {{ $t('common.api_error.risk_hint') }}
     </p>
     <p v-else-if="report && !report.hasRequestRecords" class="api-error-note">
@@ -78,11 +81,19 @@ async function copyReport() {
   line-height: var(--bew-line-height-control);
 }
 
+.api-error-note--permission,
 .api-error-note--risk {
   padding: var(--bew-space-2) var(--bew-space-3);
   color: var(--bew-text-1);
-  background: var(--bew-warning-color-20);
   border-radius: var(--bew-interactive-radius);
+}
+
+.api-error-note--permission {
+  background: var(--bew-error-color-20);
+}
+
+.api-error-note--risk {
+  background: var(--bew-warning-color-20);
 }
 
 .api-error-report {

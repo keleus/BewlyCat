@@ -10,5 +10,7 @@ export type ApiPortResponse = {
     message: string
     code?: number
     isRiskControl?: boolean
+    isHostPermissionMissing?: boolean
+    missingHostOrigin?: string
   }
 }

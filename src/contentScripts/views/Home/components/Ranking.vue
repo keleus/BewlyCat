@@ -13,6 +13,7 @@ import type { List as RankingVideoItem, RankingResult } from '~/models/video/ran
 import type { List as RankingPgcItem, RankingPgcResult } from '~/models/video/rankingPgc'
 import api from '~/utils/api'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
+import { hasMissingHostPermissionFailure } from '~/utils/apiDiagnostics'
 import { getListGridColumnCount } from '~/utils/gridLayout'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
@@ -398,7 +399,11 @@ function getItemKey(item: RankingVideoElement) {
             />
           </template>
         </div>
-        <Empty v-if="requestFailed && !isLoading && PgcList.length === 0" mt-6 :description="$t('common.api_error.request_failed')">
+        <Empty
+          v-if="requestFailed && !isLoading && PgcList.length === 0"
+          mt-6
+          :description="$t(hasMissingHostPermissionFailure(errorReportSource.queries) ? 'common.api_error.host_permission_denied' : 'common.api_error.request_failed')"
+        >
           <div flex="~ wrap justify-center gap-2">
             <Button type="primary" @click="initData">
               {{ $t('common.operation.refresh') }}
