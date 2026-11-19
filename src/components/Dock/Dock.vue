@@ -1218,13 +1218,13 @@ onUnmounted(() => {
                   v-if="key === 1"
                   icon="tabler:reload"
                   class="dock-action-icon"
-                  shrink-0 absolute text="size-$bew-icon-size-lg"
+                  shrink-0 absolute
                 />
                 <Icon
                   v-else
                   icon="line-md:arrow-small-up"
                   class="dock-action-icon"
-                  shrink-0 absolute text="size-$bew-icon-size-lg"
+                  shrink-0 absolute
                 />
               </button>
             </Transition>
@@ -1246,13 +1246,13 @@ onUnmounted(() => {
                 v-if="(reachTop || !backToTopButtonEnabled) && showRefreshButton"
                 icon="tabler:reload"
                 class="dock-action-icon"
-                shrink-0 absolute text="size-$bew-icon-size-lg"
+                shrink-0 absolute
               />
               <Icon
                 v-else
                 icon="line-md:arrow-small-up"
                 class="dock-action-icon"
-                shrink-0 absolute text="size-$bew-icon-size-lg"
+                shrink-0 absolute
               />
             </Transition>
           </button>
@@ -1272,13 +1272,13 @@ onUnmounted(() => {
               v-if="showUndo"
               icon="mdi:undo-variant"
               class="dock-action-icon"
-              shrink-0 absolute text="size-$bew-icon-size-lg"
+              shrink-0 absolute
             />
             <Icon
               v-else-if="showForward"
               icon="mdi:redo-variant"
               class="dock-action-icon"
-              shrink-0 absolute text="size-$bew-icon-size-lg"
+              shrink-0 absolute
             />
           </button>
         </Transition>
@@ -1345,11 +1345,6 @@ onUnmounted(() => {
       height: var(--bew-edge-hover-area);
     }
   }
-}
-
-.back-to-top-or-refresh-btn :deep(.dock-action-icon) {
-  width: var(--bew-icon-size-lg);
-  height: var(--bew-icon-size-lg);
 }
 
 .dock-content {
@@ -1477,6 +1472,10 @@ onUnmounted(() => {
     &.inactive {
       --uno: "opacity-80 !shadow-none";
     }
+
+    :deep(.bew-local-icon) {
+      --uno: "lg:w-22px w-18px lg:h-22px h-18px block align-middle";
+    }
   }
 
   &.bottom .back-to-top-or-refresh-btn {
@@ -1511,8 +1510,6 @@ onUnmounted(() => {
 
 .dock-edit-action-item__icon {
   position: absolute;
-  width: var(--bew-icon-size-lg);
-  height: var(--bew-icon-size-lg);
   flex: none;
 }
 
