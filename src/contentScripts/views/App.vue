@@ -964,9 +964,11 @@ const useFirefoxScrollbar = computed(() => isFirefoxBuild && settings.value.enab
 // 首页由内部容器或 iframe 滚动，滚动条位于窗口右缘；顶栏和 Dock 让出这一列，
 // 与原版页面中 fixed 元素止于文档滚动条左侧的位置保持一致。
 const viewportScrollbarGutter = ref(0)
-const iframeScrollbarGutter = ref(0)
+const iframeScrollbarGutter = ref<number | null>(null)
 useResizeObserver(scrollViewportRef, ([entry]) => {
   const viewport = entry.target as HTMLElement
+  if (!viewport.isConnected || viewport.offsetWidth === 0)
+    return
   viewportScrollbarGutter.value = viewport.offsetWidth - viewport.clientWidth
 })
 
@@ -1164,10 +1166,17 @@ const showBewlyPage = computed((): boolean => {
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
 })
 
+watch(iframePageURL, (url) => {
+  if (!url)
+    iframeScrollbarGutter.value = null
+}, { flush: 'sync' })
+
 const pageScrollbarGutter = computed(() => {
   if (showBewlyPage.value)
     return viewportScrollbarGutter.value
-  return iframePageURL.value ? iframeScrollbarGutter.value : 0
+  if (iframePageURL.value)
+    return iframeScrollbarGutter.value ?? viewportScrollbarGutter.value
+  return 0
 })
 // 原版页面的文档滚动条不需要让位，但 Dock 需要据此收紧与滚动条之间的边距。
 const documentScrollbarWidth = ref(0)

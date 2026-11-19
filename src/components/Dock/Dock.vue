@@ -1350,6 +1350,7 @@ onUnmounted(() => {
 .dock-content {
   --uno: "absolute flex justify-center items-center scale-$scale";
 
+  transition-property: opacity, transform;
   transition-duration: 0ms;
   // Only the visible pieces should hit-test; the inner margin would otherwise
   // cover the page scrollbar next to the Dock.
