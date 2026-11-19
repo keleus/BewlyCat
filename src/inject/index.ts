@@ -287,6 +287,7 @@ else if (shouldInitializePageScript) {
   const COMMENT_REPLY_BATCH_PAGE_LIMIT = 5
   const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
   const COMMENT_REPLY_CONTAINER_ATTRIBUTE = 'data-bewly-comment-reply-container'
+  const COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE = 'data-bewly-comment-reply-footer-stuck'
   const COMMENT_REPLY_CONTAINER_HEIGHT_VAR = '--bew-comment-reply-container-height'
   const COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT = 240
   const COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT = 960
@@ -321,6 +322,7 @@ else if (shouldInitializePageScript) {
     resizeObserver?: ResizeObserver
     observedReplyContainer?: HTMLElement
     replyContainerMutationObserver?: MutationObserver
+    replyContainerScrollAbort?: AbortController
     imageLoadAbort?: AbortController
     imageLoadListeners?: WeakSet<HTMLImageElement>
     layoutUpdateRaf?: number
@@ -407,10 +409,35 @@ else if (shouldInitializePageScript) {
       id: 'bewly-comment-header-style',
       css: `
         .bili-comments-bottom-fixed-wrapper > div {
+          --_bew-box-bg: var(--bew-comment-bottom-fixed-box-bg);
+          --_bew-box-bg-hover: var(--bew-comment-bottom-fixed-box-bg-hover);
+          --_bew-box-bg-active: var(--bew-comment-bottom-fixed-box-bg-active);
+          --_bew-box-filter: var(--bew-comment-bottom-fixed-box-filter);
+          --_bew-box-shadow: var(--bew-comment-bottom-fixed-box-shadow);
           background-color: var(--bew-comment-bottom-fixed-bg, var(--bg1)) !important;
           -webkit-backdrop-filter: var(--bew-comment-bottom-fixed-filter, none);
           backdrop-filter: var(--bew-comment-bottom-fixed-filter, none);
           border-top-color: var(--bew-comment-bottom-fixed-border, var(--Ga2, var(--line_regular))) !important;
+          border-radius: var(--bew-comment-bottom-fixed-radius, 0);
+          box-shadow: var(--bew-comment-bottom-fixed-shadow, none) !important;
+          transition:
+            background-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
+            border-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
+            box-shadow var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+        }
+
+        .bili-comments-bottom-fixed-wrapper > div:focus-within {
+          --_bew-box-bg: initial;
+          --_bew-box-bg-hover: initial;
+          --_bew-box-bg-active: initial;
+          --_bew-box-filter: none;
+          --_bew-box-shadow: none;
+          background-color: var(--bew-comment-bottom-fixed-active-bg, var(--bew-comment-bottom-fixed-bg, var(--bg1))) !important;
+          -webkit-backdrop-filter: var(--bew-comment-bottom-fixed-active-filter, var(--bew-comment-bottom-fixed-filter, none));
+          backdrop-filter: var(--bew-comment-bottom-fixed-active-filter, var(--bew-comment-bottom-fixed-filter, none));
+          border-top-color: var(--bew-comment-bottom-fixed-active-border, var(--bew-comment-bottom-fixed-border, var(--Ga2, var(--line_regular)))) !important;
+          border-radius: var(--bew-comment-bottom-fixed-active-radius, var(--bew-comment-bottom-fixed-radius, 0));
+          box-shadow: var(--bew-comment-bottom-fixed-active-shadow, var(--bew-comment-bottom-fixed-shadow, none)) !important;
         }
       `,
     },
@@ -652,8 +679,13 @@ else if (shouldInitializePageScript) {
           position: sticky;
           bottom: 0;
           z-index: 1;
+          transition: background-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+        }
+
+        /* 仅在容器溢出且未滚到底部（底栏压在下方回复上）时铺底防叠字，避免未展开的「共 x 条回复」出现实色横条 */
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}][${COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE}]) #expander-contents > #expander-footer {
           /* 宽屏侧栏和原生评论区可有独立底色，不能优先取全局页面背景。 */
-          background: var(--bewly-widescreen-sidebar-bg, var(--bg1, var(--bew-bg, #fff)));
+          background: var(--bew-comment-sticky-footer-bg, var(--bewly-widescreen-sidebar-bg, var(--bg1, var(--bew-bg, #fff))));
           -webkit-backdrop-filter: var(--bew-comment-sticky-footer-filter, none);
           backdrop-filter: var(--bew-comment-sticky-footer-filter, none);
         }
@@ -745,18 +777,29 @@ else if (shouldInitializePageScript) {
           border-color: var(--bew-comment-box-border, var(--Ga1)) !important;
         }
 
-        /* 编辑框底色与边框钩子：未设置时回落到原生 var(--bg3) / var(--bg1) / var(--Ga2)，供视频页玻璃风格统一为半透明填充 */
+        /* 编辑框底色、边框与毛玻璃钩子：未设置时回落到原生样式，供视频页玻璃风格统一处理 */
+        #editor {
+          -webkit-backdrop-filter: var(--_bew-box-filter, var(--bew-comment-box-filter, none));
+          backdrop-filter: var(--_bew-box-filter, var(--bew-comment-box-filter, none));
+          box-shadow: var(--_bew-box-shadow, none);
+        }
+
+        .tool-btn {
+          -webkit-backdrop-filter: var(--_bew-box-filter, none);
+          backdrop-filter: var(--_bew-box-filter, none);
+        }
+
         #editor:not(:hover):not(.active) {
-          background-color: var(--bew-comment-box-bg, var(--bg3)) !important;
+          background-color: var(--_bew-box-bg, var(--bew-comment-box-bg, var(--bg3))) !important;
         }
 
         #editor:hover:not(.active) {
-          background-color: var(--bew-comment-box-bg-hover, var(--bew-comment-box-bg-active, var(--bg1))) !important;
+          background-color: var(--_bew-box-bg-hover, var(--bew-comment-box-bg-hover, var(--bew-comment-box-bg-active, var(--bg1)))) !important;
           border-color: var(--bew-comment-box-border-hover, var(--Ga2)) !important;
         }
 
         #editor.active {
-          background-color: var(--bew-comment-box-bg-active, var(--bg1)) !important;
+          background-color: var(--_bew-box-bg-active, var(--bew-comment-box-bg-active, var(--bg1))) !important;
           border-color: var(--bew-comment-box-border-active, var(--Ga2)) !important;
         }
 
@@ -2648,6 +2691,8 @@ else if (shouldInitializePageScript) {
     state.observedTargetsKey = undefined
     state.replyContainerMutationObserver?.disconnect()
     state.replyContainerMutationObserver = undefined
+    state.replyContainerScrollAbort?.abort()
+    state.replyContainerScrollAbort = undefined
     state.observedReplyContainer = undefined
     state.imageLoadAbort?.abort()
     state.imageLoadAbort = undefined
@@ -2853,6 +2898,14 @@ else if (shouldInitializePageScript) {
           scheduleCommentReplyTreeLayoutUpdate(component)
       })
       observer.observe(replyContainer, { childList: true })
+      state.replyContainerScrollAbort?.abort()
+      const scrollAbort = new AbortController()
+      replyContainer.addEventListener(
+        'scroll',
+        () => syncCommentReplyFooterStuckState(component, replyContainer),
+        { passive: true, signal: scrollAbort.signal },
+      )
+      state.replyContainerScrollAbort = scrollAbort
       state.observedReplyContainer = replyContainer
       state.replyContainerMutationObserver = observer
     }
@@ -3001,16 +3054,34 @@ else if (shouldInitializePageScript) {
     )
   }
 
+  /** 仅在回复容器产生纵向溢出且尚未滚到底部时，才将吸底栏标为遮挡态以显示底衬 */
+  function syncCommentReplyFooterStuckState(component: any, replyContainer: HTMLElement | null) {
+    if (!(component instanceof HTMLElement))
+      return
+
+    if (!component.hasAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE) || !replyContainer) {
+      component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
+      return
+    }
+
+    const isOverflowing = replyContainer.scrollHeight > replyContainer.clientHeight + 1
+    const isAtBottom = replyContainer.scrollTop + replyContainer.clientHeight >= replyContainer.scrollHeight - 1
+    component.toggleAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE, isOverflowing && !isAtBottom)
+  }
+
   /** 回复容器由 CSS 驱动：属性切换生效范围，变量承载用户配置的高度 */
   function applyCommentReplyContainer(component: any, enabled: boolean) {
     if (!(component instanceof HTMLElement))
       return
 
     component.toggleAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE, enabled)
-    if (enabled)
+    if (enabled) {
       component.style.setProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR, `${getCommentReplyContainerHeight()}px`)
-    else
+    }
+    else {
       component.style.removeProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR)
+      component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
+    }
   }
 
   /**
@@ -4642,6 +4713,7 @@ else if (shouldInitializePageScript) {
     else {
       removeCommentReplyTreeGuides(component, replyContainer)
     }
+    syncCommentReplyFooterStuckState(component, replyContainer)
     updateCommentReplyExpandAllControl(component)
     state.enabled = true
   }

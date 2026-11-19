@@ -261,6 +261,7 @@ export function setupNecessarySettingsWatchers() {
       () => settings.value.adaptToOtherPageStyles,
       () => settings.value.videoPageDarkMode,
       () => settings.value.videoPageGlassStyle,
+      () => settings.value.videoPageGlassStyleOverlay,
       () => settings.value.roundedVideoPlayer,
     ],
     () => {

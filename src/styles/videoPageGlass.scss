@@ -1,21 +1,75 @@
 // 视频与番剧播放页整页毛玻璃风格（含普通播放页与 Bewly 宽屏模式）：
-// App.vue 在底层渲染全局背景，并按设置可选叠加全页毛玻璃底衬优化文字可读性，页面容器与宽屏侧栏/发送栏整体穿透融入，
-// 原生实色控件改为半透明填充，吸顶/吸底栏与悬浮按钮辅以毛玻璃防文字叠印。
+// App.vue 在底层渲染全局背景，并按设置可选叠加全页毛玻璃底衬优化文字可读性，页面容器与宽屏侧栏整体穿透融入，
+// 弹幕发送栏、弹幕列表与选集面板保留独立毛玻璃表面，吸底评论栏常态仅对输入框模糊以消除左右割裂。
 @use "./videoPageSurfaces" as surfaces;
 
 html.bewly-video-glass.bewly-design {
   background-color: var(--bew-homepage-bg);
 
-  --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 24%, transparent);
-  --bew-video-glass-sticky-filter: var(--bew-filter-glass-blur-1);
+  // 未叠加全页毛玻璃底衬时保留完整毛玻璃（含饱和度），叠加全页底衬后仅保留模糊避免二次叠乘饱和度
+  --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 42%, transparent);
+  --bew-video-glass-panel-filter: var(--bew-filter-glass-1);
+  --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 72%, transparent);
+  --bew-video-glass-sticky-filter: var(--bew-filter-glass-1);
+  // 宽屏自适应抽屉滑入盖在视频画面（含 HDR 视频）上时提高底色不透明度，在保留毛玻璃质感的同时避免画面高亮穿透变透明
+  --bew-video-glass-drawer-bg: color-mix(in oklab, var(--bew-content-solid) 82%, transparent);
+  --bew-video-glass-drawer-filter: var(--bew-filter-glass-2);
+  --bew-video-glass-floating-input-bg: color-mix(in oklab, var(--bew-content-solid) 52%, transparent);
+  --bew-video-glass-floating-input-bg-hover: color-mix(in oklab, var(--bew-content-solid) 64%, transparent);
+
+  &.bewly-video-glass-overlay {
+    --bew-video-glass-panel-filter: var(--bew-filter-glass-blur-1);
+    --bew-video-glass-sticky-filter: var(--bew-filter-glass-blur-1);
+  }
+
+  &:not(.dark) {
+    // 浅色毛玻璃下原站浅灰 token（#9499a0 / #c9ccd0 / #e3e5e7）在透色底衬上会发淡或反白；
+    // 统一改用深墨色半透明阶梯，确保次级文字、操作图标与分割线在任意浅色玻璃底上保持清晰对比度。
+    --bew-text-2: hsl(217 19% 14% / 84%);
+    --bew-text-3: hsl(217 19% 16% / 68%);
+    --bew-text-4: hsl(217 19% 20% / 48%);
+    --bew-fill-1: rgb(24 25 28 / 7%);
+    --bew-fill-2: rgb(24 25 28 / 13%);
+    --bew-fill-3: rgb(24 25 28 / 20%);
+    --bew-border-color: rgb(24 25 28 / 14%);
+    --bew-comment-tree-line-color: rgb(24 25 28 / 24%);
+    --bew-ip-tag-text: var(--bew-text-2);
+
+    body {
+      --text1: var(--bew-text-1);
+      --text2: var(--bew-text-2);
+      --text3: var(--bew-text-3);
+      --text4: var(--bew-text-4);
+      --line_light: rgb(24 25 28 / 8%);
+      --line_regular: rgb(24 25 28 / 12%);
+      --line_bold: rgb(24 25 28 / 20%);
+      --graph_bg_thin: var(--bew-fill-1);
+      --graph_bg_regular: var(--bew-fill-1);
+      --graph_bg_thick: rgb(24 25 28 / 12%);
+      --graph_weak: rgb(24 25 28 / 22%);
+      --graph_medium: rgb(24 25 28 / 34%);
+      --graph_bold: rgb(24 25 28 / 50%);
+      --graph_icon: var(--bew-text-2);
+    }
+  }
 
   &.dark {
-    --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 32%, transparent);
+    --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 38%, transparent);
+    --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 76%, transparent);
+    --bew-video-glass-drawer-bg: color-mix(in oklab, var(--bew-content-solid) 80%, transparent);
+    --bew-video-glass-floating-input-bg: color-mix(in oklab, var(--bew-content-solid) 48%, transparent);
+    --bew-video-glass-floating-input-bg-hover: color-mix(in oklab, var(--bew-content-solid) 60%, transparent);
   }
 
   &.disable-frosted-glass {
+    --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 52%, transparent);
+    --bew-video-glass-panel-filter: none;
     --bew-video-glass-sticky-bg: var(--bew-content-solid);
     --bew-video-glass-sticky-filter: none;
+    --bew-video-glass-drawer-bg: var(--bew-content-solid);
+    --bew-video-glass-drawer-filter: none;
+    --bew-video-glass-floating-input-bg: var(--bew-content-solid);
+    --bew-video-glass-floating-input-bg-hover: var(--bew-content-solid-hover);
   }
 
   body {
@@ -28,13 +82,30 @@ html.bewly-video-glass.bewly-design {
     --bew-comment-box-border: var(--bew-border-color);
     --bew-comment-box-border-hover: var(--bew-border-color);
     --bew-comment-box-border-active: var(--bew-theme-color-40);
+    --bew-comment-box-filter: var(--bew-video-glass-panel-filter);
     --bew-comment-vote-card-bg: var(--bew-fill-1);
     --bew-comment-vote-card-bg-hover: var(--bew-fill-2);
     --bew-comment-vote-card-border: var(--bew-border-color);
     --bew-comment-vote-card-border-hover: var(--bew-border-color);
-    --bew-comment-bottom-fixed-bg: var(--bew-video-glass-sticky-bg);
-    --bew-comment-bottom-fixed-filter: var(--bew-video-glass-sticky-filter);
-    --bew-comment-bottom-fixed-border: var(--bew-border-color);
+    // 吸底评论栏常态外层保持透明无边框，仅针对输入框做独立毛玻璃消除左右硬切割裂；
+    // 聚焦展开工具栏时，外层浮现顶部圆角毛玻璃面板防止与下方滚动评论叠字。
+    --bew-comment-bottom-fixed-bg: transparent;
+    --bew-comment-bottom-fixed-filter: none;
+    --bew-comment-bottom-fixed-border: transparent;
+    --bew-comment-bottom-fixed-radius: 0;
+    --bew-comment-bottom-fixed-shadow: none;
+    --bew-comment-bottom-fixed-box-bg: var(--bew-video-glass-floating-input-bg);
+    --bew-comment-bottom-fixed-box-bg-hover: var(--bew-video-glass-floating-input-bg-hover);
+    --bew-comment-bottom-fixed-box-bg-active: var(--bew-video-glass-floating-input-bg-hover);
+    --bew-comment-bottom-fixed-box-filter: var(--bew-video-glass-sticky-filter);
+    --bew-comment-bottom-fixed-box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+    --bew-comment-bottom-fixed-active-bg: var(--bew-content);
+    --bew-comment-bottom-fixed-active-filter: var(--bew-video-glass-sticky-filter);
+    --bew-comment-bottom-fixed-active-border: var(--bew-border-color);
+    --bew-comment-bottom-fixed-active-radius: var(--bew-panel-radius) var(--bew-panel-radius) 0 0;
+    --bew-comment-bottom-fixed-active-shadow:
+      inset 1px 0 0 var(--bew-border-color), inset -1px 0 0 var(--bew-border-color), var(--bew-shadow-2);
+    --bew-comment-sticky-footer-bg: var(--bew-video-glass-sticky-bg);
     --bew-comment-sticky-footer-filter: var(--bew-video-glass-sticky-filter);
     --bew-comment-tag-color: var(--bew-text-2);
     --bew-comment-tag-bg: var(--bew-fill-1);
@@ -114,6 +185,11 @@ html.bewly-video-glass.bewly-design {
     }
 
     // 原生的 .focus 类常驻，不代表真实聚焦；悬停与聚焦维持中性半透明加深，不跳成白块
+    :is(.bb-comment, .comment-bilibili-fold) :is(.comment-send, .comment-send-lite) .textarea-container .ipt-txt {
+      -webkit-backdrop-filter: var(--bew-comment-box-filter);
+      backdrop-filter: var(--bew-comment-box-filter);
+    }
+
     .bpx-player-video-inputbar:focus-within,
     :is(.bb-comment, .comment-bilibili-fold)
       :is(.comment-send, .comment-send-lite)
@@ -174,20 +250,67 @@ html.bewly-video-glass.bewly-design {
     }
   }
 
-  // 发送栏透明后消去播放器外框阴影，避免勾出空框
-  body:not(.bewly-widescreen-active) {
+  // 清除播放器内层原站阴影；未开启圆角播放器或禁用阴影时一并清除外层阴影，其余由 roundedPlayer.scss 统一施加柔和外投影
+  &:is(:not(.rounded-video-player), .disable-shadow) body:not(.bewly-widescreen-active) {
     #bilibili-player-wrap,
-    #playerWrap,
+    #playerWrap {
+      box-shadow: none !important;
+    }
+  }
+
+  // 普通播放页下，弹幕列表、选集/合集/番剧选集面板与播放器弹幕发送栏使用统一毛玻璃表面（跟随毛玻璃开关与模糊强度）
+  body:not(.bewly-widescreen-active) {
     #bilibili-player,
     .bpx-docker-major,
     .bpx-player-container {
       box-shadow: none !important;
     }
+
+    // 联合投稿创作团队标题栏若有原生分隔线，改为柔和玻璃边框色
+    .membersinfo-normal .header {
+      border-color: var(--bew-border-color) !important;
+    }
+
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap) .bui-collapse-wrap,
+    .membersinfo-normal,
+    .video-pod,
+    .multi-page-v1,
+    .multi-page:not(:has(.multi-page-v1)),
+    .base-video-sections-v1,
+    .video-sections-v1:not(.base-video-sections-v1 *),
+    [class*="eplist_ep_list_wrapper"],
+    [class*="PaginatedEpList_root"],
+    [class*="SectionPanel_panel"]:not([class*="PaginatedEpList_root"] *),
+    .main-container .ep-list-wrapper,
+    .ep-section-module:not(.ep-list-wrapper *),
+    .playlist-app .action-list-container {
+      background: var(--bew-video-glass-panel-bg) !important;
+      border-radius: var(--bew-radius-md);
+      box-shadow: inset 0 0 0 1px var(--bew-border-color) !important;
+      -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
+      backdrop-filter: var(--bew-video-glass-panel-filter);
+    }
+
+    #bilibili-player
+      .bpx-player-container:not(:fullscreen):not([data-screen="full"]):not([data-screen="web"]):not(
+        [data-screen="mini"]
+      )
+      .bpx-player-sending-bar,
+    .bilibili-player-video-sendbar,
+    [class*="NanoPlayer_nonoPlayerSendingBar"] {
+      background: var(--bew-video-glass-panel-bg) !important;
+      box-shadow:
+        inset 1px 0 0 var(--bew-border-color),
+        inset -1px 0 0 var(--bew-border-color),
+        inset 0 -1px 0 var(--bew-border-color) !important;
+      -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
+      backdrop-filter: var(--bew-video-glass-panel-filter);
+    }
   }
 
   // Bewly 宽屏模式：底层全页玻璃背景升至 z-index: 999，宽屏侧栏各区块默认透明穿透共享同一层毛玻璃；
-  // 自适应抽屉（fit）的玻璃底衬挂在兄弟伪元素 stage::before（z-index: 2001）而非侧栏本体，
-  // 避免侧栏形成 W3C Backdrop Root 后导致内部吸顶栏二次叠白与采样截断。
+  // 自适应抽屉（fit）的厚底毛玻璃挂在兄弟伪元素 stage::before（z-index: 2001）而非侧栏本体，
+  // 既保留滑入覆盖视频时的毛玻璃模糊质感、压低 HDR 视频透底，也避免侧栏形成 W3C Backdrop Root 截断内部吸顶栏采样。
   #bewly-widescreen-root {
     background: transparent !important;
     --bewly-widescreen-sidebar-bg: var(--bew-video-glass-sticky-bg);
@@ -205,12 +328,49 @@ html.bewly-video-glass.bewly-design {
     }
 
     .bewly-widescreen-danmaku-dock {
-      background: transparent !important;
+      background: var(--bew-video-glass-panel-bg) !important;
       border-top: 1px solid var(--bew-border-color);
+      -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
+      backdrop-filter: var(--bew-video-glass-panel-filter);
 
       .bpx-player-dm-btn-send.bui-disabled .bui-button-blue {
         color: var(--bew-text-3) !important;
         background-color: var(--bew-fill-2) !important;
+      }
+    }
+
+    &[data-sidebar-mode="fit"]:not([data-sidebar-full="true"]):not([data-sidebar-custom-width="true"]):not(
+        [data-wide-video-priority="true"]
+      ) {
+      // 自适应抽屉背后已有 stage::before 的整体毛玻璃，内部输入框无需二次采样
+      --bew-comment-box-filter: none;
+      --bewly-widescreen-sidebar-bg: var(--bew-video-glass-drawer-bg);
+      --bew-comment-sticky-footer-bg: var(--bewly-widescreen-sidebar-bg);
+
+      .bewly-widescreen-stage::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2001;
+        width: var(--bewly-widescreen-sidebar-panel-width);
+        background: var(--bew-video-glass-drawer-bg);
+        -webkit-backdrop-filter: var(--bew-video-glass-drawer-filter);
+        backdrop-filter: var(--bew-video-glass-drawer-filter);
+        transform: translateX(var(--bewly-widescreen-sidebar-offset));
+        transition: transform 180ms ease;
+        will-change: transform;
+        pointer-events: none;
+      }
+
+      &[data-sidebar-position="left"] .bewly-widescreen-stage::before {
+        left: 0;
+        right: auto;
+      }
+
+      &[data-sidebar-expanded="true"] .bewly-widescreen-stage::before {
+        transform: translateX(0);
       }
     }
 
@@ -220,32 +380,6 @@ html.bewly-video-glass.bewly-design {
     .bewly-widescreen-tabs,
     .bewly-widescreen-panels {
       background: transparent;
-    }
-
-    &[data-sidebar-mode="fit"] .bewly-widescreen-stage::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 2001;
-      width: var(--bewly-widescreen-sidebar-panel-width);
-      background: var(--bew-content);
-      -webkit-backdrop-filter: var(--bew-filter-glass-2);
-      backdrop-filter: var(--bew-filter-glass-2);
-      transform: translateX(var(--bewly-widescreen-sidebar-offset));
-      transition: transform 180ms ease;
-      will-change: transform;
-      pointer-events: none;
-    }
-
-    &[data-sidebar-mode="fit"][data-sidebar-position="left"] .bewly-widescreen-stage::before {
-      left: 0;
-      right: auto;
-    }
-
-    &[data-sidebar-mode="fit"][data-sidebar-expanded="true"] .bewly-widescreen-stage::before {
-      transform: translateX(0);
     }
 
     // 仅在滚动后正文实际钻入吸顶区下方时启用轻度底衬与纯模糊防叠字，未滚动时保持整栏完全一体

@@ -23,11 +23,13 @@ export function applyBewlyDesignClasses(doc: Document = document, url: string = 
   const shouldApplyVideoDarkOnly = !settings.value.adaptToOtherPageStyles
     && isVideoPageDesignEnabled(url)
   const glassEnabled = isVideoPageGlassStyleEnabled(url)
+  const glassOverlayEnabled = glassEnabled && settings.value.videoPageGlassStyleOverlay
 
   const root = doc.documentElement
   root.classList.toggle('bewly-design', shouldApply)
   root.classList.toggle('bewly-video-dark-only', shouldApplyVideoDarkOnly)
   root.classList.toggle('bewly-video-glass', glassEnabled)
+  root.classList.toggle('bewly-video-glass-overlay', glassOverlayEnabled)
   root.classList.toggle('rounded-video-player', settings.value.roundedVideoPlayer && !festivalPage)
 
   return shouldApply

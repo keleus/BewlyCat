@@ -89,8 +89,8 @@ html.rounded-video-player {
     }
   }
 
-  // 整页毛玻璃或环境光下发送栏透明穿透，视频画面本身改为完整四角圆角
-  &:is(.bewly-video-glass, [data-bewly-ambilight]) body:not(.bewly-widescreen-active) {
+  // 纯环境光下发送栏透明穿透，视频画面本身改为完整四角圆角；视频页玻璃风格下发送栏自带毛玻璃底衬，与视频拼合为整体圆角
+  &[data-bewly-ambilight]:not(.bewly-video-glass) body:not(.bewly-widescreen-active) {
     #{$normal-screen-player} .bpx-player-video-area {
       border-radius: var(--bew-media-radius);
 
@@ -120,9 +120,9 @@ html.rounded-video-player {
     }
   }
 
-  // 整页毛玻璃模式下发送栏已透明，阴影只落在四角圆角的视频画面本身
+  // 整页毛玻璃模式下发送栏带毛玻璃底衬与视频画面拼合，外框使用柔和投影
   &.bewly-video-glass:not(.disable-shadow):not([data-bewly-ambilight]) body:not(.bewly-widescreen-active) {
-    #{$normal-screen-player} .bpx-player-video-area {
+    #{$normal-screen-wrap} {
       box-shadow: var(--bew-shadow-2);
     }
   }
