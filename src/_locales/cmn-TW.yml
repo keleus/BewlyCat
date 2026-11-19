@@ -963,7 +963,9 @@ settings:
   disable_background: 關閉背景
   disable_background_desc: 徹底關閉擴充功能頁面的純色背景、漸層背景與桌布（含搜尋頁桌布），顯示 B 站原頁面背景。
   video_page_glass_style: 影片頁玻璃風格
-  video_page_glass_style_desc: 在影片與番劇播放頁（含 Bewly 寬螢幕）顯示背景，整頁鋪一層毛玻璃使內容直接融入。桌布、遮罩、漸層與模糊強度沿用外觀設定，不含課程頁。
+  video_page_glass_style_desc: 在影片與番劇播放頁（含 Bewly 寬螢幕）顯示背景，使內容直接融入。桌布、遮罩、漸層與模糊強度沿用外觀設定，不含課程頁。
+  video_page_glass_style_overlay: 最佳化影片頁玻璃文字顯示
+  video_page_glass_style_overlay_desc: 在背景之上額外疊加一層半透明毛玻璃底襯，提升影片頁文字可讀性；關閉後背景遮罩與模糊完全與外觀設定一致。
   rounded_video_player: 影片播放器圓角
   rounded_video_player_desc: 為影片與番劇頁播放器加上圓角，全螢幕、網頁全螢幕與小視窗下維持直角。
   prevent_mobile_redirect: 防止跳轉至行動版

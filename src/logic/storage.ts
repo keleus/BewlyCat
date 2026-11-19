@@ -498,6 +498,7 @@ export interface Settings {
   themeScheduleEnd: string
   videoPageDarkMode: boolean
   videoPageGlassStyle: boolean
+  videoPageGlassStyleOverlay: boolean
   roundedVideoPlayer: boolean
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
@@ -873,6 +874,7 @@ export const originalSettings: Settings = {
   themeScheduleEnd: '18:00',
   videoPageDarkMode: false,
   videoPageGlassStyle: false,
+  videoPageGlassStyleOverlay: true,
   roundedVideoPlayer: false,
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
@@ -1353,6 +1355,8 @@ export const settings = useSettingsStorage(originalSettings, {
 
     if (typeof record.videoPageGlassStyle !== 'boolean')
       record.videoPageGlassStyle = originalSettings.videoPageGlassStyle
+    if (typeof record.videoPageGlassStyleOverlay !== 'boolean')
+      record.videoPageGlassStyleOverlay = originalSettings.videoPageGlassStyleOverlay
     if (typeof record.roundedVideoPlayer !== 'boolean')
       record.roundedVideoPlayer = originalSettings.roundedVideoPlayer
 

@@ -1934,7 +1934,10 @@ if (settings.value.cleanUrlArgument) {
     <div
       v-else-if="isVideoPageGlassStyleEnabled(currentPageUrl)"
       class="bewly-video-page-background"
-      :class="{ 'bewly-video-page-background--widescreen': isWidescreenActive }"
+      :class="{
+        'bewly-video-page-background--widescreen': isWidescreenActive,
+        'bewly-video-page-background--overlay': settings.videoPageGlassStyleOverlay,
+      }"
     >
       <AppBackground :activated-page="AppPage.Home" />
     </div>
@@ -2409,7 +2412,7 @@ if (settings.value.cleanUrlArgument) {
     z-index: 999;
   }
 
-  &::after {
+  &--overlay::after {
     content: "";
     position: absolute;
     inset: 0;

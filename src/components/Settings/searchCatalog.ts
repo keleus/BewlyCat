@@ -753,6 +753,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_page_style',
     'settings.disable_background',
     'settings.video_page_glass_style',
+    'settings.video_page_glass_style_overlay',
     'settings.rounded_video_player',
     'settings.group_fonts',
     'settings.customize_font',

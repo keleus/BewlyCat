@@ -356,6 +356,14 @@ function changeWallpaper(url: string) {
         <Radio v-model="settings.videoPageGlassStyle" />
       </SettingsItem>
       <SettingsItem
+        v-if="settings.videoPageGlassStyle"
+        :title="$t('settings.video_page_glass_style_overlay')"
+        :desc="$t('settings.video_page_glass_style_overlay_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.videoPageGlassStyleOverlay" />
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.rounded_video_player')"
         :desc="$t('settings.rounded_video_player_desc')"
         right-width="auto"
