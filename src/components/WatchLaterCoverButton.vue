@@ -139,6 +139,9 @@ onBeforeUnmount(() => {
   line-height: 1;
   opacity: 0;
   transform: scale(0.78);
+  /* 弹出/收起由合成图层缩放完成：缺省时 Blink 只能按每帧插值出的 scale 重新栅格化
+     按钮与其中的蒙版图标（UnoCSS 图标为 mask + SVG data URL），过渡期间几乎每帧重绘。 */
+  will-change: transform, opacity;
   transition:
     opacity var(--bew-duration-normal) var(--bew-ease-standard),
     transform var(--bew-duration-normal) var(--bew-ease-standard),
@@ -184,6 +187,7 @@ onBeforeUnmount(() => {
   .bew-watch-later-cover__btn {
     transition: none;
     transform: none;
+    will-change: auto;
   }
 }
 </style>
