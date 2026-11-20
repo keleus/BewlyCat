@@ -200,6 +200,7 @@ html.bewly-video-glass.bewly-design {
 
     .tag-panel .tag-link:hover,
     .video-tag-container .show-more-btn:hover,
+    .random-play-order-select:is(:hover, :active, [aria-expanded="true"]):not(:disabled),
     .rec-footer:hover {
       background: var(--bew-fill-2) !important;
     }

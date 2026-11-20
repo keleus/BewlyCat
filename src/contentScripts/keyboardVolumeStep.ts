@@ -24,6 +24,8 @@ function isEditableTarget(target: Element | null): boolean {
     return false
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)
     return true
+  if (target.closest('.bewly-native-select-trigger, .bewly-native-select-menu') !== null)
+    return true
   return target instanceof HTMLElement
     && (target.isContentEditable || target.closest('[contenteditable="true"], [role="textbox"]') !== null)
 }

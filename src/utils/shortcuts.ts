@@ -167,8 +167,9 @@ function shouldIgnoreShortcutEvent(e: KeyboardEvent): boolean {
     return true
   }
 
-  // 分隔线使用方向键和 Home/End 调宽，不能被播放器快捷键提前拦截。
-  return !!target?.closest?.('.bewly-widescreen-sidebar-resize-handle')
+  // 分隔线使用方向键和 Home/End 调宽，自定义下拉菜单使用方向键/Home/End/空格/回车导航，
+  // 都不能被播放器快捷键提前拦截。
+  return !!target?.closest?.('.bewly-widescreen-sidebar-resize-handle, .bewly-native-select-trigger, .bewly-native-select-menu')
 }
 
 // 已被插件接管的物理按键，对应的 keypress/keyup 也要拦截，避免 B 站在这些阶段执行原有快捷键。

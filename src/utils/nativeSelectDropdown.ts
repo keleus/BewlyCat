@@ -17,7 +17,7 @@ export interface NativeSelectDropdownOptions {
   menuClassName?: string
   /** 浮层挂载目标；默认挂到 document.body，脱离祖先层叠上下文与 Shadow DOM 裁切 */
   mountTarget?: HTMLElement | ShadowRoot
-  /** 浮层与触发器的间距，默认 8px（对齐 Select.vue 的 gap-1 / 4px 网格） */
+  /** 浮层与触发器的间距，默认 4px（对齐 4px 间距网格） */
   gap?: number
   /** 浮层最大高度，默认 300px（对齐 Select.vue） */
   maxHeight?: number
@@ -280,8 +280,13 @@ function isDarkModeActive(): boolean {
   return root.classList.contains('dark') || root.classList.contains('bili_dark')
 }
 
+function isBiliDarkOnlyActive(): boolean {
+  const root = document.documentElement
+  return root.classList.contains('bili_dark') && !root.classList.contains('dark')
+}
+
 /** 从触发器（含 Shadow DOM 继承）与文档根解析当前生效的主题变量值。 */
-function getEffectiveThemeVars(anchor: HTMLElement): {
+function getEffectiveThemeVars(anchor: HTMLElement, skipRootSurfaceVars: boolean): {
   elevated: string
   text1: string
   borderColor: string
@@ -295,11 +300,20 @@ function getEffectiveThemeVars(anchor: HTMLElement): {
   const anchorStyle = getComputedStyle(anchor)
   const rootStyle = getComputedStyle(document.documentElement)
   const readVar = (name: string) => anchorStyle.getPropertyValue(name).trim() || rootStyle.getPropertyValue(name).trim()
+  // 当页面仅有 B 站原生 bili_dark（无插件 .dark）时，:root 上仍挂着浅色 --bew-* 变量，
+  // 需忽略与 :root 相同的浅色底/文字变量，避免覆盖深色兜底；仅保留锚点局部覆写。
+  const readSurfaceVar = (name: string) => {
+    const anchorVal = anchorStyle.getPropertyValue(name).trim()
+    const rootVal = rootStyle.getPropertyValue(name).trim()
+    if (skipRootSurfaceVars)
+      return anchorVal && anchorVal !== rootVal ? anchorVal : ''
+    return anchorVal || rootVal
+  }
   return {
-    elevated: readVar('--bew-elevated'),
-    text1: readVar('--bew-text-1'),
-    borderColor: readVar('--bew-popover-border-color'),
-    fill2: readVar('--bew-fill-2'),
+    elevated: readSurfaceVar('--bew-elevated'),
+    text1: readSurfaceVar('--bew-text-1'),
+    borderColor: readSurfaceVar('--bew-popover-border-color'),
+    fill2: readSurfaceVar('--bew-fill-2'),
     themeColor: readVar('--bew-theme-color'),
     themeColor10: readVar('--bew-theme-color-10'),
     themeColor20: readVar('--bew-theme-color-20'),
@@ -311,8 +325,8 @@ function getEffectiveThemeVars(anchor: HTMLElement): {
  * 打开时把解析结果直接写到浮层元素上：有值就原样透传，缺失时才用明暗兜底。
  */
 function applyDarkThemeFallbackVars(element: HTMLElement, anchor: HTMLElement): void {
-  const vars = getEffectiveThemeVars(anchor)
   const dark = isDarkModeActive()
+  const vars = getEffectiveThemeVars(anchor, isBiliDarkOnlyActive())
 
   const fallback = dark
     ? {
@@ -386,6 +400,7 @@ export function createNativeSelectDropdown(
   let isOpen = false
   let closeTimer: number | undefined
   let openListenersAbort: AbortController | undefined
+  let spaceKeyupAbort: AbortController | undefined
   let positionRaf: number | undefined
   /** 内容高度只随选项变化，缓存后避免每帧测量触发同步重排 */
   let contentHeightCache: number | undefined
@@ -450,11 +465,36 @@ export function createNativeSelectDropdown(
     return contentHeightCache ?? maxHeight
   }
 
-  function positionMenu(force = false) {
+  /** 穿透多层开放 Shadow DOM 命中坐标下的实际元素，用于识别顶栏/吸顶头/滚动裁切遮挡。 */
+  function deepElementFromPoint(x: number, y: number): Element | null {
+    let current: Element | null = document.elementFromPoint(x, y)
+    const visited = new Set<Element>()
+    while (current?.shadowRoot && !visited.has(current)) {
+      visited.add(current)
+      const next = current.shadowRoot.elementFromPoint(x, y)
+      if (!next || next === current)
+        break
+      current = next
+    }
+    return current
+  }
+
+  function isTriggerOccluded(rect: DOMRect, viewportWidth: number, viewportHeight: number): boolean {
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    if (cx < 0 || cx > viewportWidth || cy < 0 || cy > viewportHeight)
+      return true
+    const hit = deepElementFromPoint(cx, cy)
+    if (!hit)
+      return false
+    return !trigger.contains(hit) && !menu.contains(hit)
+  }
+
+  function positionMenu(force = false, precomputedRect?: DOMRect): void {
     if (!trigger.isConnected)
       return
 
-    const rect = trigger.getBoundingClientRect()
+    const rect = precomputedRect ?? trigger.getBoundingClientRect()
     const viewportWidth = document.documentElement.clientWidth || window.innerWidth
     const viewportHeight = document.documentElement.clientHeight || window.innerHeight
 
@@ -471,6 +511,13 @@ export function createNativeSelectDropdown(
     ].join(',')
     if (!force && positionKey === lastPositionKey)
       return
+
+    // 仅在触发器几何变化时做遮挡检测（如滚到固定顶栏/宽屏吸顶栏/溢出裁切区背后），
+    // 静态帧零开销，且在移动浮层前直接关闭，避免浮层先跳到顶栏上方再淡出。
+    if (!force && isTriggerOccluded(rect, viewportWidth, viewportHeight)) {
+      close()
+      return
+    }
     lastPositionKey = positionKey
 
     const spaceBelow = viewportHeight - rect.bottom - gap - DROPDOWN_VIEWPORT_MARGIN
@@ -532,12 +579,15 @@ export function createNativeSelectDropdown(
       const rect = trigger.getBoundingClientRect()
       const viewportWidth = document.documentElement.clientWidth || window.innerWidth
       const viewportHeight = document.documentElement.clientHeight || window.innerHeight
-      // 触发器完全离开视口时关闭，避免浮层悬空指向不可见入口。
-      if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
+      // 触发器隐藏或完全离开视口时关闭，避免浮层悬空指向不可见入口。
+      if ((rect.width === 0 && rect.height === 0)
+        || rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
         close()
         return
       }
-      positionMenu()
+      positionMenu(false, rect)
+      if (!isOpen)
+        return
       positionRaf = requestAnimationFrame(tick)
     }
     positionRaf = requestAnimationFrame(tick)
@@ -661,6 +711,28 @@ export function createNativeSelectDropdown(
     event.stopPropagation()
   }
 
+  function clearSpaceKeyupGuard() {
+    spaceKeyupAbort?.abort()
+    spaceKeyupAbort = undefined
+  }
+
+  // 空格键在 keydown 阶段已被下拉菜单消费后，捕获并拦截随后的 keyup，
+  // 避免 B 站播放器在 keyup 阶段误触暂停或长按倍速。
+  function swallowNextSpaceKeyup() {
+    clearSpaceKeyupGuard()
+    const abort = new AbortController()
+    spaceKeyupAbort = abort
+    const { signal } = abort
+    window.addEventListener('keyup', (event) => {
+      if (event.key !== ' ' && event.code !== 'Space')
+        return
+      event.preventDefault()
+      event.stopPropagation()
+      clearSpaceKeyupGuard()
+    }, { capture: true, signal })
+    window.addEventListener('blur', clearSpaceKeyupGuard, { signal })
+  }
+
   function handleTriggerKeydown(event: KeyboardEvent) {
     if (trigger.disabled)
       return
@@ -670,8 +742,19 @@ export function createNativeSelectDropdown(
       open()
       return
     }
-    // 空格 / 回车交给按钮原生激活，但要拦住冒泡，避免触发 B 站播放器的播放暂停快捷键。
-    if (event.key === ' ' || event.key === 'Enter')
+    // 空格在 keydown 阶段立即切换并拦截后续 keyup，避免触发 B 站播放器的暂停/长按倍速。
+    if (event.key === ' ') {
+      event.preventDefault()
+      event.stopPropagation()
+      swallowNextSpaceKeyup()
+      if (isOpen)
+        close()
+      else
+        open()
+      return
+    }
+    // 回车交给按钮原生激活，但要拦住冒泡。
+    if (event.key === 'Enter')
       event.stopPropagation()
   }
 
@@ -730,6 +813,8 @@ export function createNativeSelectDropdown(
         // 选项本身是 button；这里主动激活并阻断冒泡，避免空格被 B 站播放器快捷键占用。
         event.preventDefault()
         event.stopPropagation()
+        if (event.key === ' ')
+          swallowNextSpaceKeyup()
         if (pos >= 0)
           optionButtons[enabled[pos]]?.click()
         break
@@ -802,6 +887,7 @@ export function createNativeSelectDropdown(
     close,
     destroy: () => {
       window.clearTimeout(closeTimer)
+      clearSpaceKeyupGuard()
       cleanupOpenListeners()
       trigger.removeEventListener('click', handleTriggerClick)
       trigger.removeEventListener('pointerdown', handleTriggerPointerDown)
