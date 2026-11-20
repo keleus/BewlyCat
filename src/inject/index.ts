@@ -11,6 +11,8 @@ import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/c
 import { formatCommentReplyGuideCoordinate, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
 import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUserInfo'
 import { isElectron } from '~/utils/main'
+import type { NativeSelectController, NativeSelectOption } from '~/utils/nativeSelectDropdown'
+import { createNativeSelectDropdown, NATIVE_SELECT_DROPDOWN_CSS } from '~/utils/nativeSelectDropdown'
 import type { PageScriptIdentity, PageScriptInitializedMarker, RunningPageScriptIdentity } from '~/utils/pageScriptIdentity'
 import { createPageScriptIdentityMessage, isPageScriptIdentity, PAGE_SCRIPT_PING } from '~/utils/pageScriptIdentity'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
@@ -263,6 +265,7 @@ else if (shouldInitializePageScript) {
   const commentReplyTreeEpochs = new WeakMap<object, number>()
   const commentReplyPaginationStates = new WeakMap<object, CommentReplyPaginationState>()
   const commentReplyPaginationModeStates = new WeakMap<object, boolean>()
+  const commentReplyPageSelectControllers = new WeakMap<object, NativeSelectController>()
   // B 站切页时可能销毁并重建 replies renderer；按楼层身份保留已见回复的
   // parent/root 与正文摘要，重建后仍能解析跨页父子关系。
   const commentReplyCrossPageMetaCaches = new Map<string, Map<string, CommentReplyTreeCachedMeta>>()
@@ -480,37 +483,11 @@ else if (shouldInitializePageScript) {
           white-space: nowrap;
         }
 
-        #${COMMENT_REPLY_PAGE_SELECT_ID} {
-          min-width: var(--bew-space-6, 24px);
-          min-height: var(--bew-space-6, 24px);
-          padding: 0 var(--bew-space-1, 4px);
-          border: 0;
-          border-radius: var(--bew-radius-sm, 4px);
-          background: transparent;
-          color: var(--bew-text-2, var(--text2, #61666d));
-          font: inherit;
-          cursor: pointer;
-          vertical-align: baseline;
-        }
+        ${NATIVE_SELECT_DROPDOWN_CSS}
 
-        #${COMMENT_REPLY_PAGE_SELECT_ID}:is(:hover, :active):not(:disabled) {
-          color: var(--bew-theme-color, #00aeec);
-          background: var(--bew-fill-1, var(--graph_bg_thin, #f1f2f3));
-        }
-
-        #${COMMENT_REPLY_PAGE_SELECT_ID}:focus-visible {
-          outline: var(--bew-space-0-5, 2px) solid var(--bew-theme-color, #00aeec);
-          outline-offset: var(--bew-space-0-5, 2px);
-        }
-
+        /* 分页加载中保留等待光标，覆盖公共禁用态的 not-allowed */
         #${COMMENT_REPLY_PAGE_SELECT_ID}:disabled {
-          opacity: 0.6;
           cursor: wait;
-        }
-
-        #${COMMENT_REPLY_PAGE_SELECT_ID} option {
-          background: var(--bew-bg, var(--bg1, #fff));
-          color: var(--bew-text-1, var(--text1, #18191c));
         }
 
         #view-more:has(> #${COMMENT_REPLY_EXPAND_ALL_ID}) {
@@ -1314,43 +1291,47 @@ else if (shouldInitializePageScript) {
       pageHead.id = COMMENT_REPLY_PAGE_HEAD_ID
       head.after(pageHead)
     }
-    let select = pageHead.querySelector<HTMLSelectElement>(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)
-    if (!select) {
-      select = document.createElement('select')
-      select.id = COMMENT_REPLY_PAGE_SELECT_ID
-      select.addEventListener('click', event => event.stopPropagation())
-      select.addEventListener('change', (event) => {
-        event.stopPropagation()
-        void jumpToCommentReplyPage(component, Number((event.currentTarget as HTMLSelectElement).value))
+    let controller = commentReplyPageSelectControllers.get(component)
+    let select = pageHead.querySelector<HTMLButtonElement>(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)
+    if (!controller || !select) {
+      controller?.destroy()
+      controller = createNativeSelectDropdown({
+        triggerId: COMMENT_REPLY_PAGE_SELECT_ID,
+        gap: 4,
+        minMenuWidth: 96,
+        onChange: (value) => {
+          void jumpToCommentReplyPage(component, Number(value))
+        },
       })
-      pageHead.append(select, document.createElement('span'))
+      commentReplyPageSelectControllers.set(component, controller)
+      select = controller.trigger
+      pageHead.replaceChildren(select, document.createElement('span'))
     }
     const state = commentReplyPaginationStates.get(component)
     const allExpanded = state?.allRepliesExpanded === true
     const optionsKey = `${totalPage}|${allExpanded}|${currentSettings?.language ?? DEFAULT_PAGE_LOCALE}`
     if (select.dataset.optionsKey !== optionsKey) {
-      const options = document.createDocumentFragment()
+      const options: NativeSelectOption[] = []
       if (allExpanded) {
-        const option = document.createElement('option')
-        option.value = ''
-        option.textContent = pageT('inject.all_pages')
-        option.disabled = true
-        option.hidden = true
-        options.appendChild(option)
+        options.push({
+          value: '',
+          label: pageT('inject.all_pages'),
+          disabled: true,
+          hidden: true,
+        })
       }
       for (let page = 1; page <= totalPage; page += 1) {
-        const option = document.createElement('option')
-        option.value = String(page)
-        option.textContent = pageT('inject.page_number', { current: page })
-        options.appendChild(option)
+        options.push({
+          value: String(page),
+          label: pageT('inject.page_number', { current: page }),
+        })
       }
-      select.replaceChildren(options)
+      controller.setOptions(options)
       select.dataset.optionsKey = optionsKey
     }
-    select.value = allExpanded ? '' : String(Number(component.currentPage) || 1)
-    select.disabled = Boolean(state?.loading || state?.expandAllLoading || component.showSpinner)
-    select.title = pageT('inject.select_reply_page')
-    select.setAttribute('aria-label', select.title)
+    controller.setValue(allExpanded ? '' : String(Number(component.currentPage) || 1))
+    controller.setDisabled(Boolean(state?.loading || state?.expandAllLoading || component.showSpinner))
+    controller.setAriaLabel(pageT('inject.select_reply_page'))
     const totalLabel = pageT('inject.page_total', { total: totalPage })
     const summary = select.nextElementSibling
     if (summary && summary.textContent !== totalLabel)
@@ -1358,6 +1339,8 @@ else if (shouldInitializePageScript) {
   }
 
   function restoreCommentReplyPaginationHead(component: any) {
+    commentReplyPageSelectControllers.get(component)?.destroy()
+    commentReplyPageSelectControllers.delete(component)
     const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
     if (!head)
       return
@@ -2744,6 +2727,7 @@ else if (shouldInitializePageScript) {
       getCommentReplyTreeRootRenderer(component)
         ?.removeAttribute('data-bewly-comment-reply-collapsed')
       root?.querySelector(`#${COMMENT_REPLY_EXPAND_ALL_ID}`)?.remove()
+      restoreCommentReplyPaginationHead(component)
       component.removeAttribute('data-bewly-comment-reply-tree')
       applyCommentReplyContainer(component, false)
       component.style.removeProperty('--bew-comment-reply-indent-step')
