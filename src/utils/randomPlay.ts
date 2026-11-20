@@ -4,7 +4,7 @@ import { getBilibiliPathname, stripBilibiliLocaleUrl } from '~/utils/bilibiliLoc
 import { i18n } from '~/utils/i18n'
 
 import type { NativeSelectController } from './nativeSelectDropdown'
-import { createNativeSelectDropdown, NATIVE_SELECT_DROPDOWN_CSS } from './nativeSelectDropdown'
+import { createNativeSelectDropdown } from './nativeSelectDropdown'
 import { applyAutoPlayByVideoType, canCustomPlayHandleCurrentEnd, detectCustomPlayListVideoType, detectVideoType, disableNativeEndPlaybackBehavior, getVideoElement, isPlayerEndingPanelVisible, isPlayerShowingAdvertisement, setCustomEndPlaybackHandlerActive, supportsCustomPlaybackForVideoType, VideoType } from './player'
 
 // 随机播放状态管理
@@ -29,6 +29,8 @@ let playlistEditorButton: HTMLButtonElement | null = null
 let playlistEditorStyle: HTMLStyleElement | null = null
 let randomPlayDropdownStyle: HTMLStyleElement | null = null
 let randomPlayOrderController: NativeSelectController | null = null
+/** 已应用到下拉菜单的选项文案快照，用于跳过无变化的重建 */
+let randomPlayOrderOptionsKey = ''
 const manualPlayStateStorageKey = 'bewly-custom-play-state'
 let manualPlayContextKey: string | null = null
 const originalEpisodeOrders = new Map<HTMLElement, { priority: string, value: string }>()
@@ -608,9 +610,10 @@ function ensureRandomPlayDropdownStyle(): void {
     return
 
   randomPlayDropdownStyle = document.createElement('style')
+  // 基础触发器样式由 nativeSelectDropdown 的全局样式提供，这里只补随机播放专属外观。
+  // 选择器与基础类组合以提高优先级，避免被后注入的 .bewly-native-select-trigger 覆盖。
   randomPlayDropdownStyle.textContent = `
-    ${NATIVE_SELECT_DROPDOWN_CSS}
-    .random-play-order-select {
+    .bewly-native-select-trigger.random-play-order-select {
       width: auto;
       min-width: 0;
       flex-shrink: 0;
@@ -623,7 +626,7 @@ function ensureRandomPlayDropdownStyle(): void {
       border-radius: var(--bew-radius-half, 6px);
       font: inherit;
     }
-    .random-play-order-select:is(:hover, :active, [aria-expanded="true"]):not(:disabled) {
+    .bewly-native-select-trigger.random-play-order-select:is(:hover, :active, [aria-expanded="true"]):not(:disabled) {
       color: var(--bew-theme-color, #00aeec);
       background: var(--bew-fill-1, var(--bg2, #f6f7f8));
       border-color: var(--bew-theme-color-40, var(--line_regular, #e3e5e7));
@@ -826,7 +829,7 @@ export function createRandomPlayUI(): HTMLElement | null {
   activePlayOrder ??= getEffectiveCustomPlayOrder() ?? 'sequential'
   const orderDropdown = createNativeSelectDropdown({
     triggerClassName: 'random-play-order-select',
-    gap: 6,
+    gap: 4,
     minMenuWidth: 112,
     onChange: (value) => {
       activePlayOrder = value as RandomPlayOrder
@@ -839,7 +842,9 @@ export function createRandomPlayUI(): HTMLElement | null {
     },
   })
   randomPlayOrderController = orderDropdown
-  orderDropdown.setOptions(getOrderSelectOptions())
+  const initialOrderOptions = getOrderSelectOptions()
+  randomPlayOrderOptionsKey = initialOrderOptions.map(option => `${option.value}:${option.label}`).join('|')
+  orderDropdown.setOptions(initialOrderOptions)
   orderDropdown.setValue(activePlayOrder)
   orderDropdown.setAriaLabel(getRandomPlayText())
   const orderSelect = orderDropdown.trigger
@@ -1178,6 +1183,7 @@ export function destroyRandomPlay(): void {
   playlistEditorStyle = null
   randomPlayOrderController?.destroy()
   randomPlayOrderController = null
+  randomPlayOrderOptionsKey = ''
   randomPlayDropdownStyle?.remove()
   randomPlayDropdownStyle = null
   document.querySelector('.random-play')?.remove()
@@ -1194,7 +1200,13 @@ export function syncRandomPlayUI(): void {
   const existingBtn = document.querySelector('.random-play-btn .switch-btn') as HTMLElement
   const existingBlock = document.querySelector('.random-play-btn .switch-block') as HTMLElement
   if (randomPlayOrderController) {
-    randomPlayOrderController.setOptions(getOrderSelectOptions())
+    // 只在文案真正变化时重建选项：setOptions 会 replaceChildren，菜单打开时会丢焦点。
+    const orderOptions = getOrderSelectOptions()
+    const optionsKey = orderOptions.map(option => `${option.value}:${option.label}`).join('|')
+    if (optionsKey !== randomPlayOrderOptionsKey) {
+      randomPlayOrderOptionsKey = optionsKey
+      randomPlayOrderController.setOptions(orderOptions)
+    }
     randomPlayOrderController.setValue(getActivePlayOrder())
     randomPlayOrderController.setAriaLabel(getRandomPlayText())
   }

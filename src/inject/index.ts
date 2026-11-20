@@ -485,6 +485,11 @@ else if (shouldInitializePageScript) {
 
         ${NATIVE_SELECT_DROPDOWN_CSS}
 
+        /* 分页加载中保留等待光标，覆盖公共禁用态的 not-allowed */
+        #${COMMENT_REPLY_PAGE_SELECT_ID}:disabled {
+          cursor: wait;
+        }
+
         #view-more:has(> #${COMMENT_REPLY_EXPAND_ALL_ID}) {
           display: flex;
           align-items: center;
@@ -1292,8 +1297,7 @@ else if (shouldInitializePageScript) {
       controller?.destroy()
       controller = createNativeSelectDropdown({
         triggerId: COMMENT_REPLY_PAGE_SELECT_ID,
-        mountTarget: component.shadowRoot ?? undefined,
-        gap: 6,
+        gap: 4,
         minMenuWidth: 96,
         onChange: (value) => {
           void jumpToCommentReplyPage(component, Number(value))

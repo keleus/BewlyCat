@@ -17,13 +17,13 @@ export interface NativeSelectDropdownOptions {
   menuClassName?: string
   /** 浮层挂载目标；默认挂到 document.body，脱离祖先层叠上下文与 Shadow DOM 裁切 */
   mountTarget?: HTMLElement | ShadowRoot
-  /** 浮层与触发器的间距，默认 8px（对齐 Select.vue） */
+  /** 浮层与触发器的间距，默认 8px（对齐 Select.vue 的 gap-1 / 4px 网格） */
   gap?: number
   /** 浮层最大高度，默认 300px（对齐 Select.vue） */
   maxHeight?: number
   /** 浮层最小宽度，默认 100px */
   minMenuWidth?: number
-  /** z-index（可用 CSS var 回退字符串） */
+  /** z-index；需高于 B 站顶栏(1002)、Bewly 顶栏(1004)与宽屏侧栏(2002/2004)，低于 Bewly 宿主(10003) */
   zIndex?: string
   /** 选项变更回调 */
   onChange?: (value: string) => void
@@ -42,11 +42,13 @@ export interface NativeSelectController {
 }
 
 const DROPDOWN_VIEWPORT_MARGIN = 8
-const DEFAULT_DROPDOWN_GAP = 8
+const DEFAULT_DROPDOWN_GAP = 4
 const DEFAULT_DROPDOWN_MAX_HEIGHT = 300
 const DEFAULT_DROPDOWN_MIN_WIDTH = 100
 const CLOSE_ANIMATION_FALLBACK_MS = 220
-const DEFAULT_DROPDOWN_Z_INDEX = '10004'
+// 高于原页顶栏与宽屏侧栏，低于 #bewly 宿主（--bew-z-settings-host: 10003），
+// 避免浮层盖住设置弹窗等插件自身界面。
+const DEFAULT_DROPDOWN_Z_INDEX = '2100'
 
 export const NATIVE_SELECT_DROPDOWN_CSS = `
 .bewly-native-select-trigger {
@@ -85,7 +87,7 @@ export const NATIVE_SELECT_DROPDOWN_CSS = `
 
 .bewly-native-select-trigger:disabled {
   opacity: 0.6;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .bewly-native-select-trigger__label {
@@ -113,7 +115,7 @@ export const NATIVE_SELECT_DROPDOWN_CSS = `
   padding: var(--bew-popover-padding, 8px);
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-0-5, 2px);
+  gap: var(--bew-space-1, 4px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -228,16 +230,29 @@ export const NATIVE_SELECT_DROPDOWN_CSS = `
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
+// 两个 world（MAIN 注入脚本与 ISOLATED 内容脚本）各有独立模块状态，
+// 但共享同一份 document。ID 前缀随机化，避免跨 world 生成同名 id 与 aria-controls。
+const DROPDOWN_ID_PREFIX = `bewly-native-select-menu-${Math.random().toString(36).slice(2, 8)}`
 let nextDropdownId = 0
 let globalStyleEl: HTMLStyleElement | null = null
 
+const GLOBAL_STYLE_ID = 'bewly-native-select-dropdown-style'
+
 // 浮层默认挂到 document.body，脱离触发器所在 Shadow DOM；Shadow DOM 内注入的样式
 // 无法覆盖到 body 下的浮层，因此全局再注入一份，保证菜单在任何挂载点都被样式覆盖。
+// 先按 id 复用文档中已有的节点，避免 MAIN / ISOLATED 两个 world 重复插入。
 function ensureGlobalStyle(): void {
   if (globalStyleEl?.isConnected)
     return
+
+  const existing = document.getElementById(GLOBAL_STYLE_ID)
+  if (existing instanceof HTMLStyleElement) {
+    globalStyleEl = existing
+    return
+  }
+
   globalStyleEl = document.createElement('style')
-  globalStyleEl.id = 'bewly-native-select-dropdown-style'
+  globalStyleEl.id = GLOBAL_STYLE_ID
   globalStyleEl.textContent = NATIVE_SELECT_DROPDOWN_CSS
   const target = document.head || document.documentElement
   target.appendChild(globalStyleEl)
@@ -265,14 +280,18 @@ function isDarkModeActive(): boolean {
   return root.classList.contains('dark') || root.classList.contains('bili_dark')
 }
 
+/** 从触发器（含 Shadow DOM 继承）与文档根解析当前生效的主题变量值。 */
 function getEffectiveThemeVars(anchor: HTMLElement): {
   elevated: string
   text1: string
   borderColor: string
   fill2: string
   themeColor: string
+  themeColor10: string
+  themeColor20: string
 } {
-  // 向上兼容宿主或文档样式（如视频页关闭「适应其他页面样式」时仅局部存在主题变量）
+  // 视频页关闭「适应其他页面样式」时变量可能只存在于局部作用域，
+  // 因此以锚点计算结果为准，再回落到文档根。
   const anchorStyle = getComputedStyle(anchor)
   const rootStyle = getComputedStyle(document.documentElement)
   const readVar = (name: string) => anchorStyle.getPropertyValue(name).trim() || rootStyle.getPropertyValue(name).trim()
@@ -282,55 +301,50 @@ function getEffectiveThemeVars(anchor: HTMLElement): {
     borderColor: readVar('--bew-popover-border-color'),
     fill2: readVar('--bew-fill-2'),
     themeColor: readVar('--bew-theme-color'),
+    themeColor10: readVar('--bew-theme-color-10'),
+    themeColor20: readVar('--bew-theme-color-20'),
   }
 }
 
+/**
+ * 浮层挂在 document.body 上，未必能继承到触发器局部作用域里的自定义属性。
+ * 打开时把解析结果直接写到浮层元素上：有值就原样透传，缺失时才用明暗兜底。
+ */
 function applyDarkThemeFallbackVars(element: HTMLElement, anchor: HTMLElement): void {
-  // 在未开启「适应其他页面样式」的深色上下文或未继承变量的场景提供兜底，
-  // 已有外层 `--bew-elevated` 等自定义属性时优先沿用主题变量。
   const vars = getEffectiveThemeVars(anchor)
-  const hasThemeVars = Boolean(vars.elevated)
-  const hasThemeColor = Boolean(vars.themeColor)
-  if (hasThemeVars) {
-    element.style.removeProperty('--bew-elevated')
-    element.style.removeProperty('--bew-text-1')
-    element.style.removeProperty('--bew-popover-border-color')
-    element.style.removeProperty('--bew-fill-2')
-  }
-  if (hasThemeColor) {
-    element.style.removeProperty('--bew-theme-color')
-    element.style.removeProperty('--bew-theme-color-10')
-    element.style.removeProperty('--bew-theme-color-20')
-  }
-  if (hasThemeVars && hasThemeColor)
-    return
+  const dark = isDarkModeActive()
 
-  if (isDarkModeActive()) {
-    if (!hasThemeVars) {
-      element.style.setProperty('--bew-elevated', 'rgba(42, 45, 50, 0.92)')
-      element.style.setProperty('--bew-text-1', '#f1f2f3')
-      element.style.setProperty('--bew-popover-border-color', 'rgba(255, 255, 255, 0.14)')
-      element.style.setProperty('--bew-fill-2', 'rgba(131, 131, 145, 0.24)')
-    }
-    if (!hasThemeColor) {
-      element.style.setProperty('--bew-theme-color', '#00aeec')
-      element.style.setProperty('--bew-theme-color-10', 'rgba(0, 174, 236, 0.14)')
-      element.style.setProperty('--bew-theme-color-20', 'rgba(0, 174, 236, 0.24)')
-    }
+  const fallback = dark
+    ? {
+        elevated: 'rgba(42, 45, 50, 0.92)',
+        text1: '#f1f2f3',
+        borderColor: 'rgba(255, 255, 255, 0.14)',
+        fill2: 'rgba(131, 131, 145, 0.24)',
+        themeColor: '#00aeec',
+        themeColor10: 'rgba(0, 174, 236, 0.14)',
+        themeColor20: 'rgba(0, 174, 236, 0.24)',
+      }
+    : {
+        elevated: 'rgba(255, 255, 255, 0.92)',
+        text1: '#18191c',
+        borderColor: 'rgba(148, 153, 160, 0.28)',
+        fill2: 'rgba(131, 131, 145, 0.16)',
+        themeColor: '#00aeec',
+        themeColor10: 'rgba(0, 174, 236, 0.12)',
+        themeColor20: 'rgba(0, 174, 236, 0.2)',
+      }
+
+  const resolved: Record<string, string> = {
+    '--bew-elevated': vars.elevated || fallback.elevated,
+    '--bew-text-1': vars.text1 || fallback.text1,
+    '--bew-popover-border-color': vars.borderColor || fallback.borderColor,
+    '--bew-fill-2': vars.fill2 || fallback.fill2,
+    '--bew-theme-color': vars.themeColor || fallback.themeColor,
+    '--bew-theme-color-10': vars.themeColor10 || fallback.themeColor10,
+    '--bew-theme-color-20': vars.themeColor20 || fallback.themeColor20,
   }
-  else {
-    if (!hasThemeVars) {
-      element.style.setProperty('--bew-elevated', 'rgba(255, 255, 255, 0.92)')
-      element.style.setProperty('--bew-text-1', '#18191c')
-      element.style.setProperty('--bew-popover-border-color', 'rgba(148, 153, 160, 0.28)')
-      element.style.setProperty('--bew-fill-2', 'rgba(131, 131, 145, 0.16)')
-    }
-    if (!hasThemeColor) {
-      element.style.setProperty('--bew-theme-color', '#00aeec')
-      element.style.setProperty('--bew-theme-color-10', 'rgba(0, 174, 236, 0.12)')
-      element.style.setProperty('--bew-theme-color-20', 'rgba(0, 174, 236, 0.2)')
-    }
-  }
+  for (const [name, value] of Object.entries(resolved))
+    element.style.setProperty(name, value)
 }
 
 export function createNativeSelectDropdown(
@@ -340,7 +354,7 @@ export function createNativeSelectDropdown(
   const gap = config.gap ?? DEFAULT_DROPDOWN_GAP
   const maxHeight = config.maxHeight ?? DEFAULT_DROPDOWN_MAX_HEIGHT
   const minMenuWidth = config.minMenuWidth ?? DEFAULT_DROPDOWN_MIN_WIDTH
-  const listboxId = `bewly-native-select-menu-${++nextDropdownId}`
+  const listboxId = `${DROPDOWN_ID_PREFIX}-${++nextDropdownId}`
 
   const trigger = document.createElement('button')
   trigger.type = 'button'
@@ -373,6 +387,10 @@ export function createNativeSelectDropdown(
   let closeTimer: number | undefined
   let openListenersAbort: AbortController | undefined
   let positionRaf: number | undefined
+  /** 内容高度只随选项变化，缓存后避免每帧测量触发同步重排 */
+  let contentHeightCache: number | undefined
+  /** 上一帧的锚点/视口快照，未变化时跳过定位写入 */
+  let lastPositionKey = ''
 
   function syncSelectionState() {
     let matchedLabel = ''
@@ -418,37 +436,79 @@ export function createNativeSelectDropdown(
     button.scrollIntoView({ block: 'nearest' })
   }
 
-  function positionMenu() {
+  /**
+   * 测量浮层内容高度。scrollHeight 返回滚动内容高度、不受 max-height 钳制，
+   * 因此无需临时放宽 max-height（那会让 max-height 变小时把 scrollTop 反复钳回顶部）。
+   * 仅在选项变化或打开时调用。
+   */
+  function measureContentHeight(): number {
+    if (menu.isConnected) {
+      const measured = menu.scrollHeight
+      if (measured > 0)
+        contentHeightCache = measured
+    }
+    return contentHeightCache ?? maxHeight
+  }
+
+  function positionMenu(force = false) {
     if (!trigger.isConnected)
       return
 
     const rect = trigger.getBoundingClientRect()
     const viewportWidth = document.documentElement.clientWidth || window.innerWidth
     const viewportHeight = document.documentElement.clientHeight || window.innerHeight
+
+    // 几何与视口都未变化时不做任何布局读写，避免每帧强制同步重排。
+    const positionKey = [
+      Math.round(rect.left),
+      Math.round(rect.top),
+      Math.round(rect.bottom),
+      Math.round(rect.width),
+      Math.round(rect.height),
+      viewportWidth,
+      viewportHeight,
+      contentHeightCache ?? 0,
+    ].join(',')
+    if (!force && positionKey === lastPositionKey)
+      return
+    lastPositionKey = positionKey
+
     const spaceBelow = viewportHeight - rect.bottom - gap - DROPDOWN_VIEWPORT_MARGIN
     const spaceAbove = rect.top - gap - DROPDOWN_VIEWPORT_MARGIN
-
-    // 先按默认展开方向预估高度，再按真实内容高度校正是否上翻。
-    menu.style.maxHeight = `${maxHeight}px`
-    menu.style.minWidth = `${Math.max(Math.ceil(rect.width), minMenuWidth)}px`
-    const contentHeight = Math.min(maxHeight, menu.scrollHeight || maxHeight)
+    const contentHeight = Math.min(maxHeight, contentHeightCache ?? maxHeight)
     const openUp = spaceBelow < contentHeight && spaceAbove > spaceBelow
     const availableHeight = Math.max(0, Math.min(maxHeight, openUp ? spaceAbove : spaceBelow))
-    menu.style.maxHeight = `${availableHeight}px`
     menu.dataset.openUp = openUp ? 'true' : 'false'
 
+    const nextMaxHeight = `${availableHeight}px`
+    if (menu.style.maxHeight !== nextMaxHeight)
+      menu.style.maxHeight = nextMaxHeight
+
+    // 宽度基于已有的 offsetWidth，不额外触发重排。
     const menuWidth = Math.max(menu.offsetWidth, Math.ceil(rect.width), minMenuWidth)
+    const nextMinWidth = `${Math.max(Math.ceil(rect.width), minMenuWidth)}px`
+    if (menu.style.minWidth !== nextMinWidth)
+      menu.style.minWidth = nextMinWidth
+
     const maxLeft = Math.max(DROPDOWN_VIEWPORT_MARGIN, viewportWidth - menuWidth - DROPDOWN_VIEWPORT_MARGIN)
     const left = Math.max(DROPDOWN_VIEWPORT_MARGIN, Math.min(rect.left, maxLeft))
-    menu.style.left = `${left}px`
+    const nextLeft = `${left}px`
+    if (menu.style.left !== nextLeft)
+      menu.style.left = nextLeft
 
     if (openUp) {
-      menu.style.top = ''
-      menu.style.bottom = `${Math.max(DROPDOWN_VIEWPORT_MARGIN, viewportHeight - rect.top + gap)}px`
+      const nextBottom = `${Math.max(DROPDOWN_VIEWPORT_MARGIN, viewportHeight - rect.top + gap)}px`
+      if (menu.style.top)
+        menu.style.top = ''
+      if (menu.style.bottom !== nextBottom)
+        menu.style.bottom = nextBottom
     }
     else {
-      menu.style.bottom = ''
-      menu.style.top = `${Math.max(DROPDOWN_VIEWPORT_MARGIN, rect.bottom + gap)}px`
+      const nextTop = `${Math.max(DROPDOWN_VIEWPORT_MARGIN, rect.bottom + gap)}px`
+      if (menu.style.bottom)
+        menu.style.bottom = ''
+      if (menu.style.top !== nextTop)
+        menu.style.top = nextTop
     }
   }
 
@@ -552,7 +612,10 @@ export function createNativeSelectDropdown(
       host.appendChild(menu)
 
     menu.classList.remove('is-open')
-    positionMenu()
+    // 挂载后先测一次内容高度，再按它决定方向与 max-height（此后不再每帧测量）。
+    lastPositionKey = ''
+    measureContentHeight()
+    positionMenu(true)
     // 强制一帧后再加 is-open，保证 Shadow DOM 内每次打开都能播放入场过渡。
     void menu.offsetWidth
     menu.classList.add('is-open')
@@ -577,6 +640,13 @@ export function createNativeSelectDropdown(
       config.onChange?.(nextValue)
   }
 
+  function handleOptionClick(option: NativeSelectOption, disabled: boolean, event: MouseEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!disabled)
+      selectValue(option.value)
+  }
+
   function handleTriggerClick(event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -598,7 +668,11 @@ export function createNativeSelectDropdown(
       event.preventDefault()
       event.stopPropagation()
       open()
+      return
     }
+    // 空格 / 回车交给按钮原生激活，但要拦住冒泡，避免触发 B 站播放器的播放暂停快捷键。
+    if (event.key === ' ' || event.key === 'Enter')
+      event.stopPropagation()
   }
 
   function handleMenuClick(event: MouseEvent) {
@@ -651,6 +725,15 @@ export function createNativeSelectDropdown(
         close()
         break
       }
+      case ' ':
+      case 'Enter': {
+        // 选项本身是 button；这里主动激活并阻断冒泡，避免空格被 B 站播放器快捷键占用。
+        event.preventDefault()
+        event.stopPropagation()
+        if (pos >= 0)
+          optionButtons[enabled[pos]]?.click()
+        break
+      }
     }
   }
 
@@ -687,18 +770,24 @@ export function createNativeSelectDropdown(
         button.append(textSpan, checkSvg)
 
         button.addEventListener('click', (event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          if (!button.disabled)
-            selectValue(option.value)
+          handleOptionClick(option, Boolean(option.disabled), event)
         })
         fragment.appendChild(button)
         return button
       })
       menu.replaceChildren(fragment)
       syncSelectionState()
-      if (isOpen)
-        positionMenu()
+      if (isOpen) {
+        // 选项变化后内容高度可能改变，重新测量一次再定位（不在每帧重复测量）。
+        contentHeightCache = undefined
+        measureContentHeight()
+        lastPositionKey = ''
+        positionMenu(true)
+      }
+      else {
+        // 关闭状态下菜单可能不在文档中，下次打开时重测。
+        contentHeightCache = undefined
+      }
     },
     setDisabled: (disabled: boolean) => {
       trigger.disabled = disabled
