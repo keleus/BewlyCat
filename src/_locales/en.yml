@@ -233,7 +233,7 @@ settings:
   module_bewly_pages: Bewly pages
   module_bewly_pages_desc: 'Custom home, moments, and search pages with their video cards and wallpapers. When off, the original Bilibili pages are used and open home pages reload automatically.'
   module_top_bar: Top bar
-  module_top_bar_desc: "The extension's top bar and its management of the original one. When off, the extension no longer hides or changes any top bar, so pages show Bilibili's own. The Bewly homepage replaces the whole page and shows no top bar."
+  module_top_bar_desc: "Let the extension manage the top bar (choose between the BewlyCat or original top bar in Top bar settings). When off, the extension leaves Bilibili's native top bar untouched; the Bewly homepage replaces the whole page and shows no top bar."
   module_dock: Dock
   module_dock_desc: 'Page navigation and floating sidebar. Required while Bewly pages are on; when Bewly pages are off, clicking an item goes straight to the original Bilibili page, and turning this module off leaves settings accessible from the browser toolbar icon.'
   module_sidebar: Floating sidebar
@@ -413,6 +413,7 @@ settings:
   group_new_moments_page: Bewly Dynamic Feed
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_filters: Dynamic Filters
+  group_moments_filters_desc: Filter types and keyword rules are shared between the Bewly Moments page and the original Bilibili Moments page.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
   group_environment_info: Environment information
@@ -836,8 +837,8 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: Background darkens when the search bar is focused
   bg_blurs_when_the_search_bar_is_focused: Background blurs when the search bar is focused
   choose_search_bar_focused_character: Choose the character that appears when the search bar is focused
-  show_hot_search_in_top_bar: Show hot search in top bar
-  show_hot_search_in_top_bar_desc: Shared with the search page hot search toggle.
+  show_hot_search_in_top_bar: Show hot searches
+  show_hot_search_in_top_bar_desc: Controls the hot search list in both the top bar search box and the extension search page.
   show_hot_search_in_search_page: Show hot search in search page
   show_hot_search_in_search_page_desc: Shared with the top bar hot search toggle.
   show_search_recommendation: Show search recommendation
@@ -1035,11 +1036,12 @@ settings:
   home_tabs_adjustment_desc: The first activated tab is the default page.
   home_tabs_position: Home tabs position
   fixed_home_tabs_on_home_page: Fix home tabs to the top
-  topbar_visibility: Top bar visibility
+  topbar_visibility: Show top bar
   topbar_visibility_desc: >-
-    When enabled, the BewlyCat or original Bilibili top bar is shown. When
-    disabled, both are hidden so Bilibili Evolved and other third-party top bars
-    can take over.
+    When disabled, hides both the BewlyCat and original Bilibili top bars so
+    third-party top bars like Bilibili Evolved can take over. To simply restore
+    Bilibili's native top bar, turn off Top bar under General → Interface
+    Modules instead.
   use_original_bilibili_topbar: Use the original Bilibili top bar
   use_original_bilibili_topbar_desc: >-
     Only applies when top bar visibility is on. Enable it to use the original

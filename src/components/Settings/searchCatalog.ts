@@ -261,6 +261,22 @@ export const bewlyTopBarOnlyTitleKeys = new Set([
   'settings.top_bar_link_opening_behavior',
 ])
 
+const sharedMomentFilterTitleKeys = [
+  'settings.group_moments_filters',
+  'settings.moments_filtered_types',
+  'settings.moments_filter_video_dynamic',
+  'settings.moments_filter_draw_dynamic',
+  'settings.moments_filter_ugc_season_dynamic',
+  'settings.moments_filter_forward_dynamic',
+  'settings.moments_filter_pgc_dynamic',
+  'settings.moments_filter_article_dynamic',
+  'settings.moments_filter_charge_dynamic',
+  'settings.moments_filter_video_reservation',
+  'settings.moments_filter_live_reservation',
+  'settings.moments_filter_live_dynamic',
+  'settings.moments_keyword_filter',
+] as const
+
 const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(generalRoute, [
     'settings.menu_general',
@@ -380,19 +396,8 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.only_cover_video_preview',
     'settings.moments_card_open_mode',
     'settings.moments_video_card_open_mode',
-    'settings.group_moments_filters',
+    ...sharedMomentFilterTitleKeys,
     'settings.moments_show_filter_entry',
-    'settings.moments_filter_video_dynamic',
-    'settings.moments_filter_draw_dynamic',
-    'settings.moments_filter_ugc_season_dynamic',
-    'settings.moments_filter_forward_dynamic',
-    'settings.moments_filter_pgc_dynamic',
-    'settings.moments_filter_article_dynamic',
-    'settings.moments_filter_charge_dynamic',
-    'settings.moments_filter_video_reservation',
-    'settings.moments_filter_live_reservation',
-    'settings.moments_filter_live_dynamic',
-    'settings.moments_keyword_filter',
     'settings.group_moments_pinned_users',
     'settings.moments_pinned_users',
   ], {
@@ -418,9 +423,14 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.original_moments_show_fold_comments_button',
     'settings.original_moments_click_blank_to_fold_comments',
     'settings.original_moments_use_bewly_filters',
-    'settings.moments_filtered_types',
-    'settings.moments_keyword_filter',
+    ...sharedMomentFilterTitleKeys,
   ], { keywordKeys: ['settings.bilibili_features.moments'] }),
+  ...createEntries(originalMomentsRoute, [
+    'settings.moments_filter_up_recommendation',
+  ], { targetTitleKey: 'settings.moments_filter_up_recommendation_short', keywordKeys: ['settings.bilibili_features.moments'] }),
+  ...createEntries(originalMomentsRoute, [
+    'settings.moments_hide_charge_exclusive',
+  ], { targetTitleKey: 'settings.moments_filter_charge_dynamic', keywordKeys: ['settings.bilibili_features.moments'] }),
   ...createEntries(favoritesRoute, [
     'settings.bilibili_features.favorite_organizer',
     'settings.group_favorite_organizer',
@@ -579,11 +589,10 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_search_bar',
     'settings.show_search_recommendation',
     'settings.enable_search_history',
+    'settings.show_hot_search_in_top_bar',
     'settings.bg_darkens_when_the_search_bar_is_focused',
     'settings.bg_blurs_when_the_search_bar_is_focused',
     'settings.choose_search_bar_focused_character',
-    'settings.group_hot_search',
-    'settings.show_hot_search_in_search_page',
     'settings.group_search_results',
     'settings.use_plugin_search_results_page',
     'settings.show_search_identity_switcher',

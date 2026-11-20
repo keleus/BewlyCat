@@ -233,7 +233,7 @@ settings:
   module_bewly_pages: Bewly 頁面
   module_bewly_pages_desc: 自訂主頁、動態、搜尋等頁面同佢哋嘅影片卡片、桌布。閂咗之後用 B 站原版頁面，已開啟嘅主頁會自動重新整理。
   module_top_bar: 頂欄
-  module_top_bar_desc: 外掛提供嘅頂欄同原版頂欄託管。閂咗之後外掛唔會再隱藏或者改動任何頂欄，頁面顯示 B 站自己嘅頂欄；Bewly 首頁成頁由外掛接管，唔顯示頂欄。
+  module_top_bar_desc: 由外掛接管頂欄顯示（可以喺頂欄設定切換外掛頂欄或者原版頂欄）。閂咗之後外掛唔再改動或隱藏任何頂欄，恢復 B 站原生頂欄；Bewly 首頁成頁由外掛接管，唔顯示頂欄。
   module_dock: Dock 欄
   module_dock_desc: 頁面切換導覽同懸浮側欄。Bewly 頁面開緊嗰陣需要保持開啟；Bewly 頁面閂咗嘅時候撳落直接跳去 B 站原站頁面，閂咗呢個模組之後可以喺瀏覽器工具列圖示開啟設定。
   module_sidebar: 懸浮側欄
@@ -438,6 +438,7 @@ settings:
   group_new_moments_page: Bewly動態頁
   group_new_moments_page_desc: 呢個頁面唔係最終成品，相關形態之後可能會有較大改動。
   group_moments_filters: 動態過濾
+  group_moments_filters_desc: 過濾類型同關鍵字規則喺 Bewly 動態頁同 B 站原版動態頁之間共用。
   group_moments_sidebar: 動態頁左邊元件
   group_moments_interaction: 動態卡片互動
   group_environment_info: 環境資訊
@@ -796,8 +797,8 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 搜尋欄聚焦嗰陣校暗背景
   bg_blurs_when_the_search_bar_is_focused: 搜尋欄聚焦嗰陣校矇背景
   choose_search_bar_focused_character: 揀個喺搜尋欄聚焦嗰陣出現嘅人物
-  show_hot_search_in_top_bar: 喺頂欄顯示熱搜
-  show_hot_search_in_top_bar_desc: 同時控制頂欄搜尋框同搜尋頁嘅熱搜顯示。
+  show_hot_search_in_top_bar: 顯示搜尋熱搜
+  show_hot_search_in_top_bar_desc: 統一控制頂欄搜尋框同插件搜尋頁入面嘅熱搜列表顯示。
   show_hot_search_in_search_page: 喺搵嘢頁顯示熱搜
   show_hot_search_in_search_page_desc: 同時控制搜尋頁同頂欄搜尋框嘅熱搜顯示。
   show_search_recommendation: 顯示搜尋推介
@@ -984,8 +985,8 @@ settings:
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
   home_tabs_position: 主頁分頁欄位置
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
-  topbar_visibility: 頂欄可視性
-  topbar_visibility_desc: 開咗之後顯示 BewlyCat 或 B 站原本頂欄；閂咗就兩個都收埋，交俾 Bilibili Evolved 等第三方頂欄。
+  topbar_visibility: 顯示頂欄
+  topbar_visibility_desc: 閂咗會收埋外掛同 B 站原本頂欄，俾 Bilibili Evolved 等第三方頂欄接管；如果只係想恢復 B 站原生頂欄，請閂咗「通用 → 介面模組 → 頂欄」。
   use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂欄
   use_original_bilibili_topbar_desc: 淨係喺「頂欄可視性」開咗先會生效。開咗就用 B 站原本頂欄，閂咗就用 BewlyCat 頂欄。
   top_bar_mode: 頂欄類型

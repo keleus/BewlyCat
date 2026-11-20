@@ -233,7 +233,7 @@ settings:
   module_bewly_pages: Bewly 页面
   module_bewly_pages_desc: 自定义首页、动态、搜索等页面及其视频卡片和壁纸。关闭后使用 B 站原版页面，已打开的首页会自动刷新。
   module_top_bar: 顶栏
-  module_top_bar_desc: 插件提供的顶栏及原版顶栏托管。关闭后插件不再隐藏或改动任何顶栏，页面显示 B 站自己的顶栏；Bewly 首页整页由插件接管，不显示顶栏。
+  module_top_bar_desc: 由插件接管顶栏显示（可在顶栏设置中切换插件顶栏或原版顶栏）。关闭后插件不再改动或隐藏任何顶栏，恢复 B 站原生顶栏；Bewly 首页整页由插件接管，不显示顶栏。
   module_dock: Dock 栏
   module_dock_desc: 页面切换导航与悬浮侧栏。Bewly 页面开启时需保持开启；Bewly 页面关闭时点击直接跳转 B 站原站页面，关闭本模块后可从浏览器工具栏图标打开设置。
   module_sidebar: 悬浮侧栏
@@ -410,6 +410,7 @@ settings:
   group_new_moments_page: Bewly动态页
   group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
   group_moments_filters: 动态过滤
+  group_moments_filters_desc: 过滤类型与关键词规则在 Bewly 动态页与 B 站原版动态页之间共享。
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
   group_environment_info: 环境信息
@@ -921,8 +922,8 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 当搜索栏聚焦时背景暗化
   bg_blurs_when_the_search_bar_is_focused: 当搜索栏聚焦时背景模糊
   choose_search_bar_focused_character: 选择搜索栏聚焦时出现的人物
-  show_hot_search_in_top_bar: 在顶栏显示热搜
-  show_hot_search_in_top_bar_desc: 同时控制顶栏搜索框与搜索页的热搜显示。
+  show_hot_search_in_top_bar: 显示搜索热搜
+  show_hot_search_in_top_bar_desc: 统一控制顶栏搜索框与插件搜索页中的热搜列表显示。
   show_hot_search_in_search_page: 在搜索页显示热搜
   show_hot_search_in_search_page_desc: 同时控制搜索页与顶栏搜索框的热搜显示。
   show_search_recommendation: 显示搜索推荐
@@ -1094,8 +1095,8 @@ settings:
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
   home_tabs_position: 首页标签栏位置
   fixed_home_tabs_on_home_page: 固定首页标签栏
-  topbar_visibility: 顶栏可见性
-  topbar_visibility_desc: 开启后显示 BewlyCat 或 B 站原版顶栏；关闭后隐藏两者，交给 Bilibili Evolved 等第三方顶栏。
+  topbar_visibility: 显示顶栏
+  topbar_visibility_desc: 关闭后会隐藏插件与 B 站原版顶栏，供 Bilibili Evolved 等第三方顶栏接管；若只想恢复 B 站原生顶栏，请关闭「通用 → 界面模块 → 顶栏」。
   use_original_bilibili_topbar: 使用原版 Bilibili 顶栏
   use_original_bilibili_topbar_desc: 仅在「顶栏可见性」开启时生效。开启后使用 B 站原版顶栏，关闭后使用 BewlyCat 顶栏。
   top_bar_mode: 顶栏类型

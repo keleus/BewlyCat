@@ -55,6 +55,10 @@ function changeSearchBarFocusCharacter(url: string) {
         <Radio v-model="settings.enableSearchHistory" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')" right-width="auto">
+        <Radio v-model="settings.showHotSearchInTopBar" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.bg_darkens_when_the_search_bar_is_focused')" right-width="auto">
         <Radio v-model="settings.searchPageDarkenOnSearchFocus" />
       </SettingsItem>
@@ -96,15 +100,6 @@ function changeSearchBarFocusCharacter(url: string) {
             </Tooltip>
           </div>
         </template>
-      </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup :title="$t('settings.group_hot_search')">
-      <SettingsItem :title="$t('settings.show_hot_search_in_search_page')" right-width="auto">
-        <template #desc>
-          <span>{{ $t('settings.show_hot_search_in_search_page_desc') }}</span>
-        </template>
-        <Radio v-model="settings.showHotSearchInTopBar" />
       </SettingsItem>
     </SettingsItemGroup>
 

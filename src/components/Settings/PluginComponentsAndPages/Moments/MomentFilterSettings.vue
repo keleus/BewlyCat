@@ -22,7 +22,10 @@ const filterOptions = computed(() => MOMENT_TYPE_FILTER_OPTIONS.map(option => ({
 
 <template>
   <!-- 插件动态页与原版动态页共用同一组过滤规则；默认插槽放各自的开关。 -->
-  <SettingsItemGroup :title="$t('settings.group_moments_filters')">
+  <SettingsItemGroup
+    :title="$t('settings.group_moments_filters')"
+    :desc="$t('settings.group_moments_filters_desc')"
+  >
     <slot />
     <SettingsItem
       :title="$t('settings.moments_filtered_types')"
