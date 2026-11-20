@@ -15,7 +15,7 @@ export interface NativeSelectDropdownOptions {
   triggerClassName?: string
   /** 浮层额外 class（可选） */
   menuClassName?: string
-  /** 浮层挂载目标；默认挂到触发器同属 ShadowRoot 或 document.body，确保继承宿主样式 */
+  /** 浮层挂载目标；默认挂到 document.body，脱离祖先层叠上下文与 Shadow DOM 裁切 */
   mountTarget?: HTMLElement | ShadowRoot
   /** 浮层与触发器的间距，默认 8px（对齐 Select.vue） */
   gap?: number
@@ -229,6 +229,19 @@ export const NATIVE_SELECT_DROPDOWN_CSS = `
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 let nextDropdownId = 0
+let globalStyleEl: HTMLStyleElement | null = null
+
+// 浮层默认挂到 document.body，脱离触发器所在 Shadow DOM；Shadow DOM 内注入的样式
+// 无法覆盖到 body 下的浮层，因此全局再注入一份，保证菜单在任何挂载点都被样式覆盖。
+function ensureGlobalStyle(): void {
+  if (globalStyleEl?.isConnected)
+    return
+  globalStyleEl = document.createElement('style')
+  globalStyleEl.id = 'bewly-native-select-dropdown-style'
+  globalStyleEl.textContent = NATIVE_SELECT_DROPDOWN_CSS
+  const target = document.head || document.documentElement
+  target.appendChild(globalStyleEl)
+}
 
 function createSvgIcon(pathData: string, className: string): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, 'svg')
@@ -323,6 +336,7 @@ function applyDarkThemeFallbackVars(element: HTMLElement, anchor: HTMLElement): 
 export function createNativeSelectDropdown(
   config: NativeSelectDropdownOptions = {},
 ): NativeSelectController {
+  ensureGlobalStyle()
   const gap = config.gap ?? DEFAULT_DROPDOWN_GAP
   const maxHeight = config.maxHeight ?? DEFAULT_DROPDOWN_MAX_HEIGHT
   const minMenuWidth = config.minMenuWidth ?? DEFAULT_DROPDOWN_MIN_WIDTH
@@ -358,6 +372,7 @@ export function createNativeSelectDropdown(
   let isOpen = false
   let closeTimer: number | undefined
   let openListenersAbort: AbortController | undefined
+  let positionRaf: number | undefined
 
   function syncSelectionState() {
     let matchedLabel = ''
@@ -379,11 +394,10 @@ export function createNativeSelectDropdown(
   }
 
   function resolveMountHost(): HTMLElement | ShadowRoot {
+    // 默认挂到 document.body，脱离祖先层叠上下文与 Shadow DOM 边界，
+    // 避免 transform/isolation/低 z-index 祖先把浮层裁切或盖住。
     if (config.mountTarget)
       return config.mountTarget
-    const root = trigger.getRootNode()
-    if (root instanceof ShadowRoot)
-      return root
     return document.body || document.documentElement
   }
 
@@ -441,6 +455,39 @@ export function createNativeSelectDropdown(
   function cleanupOpenListeners() {
     openListenersAbort?.abort()
     openListenersAbort = undefined
+    stopPositionTracking()
+  }
+
+  // 打开期间持续按触发器位置重算浮层坐标：原生 <select> 弹层始终锚定触发器，
+  // 这里用 rAF 模拟，滚动回复列表或页面时浮层跟随而非关闭。
+  function startPositionTracking() {
+    stopPositionTracking()
+    const tick = () => {
+      if (!isOpen)
+        return
+      if (!trigger.isConnected) {
+        close()
+        return
+      }
+      const rect = trigger.getBoundingClientRect()
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth
+      const viewportHeight = document.documentElement.clientHeight || window.innerHeight
+      // 触发器完全离开视口时关闭，避免浮层悬空指向不可见入口。
+      if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
+        close()
+        return
+      }
+      positionMenu()
+      positionRaf = requestAnimationFrame(tick)
+    }
+    positionRaf = requestAnimationFrame(tick)
+  }
+
+  function stopPositionTracking() {
+    if (positionRaf !== undefined) {
+      cancelAnimationFrame(positionRaf)
+      positionRaf = undefined
+    }
   }
 
   function close(closeOpts: { restoreFocus?: boolean } = {}) {
@@ -480,18 +527,6 @@ export function createNativeSelectDropdown(
       close()
     }, { capture: true, signal })
 
-    window.addEventListener('wheel', (event) => {
-      if (!event.composedPath().includes(menu))
-        close()
-    }, { capture: true, passive: true, signal })
-
-    window.addEventListener('scroll', (event) => {
-      if (!event.composedPath().includes(menu))
-        close()
-    }, { capture: true, passive: true, signal })
-
-    window.addEventListener('resize', () => close(), { signal })
-
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -499,6 +534,8 @@ export function createNativeSelectDropdown(
         close({ restoreFocus: true })
       }
     }, { capture: true, signal })
+
+    startPositionTracking()
   }
 
   function open() {
@@ -683,6 +720,7 @@ export function createNativeSelectDropdown(
       menu.removeEventListener('click', handleMenuClick)
       menu.removeEventListener('pointerdown', handleMenuPointerDown)
       menu.removeEventListener('keydown', handleMenuKeydown)
+      stopPositionTracking()
       menu.remove()
     },
   }
