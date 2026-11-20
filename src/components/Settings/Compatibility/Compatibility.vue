@@ -11,6 +11,13 @@ import SettingsItemGroup from '../components/SettingsItemGroup.vue'
   <div>
     <SettingsItemGroup :title="$t('settings.group_common')">
       <SettingsItem
+        :title="$t('settings.enable_native_home_feed_history')"
+        :desc="$t('settings.enable_native_home_feed_history_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableNativeHomeFeedHistory" />
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.prevent_mobile_redirect')"
         :desc="$t('settings.prevent_mobile_redirect_desc')"
         right-width="auto"

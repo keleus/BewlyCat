@@ -239,7 +239,7 @@ settings:
   module_sidebar: 懸浮側欄
   module_sidebar_desc: 提供主題切換和設定入口，Dock 顯示時不顯示。關閉後可從瀏覽器工具列圖示開啟設定。
   group_modules_enhancements: 功能增強
-  group_modules_enhancements_desc: 不依賴上方介面模組。大會員、收藏夾整理、原版動態和淨化功能在「Bilibili」分類中單獨設定。
+  group_modules_enhancements_desc: 不依賴上方介面模組。大會員、收藏夾整理、原版動態和通用淨化功能在「Bilibili」分類中單獨設定。
   module_comments: 評論增強
   module_comments_desc: 回覆樹、IP 屬地、性別、樓主標識和評論圖片最佳化。
   module_player: 播放器增強
@@ -263,7 +263,7 @@ settings:
   category_bilibili_vip_desc: 設定大會員 B 幣券與每日經驗的提醒及自動領取。
   category_bilibili_volume_balance_desc: 在本機平衡影片響度，並設定播放器畫面旋轉、鏡像與音畫同步。
   category_bilibili_ambilight_desc: 在播放器四周投射隨畫面變化的柔和環境光。
-  category_advanced_compatibility_desc: 攔截廣告、淨化連結與分享文字，並設定搜尋去個人化與頁面相容選項。
+  category_advanced_compatibility_desc: 設定原版首頁前進後退、搜尋去個人化、廣告攔截、連結淨化與頁面相容選項。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或還原 BewlyCat 預設配置。
   category_data_desc: 開啟瀏覽器雲端同步，匯出備份、匯入設定或還原 BewlyCat 預設配置。
   maintenance:
@@ -290,7 +290,7 @@ settings:
   menu_plugin_components_and_pages: BewlyCat 介面
   menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 外觀
-  menu_compatibility: 淨化與相容
+  menu_compatibility: 通用與淨化
   menu_data: 資料與同步
   menu_about: 關於
   menu_changelog: 更新日誌
@@ -1084,7 +1084,9 @@ settings:
   random_play_not_enabled: 自訂播放功能未啟用
   random_play_min_videos_required: 需要至少{count}個影片才能啟用隨機播放
   enable_undo_refresh_button: 啟用首頁前進後退按鈕
-  enable_undo_refresh_button_desc: 支援擴充功能首頁推薦的撤銷重新整理，以及 B 站原版首頁「換一換」的前進後退（最多保留 5 組推薦）。
+  enable_undo_refresh_button_desc: 在擴充功能首頁推薦重新整理後顯示撤銷與前進按鈕，點擊可切換回之前重新整理的內容。
+  enable_native_home_feed_history: 啟用原版首頁推薦前進後退按鈕
+  enable_native_home_feed_history_desc: 在 B 站原版首頁「換一換」旁加入前進與後退按鈕，支援切換回之前瀏覽的推薦（最多保留 5 組推薦）。
   native_home_feed_back: 返回上一組推薦
   native_home_feed_forward: 前往下一組推薦
   shortcuts:

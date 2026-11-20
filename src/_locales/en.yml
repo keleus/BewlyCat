@@ -239,7 +239,7 @@ settings:
   module_sidebar: Floating sidebar
   module_sidebar_desc: 'Theme switch and settings entry, hidden while the Dock is shown. When off, open settings from the browser toolbar icon.'
   group_modules_enhancements: Enhancements
-  group_modules_enhancements_desc: 'Independent of the interface modules above. Premium features, favorites organizer, original moments, and cleanup are configured under Bilibili.'
+  group_modules_enhancements_desc: 'Independent of the interface modules above. Premium features, favorites organizer, original moments, and general cleanup are configured under Bilibili.'
   module_comments: Comment enhancements
   module_comments_desc: 'Reply trees, IP location, gender, original poster tags, and comment image improvements.'
   module_player: Player enhancements
@@ -263,7 +263,7 @@ settings:
   category_bilibili_vip_desc: Configure reminders and auto-claim for VIP B-coin coupons and daily XP.
   category_bilibili_volume_balance_desc: Balance video loudness locally, and configure picture rotation, mirroring, and audio sync.
   category_bilibili_ambilight_desc: Cast soft ambient light around the player that follows the picture.
-  category_advanced_compatibility_desc: Block ads, clean URLs and share links, and configure depersonalized search and page compatibility.
+  category_advanced_compatibility_desc: Configure original homepage recommendation history, depersonalized search, ad blocking, link cleanup, and compatibility options.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
   category_data_desc: Turn on browser cloud sync, export a backup, import settings, or restore BewlyCat defaults.
   maintenance:
@@ -290,7 +290,7 @@ settings:
   menu_plugin_components_and_pages: BewlyCat Interface
   menu_bilibili_features_enhancement: Bilibili Features
   menu_appearance: Appearance
-  menu_compatibility: Cleanup & Compatibility
+  menu_compatibility: General & Cleanup
   menu_data: Data & Sync
   menu_about: About
   menu_changelog: Changelog
@@ -1192,7 +1192,9 @@ settings:
   random_play_not_enabled: Custom playback is not enabled
   random_play_min_videos_required: At least {count} videos required to enable random play
   enable_undo_refresh_button: Enable homepage back/forward buttons
-  enable_undo_refresh_button_desc: Undo recommendation refreshes on the extension homepage, or navigate up to 5 recommendation batches on the original Bilibili homepage.
+  enable_undo_refresh_button_desc: Show back and forward buttons on the Dock after refreshing extension homepage recommendations.
+  enable_native_home_feed_history: Enable original homepage recommendation history buttons
+  enable_native_home_feed_history_desc: Add back and forward buttons next to the refresh button on the original Bilibili homepage (keeps up to 5 recommendation batches).
   native_home_feed_back: Previous recommendations
   native_home_feed_forward: Next recommendations
   shortcuts:

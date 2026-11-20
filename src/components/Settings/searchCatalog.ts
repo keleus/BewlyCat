@@ -244,6 +244,7 @@ export const bewlyPagesOnlyTitleKeys = new Set([
   'settings.gradient_theme_color_background',
   'settings.always_use_dock',
   'settings.dock_item_use_original_bili_web_page',
+  'settings.enable_undo_refresh_button',
   'settings.video_card_link_opening_behavior',
   'settings.group_list_scrolling',
   'settings.enable_horizontal_scrolling',
@@ -806,6 +807,7 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(compatibilityRoute, [
     'settings.menu_compatibility',
     'settings.group_common',
+    'settings.enable_native_home_feed_history',
     'settings.prevent_mobile_redirect',
     'settings.depersonalize_search_results',
     ...(isFirefoxBuild ? ['settings.enable_firefox_scrollbar_repaint'] : []),

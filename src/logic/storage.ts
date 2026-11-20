@@ -491,6 +491,7 @@ export interface Settings {
   backToTopAndRefreshButtonsAreSeparated: boolean
   alwaysShowDockActionsWhenAutoHide: boolean
   enableUndoRefreshButton: boolean // 添加撤销刷新按钮配置项
+  enableNativeHomeFeedHistory: boolean // 原版首页推荐前进后退按钮
 
   sidebarPosition: 'left' | 'right'
   autoHideSidebar: boolean
@@ -868,6 +869,7 @@ export const originalSettings: Settings = {
   backToTopAndRefreshButtonsAreSeparated: true,
   alwaysShowDockActionsWhenAutoHide: false,
   enableUndoRefreshButton: true, // 默认开启撤销刷新按钮
+  enableNativeHomeFeedHistory: true, // 默认开启原版首页推荐前进后退按钮
 
   sidebarPosition: 'right',
   autoHideSidebar: false,
@@ -1199,6 +1201,13 @@ export const settings = useSettingsStorage(originalSettings, {
     if (typeof record.enableFavoriteCoverBlur === 'boolean') {
       record.enableSidebarCoverBlur = record.enableFavoriteCoverBlur
       Reflect.deleteProperty(record, 'enableFavoriteCoverBlur')
+    }
+
+    // 原版首页推荐前进后退从 Dock 的 enableUndoRefreshButton 拆出为独立开关，旧用户继承原偏好。
+    if (typeof record.enableNativeHomeFeedHistory !== 'boolean') {
+      record.enableNativeHomeFeedHistory = typeof record.enableUndoRefreshButton === 'boolean'
+        ? record.enableUndoRefreshButton
+        : originalSettings.enableNativeHomeFeedHistory
     }
 
     // 原版首页用户此前看不到 Dock，引入独立开关后保持原有界面。

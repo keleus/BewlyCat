@@ -239,7 +239,7 @@ settings:
   module_sidebar: 悬浮侧栏
   module_sidebar_desc: 提供主题切换和设置入口，Dock 显示时不显示。关闭后可从浏览器工具栏图标打开设置。
   group_modules_enhancements: 功能增强
-  group_modules_enhancements_desc: 不依赖上方界面模块。大会员、收藏夹整理、原版动态和净化功能在「Bilibili」分类中单独设置。
+  group_modules_enhancements_desc: 不依赖上方界面模块。大会员、收藏夹整理、原版动态和通用净化功能在「Bilibili」分类中单独设置。
   module_comments: 评论增强
   module_comments_desc: 回复树、IP 属地、性别、楼主标识和评论图片优化。
   module_player: 播放器增强
@@ -263,7 +263,7 @@ settings:
   category_bilibili_vip_desc: 配置大会员 B 币券与每日经验的提醒及自动领取。
   category_bilibili_volume_balance_desc: 在本地平衡视频响度，并配置播放器画面旋转、镜像与音画同步。
   category_bilibili_ambilight_desc: 在播放器四周投射随画面变化的柔和环境光。
-  category_advanced_compatibility_desc: 拦截广告、净化链接与分享文本，并配置搜索去个性化与页面兼容选项。
+  category_advanced_compatibility_desc: 配置原版首页前进后退、搜索去个性化、广告拦截、链接净化与页面兼容选项。
   category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。
   category_data_desc: 开启浏览器云同步，导出备份、导入设置或恢复 BewlyCat 默认配置。
   maintenance:
@@ -290,7 +290,7 @@ settings:
   menu_plugin_components_and_pages: BewlyCat界面
   menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 外观
-  menu_compatibility: 净化与兼容
+  menu_compatibility: 通用与净化
   menu_data: 数据与同步
   menu_about: 关于
   menu_changelog: 更新日志
@@ -1139,7 +1139,9 @@ settings:
   disable_auto_play_collection: 自动关闭合集自动播放
   disable_auto_play_collection_desc: 自动关闭视频合集的自动播放功能
   enable_undo_refresh_button: 启用首页前进后退按钮
-  enable_undo_refresh_button_desc: 支持插件首页推荐的撤销刷新，以及 B 站原版首页“换一换”的前进后退（最多保留 5 组推荐）。
+  enable_undo_refresh_button_desc: 在插件首页推荐刷新后显示撤销与前进按钮，点击可切换回之前刷新的内容。
+  enable_native_home_feed_history: 启用原版首页推荐前进后退按钮
+  enable_native_home_feed_history_desc: 在 B 站原版首页「换一换」旁添加前进与后退按钮，支持切换回之前浏览的推荐（最多保留 5 组推荐）。
   native_home_feed_back: 返回上一组推荐
   native_home_feed_forward: 前往下一组推荐
   shortcuts:
