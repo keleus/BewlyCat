@@ -604,10 +604,10 @@ function normalizeMediaCover(value: any): string | undefined {
 }
 
 function resolveUserSampleUrl(sample: any): string | undefined {
+  if (typeof sample?.bvid === 'string' && sample.bvid.trim())
+    return `https://www.bilibili.com/video/${sample.bvid.trim()}`
   if (typeof sample?.arcurl === 'string' && sample.arcurl)
     return sample.arcurl
-  if (typeof sample?.bvid === 'string' && sample.bvid)
-    return `https://www.bilibili.com/video/${sample.bvid}`
   if (typeof sample?.aid === 'number' && Number.isFinite(sample.aid))
     return `https://www.bilibili.com/video/av${sample.aid}`
   return undefined
