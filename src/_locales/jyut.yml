@@ -1288,6 +1288,8 @@ settings:
   enlarge_favorite_dialog_desc: 用更大尺寸顯示影片頁收藏彈窗，方便睇同管理收藏夾。
   external_watch_later_button: 稍後再睇按鈕外置
   external_watch_later_button_desc: 喺影片頁工具欄顯示獨立嘅稍後再睇按鈕，可以睇到目前狀態並撳一下加入或者移除。
+  show_vertical_video_zoom_button: 直屏影片放大按鈕
+  show_vertical_video_zoom_button_desc: 喺直屏影片播放器顯示放大/縮小按鈕同畫面位置調整控制
   show_bewly_widescreen_button: 顯示播放器 Bewly 闊螢幕按鈕
   show_bewly_widescreen_button_desc: 啓用後，喺影片播放器控制欄顯示 Bewly 闊螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
@@ -2013,6 +2015,10 @@ player_state:
   volume: '音量 {volume}%'
   on: 開
   off: 關
+vertical_video:
+  zoom_in: 放大
+  zoom_out: 縮小
+  adjust_area: 調整直屏影片放大區域
 favorite_dialog:
   clear_selected: 清走已揀
   folder_full: 呢個收藏夾已經滿咗，加唔到

@@ -1347,6 +1347,8 @@ settings:
   enlarge_favorite_dialog_desc: Display the video page favorite dialog at a larger size for easier management.
   external_watch_later_button: External watch later button
   external_watch_later_button_desc: Show a standalone Watch later button in the video toolbar. It displays the current state and can add or remove the video.
+  show_vertical_video_zoom_button: Vertical video zoom button
+  show_vertical_video_zoom_button_desc: Show zoom controls and the visible-area position control for vertical videos
   show_bewly_widescreen_button: Show player Bewly Widescreen button
   show_bewly_widescreen_button_desc: Show the Bewly Widescreen button in the video player controls.
   show_video_screenshot_button: Show player screenshot button
@@ -2076,6 +2078,10 @@ player_state:
   volume: 'Volume {volume}%'
   on: On
   off: Off
+vertical_video:
+  zoom_in: Zoom in
+  zoom_out: Zoom out
+  adjust_area: Adjust vertical-video zoom area
 favorite_dialog:
   clear_selected: Clear selected
   folder_full: This favorite folder is full and cannot be added
