@@ -243,7 +243,7 @@ settings:
   module_comments: Comment enhancements
   module_comments_desc: 'Reply trees, IP location, gender, original poster tags, and comment image improvements.'
   module_player: Player enhancements
-  module_player_desc: 'Display modes, player buttons, volume balance, ambient light, and autoplay control. Takes effect after a page refresh.'
+  module_player_desc: 'Display modes, player buttons, player shortcuts, volume balance, ambient light, and autoplay control. Takes effect after a page refresh.'
   module_shortcuts: Keyboard shortcuts
   module_shortcuts_desc: Player and home page shortcuts provided by the extension.
   category_bilibili_moments_desc: 'Adjust modules and comment behavior on the original moments page, and filter moments.'

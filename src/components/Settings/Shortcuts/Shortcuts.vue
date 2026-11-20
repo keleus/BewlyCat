@@ -37,6 +37,7 @@ interface ConfigurableShortcutDefinition {
 
 interface ShortcutGroup {
   title: string
+  playerOnly?: boolean
   shortcuts: ConfigurableShortcutDefinition[]
 }
 
@@ -70,6 +71,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
   },
   {
     title: t('settings.shortcuts.group.general'),
+    playerOnly: true,
     shortcuts: [
       { id: 'danmuStatus', name: t('settings.shortcuts.danmu_status'), description: t('settings.shortcuts.danmu_status_desc'), defaultKey: 'Shift+D' },
       { id: 'webFullscreen', name: t('settings.shortcuts.web_fullscreen'), description: t('settings.shortcuts.web_fullscreen_desc'), defaultKey: 'Shift+W' },
@@ -95,6 +97,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
   },
   {
     title: t('settings.shortcuts.group.fullscreen_mode'),
+    playerOnly: true,
     shortcuts: [
       { id: 'increaseVideoSize', name: t('settings.shortcuts.increase_video_size'), description: t('settings.shortcuts.increase_video_size_desc'), defaultKey: '' },
       { id: 'decreaseVideoSize', name: t('settings.shortcuts.decrease_video_size'), description: t('settings.shortcuts.decrease_video_size_desc'), defaultKey: '' },
@@ -105,6 +108,10 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
     ],
   },
 ]
+
+const visibleConfigurableShortcutsGroups = computed(() =>
+  configurableShortcutsGroups.filter(group => !group.playerOnly || settings.value.enablePlayerEnhancements),
+)
 
 // --- Reactive State ---
 const editingShortcutId = ref<ConfigurableShortcutId | null>(null)
@@ -304,7 +311,7 @@ function undoResetAllShortcuts() {
     </SettingsItemGroup>
 
     <!-- Configurable Extension Shortcuts -->
-    <template v-for="group in configurableShortcutsGroups" :key="group.title">
+    <template v-for="group in visibleConfigurableShortcutsGroups" :key="group.title">
       <ShortcutSection
         :title="group.title"
         default-open

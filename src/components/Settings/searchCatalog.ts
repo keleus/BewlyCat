@@ -261,6 +261,38 @@ export const bewlyTopBarOnlyTitleKeys = new Set([
   'settings.top_bar_link_opening_behavior',
 ])
 
+/** 播放器扩展快捷键；关闭「播放器增强」模块后停用并从搜索结果中隐藏。 */
+export const playerShortcutTitleKeys = new Set([
+  'settings.shortcuts.group.general',
+  'settings.shortcuts.danmu_status',
+  'settings.shortcuts.web_fullscreen',
+  'settings.shortcuts.widescreen',
+  'settings.shortcuts.bewly_widescreen',
+  'settings.shortcuts.short_step_backward',
+  'settings.shortcuts.long_step_backward',
+  'settings.shortcuts.play_pause_ext',
+  'settings.shortcuts.short_step_forward',
+  'settings.shortcuts.long_step_forward',
+  'settings.shortcuts.pip',
+  'settings.shortcuts.turn_off_light',
+  'settings.shortcuts.caption',
+  'settings.shortcuts.video_screenshot',
+  'settings.shortcuts.increase_playback_rate',
+  'settings.shortcuts.decrease_playback_rate',
+  'settings.shortcuts.reset_playback_rate',
+  'settings.shortcuts.previous_frame',
+  'settings.shortcuts.next_frame',
+  'settings.shortcuts.replay',
+  'settings.shortcuts.toggle_follow',
+  'settings.shortcuts.group.fullscreen_mode',
+  'settings.shortcuts.increase_video_size',
+  'settings.shortcuts.decrease_video_size',
+  'settings.shortcuts.reset_video_size',
+  'settings.shortcuts.video_title',
+  'settings.shortcuts.video_time',
+  'settings.shortcuts.clock_time',
+])
+
 const sharedMomentFilterTitleKeys = [
   'settings.group_moments_filters',
   'settings.moments_filtered_types',

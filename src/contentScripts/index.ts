@@ -1710,7 +1710,7 @@ else if (shouldInitializeContentScript) {
   )
 
   watch(
-    () => settings.value.keyboard,
+    [() => settings.value.keyboard, () => settings.value.enablePlayerEnhancements],
     () => {
       if (isVideoPlaybackPage() || isVideoOrBangumiPage())
         setupShortcutHandlers()

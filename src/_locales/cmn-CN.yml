@@ -243,7 +243,7 @@ settings:
   module_comments: 评论增强
   module_comments_desc: 回复树、IP 属地、性别、楼主标识和评论图片优化。
   module_player: 播放器增强
-  module_player_desc: 显示模式、播放器按钮、音量均衡、环境光和连播控制。刷新页面后生效。
+  module_player_desc: 显示模式、播放器按钮、快捷键、音量均衡、环境光和连播控制。刷新页面后生效。
   module_shortcuts: 键盘快捷键
   module_shortcuts_desc: 插件提供的播放器和首页快捷键。
   category_bilibili_moments_desc: 调整原版动态页的模块和评论行为，并过滤动态。

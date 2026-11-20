@@ -243,7 +243,7 @@ settings:
   module_comments: 評論增強
   module_comments_desc: 回覆樹、IP 屬地、性別、樓主標識和評論圖片最佳化。
   module_player: 播放器增強
-  module_player_desc: 顯示模式、播放器按鈕、音量均衡、環境光和連播控制。重新整理頁面後生效。
+  module_player_desc: 顯示模式、播放器按鈕、快捷鍵、音量均衡、環境光和連播控制。重新整理頁面後生效。
   module_shortcuts: 鍵盤快捷鍵
   module_shortcuts_desc: 外掛提供的播放器和首頁快捷鍵。
   category_bilibili_moments_desc: 調整原版動態頁的模組和評論行為，並過濾動態。

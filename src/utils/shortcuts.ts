@@ -184,7 +184,7 @@ function handleShortcutKeydown(e: KeyboardEvent) {
   if (e.code)
     interceptedKeyCodes.delete(e.code)
 
-  if (settings.value.keyboard === false || shouldIgnoreShortcutEvent(e))
+  if (settings.value.keyboard === false || !settings.value.enablePlayerEnhancements || shouldIgnoreShortcutEvent(e))
     return
 
   updateShortcutsCache()
@@ -247,8 +247,8 @@ export function setupShortcutHandlers() {
     delete shortcutHandlers[id]
   })
 
-  // 如果快捷键总开关关闭，不注册处理器
-  if (settings.value.keyboard === false) {
+  // 快捷键总开关或播放器增强总开关关闭时，不注册插件提供的播放器快捷键处理器
+  if (settings.value.keyboard === false || !settings.value.enablePlayerEnhancements) {
     cachedShortcutIds = null
     return
   }

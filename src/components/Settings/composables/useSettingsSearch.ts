@@ -5,7 +5,7 @@ import { settings } from '~/logic'
 import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 
 import type { SettingsSearchEntry } from '../searchCatalog'
-import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from '../searchCatalog'
+import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, playerShortcutTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from '../searchCatalog'
 import type { SearchPartMatch } from '../searchMatch'
 import { getSearchPartScore } from '../searchMatch'
 import type { SettingsMenuDefinition } from '../settingsMenus'
@@ -92,6 +92,8 @@ export function useSettingsSearch(options: UseSettingsSearchOptions) {
       && !shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
       return false
     }
+    if (entry.titleKey && playerShortcutTitleKeys.has(entry.titleKey) && !settings.value.enablePlayerEnhancements)
+      return false
 
     const secondaryPage = entry.storageValues?.find(({ key }) => key === menu.storageKey)?.value
     return !secondaryPage || !menu.pages || menu.pages.some(page => page.value === secondaryPage)
