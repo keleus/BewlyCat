@@ -183,7 +183,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 
       <SettingsItem
         :title="t('settings.video_player_scroll')"
-        :desc="t('settings.video_player_scroll_desc')"
         right-width="auto"
       >
         <Radio v-model="settings.videoPlayerScroll" />
@@ -232,7 +231,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
     >
       <SettingsItem
         :title="t('settings.show_bewly_widescreen_button')"
-        :desc="t('settings.show_bewly_widescreen_button_desc')"
         right-width="auto"
       >
         <Radio v-model="settings.showBewlyWidescreenButton" />
@@ -270,7 +268,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup :title="t('settings.group_player_components')">
+    <SettingsItemGroup :title="t('settings.group_danmaku_and_captions')">
       <SettingsItem
         :title="t('settings.video_danmaku_default_state')"
         right-width="auto"
@@ -300,120 +298,126 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
           w="180px"
         />
       </SettingsItem>
+    </SettingsItemGroup>
 
-      <PlaybackRate />
+    <PlaybackRate />
 
-      <SettingsItemSubgroup :title="t('settings.fullscreen_wheel_volume')">
-        <SettingsItem
-          :title="t('settings.fullscreen_wheel_volume')"
-          :desc="t('settings.fullscreen_wheel_volume_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.customFullscreenWheelVolume" />
-        </SettingsItem>
-        <SettingsItem
-          v-if="settings.customFullscreenWheelVolume"
-          :title="t('settings.fullscreen_wheel_volume_step')"
-          :desc="t('settings.fullscreen_wheel_volume_step_desc')"
-          right-width="auto"
-        >
-          <Input
-            v-model="wheelVolumeStep" type="number" :min="1" :max="50" :step="1"
-            w="100px"
-            :aria-label="t('settings.fullscreen_wheel_volume_step')" @blur="saveWheelVolumeStep" @enter="saveWheelVolumeStep"
-          />
-        </SettingsItem>
-      </SettingsItemSubgroup>
-
-      <SettingsItemSubgroup :title="t('settings.keyboard_volume')">
-        <SettingsItem
-          :title="t('settings.keyboard_volume')"
-          :desc="t('settings.keyboard_volume_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.customKeyboardVolume" />
-        </SettingsItem>
-        <SettingsItem
-          v-if="settings.customKeyboardVolume"
-          :title="t('settings.keyboard_volume_step')"
-          :desc="t('settings.keyboard_volume_step_desc')"
-          right-width="auto"
-        >
-          <Input
-            v-model="keyboardVolumeStep" type="number" :min="1" :max="50" :step="1"
-            w="100px"
-            :aria-label="t('settings.keyboard_volume_step')" @blur="saveKeyboardVolumeStep" @enter="saveKeyboardVolumeStep"
-          />
-        </SettingsItem>
-      </SettingsItemSubgroup>
-
-      <SettingsItemSubgroup
-        :title="t('settings.group_playback_memory')"
-        :desc="t('settings.group_playback_memory_desc')"
+    <SettingsItemGroup :title="t('settings.group_volume_control')">
+      <SettingsItem
+        :title="t('settings.fullscreen_wheel_volume')"
+        :desc="t('settings.fullscreen_wheel_volume_desc')"
+        right-width="auto"
       >
-        <SettingsSearchContainer class="video-setting-tags" role="group" :aria-label="t('settings.group_playback_memory')">
-          <SettingsToggleTag
-            v-for="option in playbackMemoryOptions"
-            :key="option.setting"
-            :model-value="settings[option.setting]"
-            :label="option.label"
-            :icon="option.icon"
-            :show-state-icon="false"
-            searchable
-            @update:model-value="updatePlaybackMemory(option.setting, $event)"
-          />
-        </SettingsSearchContainer>
-
-        <Dialog
-          v-if="showVideoQualityMemoryConfirm"
-          :title="t('settings.remember_video_quality_confirm_title')"
-          width="420px"
-          append-to-bewly-body
-          @close="showVideoQualityMemoryConfirm = false"
-          @confirm="settings.rememberVideoQuality = true"
-        >
-          <p text="$bew-text-1">
-            {{ t('settings.remember_video_quality_confirm_message') }}
-          </p>
-        </Dialog>
-      </SettingsItemSubgroup>
-
-      <SettingsItemSubgroup
-        :title="t('settings.group_video_page_actions')"
-        :desc="t('settings.group_video_page_actions_desc')"
+        <Radio v-model="settings.customFullscreenWheelVolume" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="settings.customFullscreenWheelVolume"
+        :title="t('settings.fullscreen_wheel_volume_step')"
+        :desc="t('settings.fullscreen_wheel_volume_step_desc')"
+        right-width="auto"
       >
-        <SettingsItem
-          :title="t('settings.enlarge_favorite_dialog')"
-          :desc="t('settings.enlarge_favorite_dialog_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.enlargeFavoriteDialog" />
-        </SettingsItem>
+        <Input
+          v-model="wheelVolumeStep" type="number" :min="1" :max="50" :step="1"
+          w="100px"
+          :aria-label="t('settings.fullscreen_wheel_volume_step')" @blur="saveWheelVolumeStep" @enter="saveWheelVolumeStep"
+        />
+      </SettingsItem>
 
-        <SettingsItem
-          :title="t('settings.external_watch_later_button')"
-          :desc="t('settings.external_watch_later_button_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.externalWatchLaterButton" />
-        </SettingsItem>
+      <SettingsItem
+        :title="t('settings.keyboard_volume')"
+        :desc="t('settings.keyboard_volume_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.customKeyboardVolume" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="settings.customKeyboardVolume"
+        :title="t('settings.keyboard_volume_step')"
+        :desc="t('settings.keyboard_volume_step_desc')"
+        right-width="auto"
+      >
+        <Input
+          v-model="keyboardVolumeStep" type="number" :min="1" :max="50" :step="1"
+          w="100px"
+          :aria-label="t('settings.keyboard_volume_step')" @blur="saveKeyboardVolumeStep" @enter="saveKeyboardVolumeStep"
+        />
+      </SettingsItem>
+    </SettingsItemGroup>
 
-        <SettingsItem
-          :title="t('settings.show_video_screenshot_button')"
-          :desc="t('settings.show_video_screenshot_button_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.showVideoScreenshotButton" />
-        </SettingsItem>
+    <SettingsItemGroup
+      :title="t('settings.group_playback_memory')"
+      :desc="t('settings.group_playback_memory_desc')"
+    >
+      <SettingsSearchContainer class="video-setting-tags" role="group" :aria-label="t('settings.group_playback_memory')">
+        <SettingsToggleTag
+          v-for="option in playbackMemoryOptions"
+          :key="option.setting"
+          :model-value="settings[option.setting]"
+          :label="option.label"
+          :icon="option.icon"
+          :show-state-icon="false"
+          searchable
+          @update:model-value="updatePlaybackMemory(option.setting, $event)"
+        />
+      </SettingsSearchContainer>
 
-        <SettingsItem
-          :title="t('settings.show_video_pip_button')"
-          :desc="t('settings.show_video_pip_button_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.showVideoPipButton" />
-        </SettingsItem>
-      </SettingsItemSubgroup>
+      <Dialog
+        v-if="showVideoQualityMemoryConfirm"
+        :title="t('settings.remember_video_quality_confirm_title')"
+        width="420px"
+        append-to-bewly-body
+        @close="showVideoQualityMemoryConfirm = false"
+        @confirm="settings.rememberVideoQuality = true"
+      >
+        <p text="$bew-text-1">
+          {{ t('settings.remember_video_quality_confirm_message') }}
+        </p>
+      </Dialog>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="t('settings.group_video_page_actions')"
+      :desc="t('settings.group_video_page_actions_desc')"
+    >
+      <SettingsItem
+        :title="t('settings.enlarge_favorite_dialog')"
+        :desc="t('settings.enlarge_favorite_dialog_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enlargeFavoriteDialog" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.external_watch_later_button')"
+        :desc="t('settings.external_watch_later_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.externalWatchLaterButton" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.show_video_screenshot_button')"
+        :desc="t('settings.show_video_screenshot_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showVideoScreenshotButton" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.show_video_pip_button')"
+        :desc="t('settings.show_video_pip_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showVideoPipButton" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.show_video_loudness_button')"
+        :desc="t('settings.show_video_loudness_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showLocalLoudnessControl" />
+      </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>
@@ -422,7 +426,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 .video-setting-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 0.25rem 0 0.5rem;
+  gap: var(--bew-space-2);
+  padding: var(--bew-space-4) 0;
 }
 </style>

@@ -197,9 +197,6 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
       </SettingsItem>
       <template v-if="settings.useSearchPageModeOnHomePage">
         <SettingsItem :title="$t('settings.settings_shared_with_the_search_page')" right-width="auto">
-          <template #desc>
-            <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
-          </template>
           <Button type="secondary" center @click="openSearchPageSettings">
             {{ $t('settings.btn.open_settings') }}
           </Button>
@@ -427,7 +424,7 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
       >
         <Radio v-model="settings.showRecommendationFilterRiskWarning" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" :desc="$t('settings.disable_filters_for_followed_users_desc')" right-width="auto">
+      <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" right-width="auto">
         <Radio v-model="settings.disableFilterForFollowedUser" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.filter_out_vertical_videos')" right-width="auto">

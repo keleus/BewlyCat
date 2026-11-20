@@ -90,7 +90,6 @@ function getCoverRatioProgress(value: number) {
     <SettingsItemGroup :title="$t('settings.group_video_card_display')">
       <SettingsItem
         :title="$t('settings.video_card_layout')"
-        :desc="$t('settings.video_card_layout_desc')"
         right-width="auto"
       >
         <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
@@ -134,7 +133,6 @@ function getCoverRatioProgress(value: number) {
     <!-- 视频卡片网格：打开设置时直接展示断点配置 -->
     <SettingsItemGroup
       :title="$t('settings.group_video_card_grid')"
-      :desc="$t('settings.grid_breakpoints_desc')"
     >
       <SettingsItem
         :title="$t('settings.auto_switch_list_layout')"
@@ -231,7 +229,6 @@ function getCoverRatioProgress(value: number) {
 
       <SettingsItem
         :title="$t('settings.video_card_title_font_size')"
-        :desc="$t('settings.video_card_title_font_size_desc')"
         right-width="auto"
       >
         <Select v-model="settings.videoCardTitleFontSize" :options="videoCardFontSizeOptions" w="160px" />
@@ -239,7 +236,6 @@ function getCoverRatioProgress(value: number) {
 
       <SettingsItem
         :title="$t('settings.video_card_author_font_size')"
-        :desc="$t('settings.video_card_author_font_size_desc')"
         right-width="auto"
       >
         <Select v-model="settings.videoCardAuthorFontSize" :options="videoCardFontSizeOptions" w="160px" />
@@ -247,7 +243,6 @@ function getCoverRatioProgress(value: number) {
 
       <SettingsItem
         :title="$t('settings.video_card_meta_font_size')"
-        :desc="$t('settings.video_card_meta_font_size_desc')"
         right-width="auto"
       >
         <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="160px" />

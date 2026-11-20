@@ -118,8 +118,11 @@ async function removeWatchLaterItem(item: WatchLaterItem, index: number) {
   if (removeStatuses.has(item.aid))
     return
 
-  const entry: { item: WatchLaterItem, index: number, status: RemoveStatus } = { item, index, status: 'removing' }
-  removeStatuses.set(item.aid, entry)
+  removeStatuses.set(item.aid, { item, index, status: 'removing' })
+  // 从响应式 Map 取代理引用，避免原始对象与 Proxy 比较恒不等且绕过响应式更新
+  const entry = removeStatuses.get(item.aid)
+  if (!entry)
+    return
   const success = await topBarStore.deleteWatchLaterItem(index, item.aid)
   if (removeStatuses.get(item.aid) !== entry)
     return

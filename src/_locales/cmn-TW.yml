@@ -162,7 +162,7 @@ settings:
     summary: 平衡不同影片之間的響度，同時平滑同一個影片內的大小聲。
     title: 音量均衡
     enable: 啟用局部音量均衡
-    description: 平衡不同影片之間的響度，並在播放中即時調整增益，因此同一個影片內的大小聲也會被平滑；強度越高，對原有動態的影響越大。啟用後會關閉 B 站原生均衡（關閉本功能後不會自動恢復），最高提升 6 dB。
+    description: 即時平衡不同影片及影片內的音量差異（最高提升 6 dB）。開啟後會關閉 B 站原生均衡，關閉本功能後不會自動恢復。
     target: 目標響度
     target_desc: 建議從 -18 LUFS 開始。數值越低越安靜；播放器音量仍可單獨調整。
     strength: 均衡強度
@@ -177,7 +177,7 @@ settings:
       unsupported: 目前音源無法安全接入，保持原聲。
   player_adjustment:
     title: 畫面與聲音調整
-    desc: 在影片控制列顯示調整按鈕，懸停開啟面板。以下兩項可單獨關閉，音量均衡項隨上方「啟用局部音量均衡」顯示；三項都關閉時不顯示按鈕。
+    desc: 在影片控制列顯示調整按鈕，懸停開啟面板。以下兩項可單獨關閉，音量均衡項也可在「播放器 → 影片頁功能」中關閉顯示；三項均不顯示時隱藏按鈕。
     show_picture: 畫面旋轉與鏡像
     show_picture_desc: 在面板中旋轉、鏡像畫面，只對目前影片生效；關閉後會重設目前畫面調整。
     show_audio_delay: 音畫同步
@@ -224,7 +224,7 @@ settings:
     results_title: 搜尋結果
     results_count: 找到 {count} 個設定
   category_general_desc: 設定語言與互動方式，並依需求開啟外掛的各個部分，可以只保留評論、大會員等單項功能。
-  category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式與其他頁面的適配。
+  category_appearance_desc: 設定視覺效果、主題顏色、頁面樣式、桌布、字型和自訂樣式。
   category_shortcuts_desc: 啟用、修改或還原 BewlyCat 與播放器快速鍵。
   breadcrumb: 設定位置
   usage_guide: 使用說明
@@ -249,21 +249,21 @@ settings:
   category_bilibili_moments_desc: 調整原版動態頁的模組和評論行為，並過濾動態。
   group_interaction: 互動
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁和首頁分頁。
-  category_browsing_video_card_desc: 設定影片卡片的版面、預覽、資訊顯示與開啟方式。
+  category_browsing_video_card_desc: 設定影片卡片的版面、預覽、網格、資訊顯示與更多選單。
   category_browsing_favorites_desc: 依規則整理收藏夾，並在一鍵三連後自動同步到對應收藏夾。
   category_navigation_link_opening_desc: 統一設定頂欄、影片卡片與搜尋列連結的開啟位置和抽屜行為。
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口和通知顯示。
   category_navigation_dock_desc: 設定 Dock 列與側欄的位置、顯示和快捷操作。
   category_navigation_interaction_desc: 設定連結開啟方式、抽屜行為與清單捲動。
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋與結果頁。
-  category_navigation_moments_desc: 設定插件動態頁的左側元件和動態卡片開啟方式。
+  category_navigation_moments_desc: 設定外掛動態頁的元件版面、懸停預覽、開啟方式、動態過濾與固定 UP 主。
   category_playback_player_desc: 設定播放器模式、捲動行為、彈幕、字幕和播放狀態。
   category_playback_autoplay_desc: 設定自動連播與自訂播放行為。
   category_bilibili_comments_desc: 增強留言區的使用者資訊與內容顯示。
-  category_bilibili_vip_desc: 設定大會員權益相關的提醒功能。
-  category_bilibili_volume_balance_desc: 在本機平衡不同影片的響度，並平滑影片內的大小聲。
+  category_bilibili_vip_desc: 設定大會員 B 幣券與每日經驗的提醒及自動領取。
+  category_bilibili_volume_balance_desc: 在本機平衡影片響度，並設定播放器畫面旋轉、鏡像與音畫同步。
   category_bilibili_ambilight_desc: 在播放器四周投射隨畫面變化的柔和環境光。
-  category_advanced_compatibility_desc: 攔截廣告、淨化連結，並設定原版頁面和其他頁面的相容行為。
+  category_advanced_compatibility_desc: 攔截廣告、淨化連結與分享文字，並設定搜尋去個人化與頁面相容選項。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或還原 BewlyCat 預設配置。
   category_data_desc: 開啟瀏覽器雲端同步，匯出備份、匯入設定或還原 BewlyCat 預設配置。
   maintenance:
@@ -352,6 +352,9 @@ settings:
   group_player_display_mode_desc: 設定基礎顯示模式，並依需要覆寫特定播放情境。
   group_bewly_widescreen: Bewly 寬螢幕
   group_bewly_widescreen_desc: 調整 Bewly 寬螢幕模式下的側欄與影片版面，可透過播放器按鈕或快捷鍵隨時切換。
+  group_danmaku_and_captions: 彈幕與字幕
+  group_playback_rate: 播放倍速
+  group_volume_control: 音量控制
   group_playback_memory: 播放狀態記憶
   group_playback_memory_desc: 選擇是否記住倍速、畫質和影片比例。
   group_video_page_actions: 影片頁功能
@@ -372,7 +375,7 @@ settings:
   topbar_switchers: BewlyCat/Bilibili 頁面切換器
   topbar_switchers_desc: 控制 BewlyCat 與 Bilibili 原版頁面切換器是否顯示。
   topbar_actions: 頂部列功能圖示
-  topbar_actions_desc: 分別設定右側功能圖示的顯示狀態、角標與相關提醒。
+  topbar_actions_desc: 分別設定右側功能圖示的顯示狀態、角標樣式與頂欄模式。
   topbar_user_menu: 頂部列使用者選單
   topbar_display_settings: 頂部列顯示與行為
   topbar_display_settings_desc: 調整頂部列在不同頁面與互動情境下的顯示方式。
@@ -442,7 +445,7 @@ settings:
   moments_show_filter_entry: 顯示動態過濾入口
   moments_show_filter_entry_desc: 在 Bewly 動態頁標籤列右側顯示過濾按鈕，可直接調整顯示的動態類型與封鎖關鍵詞；關閉面板後依新條件重新整理動態。
   moments_filtered_types: 過濾動態
-  moments_filtered_types_desc: 控制各類動態是否出現在 Bewly 動態流中，選中表示顯示。過濾較多時可能需要手動載入更多。
+  moments_filtered_types_desc: 控制動態流中顯示的動態類型，選中表示顯示。過濾較多時可能需要手動載入更多。
   moments_enable_live_preview: 直播動態懸停預覽
   moments_enable_live_preview_desc: 滑鼠懸停直播動態封面時播放直播預覽。
   moments_enable_video_preview: 影片動態懸停預覽
@@ -492,9 +495,9 @@ settings:
     open_settings: 打開設定...
   touch_screen_optimization: 改進觸控螢幕體驗
   touch_screen_optimization_desc: |
-    啟用後，如頂部列，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。影片頁支援雙擊播放、暫停或快進快退，按住左右滑動調整播放進度，以及從播放器左右邊緣上下滑動調整音量。（舊版頂部列不支援此功能）
+    啟用後，頂部列項目需點選而非懸停展開（僅適用於 Bewly 頂部列）。影片頁支援雙擊播放/暫停或快進快退、左右滑動調整進度，以及從左右邊緣上下滑動調整音量。
   show_home_button_in_touch_mode: 顯示 Home 按鈕
-  show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂部列 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
+  show_home_button_in_touch_mode_desc: 在頂部列 Logo 旁顯示直接跳轉至首頁的按鈕。
   open_top_bar_items_in_bewly: 點選頂部列圖示開啟 Bewly 頁面
   open_top_bar_items_in_bewly_desc: 未啟用觸控螢幕優化時，點選 Logo、動態、收藏、歷史或稍後再看圖示，將依照「頂部列連結開啟行為」開啟 Dock 中對應的頁面。
   show_bewly_or_bili_page_switcher_desc: 在首頁 Logo 旁顯示切換器，用於在 BewlyCat 頁面與 Bilibili 原版頁面之間切換。
@@ -506,7 +509,7 @@ settings:
     hidden: 隱藏
   enable_grid_layout_switcher: 啟用版面格線佈局切換器
   enable_horizontal_scrolling: 啟用橫向捲動
-  enable_horizontal_scrolling_desc: 啟用後，滑鼠捲動時將直接捲動橫向捲軸列表。
+  enable_horizontal_scrolling_desc: 在 Bewly 番劇頁的橫向列表中，直接用滑鼠滾輪橫向捲動。
   select_language: 介面語言
   select_language_opt:
     english: 英文
@@ -524,7 +527,7 @@ settings:
     href="https://github.com/ayaka14732/FanWunHak" target="_blank">Fan Wun Hak
     (繁媛黑體)</a>。
 
-    這些字型還具有將簡體中文轉換為繁體/繁體中文的能力。
+    這些字型還具有將簡體中文轉換為繁體/正體中文的能力。
   override_danmaku_font: 覆蓋彈幕字型
   override_danmaku_font_desc: |
     設定彈幕字型為你的自訂字型以覆蓋預設值。影片播放器將無法在之後更改彈幕字型。
@@ -631,7 +634,7 @@ settings:
     bewly_widescreen_sidebar_position_left: 左側
     bewly_widescreen_sidebar_position_right: 右側
     bewly_widescreen_auto_collapse_sidebar: 自動收合 Bewly 寬螢幕側欄
-    bewly_widescreen_auto_collapse_sidebar_desc: 優先保持影片完整高度。空間足夠時側欄完整顯示，空間不足時自動收合，懸停時展開。關閉後側欄完整顯示並壓縮影片。與手動調整側欄寬度互斥。
+    bewly_widescreen_auto_collapse_sidebar_desc: 空間足夠時顯示側欄，不足時自動收合（懸停展開），以保持影片完整高度；關閉則始終顯示側欄。與手動調整寬度互斥。
     bewly_widescreen_video_alignment: 影片置中基準
     bewly_widescreen_video_alignment_desc: 選擇影片在側欄以外的區域置中，或在空間允許時相對整個視窗置中。
     bewly_widescreen_video_alignment_sidebar: 側欄外區域（預設）
@@ -665,7 +668,7 @@ settings:
   other_page_top_bar_config: 其他頁面頂部列配置
   other_page_top_bar_config_desc: 控制影片頁以外頁面（如首頁、動態）頂部列的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示向下滾動時隱藏、向上滾動時顯示。
   video_page_top_bar_config: 影片頁頂部列配置
-  video_page_top_bar_config_desc: 控制影片頁頂部列的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示頁面滾動時顯示。
+  video_page_top_bar_config_desc: 控制影片頁頂部列的顯示時機。「滑鼠顯示」為滑鼠移入頂部時顯示（僅適用於 Bewly 頂部列）；「滾動顯示」為向下滾動時隱藏、向上滾動時顯示。
   video_page_top_bar_config_opt:
     alwaysShow: 總是顯示
     alwaysHide: 總是隱藏
@@ -681,10 +684,10 @@ settings:
     exp_frosted_glass: 白霧（實驗）
     exp_transparent: 陰影（實驗）
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
-  show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
+  show_bewly_or_bili_page_switcher: 顯示 BewlyCat/Bilibili 頁面切換器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器
   filter_articles_in_moments: 過濾專欄
-  filter_articles_in_moments_desc: 在動態列表中過濾專欄內容，僅顯示影片
+  filter_articles_in_moments_desc: 在頂部列動態下拉選單中過濾專欄內容，僅顯示影片。
   top_bar_icon_badges_opt:
     number: 數字
     dot: 圓點
@@ -735,7 +738,7 @@ settings:
   dark_mode_base_color: 深色模式基準顏色
   gradient_theme_color_background: 在深色模式下使用漸層主題色作為背景
   wallpaper_mode: 背景圖片模式
-  wallpaper_mode_desc: '使用網址: 直接使用網路圖片的網址來設定背景圖片。'
+  wallpaper_mode_desc: 選擇內建/本機上傳圖片，或直接填寫網路圖片連結。
   wallpaper_mode_opt:
     build_in: 內建
     by_url: 使用網址
@@ -748,14 +751,14 @@ settings:
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/green-white-mountains.jpg
   enable_wallpaper_masking: 啟用背景遮蔽效果
   wallpaper_cache_time: 背景圖片快取時間
-  wallpaper_cache_time_desc: 設定 URL 背景圖的快取時間(小時)。0表示不快取，每次都重新載入。本地上傳的圖片不受此設定影響。
+  wallpaper_cache_time_desc: 設定 URL 桌布的快取時間（小時），0 表示不快取；本機上傳的圖片不受影響。
   no_cache: 不快取
   wallpaper_mask_opacity: 背景遮蔽透明度調節
   wallpaper_blur_intensity: 背景模糊強度調節
   customize_css: 自訂 CSS
   customize_css_desc: |-
-    如果你不熟悉 CSS，請不要修改 CSS。否則可能會導致意外的顯示問題。
-    如果你在修改 CSS 後遇到任何問題，請重新安裝 BewlyBewly。
+    不熟悉 CSS 請勿修改，否則可能導致頁面顯示異常。
+    如遇問題，可透過瀏覽器擴充功能圖示開啟設定頁關閉此項。
   logo_color: Logo 顏色
   logo_color_opt:
     white: 白
@@ -769,11 +772,11 @@ settings:
   bg_blurs_when_the_search_bar_is_focused: 當搜尋列聚焦時背景變模糊
   choose_search_bar_focused_character: 選擇搜尋列聚焦時出現的人物
   show_hot_search_in_top_bar: 在頂部列顯示熱門搜尋
-  show_hot_search_in_top_bar_desc: 在頂部列搜尋框中顯示熱門搜尋列表
+  show_hot_search_in_top_bar_desc: 同時控制頂部列搜尋框與搜尋頁的熱門搜尋顯示。
   show_hot_search_in_search_page: 在搜尋頁顯示熱門搜尋
-  show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱門搜尋排行榜
+  show_hot_search_in_search_page_desc: 同時控制搜尋頁與頂部列搜尋框的熱門搜尋顯示。
   show_search_recommendation: 顯示搜尋推薦
-  show_search_recommendation_desc: 在搜尋框中顯示推薦的搜尋詞作為佔位符，空白輸入時按回車將搜尋該推薦詞
+  show_search_recommendation_desc: 在搜尋框中顯示推薦的搜尋詞作為佔位符，空白輸入時按 Enter 將搜尋該推薦詞
   enable_search_history: 啟用搜尋歷史
   enable_search_history_desc: 啟用後，搜尋欄將記錄和顯示您的搜尋歷史記錄。關閉後將清除所有歷史記錄
   depersonalize_search_results: 去除個人化搜尋
@@ -803,11 +806,11 @@ settings:
   recommendation_mode_app_single: App 單列
   recommendation_mode_app_double: App 雙列
   remember_no_cookie_recommendation_state: 減少 Web 訪客模式推薦重複
-  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦進度，減少重複推薦。僅 Web 訪客模式生效。
+  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦進度，減少重複推薦。
   auto_switch_recommendation_mode: 自動切換推薦模式
   auto_switch_recommendation_mode_desc: |
     當手機端推薦失敗時自動切換至網頁模式。
-  authorize_app: 授權 BewlyBewly 使用 access key
+  authorize_app: 授權 BewlyCat 使用 access key
   authorize_app_desc: >
     授權使用後能在首頁推送 bilibili 手機端推介演算法的影片，授權金鑰的有效期約為一個月，過了有效期後，請記得重新取得授權以取得 access
     key。
@@ -825,7 +828,7 @@ settings:
   filter_by_view_count_desc: 篩選掉觀看次數少於你設定的影片。
   filter_by_view_count_unit: 次
   filter_by_like_count: 依按讚數篩選
-  filter_by_like_count_desc: 篩選掉按讚數少於你設定的影片。
+  filter_by_like_count_desc: 篩選掉按讚數少於設定值的影片（僅在 Web 推薦模式下生效）。
   filter_by_like_count_unit: 次
   filter_by_duration: 依影片長度篩選
   filter_by_duration_desc: 篩選掉時長少於你設定的影片。
@@ -905,7 +908,7 @@ settings:
   filter_by_title: 依標題篩選
   filter_by_title_desc: >
     依標題篩選掉包含你設定的字串的影片（不區分大小寫），或使用正規表示式，如 <code>/abc&#124;\d+/</code>，用
-    <code>/</code> 包裡。
+    <code>/</code> 包裹。
 
     <br/>
 
@@ -917,7 +920,7 @@ settings:
   filter_by_user: 按使用者篩選
   filter_by_user_desc: >
     篩選掉包含你設定的使用者名稱（全名，不區分大小寫）或 MID 所上傳的影片，或使用正規表示式，如
-    <code>/abc&#124;\d+/</code>，用 <code>/</code> 包裏。
+    <code>/abc&#124;\d+/</code>，用 <code>/</code> 包裹。
 
     <br/>
 
@@ -949,7 +952,7 @@ settings:
   settings_shared_with_the_search_page_desc: 這些設定都與搜尋頁共用。
   search_page_mode_wallpaper_fixed: 將搜尋頁模式的背景固定
   home_tabs_adjustment: 標籤列調整
-  home_tabs_adjustment_desc: 第一個啟用的標籤項目調整頁面將是起始頁面。
+  home_tabs_adjustment_desc: 第一個啟用的標籤將作為預設首頁分頁。
   home_tabs_position: 首頁標籤列位置
   fixed_home_tabs_on_home_page: 固定首頁標籤列
   topbar_visibility: 頂部列可視性
@@ -961,7 +964,7 @@ settings:
     original: 原版頂欄
     bewly: BewlyCat 頂欄
   adapt_to_other_page_styles: 適應其他頁面風格
-  adapt_to_other_page_styles_desc: 適應一些常見頁面，以配合 BewlyBewly 主題。
+  adapt_to_other_page_styles_desc: 適應一些常見頁面，以配合 BewlyCat 主題。
   disable_background: 關閉背景
   disable_background_desc: 徹底關閉擴充功能頁面的純色背景、漸層背景與桌布（含搜尋頁桌布），顯示 B 站原頁面背景。
   video_page_glass_style: 影片頁玻璃風格
@@ -995,7 +998,7 @@ settings:
   third_party_licenses_desc: 以下為封裝進擴充功能的第三方相依套件及其授權條款。
   third_party_licenses_failed: 第三方授權資訊載入失敗
   enable_settings_sync: 允許同步設定
-  enable_settings_sync_desc: 開啟後同時儲存到本機與瀏覽器雲端；桌布背景與裝置播放狀態不會同步（需要登入瀏覽器帳號）
+  enable_settings_sync_desc: 開啟後同步到瀏覽器雲端（需登入瀏覽器帳號）；桌布、自訂 CSS 與本機播放狀態不同步。
   sync_cloud_conflict_title: 偵測到雲端設定備份
   sync_cloud_conflict_desc: 雲端已有一份設定備份。兩側都存在的設定將以你所選的一側為準。
   sync_cloud_use_cloud: 下載：以雲端設定為準
@@ -1032,7 +1035,7 @@ settings:
   remember_video_aspect_ratio: 記住影片比例
   remember_video_aspect_ratio_desc: 啟用後，播放器會記住你上次選擇的影片比例，並在下次打開影片時自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
-  auto_exit_fullscreen_on_end_desc: 啟用後，當影片播放結束且沒有單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
+  auto_exit_fullscreen_on_end_desc: 影片播完且無單集循環、隨機播放或自動連播時，自動退出全螢幕或網頁全螢幕。
   use_bilibili_default_auto_play: 使用 Bilibili 預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用後由 Bilibili 決定播放結束行為，不套用下方依影片類型設定。
   auto_play_watch_later: 稍後觀看
@@ -1135,13 +1138,13 @@ settings:
     long_step_backward: 長退
     long_step_backward_desc: 快退30秒
     play_pause_ext: 播放/暫停
-    play_pause_ext_desc: 播放或暫停視訊(擴充套件)
+    play_pause_ext_desc: 播放或暫停影片（擴充功能）
     short_step_forward: 快進
     short_step_forward_desc: 快進5秒
     long_step_forward: 長進
     long_step_forward_desc: 快進30秒
-    next_video_ext: 下一個視訊
-    next_video_ext_desc: 播放清單的下一個視訊(擴充套件)
+    next_video_ext: 下一個影片
+    next_video_ext_desc: 播放清單的下一個影片（擴充功能）
     pip: 子母畫面
     pip_desc: 切換子母畫面模式
     turn_off_light: 關燈
@@ -1162,16 +1165,16 @@ settings:
     next_frame_desc: 前進到下一幀(暫停時)
     replay: 重播
     replay_desc: 從頭開始播放
-    increase_video_size: 放大視訊
-    increase_video_size_desc: 增加視訊畫面大小
-    decrease_video_size: 縮小視訊
-    decrease_video_size_desc: 減小視訊畫面大小
-    reset_video_size: 重置視訊大小
-    reset_video_size_desc: 恢復預設視訊大小
-    video_title: 視訊標題
-    video_title_desc: 顯示/隱藏視訊標題
-    video_time: 視訊時間
-    video_time_desc: 顯示/隱藏視訊時間
+    increase_video_size: 放大影片
+    increase_video_size_desc: 增加影片畫面大小
+    decrease_video_size: 縮小影片
+    decrease_video_size_desc: 減小影片畫面大小
+    reset_video_size: 重設影片大小
+    reset_video_size_desc: 恢復預設影片大小
+    video_title: 影片標題
+    video_title_desc: 顯示/隱藏影片標題
+    video_time: 影片時間
+    video_time_desc: 顯示/隱藏影片時間
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間
     home_refresh: 首頁重新整理
@@ -1185,8 +1188,7 @@ settings:
   group_clean_share_link: 分享連結淨化
   enable_clean_share_link: 啟用分享連結淨化
   enable_clean_share_link_desc: >
-    啟用後，分享連結將自動移除追蹤參數，並可選擇是否包含影片標題。
-    此功能適用於 BewlyCat 的複製連結功能，同時也會攔截 Bilibili 原生分享按鈕的複製內容。
+    淨化 BewlyCat 複製連結與 Bilibili 原生分享按鈕複製的內容，可依需要移除追蹤參數或附帶影片標題。
   clean_share_link_include_title: 分享時包含影片標題
   clean_share_link_include_title_desc: >
     分享時在連結前新增影片標題，例如 "影片標題 https://www.bilibili.com/video/BVxxx"
@@ -1204,25 +1206,25 @@ settings:
   enable_comment_reply_tree_display_desc: 開啟後依回覆關係以樹狀結構整理樓中樓。
   comment_reply_tree_mode:
     title: 評論回覆樹樣式
-    desc: 根據回覆關係和發佈時間整理樓中樓。線條模式下可收合任意父級評論的回覆；「收起主評論」會收合父評論本體，「不收起主評論」則保留父評論正文僅隱藏子回覆
+    desc: 線條模式可收合任意父級評論的回覆：「收起主評論」連同父評論一起收合，「不收起主評論」僅隱藏子回覆。
     line_collapse_main: 線條-收起主評論
     line_keep_main: 線條-不收起主評論
     indent_only: 縮進-無收起功能
   comment_reply_pagination_mode:
     title: 樹狀評論模式
-    desc: 選擇樹狀評論的回覆顯示方式。「載入更多」會在保持目前閱讀位置的同時向下累積回覆；「分頁」保留 Bilibili 原生分頁，只顯示目前頁面
+    desc: 「載入更多」在保持目前閱讀位置的同時向下累積回覆；「分頁」沿用 Bilibili 原生分頁。
     load_more: 載入更多
     pagination: 分頁
   enable_comment_reply_tree_container: 固定高度回覆容器
-  enable_comment_reply_tree_container_desc: 展開樓中樓後在固定高度的容器內滾動查看回覆，避免整層評論把頁面撐得過長；僅在開啟評論區樹狀顯示時生效
+  enable_comment_reply_tree_container_desc: 展開樓中樓後在固定高度的容器內滾動查看回覆，避免整層評論把頁面撐得過長。
   comment_reply_tree_container_height: 回覆容器高度
   comment_reply_tree_container_height_desc: 容器的最大高度，回覆較少時自動收縮。
   adjust_comment_image_height: 調整評論區圖片高度
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   hide_comment_image_scrollbar: 評論圖片預覽時隱藏頁面滾動條
-  hide_comment_image_scrollbar_desc: 開啟評論區圖片預覽時隱藏頁面右側滾動條，避免滾動條顯示在遮罩右側
+  hide_comment_image_scrollbar_desc: 避免頁面滾動條顯示在預覽遮罩右側。
   image_viewer_close_at_bottom: 圖片檢視器關閉按鈕置於底部居中
-  image_viewer_close_at_bottom_desc: 將評論區和動態圖片檢視器的關閉按鈕從頂部移到底部居中
+  image_viewer_close_at_bottom_desc: 作用於評論區和動態圖片檢視器。
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，調整顯示模式時會自動捲動到所選位置。
   video_player_scroll_mode:
@@ -1230,15 +1232,17 @@ settings:
     sending_bar: 保持彈幕欄可見
     player_center: 播放器置中
   enlarge_favorite_dialog: 放大收藏彈窗
-  enlarge_favorite_dialog_desc: 啟用後，影片頁收藏彈窗將以更大的尺寸顯示，方便查看和管理收藏夾。
+  enlarge_favorite_dialog_desc: 以更大尺寸顯示影片頁收藏彈窗，方便查看和管理收藏夾。
   external_watch_later_button: 稍後再看按鈕外置
-  external_watch_later_button_desc: 啟用後，影片頁工具欄會顯示獨立的稍後觀看按鈕；按鈕會顯示目前影片狀態，可點擊加入或移除。
+  external_watch_later_button_desc: 在影片頁工具欄顯示獨立的稍後再看按鈕，可查看狀態並點擊加入或移除。
   show_bewly_widescreen_button: 顯示播放器 Bewly 寬螢幕按鈕
   show_bewly_widescreen_button_desc: 啟用後，在影片播放器控制列中顯示 Bewly 寬螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 在播放器控制列顯示截圖按鈕。關閉後仍可使用快捷鍵截圖。
   show_video_pip_button: 顯示播放器子母畫面按鈕
   show_video_pip_button_desc: 在播放器控制列顯示子母畫面按鈕。關閉後仍可使用快捷鍵切換。
+  show_video_loudness_button: 顯示播放器音量均衡按鈕
+  show_video_loudness_button_desc: 在播放器控制列的調整面板中顯示音量均衡項。關閉後不影響局部音量均衡生效；同時關閉「畫面旋轉與鏡像」和「音畫同步」時將隱藏該控制列圖示。
   group_fonts: 字體
   group_visual_effects: 視覺效果
   badge_type: 角標類型
@@ -1290,11 +1294,11 @@ settings:
   visibility: 顯示
   group_search_results: 搜尋結果
   use_plugin_search_results_page: 使用插件搜尋結果頁
-  use_plugin_search_results_page_desc: 啟用後，搜尋時將使用插件內置的搜尋結果頁面，支持分類篩選等功能
+  use_plugin_search_results_page_desc: 啟用後，搜尋時將使用外掛內建的搜尋結果頁面，支援分類篩選等功能
   search_results_pagination_mode: 搜尋結果分頁模式
-  search_results_pagination_mode_desc: 選擇搜尋結果的展示方式：滾動自動加載或翻頁
+  search_results_pagination_mode_desc: 選擇搜尋結果的顯示方式：捲動自動載入或翻頁
 auth:
-  auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
+  auth_access_key_first: 在這之前請先授權 BewlyCat 使用 access key
 topbar:
   top_bar_switcher: Bilibili/BewlyCat 頂欄切換器
   switch_to_bilibili_top_bar: 切換到 Bilibili 頂欄

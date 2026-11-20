@@ -9,11 +9,11 @@ import { schedulePlayerControlFit } from './playerControlFit'
 
 let initialized = false
 
-// 画面、音画同步、音量均衡任一项开启才显示按钮
+// 画面、音画同步、音量均衡（且允许显示控制项）任一项开启才显示按钮
 function isAdjustmentButtonVisible() {
   return settings.value.playerPictureAdjustmentEnabled
     || settings.value.playerAudioDelayEnabled
-    || settings.value.localLoudnessEnabled
+    || (settings.value.localLoudnessEnabled && settings.value.showLocalLoudnessControl)
 }
 
 export function initLocalLoudnessControl() {
@@ -126,9 +126,13 @@ export function initLocalLoudnessControl() {
   void settingsReady.then(() => {
     if (stopped)
       return
-    // 设置页切换总开关后以设置为准，清除本页的临时关闭。
+    // 设置页切换总开关后以设置为准，清除本页的临时关闭；隐藏音量均衡控制项后无处恢复，同样清除。
     const stopLoudnessWatch = watch(() => settings.value.localLoudnessEnabled, () => {
       loudnessTemporarilyOff.value = false
+    })
+    const stopLoudnessControlWatch = watch(() => settings.value.showLocalLoudnessControl, (visible) => {
+      if (!visible)
+        loudnessTemporarilyOff.value = false
     })
     const stopTemporaryOffWatch = watch(loudnessTemporarilyOff, (off) => {
       window.postMessage({ type: 'BEWLY_LOUDNESS_TEMPORARY_OFF', off }, location.origin)
@@ -146,6 +150,7 @@ export function initLocalLoudnessControl() {
     }, { immediate: true })
     unwatch = () => {
       stopLoudnessWatch()
+      stopLoudnessControlWatch()
       stopTemporaryOffWatch()
       stopVisibilityWatch()
       stopItemWatch()

@@ -171,7 +171,6 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
     >
       <SettingsItem
         :title="$t('settings.top_bar_style')"
-        :desc="$t('settings.top_bar_style_desc')"
         right-width="auto"
       >
         <Select v-model="settings.topBarStyle" :options="topBarStyleOptions" w="220px" />
@@ -228,7 +227,6 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
     >
       <SettingsItem
         :title="$t('settings.top_bar_logo_style')"
-        :desc="$t('settings.top_bar_logo_style_desc')"
         right-width="auto"
       >
         <div
@@ -283,7 +281,6 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
 
     <SettingsItemGroup
       :title="$t('settings.topbar_switchers')"
-      :desc="$t('settings.topbar_switchers_desc')"
     >
       <SettingsItem
         :title="$t('settings.show_bewly_or_bili_page_switcher')"
