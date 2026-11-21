@@ -1336,7 +1336,7 @@ topbar:
     cars: 汽车
     fashion: 时尚美妆
     sports: 体育运动
-    animals: 动物圈
+    animals: 动物
     vlog: VLOG
     community: 社区中心
     music_plus: 新歌热榜
@@ -1537,8 +1537,6 @@ home:
   collaboration: 联合投稿
 ranking:
   all: 全部
-  original_content: 原创内容
-  debut_work: 新人作品
 anime:
   total_episodes: 全 {ep} 话
   update_to_n_episodes: 更新至 {ep} 话

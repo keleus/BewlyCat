@@ -44,25 +44,23 @@ const rankingTypes = computed((): RankingType[] => {
     { id: 2, name: t('topbar.logo_dropdown.anime'), seasonType: 1 },
     { id: 3, name: t('topbar.logo_dropdown.chinese_anime'), seasonType: 4 },
     { id: 5, name: t('topbar.logo_dropdown.documentary_films'), seasonType: 3 },
-    { id: 6, name: t('topbar.logo_dropdown.animations'), rid: 1005 },
-    { id: 7, name: t('topbar.logo_dropdown.music'), rid: 1003 },
-    { id: 8, name: t('topbar.logo_dropdown.dance'), rid: 1004 },
-    { id: 9, name: t('topbar.logo_dropdown.gaming'), rid: 1008 },
-    { id: 10, name: t('topbar.logo_dropdown.knowledge'), rid: 1010 },
-    { id: 11, name: t('topbar.logo_dropdown.technology'), rid: 1012 },
-    { id: 12, name: t('topbar.logo_dropdown.sports'), rid: 1018 },
-    { id: 13, name: t('topbar.logo_dropdown.cars'), rid: 1013 },
-    { id: 15, name: t('topbar.logo_dropdown.foods'), rid: 1020 },
-    { id: 16, name: t('topbar.logo_dropdown.animals'), rid: 1024 },
-    { id: 17, name: t('topbar.logo_dropdown.kichiku'), rid: 1007 },
-    { id: 18, name: t('topbar.logo_dropdown.fashion'), rid: 1014 },
-    { id: 19, name: t('topbar.logo_dropdown.showbiz'), rid: 1002 },
-    { id: 20, name: t('topbar.logo_dropdown.cinephile'), rid: 1001 },
     { id: 21, name: t('topbar.logo_dropdown.movies'), seasonType: 2 },
     { id: 22, name: t('topbar.logo_dropdown.tv_shows'), seasonType: 5 },
     { id: 23, name: t('topbar.logo_dropdown.variety_shows'), seasonType: 7 },
-    { id: 24, name: t('ranking.original_content'), rid: 0, type: 'origin' },
-    { id: 25, name: t('ranking.debut_work'), rid: 0, type: 'rookie' },
+    { id: 6, name: t('topbar.logo_dropdown.animations'), rid: 1005 },
+    { id: 9, name: t('topbar.logo_dropdown.gaming'), rid: 1008 },
+    { id: 17, name: t('topbar.logo_dropdown.kichiku'), rid: 1007 },
+    { id: 7, name: t('topbar.logo_dropdown.music'), rid: 1003 },
+    { id: 8, name: t('topbar.logo_dropdown.dance'), rid: 1004 },
+    { id: 20, name: t('topbar.logo_dropdown.cinephile'), rid: 1001 },
+    { id: 19, name: t('topbar.logo_dropdown.showbiz'), rid: 1002 },
+    { id: 10, name: t('topbar.logo_dropdown.knowledge'), rid: 1010 },
+    { id: 11, name: t('topbar.logo_dropdown.technology'), rid: 1012 },
+    { id: 15, name: t('topbar.logo_dropdown.foods'), rid: 1020 },
+    { id: 13, name: t('topbar.logo_dropdown.cars'), rid: 1013 },
+    { id: 18, name: t('topbar.logo_dropdown.fashion'), rid: 1014 },
+    { id: 12, name: t('topbar.logo_dropdown.sports'), rid: 1018 },
+    { id: 16, name: t('topbar.logo_dropdown.animals'), rid: 1024 },
   ]
 })
 
@@ -239,7 +237,7 @@ function getData(version: number, selectionId: number) {
   if (rankingType.seasonType !== undefined)
     void getRankingPgc(version, selectionId, rankingType.seasonType)
   else
-    void getRankingVideos(version, selectionId, rankingType.rid ?? 0, rankingType.type ?? 'all')
+    void getRankingVideos(version, selectionId, rankingType.rid ?? 0)
 }
 
 function finishRequest(version: number, selectionId: number) {
@@ -250,11 +248,11 @@ function finishRequest(version: number, selectionId: number) {
   emit('afterLoading')
 }
 
-async function getRankingVideos(version: number, selectionId: number, rid: number, type: RankingType['type'] = 'all') {
+async function getRankingVideos(version: number, selectionId: number, rid: number) {
   try {
     const response: RankingResult = await api.ranking.getRankingVideos({
       rid,
-      type,
+      type: 'all',
     })
     if (!isRequestCurrent(version, selectionId))
       return

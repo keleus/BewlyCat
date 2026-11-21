@@ -16,7 +16,6 @@ export interface RankingType {
   name: string
   rid?: number
   seasonType?: number
-  type?: string
 }
 
 export interface GridLayoutIcon {

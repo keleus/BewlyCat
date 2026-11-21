@@ -1611,8 +1611,6 @@ home:
   collaboration: Collaboration
 ranking:
   all: All
-  original_content: Original Content
-  debut_work: Debut Work
 anime:
   total_episodes: EP {ep}
   update_to_n_episodes: Update to EP {ep}

@@ -1338,7 +1338,7 @@ topbar:
     cars: 汽車
     fashion: 時尚美妝
     sports: 體育運動
-    animals: 動物圈
+    animals: 動物
     vlog: VLOG
     painting: 繪畫
     ai: 人工智慧
@@ -1552,8 +1552,6 @@ home:
   collaboration: 聯合投稿
 ranking:
   all: 全部
-  original_content: 原創內容
-  debut_work: 新人作品
 anime:
   total_episodes: 全 {ep} 話
   update_to_n_episodes: 更新至 {ep} 話

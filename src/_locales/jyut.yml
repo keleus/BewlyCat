@@ -1337,7 +1337,7 @@ topbar:
     cars: 汽車
     fashion: 時尚
     sports: 運動
-    animals: 動物圈
+    animals: 動物
     vlog: VLOG
     charitable_events: 慈善
     articles: 專欄
@@ -1552,8 +1552,6 @@ home:
   collaboration: 聯合投稿
 ranking:
   all: 全部
-  original_content: 原創內容
-  debut_work: 新人作品
 anime:
   total_episodes: 共 {ep} 集
   update_to_n_episodes: 更新到 {ep} 集
