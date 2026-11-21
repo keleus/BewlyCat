@@ -1363,6 +1363,35 @@ settings:
 auth:
   auth_access_key_first: Before doing this, authorize BewlyCat to use the access key.
 topbar:
+  account_switcher:
+    title: Accounts
+    current: Current
+    expired: Expired
+    refresh: Refresh accounts
+    manage: Manage account
+    rename: Rename
+    rename_placeholder: Account label
+    remove: Remove account
+    remove_confirm: Remove "{name}"? This only deletes the locally saved sign-in info; the account stays signed in on Bilibili.
+    empty: No other accounts saved yet
+    add_account: Add account
+    add_by_cookie: Paste cookies
+    switch_saved: Switch account
+    login_hint: The Bilibili sign-in page has opened in a new tab. Scanning saves the account and brings you back automatically.
+    login_pending: Adding an account…
+    cancel_login: Cancel sign-in
+    cookie_title: Add account with cookies
+    cookie_hint: Paste a cookie string containing SESSDATA, bili_jct and DedeUserID. The extension switches to it right after adding.
+    cookie_placeholder: SESSDATA=...; bili_jct=...; DedeUserID=...; DedeUserID__ckMd5=...
+    error_unavailable: Account service is temporarily unavailable. Try again later.
+    error_not_found: That account no longer exists.
+    error_expired: This account's session has expired. Sign in again.
+    error_login_in_progress: Finish or cancel the account sign-in already in progress first.
+    error_not_logged_in: You are not signed in.
+    error_invalid_input: The cookie string is missing SESSDATA or DedeUserID.
+    error_cookie_invalid: The cookies are invalid or expired; your previous account was restored.
+    error_switch_failed: Switching failed; your previous account was restored.
+    error_login_timeout: Sign-in timed out; your previous account was restored.
   top_bar_switcher: Bilibili/BewlyCat top bar switcher
   switch_to_bilibili_top_bar: Switch to the Bilibili top bar
   switch_to_bewly_top_bar: Switch to the BewlyCat top bar

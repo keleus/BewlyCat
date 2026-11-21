@@ -6,12 +6,14 @@ import browser from 'webextension-polyfill'
 import ALink from '~/components/ALink.vue'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { settings } from '~/logic'
+import { useAccountSwitcherStore } from '~/stores/accountSwitcherStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { getUserID, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumberBadge } from '~/utils/topBarBadge'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { MESSAGE_URL } from '../constants/urls'
+import AccountSwitcherLayer from './AccountSwitcherLayer.vue'
 import AddOpenTabsDialog from './AddOpenTabsDialog.vue'
 import FavoritesPop from './pops/FavoritesPop.vue'
 import HistoryPop from './pops/HistoryPop.vue'
@@ -49,6 +51,30 @@ const {
 } = storeToRefs(topBarStore)
 
 const { syncMomentsState, syncSharedData, syncUnreadMessageState } = topBarStore
+
+const accountSwitcherStore = useAccountSwitcherStore()
+const { accounts: savedAccounts, busyId: accountBusyId } = storeToRefs(accountSwitcherStore)
+
+// 首次加载由常驻的 AccountSwitcherLayer 负责；这里只在登出（含切换失败被还原）后
+// 重新拉取可切换的账号列表，使未登录态的“切换账号”入口恢复可用。
+watch(isLogin, (loggedIn) => {
+  if (!loggedIn)
+    void accountSwitcherStore.refresh()
+})
+
+async function switchToSavedAccount() {
+  if (accountBusyId.value)
+    return
+
+  const target = savedAccounts.value.find(account => !account.expired)
+  if (!target) {
+    // 所有账号都不可用时给出一致反馈，而不是静默无响应。
+    accountSwitcherStore.lastError = 'EXPIRED'
+    return
+  }
+
+  await accountSwitcherStore.switchTo(target.id)
+}
 
 function refreshUnreadMessageSharedState() {
   syncUnreadMessageState().catch((error) => {
@@ -128,7 +154,10 @@ const watchLater = setupTopBarItemHoverEvent('watchLater')
 const upload = setupTopBarItemHoverEvent('upload')
 const notifications = setupTopBarItemHoverEvent('notifications')
 const more = setupTopBarItemHoverEvent('more')
-const avatar = setupTopBarItemHoverEvent('userPanel')
+const avatar = setupTopBarItemHoverEvent('userPanel', {
+  // 账号行的“更多”菜单渲染在浮层之外，菜单打开期间不能因鼠标移出而收起浮层。
+  keepOpen: () => Boolean(accountSwitcherStore.rowMenu),
+})
 
 function handleTopBarItemClick(event: MouseEvent, key: string) {
   if (isLayoutEditing.value) {
@@ -291,6 +320,7 @@ const shouldShowDivider = computed(() => {
         v-if="!isLogin"
         class="right-side-item"
         important-w-auto
+        flex="~ items-center gap-3"
       >
         <a
           href="https://passport.bilibili.com/login"
@@ -299,6 +329,16 @@ const shouldShowDivider = computed(() => {
         >
           <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
             $t('topbar.sign_in')
+          }}
+        </a>
+        <a
+          v-if="savedAccounts.length > 0"
+          href="#"
+          class="login"
+          @click.prevent="switchToSavedAccount"
+        >
+          <div i-mingcute:refresh-2-line class="text-xl mr-2" />{{
+            $t('topbar.account_switcher.switch_saved')
           }}
         </a>
       </div>
@@ -704,6 +744,7 @@ const shouldShowDivider = computed(() => {
       v-if="showAddOpenTabsDialog"
       @close="showAddOpenTabsDialog = false"
     />
+    <AccountSwitcherLayer />
   </div>
 </template>
 

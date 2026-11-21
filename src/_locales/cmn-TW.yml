@@ -1305,6 +1305,35 @@ settings:
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyCat 使用 access key
 topbar:
+  account_switcher:
+    title: 帳號
+    current: 目前
+    expired: 已過期
+    refresh: 重新整理帳號清單
+    manage: 管理帳號
+    rename: 重新命名
+    rename_placeholder: 帳號備註名稱
+    remove: 刪除帳號
+    remove_confirm: 確定刪除「{name}」？只會刪除本機儲存的登入資訊，不會登出該帳號。
+    empty: 尚未儲存其他帳號
+    add_account: 新增帳號
+    add_by_cookie: 貼上 Cookie
+    switch_saved: 切換帳號
+    login_hint: 已在新分頁開啟 B 站登入頁，掃碼確認後會自動儲存並返回。
+    login_pending: 正在新增帳號…
+    cancel_login: 取消登入
+    cookie_title: 貼上 Cookie 新增帳號
+    cookie_hint: 貼上包含 SESSDATA、bili_jct、DedeUserID 的 Cookie；新增後會自動切換到該帳號。
+    cookie_placeholder: SESSDATA=...; bili_jct=...; DedeUserID=...; DedeUserID__ckMd5=...
+    error_unavailable: 帳號服務暫時無法使用，請稍後再試
+    error_not_found: 帳號不存在或已被刪除
+    error_expired: 該帳號的登入狀態已過期，請重新登入
+    error_login_in_progress: 正在新增帳號，請先完成或取消目前的登入
+    error_not_logged_in: 目前未登入
+    error_invalid_input: Cookie 缺少 SESSDATA 或 DedeUserID
+    error_cookie_invalid: Cookie 無效或已過期，已還原原帳號
+    error_switch_failed: 切換失敗，已還原原帳號
+    error_login_timeout: 登入逾時，已還原原帳號
   top_bar_switcher: Bilibili/BewlyCat 頂欄切換器
   switch_to_bilibili_top_bar: 切換到 Bilibili 頂欄
   switch_to_bewly_top_bar: 切換到 BewlyCat 頂欄

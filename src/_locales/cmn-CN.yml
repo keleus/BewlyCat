@@ -1290,6 +1290,35 @@ settings:
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:
+  account_switcher:
+    title: 账号
+    current: 当前
+    expired: 已过期
+    refresh: 刷新账号列表
+    manage: 管理账号
+    rename: 重命名
+    rename_placeholder: 账号备注名
+    remove: 删除账号
+    remove_confirm: 确定删除「{name}」？只会删除本地保存的登录信息，不会退出该账号。
+    empty: 还没有保存其他账号
+    add_account: 添加账号
+    add_by_cookie: 粘贴 Cookie
+    switch_saved: 切换账号
+    login_hint: 已在新标签页打开 B 站登录页，扫码确认后会自动保存并返回。
+    login_pending: 正在添加账号…
+    cancel_login: 取消登录
+    cookie_title: 粘贴 Cookie 添加账号
+    cookie_hint: 粘贴包含 SESSDATA、bili_jct、DedeUserID 的 Cookie；添加后会自动切换到该账号。
+    cookie_placeholder: SESSDATA=...; bili_jct=...; DedeUserID=...; DedeUserID__ckMd5=...
+    error_unavailable: 账号服务暂时不可用，请稍后重试
+    error_not_found: 账号不存在或已被删除
+    error_expired: 该账号的登录状态已过期，请重新登录
+    error_login_in_progress: 正在添加账号，请先完成或取消当前登录
+    error_not_logged_in: 当前未登录
+    error_invalid_input: Cookie 缺少 SESSDATA 或 DedeUserID
+    error_cookie_invalid: Cookie 无效或已过期，已恢复原账号
+    error_switch_failed: 切换失败，已恢复原账号
+    error_login_timeout: 登录超时，已恢复原账号
   top_bar_switcher: Bilibili/BewlyCat 顶栏切换器
   switch_to_bilibili_top_bar: 切换到 Bilibili 顶栏
   switch_to_bewly_top_bar: 切换到 BewlyCat 顶栏

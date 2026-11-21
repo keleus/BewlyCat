@@ -5,10 +5,12 @@ import { BILIBILI_DESKTOP_USER_AGENT, getBilibiliDesktopNavigatorValues, isBilib
 import { GET_BROWSER_INFO_MESSAGE, getExtensionBrowserInfo } from '~/utils/browserInfo'
 import { onMessage } from '~/utils/messaging'
 
+import { setupAccountSwitcher } from './accountSwitcher'
 import { isAppClientRequestUrl, setupAppClient } from './appClient'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupHostPermissionsDiagnostics } from './hostPermissions'
 import { setupLoginStateWatcher } from './loginStateWatcher'
+import { setupAccountSwitcherMessages } from './messageListeners/accounts'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
 import { setupSettingsCloudSync } from './settingsCloudSync'
@@ -187,6 +189,8 @@ setupSettingsCloudSync()
 setupApiMsgListeners()
 setupAppClient()
 setupTabMsgListeners()
+setupAccountSwitcher()
+setupAccountSwitcherMessages()
 setupTopBarStateBroker()
 setupWatchLaterStateBroker()
 setupContentScriptRefreshPrompt()

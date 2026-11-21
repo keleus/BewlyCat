@@ -12,6 +12,7 @@ import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON, L
 import { getCSRF, getUserID, isActualHomepage, isHomePage } from '~/utils/main'
 
 import type { UserInfo, UserStat } from '../../types'
+import AccountSwitcherSection from '../AccountSwitcherSection.vue'
 
 interface LoginLogItem {
   ip: string
@@ -361,6 +362,8 @@ function handleClickChannel() {
         <div>{{ $t('topbar.user_dropdown.posts') }}</div>
       </ALink>
     </div>
+
+    <AccountSwitcherSection />
 
     <div border-t="1 $bew-border-color" my-2 />
 

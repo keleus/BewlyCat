@@ -4,8 +4,8 @@ import type { Ref } from 'vue'
 import { settings } from '~/logic'
 
 // Hover and focus-triggered opening are disabled when touchscreen optimization is enabled.
-export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnter, enter, beforeLeave, leave }:
-{ enterDelay?: number, leaveDelay?: number, beforeEnter?: () => void, enter: () => void, beforeLeave?: () => void, leave: () => void }) {
+export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnter, enter, beforeLeave, leave, shouldKeepOpen }:
+{ enterDelay?: number, leaveDelay?: number, beforeEnter?: () => void, enter: () => void, beforeLeave?: () => void, leave: () => void, shouldKeepOpen?: () => boolean }) {
   const el = ref<HTMLElement>() as Ref<HTMLElement | undefined> & { reset: () => void }
 
   let enterTimer: any | undefined
@@ -52,6 +52,24 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
       enter()
     }, enterDelay)
   }
+  function armLeaveTimer() {
+    if (leaveTimer) {
+      clearTimeout(leaveTimer)
+      leaveTimer = undefined
+    }
+    leaveTimer = setTimeout(() => {
+      // 子菜单等外部浮层处于打开状态时保持弹窗，但继续轮询：
+      // 浮层关闭后仍能在 leaveDelay 内自动收起，不会把弹窗永久卡住。
+      if (shouldKeepOpen?.()) {
+        armLeaveTimer()
+        return
+      }
+      leaveTimer = undefined
+      isEntered = false
+      leave()
+    }, leaveDelay)
+  }
+
   function scheduleLeave() {
     if (focusWithin || mouseWithin)
       return
@@ -63,14 +81,8 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
       clearTimeout(enterTimer)
       enterTimer = undefined
     }
-    if (leaveTimer) {
-      clearTimeout(leaveTimer)
-      leaveTimer = undefined
-    }
-    leaveTimer = setTimeout(() => {
-      isEntered = false
-      leave()
-    }, leaveDelay)
+
+    armLeaveTimer()
   }
 
   // 主动复位该 hover 实例：清掉 pending enter/leave timer、回到 idle、关闭已打开弹窗。
