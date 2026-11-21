@@ -1,3 +1,9 @@
+// 视频环境光启用时，Chromium 可能保留一条没有可滚动范围的水平滚动条槽位。
+// clip 只关闭根页面横向滚动，不改变视频页的纵向滚动和播放器内部布局。
+html.bewly-design[data-bewly-ambilight]:is(.videoPage, .animePlaybackAndMoviePage) {
+  overflow-x: clip;
+}
+
 // 控制栏实测放不下时由 playerControlFit 收起，优先让出原生按钮和弹幕输入区的位置。
 .bpx-player-control-bottom-right .bewly-player-control-collapsed {
   display: none !important;
