@@ -31,6 +31,11 @@ const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
 
 type TopBarPopupKey = keyof ReturnType<typeof useTopBarStore>['popupVisible']
 
+// 移入另一顶栏项时，其它弹窗要等这么久才关闭；指针在这段时间内离开该项就取消关闭。
+// 用于防止只是滑过相邻按钮（最常见的是头像菜单旁的收藏/通知）就把已打开的弹窗误收起，
+// 该值需明显小于进入延时，保证新弹窗打开前旧弹窗已经收起。
+const TOP_BAR_POPUP_CLOSE_DELAY = 160
+
 function isTopBarPopupKey(key: string, popupVisible: ReturnType<typeof useTopBarStore>['popupVisible']): key is TopBarPopupKey {
   return key in popupVisible
 }
@@ -177,18 +182,42 @@ export function useTopBarInteraction() {
 
   // 设置顶栏项悬停事件
   function setupTopBarItemHoverEvent(key: TopBarPopupKey) {
+    // 移入本项时不再立刻收起其它弹窗，而是先挂一段短延时；
+    // 指针在延时结束前离开本项即取消，滑过相邻按钮时不会误收起已打开的弹窗。
+    let pendingCloseTimer: ReturnType<typeof setTimeout> | undefined
+
+    function cancelPendingClose() {
+      if (pendingCloseTimer) {
+        clearTimeout(pendingCloseTimer)
+        pendingCloseTimer = undefined
+      }
+    }
+
     const element = useDelayedHover({
       enterDelay: 320,
       // 关闭只走可被再次移入取消的延时，鼠标在延时内进入弹窗时不会被收起。
       leaveDelay: 520,
-      beforeEnter: () => closeAllPopups(key),
+      beforeEnter: () => {
+        cancelPendingClose()
+        pendingCloseTimer = setTimeout(() => {
+          pendingCloseTimer = undefined
+          closeAllPopups(key)
+        }, TOP_BAR_POPUP_CLOSE_DELAY)
+      },
       enter: () => {
+        // 常规情况下延时关闭已经生效，这里兜底保证同时只有一个弹窗打开。
+        cancelPendingClose()
+        closeAllPopups(key)
         topBarStore.popupVisible[key] = true
       },
+      beforeLeave: cancelPendingClose,
       leave: () => {
+        cancelPendingClose()
         topBarStore.popupVisible[key] = false
       },
     })
+
+    onScopeDispose(cancelPendingClose)
 
     topBarItemElements[key] = element
     return element
