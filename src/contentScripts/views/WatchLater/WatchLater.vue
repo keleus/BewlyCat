@@ -497,52 +497,49 @@ function getItemKey(item: VideoItem) {
         <!-- list layout -->
         <template v-else>
           <!-- watcher later list -->
-          <TransitionGroup name="removable-list" tag="div" class="removable-list-group">
-            <ALink
+          <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col">
+            <div
               v-for="item in currentWatchLaterList"
               :key="item.aid"
-              :href="localizeBilibiliUrl(`https://www.bilibili.com/video/${item.bvid}/`)"
-              type="videoCard"
-              class="group watch-later-list-item"
-              flex cursor-pointer
+              relative
+              rounded="$bew-radius"
+              m-1
             >
-              <section
-                rounded="$bew-radius"
-                flex="~ gap-6 col md:col lg:row items-start"
-                relative
-                group-hover:bg="$bew-fill-2"
-                duration-300 w-full
-                p-2 m-1
-                content-visibility-auto
+              <ALink
+                :href="localizeBilibiliUrl(`https://www.bilibili.com/video/${item.bvid}/`)"
+                :disabled="removeStatuses.has(item.aid)"
+                :inert="removeStatuses.has(item.aid) || undefined"
+                type="videoCard"
+                class="group watch-later-list-item"
+                flex cursor-pointer
               >
-                <!-- 删除遮罩：覆盖整行并拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
-                <WatchLaterRemovedMask
-                  v-if="removeStatuses.has(item.aid)"
-                  :message="t('watch_later.removed')"
-                  :pending="removeStatuses.get(item.aid) !== 'removed'"
-                  @undo="restoreWatchLater(item)"
-                  @dismiss="dismissRemovedItem(item)"
-                />
-
-                <!-- Cover -->
-                <div
-                  pos="relative"
-                  bg="$bew-skeleton"
-                  w="full md:full lg:250px"
-                  flex="shrink-0"
+                <section
                   rounded="$bew-radius"
-                  overflow-hidden
-                  aspect-video
+                  flex="~ gap-6 col md:col lg:row items-start"
+                  group-hover:bg="$bew-fill-2"
+                  duration-300 w-full
+                  p-2
+                  content-visibility-auto
                 >
-                  <img
-                    w="full"
+                  <!-- Cover -->
+                  <div
+                    pos="relative"
+                    bg="$bew-skeleton"
+                    w="full md:full lg:250px"
+                    flex="shrink-0"
+                    rounded="$bew-radius"
+                    overflow-hidden
                     aspect-video
-                    :src="removeHttpFromUrl(`${item.pic}@480w_270h_1c`)"
-                    :alt="item.title"
-                    object-cover
                   >
+                    <img
+                      w="full"
+                      aspect-video
+                      :src="removeHttpFromUrl(`${item.pic}@480w_270h_1c`)"
+                      :alt="item.title"
+                      object-cover
+                    >
 
-                  <!-- <div
+                    <!-- <div
                   pos="absolute bottom-0 right-0"
                   bg="black opacity-60"
                   m="2"
@@ -552,143 +549,153 @@ function getItemKey(item: VideoItem) {
                 >
                   {{ calcCurrentTime(item.duration) }}
                 </div> -->
-                  <div
+                    <div
 
-                    pos="absolute bottom-0 right-0"
-                    bg="black opacity-60"
-                    m="2"
-                    p="x-2 y-1"
-                    text="white xs"
-                    rounded="$bew-radius-half"
-                  >
-                    <!--  When progress = -1 means that the user watched the full video -->
-                    {{
-                      `${
-                        item.progress === -1
-                          ? calcCurrentTime(item.duration)
-                          : calcCurrentTime(item.progress)
-                      } /
-                      ${calcCurrentTime(item.duration)}`
-                    }}
-                  </div>
-                  <div w-full pos="absolute bottom-0" bg="white opacity-60">
-                    <Progress
-                      :percentage="
-                        (item.progress / item.duration) * 100
-                      "
-                    />
-                  </div>
-                </div>
-
-                <!-- Description -->
-                <div class="watch-later-list-description">
-                  <div class="watch-later-list-details" flex="~ col">
-                    <a
-                      class="keep-two-lines"
-                      overflow="hidden"
-                      un-text="lg overflow-ellipsis"
-                      @click.stop.prevent="handleVideoLinkClick(item.bvid)"
+                      pos="absolute bottom-0 right-0"
+                      bg="black opacity-60"
+                      m="2"
+                      p="x-2 y-1"
+                      text="white xs"
+                      rounded="$bew-radius-half"
                     >
-                      {{ item.title }}
-                    </a>
-                    <a
-                      un-text="$bew-text-2 sm"
-                      m="t-4 b-2"
-                      flex="~"
-                      items-center
-                      cursor-pointer
-                      w-fit
-                      rounded="$bew-radius"
-                      hover:color="$bew-theme-color"
-                      hover:bg="$bew-theme-color-10"
-                      duration-300
-                      pr-2
-                      :href="getAuthorJumpUrl(getWatchLaterAuthor(item))" target="_blank"
-                      @click.stop
-                    >
-                      <img
-                        :src="removeHttpFromUrl(`${getWatchLaterAuthor(item).authorFace}@40w_40h_1c`)"
-                        w-30px
-                        aspect-square
-                        object-cover
-                        alt=""
-                        rounded="1/2"
-                        mr-2
-                      >
-                      {{ getWatchLaterAuthor(item).name }}
-                    </a>
-                    <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
+                      <!--  When progress = -1 means that the user watched the full video -->
                       {{
-                        useDateFormat(item.pubdate * 1000, 'YYYY-MM-DD HH:mm:ss')
-                          .value
+                        `${
+                          item.progress === -1
+                            ? calcCurrentTime(item.duration)
+                            : calcCurrentTime(item.progress)
+                        } /
+                      ${calcCurrentTime(item.duration)}`
                       }}
-                    </p>
+                    </div>
+                    <div w-full pos="absolute bottom-0" bg="white opacity-60">
+                      <Progress
+                        :percentage="
+                          (item.progress / item.duration) * 100
+                        "
+                      />
+                    </div>
                   </div>
 
-                  <div class="watch-later-list-actions">
-                    <Tooltip :content="t('watch_later.play_video')" placement="top">
-                      <button
-                        :aria-label="t('watch_later.play_video')"
-                        text="size-$bew-icon-size-lg $bew-text-3"
-                        hover:color="$bew-theme-color"
-                        class="watch-later-list-action"
-                        type="button"
-                        p-2
-                        duration-300
-                        @click.prevent.stop="handleOpenVideoPageAndRemove(item.bvid, item.aid)"
+                  <!-- Description -->
+                  <div class="watch-later-list-description">
+                    <div class="watch-later-list-details" flex="~ col">
+                      <a
+                        class="keep-two-lines"
+                        overflow="hidden"
+                        un-text="lg overflow-ellipsis"
+                        @click.stop.prevent="handleVideoLinkClick(item.bvid)"
                       >
-                        <div i-tabler:player-play />
-                      </button>
-                    </Tooltip>
-                    <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
-                      <button
-                        :aria-label="t('watch_later.play_in_watch_later')"
-                        text="size-$bew-icon-size-lg $bew-text-3"
+                        {{ item.title }}
+                      </a>
+                      <a
+                        un-text="$bew-text-2 sm"
+                        m="t-4 b-2"
+                        flex="~"
+                        items-center
+                        cursor-pointer
+                        w-fit
+                        rounded="$bew-radius"
                         hover:color="$bew-theme-color"
-                        class="watch-later-list-action"
-                        type="button"
-                        p-2
+                        hover:bg="$bew-theme-color-10"
                         duration-300
-                        @click.prevent.stop="handleLinkClick(localizeBilibiliUrl(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`))"
+                        pr-2
+                        :href="getAuthorJumpUrl(getWatchLaterAuthor(item))" target="_blank"
+                        @click.stop
                       >
-                        <div i-tabler:list-check />
-                      </button>
-                    </Tooltip>
-                    <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
-                      <button
-                        :aria-label="t('watch_later.remove_from_watch_later')"
-                        text="size-$bew-icon-size-lg $bew-text-3"
-                        hover:color="$bew-theme-color"
-                        class="watch-later-list-action"
-                        type="button"
-                        p-2
-                        duration-300
-                        @click.prevent.stop="handleRemoveWatchLater(item)"
-                      >
-                        <div i-tabler:trash />
-                      </button>
-                    </Tooltip>
-                    <Tooltip v-if="showMoreButton" :content="t('video_card.operation.more_options')" placement="top">
-                      <button
-                        type="button"
-                        class="watch-later-list-action"
-                        :class="{ 'watch-later-list-action--active': moreMenuItem?.aid === item.aid }"
-                        :aria-label="t('video_card.operation.more_options')"
-                        aria-haspopup="menu"
-                        :aria-expanded="moreMenuItem?.aid === item.aid"
-                        text="size-$bew-icon-size-lg $bew-text-3"
-                        hover:color="$bew-theme-color"
-                        p-2
-                        duration-300
-                        @click.prevent.stop="openMoreMenu(item, $event)"
-                      >
-                        <div i-mingcute:more-2-line />
-                      </button>
-                    </Tooltip>
+                        <img
+                          :src="removeHttpFromUrl(`${getWatchLaterAuthor(item).authorFace}@40w_40h_1c`)"
+                          w-30px
+                          aspect-square
+                          object-cover
+                          alt=""
+                          rounded="1/2"
+                          mr-2
+                        >
+                        {{ getWatchLaterAuthor(item).name }}
+                      </a>
+                      <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
+                        {{
+                          useDateFormat(item.pubdate * 1000, 'YYYY-MM-DD HH:mm:ss')
+                            .value
+                        }}
+                      </p>
+                    </div>
+
+                    <div class="watch-later-list-actions">
+                      <Tooltip :content="t('watch_later.play_video')" placement="top">
+                        <button
+                          :aria-label="t('watch_later.play_video')"
+                          text="size-$bew-icon-size-lg $bew-text-3"
+                          hover:color="$bew-theme-color"
+                          class="watch-later-list-action"
+                          type="button"
+                          p-2
+                          duration-300
+                          @click.prevent.stop="handleOpenVideoPageAndRemove(item.bvid, item.aid)"
+                        >
+                          <div i-tabler:player-play />
+                        </button>
+                      </Tooltip>
+                      <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
+                        <button
+                          :aria-label="t('watch_later.play_in_watch_later')"
+                          text="size-$bew-icon-size-lg $bew-text-3"
+                          hover:color="$bew-theme-color"
+                          class="watch-later-list-action"
+                          type="button"
+                          p-2
+                          duration-300
+                          @click.prevent.stop="handleLinkClick(localizeBilibiliUrl(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`))"
+                        >
+                          <div i-tabler:list-check />
+                        </button>
+                      </Tooltip>
+                      <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
+                        <button
+                          :aria-label="t('watch_later.remove_from_watch_later')"
+                          text="size-$bew-icon-size-lg $bew-text-3"
+                          hover:color="$bew-theme-color"
+                          class="watch-later-list-action"
+                          type="button"
+                          p-2
+                          duration-300
+                          @click.prevent.stop="handleRemoveWatchLater(item)"
+                        >
+                          <div i-tabler:trash />
+                        </button>
+                      </Tooltip>
+                      <Tooltip v-if="showMoreButton" :content="t('video_card.operation.more_options')" placement="top">
+                        <button
+                          type="button"
+                          class="watch-later-list-action"
+                          :class="{ 'watch-later-list-action--active': moreMenuItem?.aid === item.aid }"
+                          :aria-label="t('video_card.operation.more_options')"
+                          aria-haspopup="menu"
+                          :aria-expanded="moreMenuItem?.aid === item.aid"
+                          text="size-$bew-icon-size-lg $bew-text-3"
+                          hover:color="$bew-theme-color"
+                          p-2
+                          duration-300
+                          @click.prevent.stop="openMoreMenu(item, $event)"
+                        >
+                          <div i-mingcute:more-2-line />
+                        </button>
+                      </Tooltip>
+                    </div>
                   </div>
-                </div>
-              </section>
-            </ALink>
+                </section>
+              </ALink>
+
+              <!-- 删除遮罩：与行链接同级，覆盖整行且避免悬停链接预览与中键/右键穿透；右上角 × 可收起占位卡片 -->
+              <WatchLaterRemovedMask
+                v-if="removeStatuses.has(item.aid)"
+                :message="t('watch_later.removed')"
+                :pending="removeStatuses.get(item.aid) !== 'removed'"
+                @undo="restoreWatchLater(item)"
+                @dismiss="dismissRemovedItem(item)"
+              />
+            </div>
           </TransitionGroup>
           <!-- loading -->
           <Transition name="fade">

@@ -9,6 +9,7 @@ const props = defineProps<{
   title?: string
   rel?: string
   type: 'topBar' | 'videoCard' | 'searchBar'
+  disabled?: boolean
   customClickEvent?: boolean
   customClickEventIncludesModifiers?: boolean
   stopPropagation?: boolean
@@ -64,6 +65,9 @@ function getTarget() {
 }
 
 function handleClick(event: MouseEvent) {
+  if (props.disabled)
+    return
+
   // Dock navigation can change the URL without remounting this link.
   const link = event.currentTarget as HTMLAnchorElement
   link.target = getTarget()
@@ -128,8 +132,8 @@ function handleClick(event: MouseEvent) {
 
 <template>
   <a
-    :href="processedHref"
-    :target="getTarget()"
+    :href="disabled ? undefined : processedHref"
+    :target="disabled ? undefined : getTarget()"
     :title="title"
     :rel="rel"
     :draggable="disableDragging ? false : undefined"

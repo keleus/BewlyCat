@@ -55,18 +55,30 @@ const hasMoreContent = computed(() => {
   return watchLaterList.value.length < watchLaterCount.value
 })
 
+const LOAD_MORE_BOTTOM_THRESHOLD = 400
+
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
   if (isLoadingWatchLater.value || !hasMoreContent.value)
     return
 
-  topBarStore.loadMoreWatchLaterList()
+  void topBarStore.loadMoreWatchLaterList()
+}
+
+// 收起占位卡或播放并移除导致列表缩短后，如内容已不足以继续滚动则自动补拉下一页
+function checkAndLoadMoreIfUnderfilled() {
+  const container = scrollContainer.value
+  if (!container)
+    return
+
+  if (container.scrollHeight - container.scrollTop - container.clientHeight <= LOAD_MORE_BOTTOM_THRESHOLD)
+    handleReachBottom()
 }
 
 useOptimizedScroll(
   scrollContainer,
   { onReachBottom: handleReachBottom },
-  { bottomThreshold: 400, throttleDelay: 100 },
+  { bottomThreshold: LOAD_MORE_BOTTOM_THRESHOLD, throttleDelay: 100 },
 )
 
 onMounted(async () => {
@@ -107,10 +119,6 @@ function openVideoPage(url: string) {
   }
 
   window.open(url, '_top')
-}
-
-function deleteWatchLaterItem(index: number, aid: number) {
-  topBarStore.deleteWatchLaterItem(index, aid)
 }
 
 // 点击即删除，卡片保留在原位并显示可撤销遮罩
@@ -156,8 +164,10 @@ async function restoreWatchLaterItem(aid: number) {
 
 // 收起已移除的占位卡片：条目已从服务器删除，这里仅移出展示集合，触发 removable-list 离场动画
 function dismissRemovedItem(aid: number) {
-  if (removeStatuses.get(aid)?.status === 'removed')
+  if (removeStatuses.get(aid)?.status === 'removed') {
     removeStatuses.delete(aid)
+    void nextTick(checkAndLoadMoreIfUnderfilled)
+  }
 }
 
 /** progress = -1 表示已看完，直接展示总时长；角标文案形如「12:34 / 45:00」。 */
@@ -176,9 +186,13 @@ function getProgressPercentage(item: WatchLaterItem): number {
   return Math.min(100, Math.max(0, percentage))
 }
 
-function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) {
+async function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) {
   openVideoPage(getVideoPageUrl(bvid))
-  deleteWatchLaterItem(index, aid)
+  const success = await topBarStore.deleteWatchLaterItem(index, aid)
+  if (success) {
+    await nextTick()
+    checkAndLoadMoreIfUnderfilled()
+  }
 }
 </script>
 
@@ -264,92 +278,98 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 
       <!-- watchlater：卡片结构与收藏/动态弹窗视频卡保持一致，特有操作作为封面覆盖层 -->
       <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col gap-2">
-        <ALink
+        <div
           v-for="(item, index) in displayWatchLaterList"
           :key="item.aid"
-          :href="getWatchLaterVideoUrl(item.bvid)"
-          class="group bew-content-card"
+          class="bew-content-card"
           pos="relative"
-          type="topBar"
-          block
           m="last:b-4"
-          p="2"
-          hover:bg="$bew-fill-2"
-          duration-300
         >
-          <PopMediaCard
-            :title="item.title"
-            :cover="`${removeHttpFromUrl(item.pic)}@320w_180h_1c`"
-            :author-name="getWatchLaterAuthor(item).name"
-            :author-href="getAuthorJumpUrl(getWatchLaterAuthor(item))"
+          <ALink
+            :href="getWatchLaterVideoUrl(item.bvid)"
+            :disabled="removeStatuses.has(item.aid)"
+            :inert="removeStatuses.has(item.aid) || undefined"
+            class="group bew-content-card"
+            type="topBar"
+            block
+            p="2"
+            hover:bg="$bew-fill-2"
+            duration-300
           >
-            <!-- 左上：在普通视频页打开 / 播放并从列表移除 -->
-            <template #coverTopLeft>
-              <div
-                class="group-hover:opacity-100 opacity-0"
-                pos="absolute top-0 left-0 z-1"
-                flex="~ gap-1 items-center"
-                m="1"
-                duration-300
-              >
-                <PopCoverIconButton
-                  :tooltip="$t('watch_later.open_video_page')"
-                  :aria-label="$t('watch_later.open_video_page')"
-                  @click="openVideoPage(getVideoPageUrl(item.bvid))"
+            <PopMediaCard
+              :title="item.title"
+              :cover="`${removeHttpFromUrl(item.pic)}@320w_180h_1c`"
+              :author-name="getWatchLaterAuthor(item).name"
+              :author-href="getAuthorJumpUrl(getWatchLaterAuthor(item))"
+            >
+              <!-- 左上：在普通视频页打开 / 播放并从列表移除 -->
+              <template #coverTopLeft>
+                <div
+                  class="group-hover:opacity-100 opacity-0"
+                  pos="absolute top-0 left-0 z-1"
+                  flex="~ gap-1 items-center"
+                  m="1"
+                  duration-300
                 >
-                  <i i-tabler:external-link aria-hidden="true" />
-                </PopCoverIconButton>
+                  <PopCoverIconButton
+                    :tooltip="$t('watch_later.open_video_page')"
+                    :aria-label="$t('watch_later.open_video_page')"
+                    @click="openVideoPage(getVideoPageUrl(item.bvid))"
+                  >
+                    <i i-tabler:external-link aria-hidden="true" />
+                  </PopCoverIconButton>
 
-                <PopCoverIconButton
-                  :tooltip="$t('watch_later.play_video')"
-                  :aria-label="$t('watch_later.play_video')"
-                  @click="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
+                  <PopCoverIconButton
+                    :tooltip="$t('watch_later.play_video')"
+                    :aria-label="$t('watch_later.play_video')"
+                    @click="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
+                  >
+                    <i i-tabler:player-play aria-hidden="true" />
+                  </PopCoverIconButton>
+                </div>
+              </template>
+
+              <!-- 右上：从稍后再看移除 -->
+              <template #coverTopRight>
+                <div
+                  class="group-hover:opacity-100 opacity-0"
+                  pos="absolute top-0 right-0 z-1"
+                  m="1"
+                  duration-300
                 >
-                  <i i-tabler:player-play aria-hidden="true" />
-                </PopCoverIconButton>
-              </div>
-            </template>
+                  <PopCoverIconButton
+                    hover-color="error"
+                    :tooltip="$t('watch_later.remove_from_watch_later')"
+                    :aria-label="$t('watch_later.remove_from_watch_later')"
+                    @click="removeWatchLaterItem(item, index)"
+                  >
+                    <i i-mingcute:close-line aria-hidden="true" />
+                  </PopCoverIconButton>
+                </div>
+              </template>
 
-            <!-- 右上：从稍后再看移除 -->
-            <template #coverTopRight>
-              <div
-                class="group-hover:opacity-100 opacity-0"
-                pos="absolute top-0 right-0 z-1"
-                m="1"
-                duration-300
-              >
-                <PopCoverIconButton
-                  hover-color="error"
-                  :tooltip="$t('watch_later.remove_from_watch_later')"
-                  :aria-label="$t('watch_later.remove_from_watch_later')"
-                  @click="removeWatchLaterItem(item, index)"
+              <!-- 右下角：观看进度 / 总时长 -->
+              <template #coverOverlay>
+                <div
+                  pos="absolute bottom-0 right-0"
+                  bg="black opacity-60"
+                  m="1"
+                  p="x-2 y-1"
+                  text="white xs"
+                  border="rounded-full"
+                  pointer-events-none
                 >
-                  <i i-mingcute:close-line aria-hidden="true" />
-                </PopCoverIconButton>
-              </div>
-            </template>
+                  {{ getProgressText(item) }}
+                </div>
+              </template>
 
-            <!-- 右下角：观看进度 / 总时长 -->
-            <template #coverOverlay>
-              <div
-                pos="absolute bottom-0 right-0"
-                bg="black opacity-60"
-                m="1"
-                p="x-2 y-1"
-                text="white xs"
-                border="rounded-full"
-                pointer-events-none
-              >
-                {{ getProgressText(item) }}
-              </div>
-            </template>
+              <template #coverBelow>
+                <Progress :percentage="getProgressPercentage(item)" />
+              </template>
+            </PopMediaCard>
+          </ALink>
 
-            <template #coverBelow>
-              <Progress :percentage="getProgressPercentage(item)" />
-            </template>
-          </PopMediaCard>
-
-          <!-- 删除遮罩：拦截链接点击，删除后可撤销；右上角 × 可收起占位卡片 -->
+          <!-- 删除遮罩：与卡片链接同级，避免悬停链接预览泄露与中键/右键穿透；右上角 × 可收起占位卡片 -->
           <WatchLaterRemovedMask
             v-if="removeStatuses.has(item.aid)"
             :message="$t('watch_later.removed')"
@@ -357,7 +377,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
             @undo="restoreWatchLaterItem(item.aid)"
             @dismiss="dismissRemovedItem(item.aid)"
           />
-        </ALink>
+        </div>
       </TransitionGroup>
 
       <!-- loading -->

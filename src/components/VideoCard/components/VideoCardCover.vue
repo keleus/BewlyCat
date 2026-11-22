@@ -416,6 +416,8 @@ onBeforeUnmount(deactivatePreview)
         v-if="removed"
         pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
         bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-media-radius" z-2
+        cursor-default
+        @click.prevent.stop
       >
         <MaskDismissButton
           v-if="removedDismissable"
