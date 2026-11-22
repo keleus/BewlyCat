@@ -51,8 +51,17 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
         this.port.close()
         return
       }
+      if (data.type === 'flush') {
+        this.flush()
+        this.desiredDb = this.gainDb
+      }
       if (data.type === 'reset')
         this.reset()
+      if (data.type === 'seed' && Number.isFinite(data.gainDb)) {
+        const seeded = Math.max(-18, Math.min(6, data.gainDb))
+        this.gainDb = seeded
+        this.desiredDb = seeded
+      }
       if (data.type === 'configure') {
         if (Number.isFinite(data.target))
           this.target = Math.max(-24, Math.min(-14, data.target))
@@ -65,7 +74,8 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
     }
   }
 
-  reset() {
+  // 同一视频内跳转/切流时仅清空滤波器与测量窗口，保留当前增益避免均衡失效 ~1s。
+  flush() {
     this.blocks.fill(0)
     this.delay.forEach(c => c.fill(0))
     this.filters.forEach(c => c.forEach(f => f.reset()))
@@ -76,9 +86,13 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
     this.frame = 0
     this.head = 0
     this.tail = 0
+    this.limiterGain = 1
+  }
+
+  reset() {
+    this.flush()
     this.gainDb = 0
     this.desiredDb = 0
-    this.limiterGain = 1
     this.loudness = -100
   }
 

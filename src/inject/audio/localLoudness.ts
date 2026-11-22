@@ -39,7 +39,14 @@ export function createLocalLoudnessController() {
   let temporarilyOff = false
   let lastStatus = 'off'
   let lastReport = 0
+  let activeMediaKey = ''
+  let lastGainSnapshot: { mediaKey: string, gainDb: number } | undefined
   const failed = new WeakSet<HTMLMediaElement>()
+
+  function getMediaKey() {
+    const params = new URLSearchParams(location.search)
+    return `${location.pathname}|${params.get('p') ?? ''}|${params.get('bvid') ?? ''}|${params.get('oid') ?? ''}`
+  }
   // 音画同步跟随设置页的音画同步开关，关闭时不响应延迟请求，也不接管声音。
   let delayEnabled = false
   let delayMs = 0
@@ -205,9 +212,24 @@ export function createLocalLoudnessController() {
     if (delayMs)
       applyDelay()
   }
+  function onCanPlay(event: Event) {
+    if (!(event.target instanceof HTMLMediaElement) || event.target.paused)
+      return
+    if (config.enabled && !active)
+      void reconcile()
+  }
   document.addEventListener('play', onPlay, { capture: true, signal: lifetime.signal })
+  document.addEventListener('playing', onPlay, { capture: true, signal: lifetime.signal })
+  document.addEventListener('canplay', onCanPlay, { capture: true, signal: lifetime.signal })
   document.addEventListener('pause', settleOwnedContext, { capture: true, signal: lifetime.signal })
   document.addEventListener('ended', settleOwnedContext, { capture: true, signal: lifetime.signal })
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden)
+      return
+    settleOwnedContext()
+    if (config.enabled)
+      void reconcile()
+  }, { signal: lifetime.signal })
   document.addEventListener('pointerdown', () => {
     for (const record of new Set([active, delayed])) {
       if (record && !record.video.paused)
@@ -283,6 +305,12 @@ export function createLocalLoudnessController() {
       return
     }
     if (active) {
+      const nextMediaKey = getMediaKey()
+      if (nextMediaKey !== activeMediaKey) {
+        activeMediaKey = nextMediaKey
+        lastGainSnapshot = undefined
+        active.processor?.port.postMessage({ type: 'reset' })
+      }
       configure(active)
       return
     }
@@ -320,14 +348,34 @@ export function createLocalLoudnessController() {
       }
       const current = record
       current.processor = node
+      const mediaKey = getMediaKey()
+      activeMediaKey = mediaKey
+      if (lastGainSnapshot?.mediaKey === mediaKey)
+        node.port.postMessage({ type: 'seed', gainDb: lastGainSnapshot.gainDb })
+      else
+        lastGainSnapshot = undefined
       rewire(current)
       active = current
       abort = new AbortController()
-      for (const name of ['play', 'pause', 'volumechange', 'seeking', 'seeked', 'emptied', 'loadedmetadata']) {
+      for (const name of ['play', 'playing', 'canplay', 'pause', 'volumechange', 'seeking', 'seeked', 'emptied', 'loadedmetadata']) {
         video.addEventListener(name, () => {
-          if (name === 'seeking' || name === 'emptied' || name === 'loadedmetadata')
-            node?.port.postMessage({ type: 'reset' })
+          if (name === 'seeking') {
+            node?.port.postMessage({ type: 'flush' })
+          }
+          else if (name === 'emptied' || name === 'loadedmetadata') {
+            const nextMediaKey = getMediaKey()
+            if (nextMediaKey !== activeMediaKey) {
+              activeMediaKey = nextMediaKey
+              lastGainSnapshot = undefined
+              node?.port.postMessage({ type: 'reset' })
+            }
+            else {
+              node?.port.postMessage({ type: 'flush' })
+            }
+          }
           configure(current)
+          if ((name === 'playing' || name === 'seeked') && !video.paused)
+            settleOwnedContext()
         }, { signal: abort.signal })
       }
       node.onprocessorerror = () => {
@@ -336,7 +384,11 @@ export function createLocalLoudnessController() {
         status('error')
       }
       node.port.onmessage = ({ data }) => {
-        if (active !== current || video.paused || video.seeking || performance.now() - lastReport < 1000)
+        if (active !== current || video.paused || video.seeking)
+          return
+        if (typeof data?.gainDb === 'number' && Number.isFinite(data.gainDb))
+          lastGainSnapshot = { mediaKey: activeMediaKey, gainDb: data.gainDb }
+        if (performance.now() - lastReport < 1000)
           return
         lastReport = performance.now()
         status('active', data)
@@ -487,6 +539,7 @@ export function createLocalLoudnessController() {
       clearInterval(timer)
     timer = undefined
     if (!config.enabled) {
+      lastGainSnapshot = undefined
       detach()
       status('off')
       pruneOwned()
