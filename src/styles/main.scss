@@ -7,8 +7,9 @@
   // outline-offset: 2px;
 }
 
-:host(.settings-open) {
-  position: relative;
+// 仅在自定义首页（#bewly 为 fixed 视口层叠上下文）打开设置浮层时提升宿主层级，
+// 避免在视频页等原生页面把 #bewly 变成层叠上下文，导致负层级背景盖住原站播放器与评论区。
+:host(.bewly-viewport-host.settings-open) {
   z-index: var(--bew-z-settings-host);
 }
 

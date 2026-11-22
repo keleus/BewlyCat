@@ -51,8 +51,9 @@ useAccountSync()
 const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
 const { t } = useI18n()
 
-// The top-bar switcher is teleported to document.body, outside this Shadow DOM.
-// Raise the host while the settings overlay is open so the modal can stay above that layer.
+// Track overlay state on #bewly for shortcut isolation and to raise the fixed
+// homepage viewport host above the teleported native top bar; non-homepage
+// pages leave #bewly without a stacking context so video glass backgrounds stay behind native content.
 watch(settingsOverlayVisible, (visible) => {
   document.getElementById('bewly')?.classList.toggle('settings-open', visible)
 }, { immediate: true })

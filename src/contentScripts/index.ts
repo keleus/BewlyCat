@@ -1595,6 +1595,7 @@ else if (shouldInitializeContentScript) {
     const useViewportLayout = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
 
     if (useViewportLayout) {
+      container.classList.add('bewly-viewport-host')
       Object.assign(container.style, {
         position: 'fixed',
         inset: '0',
