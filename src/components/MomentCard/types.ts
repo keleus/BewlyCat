@@ -44,7 +44,8 @@ export interface DisplayAdditional {
 
 export interface DisplayMoment {
   id: string
-  author: { mid: string, name: string, face: string }
+  /** 非用户作者（合集/番剧等）的 mid 为空串，跳转链接通过 url（来自接口 jump_url）提供 */
+  author: { mid: string, name: string, face: string, url?: string }
   publishedAt: number
   title: string
   text: string
@@ -119,6 +120,7 @@ export interface DisplayMoment {
   forward?: {
     author: string
     authorMid?: string
+    authorUrl?: string
     authorFace?: string
     authorAction?: string
     title: string

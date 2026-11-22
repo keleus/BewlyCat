@@ -64,12 +64,14 @@ const isKetang = computed(() => {
     pos="relative"
     shrink-0
   >
-    <a
+    <component
+      :is="getAuthorJumpUrl(item) ? 'a' : 'span'"
       v-for="(item, index) in displayedAvatars"
       :key="index"
-      :href="getAuthorJumpUrl(item)" target="_blank"
+      :href="getAuthorJumpUrl(item) || undefined"
+      :target="getAuthorJumpUrl(item) ? '_blank' : undefined"
       rounded="1/2"
-      object="center cover" bg="$bew-skeleton" cursor="pointer"
+      object="center cover" bg="$bew-skeleton"
       position-absolute top-0 inline-block
       :style="{
         zIndex: displayedAvatars.length - index,
@@ -77,8 +79,8 @@ const isKetang = computed(() => {
         width: displayedAvatars.length > 1 ? `28px` : '34px',
         height: displayedAvatars.length > 1 ? `28px` : '34px',
       }"
-      :class="{ live: isLive }"
-      @click.stop=""
+      :class="[{ live: isLive }, getAuthorJumpUrl(item) ? 'cursor-pointer' : '']"
+      @click="getAuthorJumpUrl(item) ? $event.stopPropagation() : undefined"
     >
       <!-- Avatar -->
       <Picture
@@ -110,7 +112,7 @@ const isKetang = computed(() => {
       >
         <div color-white text-sm class="i-svg-spinners:pulse-3 w-12px h-12px" />
       </div>
-    </a>
+    </component>
 
     <!-- More avatars not shown -->
     <span

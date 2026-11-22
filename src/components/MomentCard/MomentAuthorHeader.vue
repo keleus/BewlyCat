@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { DisplayMoment } from './types'
-import { getAuthorSpaceUrl, getAvatarThumbnailUrl } from './utils'
+import { getAvatarThumbnailUrl, getMomentAuthorUrl } from './utils'
 
 // 动态卡片头部：发布者头像、昵称与发布时间。右侧操作经 actions 插槽注入。
 const { author, href = '', time = '', meta = '' } = defineProps<{
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const authorSpaceUrl = computed(() => getAuthorSpaceUrl(author.mid))
+const authorUrl = computed(() => getMomentAuthorUrl(author))
 </script>
 
 <template>
@@ -35,9 +35,9 @@ const authorSpaceUrl = computed(() => getAuthorSpaceUrl(author.mid))
       @click="emit('detailClick', $event)"
     />
     <a
-      v-if="authorSpaceUrl"
+      v-if="authorUrl"
       draggable="false"
-      :href="authorSpaceUrl"
+      :href="authorUrl"
       class="moment-card__author-link"
       :aria-label="t('moment_card.open_space', { name: author.name })"
       rel="noopener noreferrer"
@@ -55,9 +55,9 @@ const authorSpaceUrl = computed(() => getAuthorSpaceUrl(author.mid))
     >
     <span class="moment-card__identity">
       <a
-        v-if="authorSpaceUrl"
+        v-if="authorUrl"
         draggable="false"
-        :href="authorSpaceUrl"
+        :href="authorUrl"
         class="moment-card__author-name"
         :aria-label="t('moment_card.open_space', { name: author.name })"
         rel="noopener noreferrer"

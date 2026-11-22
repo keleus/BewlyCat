@@ -1,6 +1,7 @@
 import type { DataItem } from '~/models/moment/moment'
 import { ThreePointItemType } from '~/models/moment/moment'
 import { i18n } from '~/utils/i18n'
+import { resolveMomentAuthor } from '~/utils/momentAuthor'
 
 import { isMomentLotteryUrl } from './lottery'
 import type { DisplayMoment, DisplayRichTextSegment } from './types'
@@ -443,13 +444,16 @@ export function mapMoment(item: DataItem): MappedMoment {
   ) ?? hotCommentAtNodes[0]
   const threePointItems = raw.modules?.module_more?.three_point_items || []
   const deleteItem = threePointItems.find(item => item?.type === ThreePointItemType.ThreePointDelete)
+  const resolvedAuthor = resolveMomentAuthor(raw)
+  const resolvedForwardedAuthor = isForward ? resolveMomentAuthor(contentRaw) : undefined
 
   const moment: DisplayMoment = {
     id,
     author: {
-      mid: String(author.mid || ''),
+      mid: resolvedAuthor.userMid ? String(resolvedAuthor.userMid) : '',
       name: author.name || t('moments.bilibili_user'),
       face: httpsUrl(author.face || ''),
+      url: resolvedAuthor.url,
     },
     publishedAt: Number(author.pub_ts || 0),
     title: content.title,
@@ -521,7 +525,8 @@ export function mapMoment(item: DataItem): MappedMoment {
     forward: isForward
       ? {
           author: forwardedAuthor.name || t('moments.original_author'),
-          authorMid: String(forwardedAuthor.mid || ''),
+          authorMid: resolvedForwardedAuthor?.userMid ? String(resolvedForwardedAuthor.userMid) : '',
+          authorUrl: resolvedForwardedAuthor?.url ?? '',
           authorFace: httpsUrl(forwardedAuthor.face || ''),
           authorAction: forwardedAuthor.pub_action || '',
           title: content.title,

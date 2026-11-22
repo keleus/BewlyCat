@@ -13,6 +13,7 @@ import { BadgeText } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { parseStatNumber } from '~/utils/dataFormatter'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
+import { resolveMomentAuthor } from '~/utils/momentAuthor'
 
 const { gridLayout } = defineProps<{
   gridLayout: GridLayoutType
@@ -313,11 +314,13 @@ async function getFollowedUsersVideos() {
           })
         }
         else {
-          // 单人投稿
+          // 单人投稿 / 合集订阅
+          const resolvedAuthor = resolveMomentAuthor(item)
           authors.push({
             name: item.modules?.module_author?.name,
             authorFace: item.modules?.module_author?.face,
-            mid: item.modules?.module_author?.mid,
+            mid: resolvedAuthor.userMid,
+            authorUrl: resolvedAuthor.url || undefined,
           })
         }
 

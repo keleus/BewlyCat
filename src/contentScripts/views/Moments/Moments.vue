@@ -40,6 +40,7 @@ import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF, isProgrammaticScrollActive } from '~/utils/main'
 import { MasonryColumnMetrics } from '~/utils/masonryColumnMetrics'
 import emitter from '~/utils/mitt'
+import { resolveMomentAuthor } from '~/utils/momentAuthor'
 import {
   fetchNewerMoments,
   fetchUnreadMomentIds,
@@ -1105,8 +1106,9 @@ function collectVideoPublicationTimes(items: DataItem[]) {
       return []
 
     const mids = new Set<number | string>()
-    if (author?.mid)
-      mids.add(author.mid)
+    const authorMid = resolveMomentAuthor(item).userMid
+    if (authorMid)
+      mids.add(authorMid)
     if (Array.isArray(archive.coop_info)) {
       archive.coop_info.forEach((coop: any) => {
         if (coop?.mid)
@@ -2976,7 +2978,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       [
         ...collectVideoPublicationTimes(rawItems),
         ...normalizedItems
-          .filter(moment => moment.isVideo && !moment.isForward)
+          .filter(moment => moment.isVideo && !moment.isForward && Boolean(moment.author.mid))
           .map(moment => ({
             mid: moment.author.mid,
             time: moment.publishedAt * 1000,

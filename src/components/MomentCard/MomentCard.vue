@@ -33,9 +33,9 @@ import type { DisplayForwardVideo, DisplayMoment } from './types'
 import type { MomentLinkKind } from './utils'
 import {
   classifyMomentLink,
-  getAuthorSpaceUrl,
   getAvatarThumbnailUrl,
   getCardPreviewText,
+  getMomentAuthorUrl,
   getMomentThumbnailUrl,
   getMomentVideoUrl,
   isCompactPlainTextMoment,
@@ -99,8 +99,11 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
   } as CSSProperties
 })
 
-const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
-const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
+const authorUrl = computed(() => getMomentAuthorUrl(moment.author))
+const forwardAuthorUrl = computed(() => getMomentAuthorUrl({
+  mid: moment.forward?.authorMid,
+  url: moment.forward?.authorUrl,
+}))
 
 // 稍后再看目标在数据边界统一规整：识别不到任何视频 ID 时为 undefined，按钮自然不渲染。
 // 注意只能挑 aid/bvid/epid：moment.id 是动态 ID，normalize 会把通用 id 兜底当 aid，直接传整个 moment 会误加入。
@@ -307,6 +310,7 @@ const menuVideo = computed<Video | null>(() => {
       name: moment.author.name,
       authorFace: getAvatarThumbnailUrl(moment.author.face),
       mid: Number(moment.author.mid) || undefined,
+      authorUrl: moment.author.url || undefined,
     },
   })
 })
@@ -450,7 +454,8 @@ function getForwardOriginMoment(): DisplayMoment | null {
     author: {
       mid: forward.authorMid || '',
       name: forward.author,
-      face: '',
+      face: forward.authorFace || '',
+      url: forward.authorUrl,
     },
     publishedAt: moment.publishedAt,
     title: forward.title,
@@ -531,11 +536,11 @@ function handleOpenLink(event: MouseEvent, url?: string, kind?: MomentLinkKind, 
 }
 
 function handleAuthorClick(event: MouseEvent) {
-  handleOpenLink(event, authorSpaceUrl.value, 'other')
+  handleOpenLink(event, authorUrl.value, 'other')
 }
 
 function handleForwardAuthorClick(event: MouseEvent) {
-  handleOpenLink(event, forwardAuthorSpaceUrl.value, 'other')
+  handleOpenLink(event, forwardAuthorUrl.value, 'other')
 }
 
 function handleForwardVideoClick(event: MouseEvent) {
@@ -750,6 +755,7 @@ function handleAdditionalClick(event: MouseEvent) {
               :video="moment.forward.video"
               :author="moment.forward.author"
               :author-mid="moment.forward.authorMid"
+              :author-url="moment.forward.authorUrl"
               :author-face="moment.forward.authorFace"
               :author-action="moment.forward.authorAction"
               :fallback="moment.forward.fallback"

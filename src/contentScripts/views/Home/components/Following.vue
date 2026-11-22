@@ -69,6 +69,7 @@ import { getFollowingGroupIds, groupFollowingUploaders } from '~/utils/following
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { jumpScrollTo } from '~/utils/main'
 import emitter from '~/utils/mitt'
+import { resolveMomentAuthor } from '~/utils/momentAuthor'
 
 import { getHomeContentScrollTop, isWithinHomeContentStart } from '../homeScroll'
 import FollowingGroupMenu from './FollowingGroupMenu.vue'
@@ -740,10 +741,12 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
             })
           }
           else {
+            const resolvedAuthor = resolveMomentAuthor(item)
             authors.push({
               name: item.modules?.module_author?.name,
               authorFace: item.modules?.module_author?.face,
-              mid: item.modules?.module_author?.mid,
+              mid: resolvedAuthor.userMid,
+              authorUrl: resolvedAuthor.url || undefined,
             })
           }
 
@@ -935,14 +938,16 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
             })
           }
           else {
+            const resolvedAuthor = resolveMomentAuthor(item)
             authors.push({
               name: item.modules?.module_author?.name,
               authorFace: item.modules?.module_author?.face,
-              mid: item.modules?.module_author?.mid,
+              mid: resolvedAuthor.userMid,
+              authorUrl: resolvedAuthor.url || undefined,
             })
           }
 
-          const displayData = mapMomentItemToVideo(item, authors)
+          const displayData = mapMomentItemToVideo(item, authors, mid)
           if (displayData) {
             const time = item.modules.module_author.pub_ts * 1000
 
@@ -1306,7 +1311,7 @@ function mapLiveItemToVideo(liveItem: FollowingLiveItem): Video {
 }
 
 // 将moment item转换为Video格式（含合集订阅 ugc_season）
-function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | undefined {
+function mapMomentItemToVideo(item?: MomentItem, authors?: Author[], sourceUploaderMid?: number): Video | undefined {
   if (!item)
     return undefined
 
@@ -1342,6 +1347,7 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
 
   return {
     id: Number.isNaN(id) ? 0 : id,
+    sourceUploaderMid,
     durationStr: archive.duration_text,
     title: decodeHtmlEntities(archive.title),
     desc: decodeHtmlEntities(archive.desc),

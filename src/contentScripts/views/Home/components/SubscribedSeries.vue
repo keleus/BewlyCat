@@ -8,6 +8,7 @@ import type { DataItem as MomentItem, MomentResult } from '~/models/moment/momen
 import api from '~/utils/api'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
+import { resolveMomentAuthor } from '~/utils/momentAuthor'
 
 interface VideoElement {
   uniqueId: string
@@ -74,15 +75,16 @@ function transformSubscribedSeriesVideo(item: VideoElement): Video | undefined {
     return undefined
 
   const momentItem = item.item
+  const resolvedAuthor = resolveMomentAuthor(momentItem)
   return {
     id: momentItem.modules.module_author.mid,
     title: decodeHtmlEntities(`${momentItem.modules.module_dynamic.major.pgc?.title}`),
     cover: `${momentItem.modules.module_dynamic.major.pgc?.cover}`,
     author: {
       name: decodeHtmlEntities(momentItem.modules.module_author.name),
-      authorUrl: momentItem.modules.module_author.jump_url,
+      authorUrl: resolvedAuthor.url || undefined,
       authorFace: momentItem.modules.module_author.face,
-      mid: momentItem.modules.module_author.mid,
+      mid: resolvedAuthor.userMid,
     },
     viewStr: momentItem.modules.module_dynamic.major.pgc?.stat.play,
     danmakuStr: momentItem.modules.module_dynamic.major.pgc?.stat.danmaku,

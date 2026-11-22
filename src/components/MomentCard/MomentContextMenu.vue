@@ -45,7 +45,7 @@ const authorMid = computed(() => Number(props.moment.author.mid) || undefined)
 const isOwnMoment = computed(() => Boolean(authorMid.value && authorMid.value === userRelationStore.accountMid))
 // 旧缓存没有三点菜单字段，按作者是否为当前账号推断，与 Web 端的展示一致。
 const canDelete = computed(() => props.moment.canDelete ?? isOwnMoment.value)
-const canReport = computed(() => props.moment.canReport ?? Boolean(userRelationStore.accountMid && !isOwnMoment.value))
+const canReport = computed(() => Boolean(authorMid.value) && (props.moment.canReport ?? Boolean(userRelationStore.accountMid && !isOwnMoment.value)))
 const dialogAuthor = computed(() => ({
   author: { name: props.moment.author.name, authorFace: props.moment.author.face, mid: authorMid.value },
 }))

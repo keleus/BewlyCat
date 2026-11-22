@@ -9,13 +9,14 @@ import { normalizeWatchLaterTarget } from '~/utils/watchLaterActions'
 
 import MomentVideoCard from './MomentVideoCard.vue'
 import type { DisplayForwardVideo } from './types'
-import { getAuthorSpaceUrl, getAvatarThumbnailUrl, getMomentThumbnailUrl } from './utils'
+import { getAvatarThumbnailUrl, getMomentAuthorUrl, getMomentThumbnailUrl } from './utils'
 
 // 转发视频：引用层承载原 UP，内层横条视频卡承载视频信息。
 const {
   video,
   author,
   authorMid,
+  authorUrl,
   authorFace,
   authorAction,
   fallback,
@@ -26,6 +27,7 @@ const {
   video: DisplayForwardVideo
   author: string
   authorMid?: string
+  authorUrl?: string
   authorFace?: string
   /** 原 UP 的发布动作文案，如“投稿了视频” */
   authorAction?: string
@@ -49,7 +51,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const authorSpaceUrl = computed(() => getAuthorSpaceUrl(authorMid))
+const resolvedAuthorUrl = computed(() => getMomentAuthorUrl({ mid: authorMid, url: authorUrl }))
 const watchLaterTarget = computed(() => normalizeWatchLaterTarget(video))
 const showDuration = computed(() => settings.value.showVideoCardDuration && Boolean(video.duration))
 
@@ -62,11 +64,11 @@ function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
   <div class="moment-card__forward-video">
     <div class="moment-card__forward-video-header">
       <component
-        :is="authorSpaceUrl ? 'a' : 'span'"
-        :href="authorSpaceUrl || undefined"
+        :is="resolvedAuthorUrl ? 'a' : 'span'"
+        :href="resolvedAuthorUrl || undefined"
         class="moment-card__forward-author moment-card__forward-video-identity"
-        rel="noopener noreferrer"
-        @click="emit('authorClick', $event)"
+        :rel="resolvedAuthorUrl ? 'noopener noreferrer' : undefined"
+        @click="resolvedAuthorUrl && emit('authorClick', $event)"
       >
         <img
           v-if="authorFace"

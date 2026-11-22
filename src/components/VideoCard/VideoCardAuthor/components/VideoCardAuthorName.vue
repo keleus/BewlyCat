@@ -17,19 +17,23 @@ const authorName = computed(() => {
   }
   return props.author?.name
 })
+const authorJumpUrl = computed(() =>
+  getAuthorJumpUrl(Array.isArray(props.author) ? props.author[0] : props.author),
+)
 </script>
 
 <template>
-  <a
+  <component
+    :is="authorJumpUrl ? 'a' : 'span'"
     class="channel-name keep-one-line"
     block min-w-0 max-w-full
-    un-text="hover:$bew-theme-color"
-    cursor-pointer mr-4
-    :href="getAuthorJumpUrl(Array.isArray(author) ? author[0] : author)"
+    :class="authorJumpUrl ? 'cursor-pointer hover:text-$bew-theme-color' : ''"
+    mr-4
+    :href="authorJumpUrl || undefined"
     :title="authorName"
-    target="_blank"
-    @click.stop=""
+    :target="authorJumpUrl ? '_blank' : undefined"
+    @click="authorJumpUrl ? $event.stopPropagation() : undefined"
   >
     {{ authorName }}
-  </a>
+  </component>
 </template>

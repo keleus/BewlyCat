@@ -99,6 +99,14 @@ export function getAuthorSpaceUrl(mid?: string | number) {
   return value ? `https://space.bilibili.com/${value}` : ''
 }
 
+export function getMomentAuthorUrl(author?: { mid?: string | number, url?: string }) {
+  if (!author)
+    return ''
+  if (author.url !== undefined)
+    return author.url
+  return getAuthorSpaceUrl(author.mid)
+}
+
 export function classifyMomentLink(url = ''): MomentLinkKind {
   if (!url)
     return 'other'
