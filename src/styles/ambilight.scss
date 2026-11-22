@@ -16,6 +16,13 @@
     opacity 480ms ease-out,
     visibility 480ms ease-out;
 
+  &.is-viewport-locked {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
   &.is-pending,
   &.is-sleeping {
     opacity: 0 !important;

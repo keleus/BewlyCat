@@ -49,6 +49,8 @@ interface EngineLayout {
   videoHeight: number
   documentContentLeft: number
   documentContentTop: number
+  viewportContentLeft: number
+  viewportContentTop: number
 }
 
 export class AmbilightEngine {
@@ -72,6 +74,7 @@ export class AmbilightEngine {
   private scrollRafId: number | null = null
   private hostDocumentLeft = 0
   private hostDocumentTop = 0
+  private isViewportLocked = false
   private lastBackdropSampleTime = 0
   private backdropSampleTimer: ReturnType<typeof setTimeout> | null = null
   private backdropProbe: AmbilightBackdropProbe | null
@@ -154,9 +157,13 @@ export class AmbilightEngine {
         return
       }
 
-      // 普通文档流中 documentContentLeft/Top 不变，浏览器原生滚动已经同步了光晕。
-      // 只有 sticky/fixed 播放器等文档坐标会变化的场景才在这里补一次位置。
-      this.syncCanvasPosition(r)
+      // 普通文档流中保持 absolute 跟随原生滚动；当视频祖先进入 sticky/fixed 吸顶停驻态
+      // （如关闭评论区后的 .left-container.scroll-sticky）时切为 fixed 视口锁定，避免环境光随滚轮上下抖动。
+      const shouldLock = this.isVideoViewportAnchored()
+      const lockChanged = shouldLock !== this.isViewportLocked
+      if (lockChanged)
+        this.setViewportLocked(shouldLock)
+      this.syncCanvasPosition(r, lockChanged)
 
       if (this.video.paused)
         this.sampleBackdrop(performance.now(), false)
@@ -242,6 +249,7 @@ export class AmbilightEngine {
     this.layout = null
     this.hostDocumentLeft = 0
     this.hostDocumentTop = 0
+    this.setViewportLocked(false)
     this.layoutDirty = true
     this.resetDiffusionField()
   }
@@ -284,6 +292,7 @@ export class AmbilightEngine {
       this.hostElem.remove()
       this.hostElem = null
     }
+    this.isViewportLocked = false
     this.canvas = null
     this.ctx = null
     this.backdropCtx = null
@@ -449,10 +458,14 @@ export class AmbilightEngine {
     if (this.hostElem.style.clipPath)
       this.hostElem.style.clipPath = ''
 
-    this.resizeHostToDocument()
-    const hostRect = this.hostElem.getBoundingClientRect()
-    this.hostDocumentLeft = hostRect.left + window.scrollX
-    this.hostDocumentTop = hostRect.top + window.scrollY
+    const shouldLock = this.isVideoViewportAnchored()
+    this.setViewportLocked(shouldLock)
+    if (!this.isViewportLocked) {
+      this.resizeHostToDocument()
+      const hostRect = this.hostElem.getBoundingClientRect()
+      this.hostDocumentLeft = hostRect.left + window.scrollX
+      this.hostDocumentTop = hostRect.top + window.scrollY
+    }
 
     const glowBlur = this.usesDiffusion() ? 0 : this.options.blur
     const effectiveSpread = this.getEffectiveSpread()
@@ -505,6 +518,8 @@ export class AmbilightEngine {
       videoHeight: this.video.videoHeight,
       documentContentLeft,
       documentContentTop,
+      viewportContentLeft: content.left,
+      viewportContentTop: content.top,
     }
 
     // 画布尺寸由本地光晕决定；left/top 是文档坐标，浏览器滚动会原生移动它。
@@ -531,15 +546,78 @@ export class AmbilightEngine {
     host.style.height = `${height}px`
   }
 
-  // 设置画布的文档坐标；只有布局/尺寸变化或 sticky 等文档坐标变化时调用。
+  // 检测视频祖先是否处于 fixed 或已触发吸顶/吸底停驻的 sticky 状态。
+  // 当关闭评论区等导致左侧栏比右侧栏矮时，B 站会给 .left-container 设置 sticky 吸顶，
+  // 此时视频相对视口静止，宿主需切为 fixed 避免随文档滚动产生 1-2 帧上下漂移。
+  private isVideoViewportAnchored(): boolean {
+    let current: HTMLElement | null = this.video
+    while (current && current !== document.body && current !== document.documentElement) {
+      const style = window.getComputedStyle(current)
+      if (style.position === 'fixed')
+        return true
+      if (style.position === 'sticky') {
+        const rect = current.getBoundingClientRect()
+        const stickyTop = Number.parseFloat(style.top)
+        if (Number.isFinite(stickyTop) && window.scrollY > 0 && Math.abs(rect.top - stickyTop) <= 1.5)
+          return true
+        const stickyBottom = Number.parseFloat(style.bottom)
+        if (Number.isFinite(stickyBottom) && Math.abs((window.innerHeight - rect.bottom) - stickyBottom) <= 1.5)
+          return true
+      }
+      current = current.parentElement
+    }
+    return false
+  }
+
+  private setViewportLocked(locked: boolean): void {
+    const host = this.hostElem
+    if (!host || this.isViewportLocked === locked)
+      return
+
+    this.isViewportLocked = locked
+    host.classList.toggle('is-viewport-locked', locked)
+    if (locked) {
+      host.style.position = 'fixed'
+      host.style.width = '100%'
+      host.style.height = '100%'
+    }
+    else {
+      host.style.position = 'absolute'
+      this.resizeHostToDocument()
+      const hostRect = host.getBoundingClientRect()
+      this.hostDocumentLeft = hostRect.left + window.scrollX
+      this.hostDocumentTop = hostRect.top + window.scrollY
+    }
+  }
+
+  // 设置画布坐标：文档流模式下写入文档坐标，吸顶/固定模式下写入视口坐标。
   private applyCanvasPosition(r: DOMRect, force: boolean): void {
     const layout = this.layout
     const canvas = this.canvas
     if (!layout || !canvas)
       return
 
-    const documentContentLeft = r.left + window.scrollX + layout.contentOffsetX
-    const documentContentTop = r.top + window.scrollY + layout.contentOffsetY
+    const viewportContentLeft = r.left + layout.contentOffsetX
+    const viewportContentTop = r.top + layout.contentOffsetY
+    const documentContentLeft = viewportContentLeft + window.scrollX
+    const documentContentTop = viewportContentTop + window.scrollY
+
+    if (this.isViewportLocked) {
+      if (!force
+        && Math.abs(layout.viewportContentLeft - viewportContentLeft) < 0.5
+        && Math.abs(layout.viewportContentTop - viewportContentTop) < 0.5) {
+        return
+      }
+
+      canvas.style.left = `${viewportContentLeft - layout.marginX}px`
+      canvas.style.top = `${viewportContentTop - layout.marginY}px`
+      layout.viewportContentLeft = viewportContentLeft
+      layout.viewportContentTop = viewportContentTop
+      layout.documentContentLeft = documentContentLeft
+      layout.documentContentTop = documentContentTop
+      return
+    }
+
     if (!force
       && Math.abs(layout.documentContentLeft - documentContentLeft) < 0.5
       && Math.abs(layout.documentContentTop - documentContentTop) < 0.5) {
@@ -552,11 +630,13 @@ export class AmbilightEngine {
     canvas.style.top = `${canvasTop}px`
     layout.documentContentLeft = documentContentLeft
     layout.documentContentTop = documentContentTop
+    layout.viewportContentLeft = viewportContentLeft
+    layout.viewportContentTop = viewportContentTop
   }
 
   // sticky/fixed 播放器的文档坐标会随页面滚动变化；普通文档流不会进入这里改位置。
-  private syncCanvasPosition(r: DOMRect): void {
-    this.applyCanvasPosition(r, false)
+  private syncCanvasPosition(r: DOMRect, force = false): void {
+    this.applyCanvasPosition(r, force)
   }
 
   private drawSingleFrame(force = false, frameTime?: number) {
