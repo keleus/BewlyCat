@@ -124,7 +124,7 @@ watch(() => settings.value.wallpaper, (newValue) => {
 
 // 插件页面和视频页玻璃风格共用同一套壁纸与渐变设置，两者任一生效都要保留入口。
 const showGlobalBackgroundSettings = computed(() => {
-  return (!settings.value.useOriginalBilibiliHomepage && !settings.value.disableBackground)
+  return (!settings.value.useOriginalBilibiliHomepage && settings.value.enableBackground)
     || settings.value.videoPageGlassStyle
 })
 
@@ -194,8 +194,8 @@ function changeWallpaper(url: string) {
         </template>
         <Radio v-model="settings.enableLiquidSegmentIndicator" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
-        <Radio v-model="settings.disableShadow" />
+      <SettingsItem :title="$t('settings.enable_shadow')" right-width="auto">
+        <Radio v-model="settings.enableShadow" />
       </SettingsItem>
       <SettingsItem
         v-if="!settings.useOriginalBilibiliHomepage"
@@ -338,11 +338,11 @@ function changeWallpaper(url: string) {
     <SettingsItemGroup :title="$t('settings.group_page_style')">
       <SettingsItem
         v-if="!settings.useOriginalBilibiliHomepage"
-        :title="$t('settings.disable_background')"
-        :desc="$t('settings.disable_background_desc')"
+        :title="$t('settings.enable_background')"
+        :desc="$t('settings.enable_background_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.disableBackground" />
+        <Radio v-model="settings.enableBackground" />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.video_page_glass_style')"

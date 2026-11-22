@@ -510,8 +510,8 @@ settings:
   open_top_bar_items_in_bewly_desc: When touch screen optimization is off, the Logo, Moments, Favorites, History, and Watch Later icons open the corresponding Dock page using the top bar link opening behavior.
   show_bewly_or_bili_page_switcher_desc: Show a switcher next to the homepage Logo to move between the BewlyCat and original Bilibili pages.
   show_bewly_or_bili_page_switcher_on_more_pages_desc: Show the switcher on original Bilibili pages such as Moments, Search, Anime, Favorites, History, and Watch Later. Switching to BewlyCat opens the corresponding plugin page.
-  hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup shows full-level XP progress instead of the last login time and location.
+  show_lv6_last_login_location_in_top_bar_user_pop: Show LV6 last login info
+  show_lv6_last_login_location_in_top_bar_user_pop_desc: Show the last login time and location in the LV6 section of the top bar user popup. When off, full-level XP progress is shown instead.
   chk_box:
     show: Show
     hidden: Hidden
@@ -555,7 +555,7 @@ settings:
   frosted_glass_blur_intensity: Frosted glass blur intensity
   enable_liquid_segment_indicator: Enable liquid segment indicator
   enable_liquid_segment_indicator_desc: Use a sliding liquid indicator on segmented controls such as home tabs and the layout switcher. Keep it off on weaker devices.
-  disable_shadow: Disable shadow
+  enable_shadow: Enable shadow
   link_opening_behavior_opt:
     current_tab: Current tab
     current_tab_if_not_homepage: Current outside home
@@ -570,8 +570,8 @@ settings:
   video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. In narrow windows, the dialog option opens a new tab instead.
   search_bar_link_opening_behavior: Search bar link opening behavior
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
-  hide_drawer_esc_hint: Hide the drawer's Esc shortcut hint
-  hide_drawer_esc_hint_desc: Hide the key badge on the drawer close button and the key hint in the notifications drawer. The Esc shortcut still works
+  show_drawer_esc_hint: Show the drawer's Esc shortcut hint
+  show_drawer_esc_hint_desc: Show the key badge on the drawer close button and the key hint in the notifications drawer. When off, the Esc shortcut still works.
   block_ads: Block ads
   block_top_search_page_ads: Block Bilibili top search page ads
   block_top_search_page_ads_desc: >
@@ -779,12 +779,12 @@ settings:
   dock_content_adjustment_desc: The page of the first activated dock item will be the startup page.
   dock_item_open_in_new_tab: Open in new tab
   dock_item_use_original_bili_web_page: Use the original Bilibili web page
-  disable_dock_glowing_effect: Disable the dock glowing effect
-  disable_dock_icon_animation: Disable dock icon hover animations
-  disable_dock_icon_animation_desc: Dock icons no longer bounce or rotate on hover and focus; click rebound and action button pulses stay on.
-  disable_light_dark_mode_switcher: Disable light/dark mode switcher
-  disable_back_to_top_button_on_dock: Disable back to top button on dock
-  disable_refresh_button_on_dock: Disable refresh button on dock
+  enable_dock_glowing_effect: Enable the dock glowing effect
+  enable_dock_icon_animation: Enable dock icon hover animations
+  enable_dock_icon_animation_desc: Bounce or rotate dock icons on hover and focus. When off, click rebound and action button pulses stay on.
+  enable_light_dark_mode_switcher: Enable light/dark mode switcher
+  enable_back_to_top_button_on_dock: Enable back to top button on dock
+  enable_refresh_button_on_dock: Enable refresh button on dock
   back_to_top_and_refresh_buttons_are_separated: Separate Back to Top and Refresh Buttons
   always_show_dock_actions_when_auto_hide: Always show action buttons when the dock auto-hides
   sidebar_position: Sidebar position
@@ -1053,8 +1053,8 @@ settings:
     bewly: BewlyCat top bar
   adapt_to_other_page_styles: Adapt to other page styles
   adapt_to_other_page_styles_desc: Adapt common Bilibili pages to match the BewlyCat theme.
-  disable_background: Disable background
-  disable_background_desc: Completely disable the plugin page's solid, gradient and wallpaper backgrounds (including the search page wallpaper) to show the original Bilibili page background.
+  enable_background: Enable background
+  enable_background_desc: Show the plugin page's solid, gradient and wallpaper backgrounds (including the search page wallpaper). Turn off to show the original Bilibili page background.
   video_page_glass_style: Video page glass style
   video_page_glass_style_desc: Show the background on video and anime playback pages (including Bewly widescreen), letting content blend directly into it. Wallpaper, mask, gradient and blur follow the appearance settings. Course pages are excluded.
   video_page_glass_style_overlay: Optimize video page glass text readability

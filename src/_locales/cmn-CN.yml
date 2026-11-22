@@ -505,8 +505,8 @@ settings:
   open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将按“顶栏链接打开行为”打开 Dock 中对应的页面。
   show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 在动态、搜索、番剧、收藏、历史和稍后再看等 Bilibili 原版页面显示切换器；切换到 BewlyCat 时会打开对应的插件页面。
-  hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息不再显示最后登录时间和地点，改为显示满级经验进度。
+  show_lv6_last_login_location_in_top_bar_user_pop: 显示 LV6 等级最后登录信息
+  show_lv6_last_login_location_in_top_bar_user_pop_desc: 在顶栏头像弹窗中的 LV6 等级区域显示最后登录时间和地点；关闭后改为显示满级经验进度。
   chk_box:
     show: 显示
     hidden: 隐藏
@@ -544,7 +544,7 @@ settings:
   frosted_glass_blur_intensity: 毛玻璃模糊强度
   enable_liquid_segment_indicator: 启用液态分段指示器
   enable_liquid_segment_indicator_desc: 在首页标签、布局切换等分段控件上使用滑动液态指示器。低性能设备建议保持关闭。
-  disable_shadow: 禁用阴影
+  enable_shadow: 启用阴影
   link_opening_behavior_opt:
     current_tab: 当前标签页
     current_tab_if_not_homepage: 首页外当前页
@@ -559,8 +559,8 @@ settings:
   video_card_link_opening_behavior_desc: 控制点击视频卡片和番剧卡片后的打开位置。窗口较窄时弹窗会改为新标签页打开。
   search_bar_link_opening_behavior: 搜索栏链接打开行为
   close_drawer_without_pressing_esc_again: 关闭抽屉时不用再次按 <kbd>Esc</kbd> 关闭
-  hide_drawer_esc_hint: 隐藏抽屉的 Esc 快捷键提示
-  hide_drawer_esc_hint_desc: 隐藏抽屉关闭按钮上的按键标识和通知抽屉的按键提示，Esc 快捷键仍可使用
+  show_drawer_esc_hint: 显示抽屉的 Esc 快捷键提示
+  show_drawer_esc_hint_desc: 在抽屉关闭按钮和通知抽屉中显示 Esc 按键提示；关闭后 Esc 快捷键仍可使用。
   block_ads: 屏蔽广告
   block_top_search_page_ads: 屏蔽 Bilibili 搜索页上方的广告
   block_top_search_page_ads_desc: |
@@ -868,12 +868,12 @@ settings:
   dock_content_adjustment_desc: 第一个激活的 Dock 项的页面将会是启动页面。
   dock_item_open_in_new_tab: 在新标签页打开
   dock_item_use_original_bili_web_page: 使用原版 Bilibili 网页
-  disable_dock_glowing_effect: 关闭 Dock 栏发光效果
-  disable_dock_icon_animation: 关闭 Dock 图标悬停动画
-  disable_dock_icon_animation_desc: 关闭后 Dock 图标在悬停、聚焦时不再播放弹跳、旋转等动画；点击回弹与操作按钮脉冲不受影响。
-  disable_light_dark_mode_switcher: 禁用亮/暗色模式切换按钮
-  disable_back_to_top_button_on_dock: 禁用 Dock 栏回到顶部按钮
-  disable_refresh_button_on_dock: 禁用 Dock 栏刷新按钮
+  enable_dock_glowing_effect: 启用 Dock 栏发光效果
+  enable_dock_icon_animation: 启用 Dock 图标悬停动画
+  enable_dock_icon_animation_desc: 在悬停、聚焦 Dock 图标时播放弹跳、旋转等动画；关闭后不影响点击回弹与操作按钮脉冲。
+  enable_light_dark_mode_switcher: 启用亮/暗色模式切换按钮
+  enable_back_to_top_button_on_dock: 启用 Dock 栏回到顶部按钮
+  enable_refresh_button_on_dock: 启用 Dock 栏刷新按钮
   back_to_top_and_refresh_buttons_are_separated: 分离回到顶部和刷新按钮
   always_show_dock_actions_when_auto_hide: 自动隐藏 Dock 栏时始终显示操作按钮
   sidebar_position: 侧边栏位置
@@ -1108,8 +1108,8 @@ settings:
     bewly: BewlyCat 顶栏
   adapt_to_other_page_styles: 适应其他页面样式
   adapt_to_other_page_styles_desc: 适应一些常见页面，以与 BewlyCat 主题相匹配。
-  disable_background: 关闭背景
-  disable_background_desc: 彻底关闭插件页面的纯色背景、渐变背景和壁纸（含搜索页壁纸），显示 B 站原页面背景。
+  enable_background: 启用背景
+  enable_background_desc: 在插件页面显示纯色背景、渐变背景和壁纸（含搜索页壁纸）；关闭后显示 B 站原页面背景。
   video_page_glass_style: 视频页玻璃风格
   video_page_glass_style_desc: 在视频与番剧播放页（含 Bewly 宽屏）显示背景，使内容直接融入。壁纸、遮罩、渐变和模糊强度沿用外观设置，不含课程页。
   video_page_glass_style_overlay: 优化视频页玻璃文字显示

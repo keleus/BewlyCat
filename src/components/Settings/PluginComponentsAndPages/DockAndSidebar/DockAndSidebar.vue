@@ -179,24 +179,24 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
         <Radio v-model="settings.showLayoutEditButton" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_dock_glowing_effect')" right-width="auto">
-        <Radio v-model="settings.disableDockGlowingEffect" />
+      <SettingsItem :title="$t('settings.enable_dock_glowing_effect')" right-width="auto">
+        <Radio v-model="settings.enableDockGlowingEffect" />
       </SettingsItem>
       <SettingsItem
-        :title="$t('settings.disable_dock_icon_animation')"
-        :desc="$t('settings.disable_dock_icon_animation_desc')"
+        :title="$t('settings.enable_dock_icon_animation')"
+        :desc="$t('settings.enable_dock_icon_animation_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.disableDockIconAnimation" />
+        <Radio v-model="settings.enableDockIconAnimation" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_light_dark_mode_switcher')" right-width="auto">
-        <Radio v-model="settings.disableLightDarkModeSwitcherOnDock" />
+      <SettingsItem :title="$t('settings.enable_light_dark_mode_switcher')" right-width="auto">
+        <Radio v-model="settings.enableLightDarkModeSwitcherOnDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_back_to_top_button_on_dock')" right-width="auto">
-        <Radio v-model="settings.disableBackToTopButtonOnDock" />
+      <SettingsItem :title="$t('settings.enable_back_to_top_button_on_dock')" right-width="auto">
+        <Radio v-model="settings.enableBackToTopButtonOnDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_refresh_button_on_dock')" right-width="auto">
-        <Radio v-model="settings.disableRefreshButtonOnDock" />
+      <SettingsItem :title="$t('settings.enable_refresh_button_on_dock')" right-width="auto">
+        <Radio v-model="settings.enableRefreshButtonOnDock" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')" right-width="auto">
         <Radio v-model="settings.backToTopAndRefreshButtonsAreSeparated" />

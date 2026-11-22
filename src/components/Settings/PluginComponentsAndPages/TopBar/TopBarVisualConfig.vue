@@ -380,11 +380,11 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
 
     <SettingsItemGroup :title="$t('settings.topbar_user_menu')">
       <SettingsItem
-        :title="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop')"
-        :desc="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop_desc')"
+        :title="$t('settings.show_lv6_last_login_location_in_top_bar_user_pop')"
+        :desc="$t('settings.show_lv6_last_login_location_in_top_bar_user_pop_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.hideTopBarUserPanelLv6LastLoginLocation" />
+        <Radio v-model="settings.showTopBarUserPanelLv6LastLoginLocation" />
       </SettingsItem>
     </SettingsItemGroup>
 

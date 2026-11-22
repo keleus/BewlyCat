@@ -18,8 +18,8 @@ import LinkOpening from '../../Navigation/LinkOpening.vue'
         </template>
         <Radio v-model="settings.closeDrawerWithoutPressingEscAgain" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.hide_drawer_esc_hint')" :desc="$t('settings.hide_drawer_esc_hint_desc')" right-width="auto">
-        <Radio v-model="settings.hideDrawerEscHint" />
+      <SettingsItem :title="$t('settings.show_drawer_esc_hint')" :desc="$t('settings.show_drawer_esc_hint_desc')" right-width="auto">
+        <Radio v-model="settings.showDrawerEscHint" />
       </SettingsItem>
     </SettingsItemGroup>
 

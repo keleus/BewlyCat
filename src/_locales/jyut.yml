@@ -533,8 +533,8 @@ settings:
   open_top_bar_items_in_bewly_desc: 未開啟觸控螢幕優化嗰陣，撳 Logo、動態、收藏、歷史或者稍後再睇圖示，會跟「頂欄連結開啟行為」打開 Dock 入面對應嘅頁面。
   show_bewly_or_bili_page_switcher_desc: 喺首頁 Logo 隔籬顯示切換掣，用嚟喺 BewlyCat 頁面同 Bilibili 原版頁面之間切換。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 喺動態、搜尋、番劇、收藏、歷史同稍後再睇等 Bilibili 原版頁面顯示切換掣；切換到 BewlyCat 時會開啟對應嘅插件頁面。
-  hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開咗之後，頂欄頭像彈窗入面嘅 LV6 等級資訊唔會再顯示最後登入時間同地點，改為顯示滿級經驗進度。
+  show_lv6_last_login_location_in_top_bar_user_pop: 顯示 LV6 等級最後登入資訊
+  show_lv6_last_login_location_in_top_bar_user_pop_desc: 喺頂欄頭像彈窗入面嘅 LV6 等級區域顯示最後登入時間同地點；閂咗之後改為顯示滿級經驗進度。
   chk_box:
     show: 擺出嚟
     hidden: 收埋
@@ -571,7 +571,7 @@ settings:
   frosted_glass_blur_intensity: 毛玻璃模糊強度
   enable_liquid_segment_indicator: 啓用液態分段指示器
   enable_liquid_segment_indicator_desc: 喺主頁標籤、版面切換等分段控件用滑動液態指示器。低效能裝置建議保持閂住。
-  disable_shadow: 閂咗陰影
+  enable_shadow: 啟用陰影
   link_opening_behavior_opt:
     current_tab: 目前分頁
     current_tab_if_not_homepage: 主頁外目前分頁
@@ -586,8 +586,8 @@ settings:
   video_card_link_opening_behavior_desc: 控制撳影片同番劇卡片之後喺邊度開。視窗太窄時彈窗會改用新分頁開。
   search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
   close_drawer_without_pressing_esc_again: 閂櫃桶嗰陣唔使再撳多次 <kbd>Esc</kbd>
-  hide_drawer_esc_hint: 隱藏櫃桶嘅 Esc 快捷鍵提示
-  hide_drawer_esc_hint_desc: 隱藏櫃桶閂制上面嘅按鍵標示同通知櫃桶嘅按鍵提示，Esc 快捷鍵照用得
+  show_drawer_esc_hint: 顯示櫃桶嘅 Esc 快捷鍵提示
+  show_drawer_esc_hint_desc: 喺櫃桶閂制同通知櫃桶顯示 Esc 按鍵提示；閂咗之後 Esc 快捷鍵照用得。
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搵嘢頁上方的廣告
 
@@ -741,12 +741,12 @@ settings:
   dock_content_adjustment_desc: 第一個啓用嘅 Dock 項個頁面會係開始頁面。
   dock_item_open_in_new_tab: 在新分頁度開啓
   dock_item_use_original_bili_web_page: 用返原本嘅 Bilibili 網頁
-  disable_dock_glowing_effect: 熄咗 Dock 發光效果去
-  disable_dock_icon_animation: 熄咗 Dock 圖示懸停動畫
-  disable_dock_icon_animation_desc: 熄咗之後 Dock 圖示喺懸停、聚焦時唔會再彈跳、旋轉；撳落嘅回彈同操作按掣脈衝照舊保留。
-  disable_light_dark_mode_switcher: 閂咗淺 / 深色主題切換粒掣去
-  disable_back_to_top_button_on_dock: 閂咗 Dock 返到最頂粒掣
-  disable_refresh_button_on_dock: 閂咗 Dock 重新整理掣
+  enable_dock_glowing_effect: 啟用 Dock 發光效果
+  enable_dock_icon_animation: 啟用 Dock 圖示懸停動畫
+  enable_dock_icon_animation_desc: 喺懸停、聚焦 Dock 圖示時播放彈跳、旋轉等動畫；熄咗之後唔影響撳落嘅回彈同操作按掣脈衝。
+  enable_light_dark_mode_switcher: 啟用淺 / 深色主題切換粒掣
+  enable_back_to_top_button_on_dock: 啟用 Dock 返到最頂粒掣
+  enable_refresh_button_on_dock: 啟用 Dock 重新整理掣
   back_to_top_and_refresh_buttons_are_separated: 分離返到最篤同重新整理掣
   always_show_dock_actions_when_auto_hide: 自動收埋 Dock 時照顯示操作掣
   sidebar_position: 側邊欄位置
@@ -996,8 +996,8 @@ settings:
     bewly: BewlyCat 頂欄
   adapt_to_other_page_styles: 適應其他版面風格
   adapt_to_other_page_styles_desc: 執執啲常用嘅版面，襯返 BewlyCat 主題風格。
-  disable_background: 閂咗背景
-  disable_background_desc: 徹底閂咗插件版面嘅純色背景、漸層背景同埋桌布（包括搜尋頁桌布），顯示返 B 站原本版面嘅背景。
+  enable_background: 啟用背景
+  enable_background_desc: 喺插件版面顯示純色背景、漸層背景同埋桌布（包括搜尋頁桌布）；閂咗之後顯示返 B 站原本版面嘅背景。
   video_page_glass_style: 影片頁玻璃風格
   video_page_glass_style_desc: 喺影片同番劇播放頁（包括 Bewly 闊熒幕）顯示背景，等內容直接融落去。桌布、遮罩、漸層同模糊強度跟返外觀設定，唔包括課程頁。
   video_page_glass_style_overlay: 優化影片頁玻璃文字顯示

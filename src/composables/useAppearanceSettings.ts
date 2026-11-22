@@ -183,9 +183,9 @@ export function useAppearanceSettings() {
     { immediate: true },
   )
 
-  watch(() => settings.value.disableShadow, (newValue) => {
+  watch(() => settings.value.enableShadow, (newValue) => {
     const bewlyElement = document.querySelector('#bewly') as HTMLElement
-    if (newValue) {
+    if (!newValue) {
       if (bewlyElement)
         bewlyElement.classList.add('disable-shadow')
 

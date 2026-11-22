@@ -6,7 +6,7 @@ import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
-import { localSettings, localSettingsReady, normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
+import { localSettings, localSettingsReady, migrateLegacyInvertedBooleanSettings, normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
 import type { LocalWallpaperData } from '~/utils/localWallpaper'
 import { convertLegacyUploadedWallpaper, extractWallpaperId, getLocalWallpaperData, hasLocalWallpaper, LOCAL_WALLPAPER_BACKUP_KEY, localWallpapersLoaded, restoreLocalWallpaper } from '~/utils/localWallpaper'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
@@ -262,6 +262,8 @@ function handleImportFile(event: Event) {
           ))
         }
       }
+
+      migrateLegacyInvertedBooleanSettings(importedSettings, { overwriteExisting: false })
 
       const currentSettings = originalSettings as unknown as Record<string, unknown>
       const recognizedSettings: Record<string, unknown> = {}

@@ -90,7 +90,7 @@ const otherLinks = computed((): { name: string, url: string, icon: string, code?
 const isMaxLevel = computed(() => (props.userInfo.level_info?.current_level ?? 0) >= 6)
 
 const showLv6LastLoginInfo = computed(() => {
-  return isMaxLevel.value && !settings.value.hideTopBarUserPanelLv6LastLoginLocation
+  return isMaxLevel.value && settings.value.showTopBarUserPanelLv6LastLoginLocation
 })
 
 function toFiniteNumber(value: number | string | undefined, fallback: number): number {

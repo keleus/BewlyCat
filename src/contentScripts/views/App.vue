@@ -100,7 +100,7 @@ const searchFocusOverlayActive = ref(false)
 const pageWallpaperReady = ref(false)
 const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
   && settings.value.frostedGlassBlurIntensity > 0
-  && !settings.value.disableBackground
+  && settings.value.enableBackground
   && (pageWallpaperReady.value || (settings.value.useLinearGradientThemeColorBackground && isDark.value)))
 
 // Registered before the layout-edit Escape handler: an open dialog consumes Escape first.
@@ -1938,7 +1938,7 @@ if (settings.value.cleanUrlArgument) {
     @scroll.capture.passive="scheduleLayoutEditTargetsRefresh"
   >
     <!-- Background -->
-    <template v-if="showBewlyPage && !settings.disableBackground">
+    <template v-if="showBewlyPage && settings.enableBackground">
       <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
     </template>
     <div

@@ -360,7 +360,7 @@ export interface Settings {
   frostedGlassBlurIntensity: number
   /** 分段控件液态滑动指示器；默认关闭以降低切换动画合成成本 */
   enableLiquidSegmentIndicator: boolean
-  disableShadow: boolean
+  enableShadow: boolean
 
   enableVideoPreview: boolean
 
@@ -369,7 +369,7 @@ export interface Settings {
   topBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   searchBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   closeDrawerWithoutPressingEscAgain: boolean
-  hideDrawerEscHint: boolean
+  showDrawerEscHint: boolean
 
   blockAds: boolean
   blockTopSearchPageAds: boolean
@@ -419,7 +419,7 @@ export interface Settings {
   showSystemNotificationReminder: boolean
   showFollowedPrivateMessageUnreadCount: boolean
   showUnfollowedPrivateMessageUnreadCount: boolean
-  hideTopBarUserPanelLv6LastLoginLocation: boolean
+  showTopBarUserPanelLv6LastLoginLocation: boolean
   showBCoinReceiveReminder: boolean
   autoReceiveBCoinCoupon: boolean
   autoReceiveVipExp: boolean
@@ -483,11 +483,11 @@ export interface Settings {
   halfHideDock: boolean
   dockPosition: 'left' | 'right' | 'bottom'
   dockItemsConfig: { page: AppPage, visible: boolean, openInNewTab: boolean, useOriginalBiliPage: boolean }[]
-  disableDockGlowingEffect: boolean
-  disableDockIconAnimation: boolean
-  disableLightDarkModeSwitcherOnDock: boolean
-  disableBackToTopButtonOnDock: boolean
-  disableRefreshButtonOnDock: boolean
+  enableDockGlowingEffect: boolean
+  enableDockIconAnimation: boolean
+  enableLightDarkModeSwitcherOnDock: boolean
+  enableBackToTopButtonOnDock: boolean
+  enableRefreshButtonOnDock: boolean
   backToTopAndRefreshButtonsAreSeparated: boolean
   alwaysShowDockActionsWhenAutoHide: boolean
   enableUndoRefreshButton: boolean // 添加撤销刷新按钮配置项
@@ -506,7 +506,7 @@ export interface Settings {
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
   useLinearGradientThemeColorBackground: boolean
-  disableBackground: boolean
+  enableBackground: boolean
   wallpaperMode: 'buildIn' | 'byUrl'
   wallpaper: string
   enableWallpaperMasking: boolean
@@ -745,14 +745,14 @@ export const originalSettings: Settings = {
   enableFrostedGlass: false,
   frostedGlassBlurIntensity: 20,
   enableLiquidSegmentIndicator: false,
-  disableShadow: false,
+  enableShadow: true,
 
   // Link Opening Behavior
   videoCardLinkOpenMode: 'newTab',
   topBarLinkOpenMode: 'currentTabIfNotHomepage',
   searchBarLinkOpenMode: 'currentTabIfNotHomepage',
   closeDrawerWithoutPressingEscAgain: false,
-  hideDrawerEscHint: false,
+  showDrawerEscHint: true,
 
   blockAds: false,
   blockTopSearchPageAds: false,
@@ -813,7 +813,7 @@ export const originalSettings: Settings = {
   showSystemNotificationReminder: true,
   showFollowedPrivateMessageUnreadCount: true,
   showUnfollowedPrivateMessageUnreadCount: false,
-  hideTopBarUserPanelLv6LastLoginLocation: false,
+  showTopBarUserPanelLv6LastLoginLocation: true,
   showBCoinReceiveReminder: true,
   autoReceiveBCoinCoupon: false,
   autoReceiveVipExp: false,
@@ -862,11 +862,11 @@ export const originalSettings: Settings = {
   halfHideDock: false,
   dockPosition: 'right',
   dockItemsConfig: [],
-  disableDockGlowingEffect: false,
-  disableDockIconAnimation: false,
-  disableLightDarkModeSwitcherOnDock: false,
-  disableBackToTopButtonOnDock: false,
-  disableRefreshButtonOnDock: false,
+  enableDockGlowingEffect: true,
+  enableDockIconAnimation: true,
+  enableLightDarkModeSwitcherOnDock: true,
+  enableBackToTopButtonOnDock: true,
+  enableRefreshButtonOnDock: true,
   backToTopAndRefreshButtonsAreSeparated: true,
   alwaysShowDockActionsWhenAutoHide: false,
   enableUndoRefreshButton: true, // 默认开启撤销刷新按钮
@@ -885,7 +885,7 @@ export const originalSettings: Settings = {
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
   useLinearGradientThemeColorBackground: false,
-  disableBackground: false,
+  enableBackground: true,
   wallpaperMode: 'buildIn',
   wallpaper: '',
   enableWallpaperMasking: false,
@@ -1157,6 +1157,40 @@ export function normalizeRecommendationModeSwitcherOptions(value: unknown): Sett
   if (result.filter(option => option.visible).length < MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS)
     result.forEach(option => option.visible = true)
   return result
+}
+
+const LEGACY_INVERTED_BOOLEAN_SETTINGS = [
+  ['disableFrostedGlass', 'enableFrostedGlass'],
+  ['disableShadow', 'enableShadow'],
+  ['hideDrawerEscHint', 'showDrawerEscHint'],
+  ['hideTopBarUserPanelLv6LastLoginLocation', 'showTopBarUserPanelLv6LastLoginLocation'],
+  ['disableDockGlowingEffect', 'enableDockGlowingEffect'],
+  ['disableDockIconAnimation', 'enableDockIconAnimation'],
+  ['disableLightDarkModeSwitcherOnDock', 'enableLightDarkModeSwitcherOnDock'],
+  ['disableBackToTopButtonOnDock', 'enableBackToTopButtonOnDock'],
+  ['disableRefreshButtonOnDock', 'enableRefreshButtonOnDock'],
+  ['disableBackground', 'enableBackground'],
+] as const
+
+export function migrateLegacyInvertedBooleanSettings(
+  record: Record<string, unknown>,
+  options: { overwriteExisting?: boolean } = {},
+) {
+  const overwriteExisting = options.overwriteExisting ?? true
+  for (const [legacyKey, nextKey] of LEGACY_INVERTED_BOOLEAN_SETTINGS) {
+    if (!(legacyKey in record))
+      continue
+
+    const legacyValue = record[legacyKey]
+    if (typeof legacyValue === 'boolean') {
+      if (overwriteExisting || !Object.prototype.hasOwnProperty.call(record, nextKey))
+        record[nextKey] = !legacyValue
+      Reflect.deleteProperty(record, legacyKey)
+    }
+    else if (overwriteExisting) {
+      Reflect.deleteProperty(record, legacyKey)
+    }
+  }
 }
 
 let resolveSettingsReady: (value: Settings) => void = () => {}
@@ -1588,12 +1622,11 @@ export const settings = useSettingsStorage(originalSettings, {
     // 清理已移除的 NVIDIA RTX 视频增强兼容设置
     Reflect.deleteProperty(record, 'nvidiaRtxVideoEnhancementCompatibility')
 
-    // 迁移旧的 disableFrostedGlass 到 enableFrostedGlass
-    if ('disableFrostedGlass' in record) {
-      record.enableFrostedGlass = !record.disableFrostedGlass
-
-      // 清理旧的字段
-      Reflect.deleteProperty(record, 'disableFrostedGlass')
+    // 迁移旧版反向布尔设置项到正向命名并清理旧字段
+    migrateLegacyInvertedBooleanSettings(record)
+    for (const [, nextKey] of LEGACY_INVERTED_BOOLEAN_SETTINGS) {
+      if (typeof record[nextKey] !== 'boolean')
+        record[nextKey] = originalSettings[nextKey]
     }
 
     // 迁移旧的 locallyUploadedWallpaper/customizeCSS/customizeCSSContent 到 localSettings

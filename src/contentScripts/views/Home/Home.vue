@@ -329,7 +329,7 @@ function toggleTabContentLoading(loading: boolean) {
     <!-- Home search page mode background -->
     <Transition name="bg">
       <div
-        v-if="settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper && !settings.disableBackground"
+        v-if="settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper && settings.enableBackground"
         pos="absolute" w-screen h-580px z-0
         :style="{
           left: '50%',

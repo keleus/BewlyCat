@@ -547,7 +547,7 @@ if (!isInIframe()) {
             <i i-mingcute:close-line />
           </template>
           {{ $t('iframe_drawer.close') }}
-          <kbd v-if="!settings.hideDrawerEscHint">Esc</kbd>
+          <kbd v-if="settings.showDrawerEscHint">Esc</kbd>
         </Button>
         <Button
           v-else
@@ -558,7 +558,7 @@ if (!isInIframe()) {
             <i i-mingcute:close-line />
           </template>
           {{ $t('iframe_drawer.press_esc_again_to_close') }}
-          <kbd v-if="!settings.hideDrawerEscHint">Esc</kbd>
+          <kbd v-if="settings.showDrawerEscHint">Esc</kbd>
         </Button>
       </div>
     </Transition>

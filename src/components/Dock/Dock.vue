@@ -298,22 +298,22 @@ const dockIconAnimationClasses: Partial<Record<AppPage, string>> = {
 const clockHandMaskId = `dock-clock-hand-mask-${useId()}`
 const animeEyeMaskId = `dock-anime-eye-mask-${useId()}`
 
-const backToTopButtonEnabled = computed((): boolean => !settings.value.disableBackToTopButtonOnDock)
-const refreshButtonEnabled = computed((): boolean => !settings.value.disableRefreshButtonOnDock)
+const backToTopButtonEnabled = computed((): boolean => settings.value.enableBackToTopButtonOnDock)
+const refreshButtonEnabled = computed((): boolean => settings.value.enableRefreshButtonOnDock)
 
 const dockEditActions = computed(() => [
   {
     key: 'refresh' as const,
     label: t('common.operation.refresh'),
     icon: 'tabler:reload',
-    settingsTitleKey: 'settings.disable_refresh_button_on_dock',
+    settingsTitleKey: 'settings.enable_refresh_button_on_dock',
     hidden: !refreshButtonEnabled.value,
   },
   {
     key: 'backToTop' as const,
     label: t('layout_editor.back_to_top'),
     icon: 'line-md:arrow-small-up',
-    settingsTitleKey: 'settings.disable_back_to_top_button_on_dock',
+    settingsTitleKey: 'settings.enable_back_to_top_button_on_dock',
     hidden: !backToTopButtonEnabled.value,
   },
 ])
@@ -403,8 +403,8 @@ watch([() => settings.value.showLayoutEditButton, isLayoutEditing], ([show, edit
     clickReboundTarget.value = undefined
 })
 
-watch([() => settings.value.disableLightDarkModeSwitcherOnDock, isLayoutEditing], ([disabled, editing]) => {
-  if (!disabled || editing)
+watch([() => settings.value.enableLightDarkModeSwitcherOnDock, isLayoutEditing], ([enabled, editing]) => {
+  if (enabled || editing)
     return
   clearClickSuppression(THEME_MODE_TARGET)
   if (clickReboundTarget.value === THEME_MODE_TARGET)
@@ -857,7 +857,7 @@ onUnmounted(() => {
         'half-hide': settings.halfHideDock && !isLayoutEditing,
         'hover': dockContentHover,
         'ready': dockReady,
-        'disable-icon-animation': settings.disableDockIconAnimation,
+        'disable-icon-animation': !settings.enableDockIconAnimation,
       }"
       :style="dockTransformStyle"
       @mouseenter="handleDockAreaEnter"
@@ -879,7 +879,7 @@ onUnmounted(() => {
                 {
                   'active': isDockItemActivated(dockItem),
                   'inactive': hoveringDockItem.themeMode && isDark,
-                  'disable-glowing-effect': settings.disableDockGlowingEffect,
+                  'disable-glowing-effect': !settings.enableDockGlowingEffect,
                   'dock-icon-click-rebound': clickReboundTarget === dockItem.page,
                   'dock-icon-click-suppressed': clickSuppressedTarget === dockItem.page,
                 },
@@ -1058,13 +1058,13 @@ onUnmounted(() => {
         <div class="divider" />
 
         <div
-          v-if="isLayoutEditing || !settings.disableLightDarkModeSwitcherOnDock"
+          v-if="isLayoutEditing || settings.enableLightDarkModeSwitcherOnDock"
           class="dock-edit-utility-item"
           data-layout-edit-target="dock-theme"
           data-layout-settings-menu="BewlyComponents"
           data-layout-settings-page="dock"
-          data-layout-settings-title-key="settings.disable_light_dark_mode_switcher"
-          :class="{ 'dock-edit-utility-item--hidden': settings.disableLightDarkModeSwitcherOnDock }"
+          data-layout-settings-title-key="settings.enable_light_dark_mode_switcher"
+          :class="{ 'dock-edit-utility-item--hidden': !settings.enableLightDarkModeSwitcherOnDock }"
         >
           <Tooltip
             :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" :placement="tooltipPlacement"
@@ -1078,7 +1078,7 @@ onUnmounted(() => {
               w-full h-full bg-white rounded="1/2"
               z--2 pointer-events-none
               :shadow="
-                settings.disableDockGlowingEffect
+                !settings.enableDockGlowingEffect
                   ? 'none'
                   : 'group-hover:[-8px_4px_160px_20px_hsla(226deg,85%,77%,1),-8px_4px_100px_12px_hsla(226deg,85%,77%,0.8),-8px_4px_60px_10px_hsla(226deg,85%,77%,0.6),-8px_4px_20px_4px_hsla(226deg,85%,77%,0.4),-4px_2px_8px_0_hsla(226deg,85%,77%,0.8)]'"
               opacity-0 group-hover:opacity-100
@@ -1088,7 +1088,7 @@ onUnmounted(() => {
             <button
               class="dock-item"
               bg="!dark-hover:$bew-bg" transform="!dark-hover:scale-100"
-              :shadow="settings.disableDockGlowingEffect ? 'none' : '!dark-hover:[inset_4px_-2px_8px_hsla(226deg,85%,77%,1)]'"
+              :shadow="!settings.enableDockGlowingEffect ? 'none' : '!dark-hover:[inset_4px_-2px_8px_hsla(226deg,85%,77%,1)]'"
               :class="{
                 'dock-icon-click-rebound': clickReboundTarget === THEME_MODE_TARGET,
                 'dock-icon-click-suppressed': clickSuppressedTarget === THEME_MODE_TARGET,
