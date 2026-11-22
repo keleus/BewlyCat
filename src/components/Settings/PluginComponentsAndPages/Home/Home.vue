@@ -272,7 +272,7 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
           v-model="recommendationModeOption"
           :aria-label="$t('settings.recommendation_mode')"
           :options="recommendationModeOptions"
-          w="200px"
+          w="160px"
           @change="handleRecommendationModeChange"
         />
       </SettingsItem>

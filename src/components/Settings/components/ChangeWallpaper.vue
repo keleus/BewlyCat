@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import Select from '~/components/Select.vue'
 import { WALLPAPERS } from '~/constants/imgs'
 import { localSettings, settings } from '~/logic'
 import { hasLocalWallpaper, isLocalWallpaperUrl, removeLocalWallpaper, resolveWallpaperUrl, storeLocalWallpaper } from '~/utils/localWallpaper'
@@ -8,7 +9,6 @@ import { compressAndResizeImage } from '~/utils/main'
 
 import SettingsItem from './SettingsItem.vue'
 import SettingsItemGroup from './SettingsItemGroup.vue'
-import SettingsSegmentedControl from './SettingsSegmentedControl.vue'
 
 const props = defineProps<Props>()
 
@@ -181,10 +181,11 @@ onMounted(() => {
 
     <template v-if="isGlobal || (settings.individuallySetSearchPageWallpaper && !isGlobal)">
       <SettingsItem :title="$t('settings.wallpaper_mode')" :desc="$t('settings.wallpaper_mode_desc')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="wallpaperMode"
-          :label="$t('settings.wallpaper_mode')"
+          :aria-label="$t('settings.wallpaper_mode')"
           :options="wallpaperModeOptions"
+          w="160px"
         />
       </SettingsItem>
 

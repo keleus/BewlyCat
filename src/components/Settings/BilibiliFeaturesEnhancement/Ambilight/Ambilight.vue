@@ -13,7 +13,6 @@ import type { AmbilightDiffusionMode, AmbilightDiffusionQuality } from '~/utils/
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
-import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 
 const { t } = useI18n()
 
@@ -145,10 +144,11 @@ function resetAmbilightSettings() {
 
     <template v-if="settings.ambilightEnabled">
       <SettingsItem :title="t('settings.ambilight.preset')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="currentPreset"
-          :label="t('settings.ambilight.preset')"
+          :aria-label="t('settings.ambilight.preset')"
           :options="presetOptions"
+          w="160px"
         />
       </SettingsItem>
 
