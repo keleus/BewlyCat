@@ -2,7 +2,6 @@
 import type { Component } from 'vue'
 
 import { settings } from '~/logic'
-import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 
 import About from './About/About.vue'
 import Appearance from './Appearance/Appearance.vue'
@@ -52,7 +51,6 @@ export interface SettingsMenuDefinition extends MenuItem {
 
 const isBewlyPagesEnabled = () => !settings.value.useOriginalBilibiliHomepage
 const isTopBarModuleEnabled = () => settings.value.enableTopBarModule
-const isBewlyTopBarEnabled = () => shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
 const isDockModuleEnabled = () => settings.value.enableDock
 const isPlayerEnabled = () => settings.value.enablePlayerEnhancements
 const isCommentsEnabled = () => settings.value.enableCommentEnhancements
@@ -143,8 +141,6 @@ export const settingsMenus: SettingsMenuDefinition[] = [
         icon: 'i-mingcute:cursor-line',
         iconActivated: 'i-mingcute:cursor-fill',
         component: Interaction,
-        // 链接打开方式和抽屉只在 Bewly 页面与 Bewly 顶栏中使用。
-        available: () => isBewlyPagesEnabled() || isBewlyTopBarEnabled(),
       },
     ],
   },

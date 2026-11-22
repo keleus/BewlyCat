@@ -1,5 +1,6 @@
 import { IFRAME_SEARCH_NAVIGATION } from '~/constants/globalEvents'
 import { settings } from '~/logic'
+import { getLinkOpenMode } from '~/utils/bilibiliLinkOpening'
 import { isActualHomepage, isHomePage, isInIframe } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
@@ -102,7 +103,7 @@ export function navigateToPluginSearchResults(keyword: string): boolean {
  */
 export function openSearchResults(keyword: string): void {
   const searchUrl = buildKeywordSearchUrl(keyword)
-  const mode = settings.value.searchBarLinkOpenMode
+  const mode = getLinkOpenMode(settings.value.searchBarLinkOpenMode, searchUrl)
 
   if (mode === 'background') {
     void openLinkInBackground(searchUrl)
@@ -115,7 +116,7 @@ export function openSearchResults(keyword: string): void {
   else if (mode === 'currentTabIfHomepage')
     target = isActualHomepage() ? '_self' : '_blank'
   else if (mode === 'currentTab')
-    target = '_self'
+    target = settings.value.openBilibiliLinksInCurrentTab ? '_top' : '_self'
 
   window.open(searchUrl, target)
 }
@@ -126,7 +127,7 @@ export function openSearchResults(keyword: string): void {
  * 调用方构建的链接同样经 buildKeywordSearchUrl 指向插件搜索结果页。
  */
 export function navigateToPluginSearchResultsInPlace(keyword: string): boolean {
-  const mode = settings.value.searchBarLinkOpenMode
+  const mode = getLinkOpenMode(settings.value.searchBarLinkOpenMode, buildKeywordSearchUrl(keyword))
   if (
     mode === 'newTab'
     || mode === 'background'

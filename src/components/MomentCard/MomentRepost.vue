@@ -177,7 +177,7 @@ onBeforeUnmount(() => {
         <button v-if="!initialized" class="bew-ghost-button" type="button" @click="initialize">
           {{ t('moment_card.repost_retry') }}
         </button>
-        <a :href="`https://t.bilibili.com/${momentId}?tab=1`" target="_blank" rel="noopener noreferrer">{{ t('moments.new_tab') }}</a>
+        <a :href="`https://t.bilibili.com/${momentId}?tab=1`" target="_blank" data-open-in-new-tab rel="noopener noreferrer">{{ t('moments.new_tab') }}</a>
       </p>
     </div>
   </section>

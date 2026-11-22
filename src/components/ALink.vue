@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
+import { getLinkOpenMode } from '~/utils/bilibiliLinkOpening'
 import { isActualHomepage, isHomePage, isInIframe } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
@@ -34,11 +35,11 @@ const processedHref = computed(() => {
 
 const openMode = computed(() => {
   if (props.type === 'topBar')
-    return settings.value.topBarLinkOpenMode
+    return getLinkOpenMode(settings.value.topBarLinkOpenMode, props.href)
   else if (props.type === 'videoCard')
-    return settings.value.videoCardLinkOpenMode
+    return getLinkOpenMode(settings.value.videoCardLinkOpenMode, props.href)
   else if (props.type === 'searchBar')
-    return settings.value.searchBarLinkOpenMode
+    return getLinkOpenMode(settings.value.searchBarLinkOpenMode, props.href)
   return 'newTab'
 })
 

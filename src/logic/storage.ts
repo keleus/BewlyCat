@@ -368,6 +368,7 @@ export interface Settings {
   videoCardLinkOpenMode: 'drawer' | 'dialog' | 'newTab' | 'currentTab' | 'background'
   topBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   searchBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
+  openBilibiliLinksInCurrentTab: boolean
   closeDrawerWithoutPressingEscAgain: boolean
   showDrawerEscHint: boolean
 
@@ -751,6 +752,7 @@ export const originalSettings: Settings = {
   videoCardLinkOpenMode: 'newTab',
   topBarLinkOpenMode: 'currentTabIfNotHomepage',
   searchBarLinkOpenMode: 'currentTabIfNotHomepage',
+  openBilibiliLinksInCurrentTab: false,
   closeDrawerWithoutPressingEscAgain: false,
   showDrawerEscHint: true,
 

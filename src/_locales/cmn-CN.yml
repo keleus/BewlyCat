@@ -558,6 +558,8 @@ settings:
   link_opening_behavior_desc: 控制点击链接后的打开位置。“首页外当前页”：仅在首页用新标签页打开；“首页内当前页”：仅在首页用当前标签页打开。
   video_card_link_opening_behavior_desc: 控制点击视频卡片和番剧卡片后的打开位置。窗口较窄时弹窗会改为新标签页打开。
   search_bar_link_opening_behavior: 搜索栏链接打开行为
+  open_bilibili_links_in_current_tab: 在当前标签页打开 B 站链接
+  open_bilibili_links_in_current_tab_desc: 在原版 B 站和 Bewly 页面中，普通点击站内链接及搜索都留在当前标签页。此开关优先于下面的打开方式。仍可用 Ctrl、⌘ 或鼠标中键打开新标签页。
   close_drawer_without_pressing_esc_again: 关闭抽屉时不用再次按 <kbd>Esc</kbd> 关闭
   show_drawer_esc_hint: 显示抽屉的 Esc 快捷键提示
   show_drawer_esc_hint_desc: 在抽屉关闭按钮和通知抽屉中显示 Esc 按键提示；关闭后 Esc 快捷键仍可使用。

@@ -16,6 +16,7 @@ import api from '~/utils/api'
 import { setupApiFailureDiagnostics } from '~/utils/apiDiagnostics'
 import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, isUserNativeLayoutModeClick, prepareBewlyWidescreenLoading, refreshBewlyWidescreenForNavigation } from '~/utils/bewlyWidescreen'
 import { isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import { isModifiedLinkClick, keepBewlyLinksInCurrentTab } from '~/utils/bilibiliLinkOpening'
 import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
 import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
@@ -1373,7 +1374,7 @@ else if (shouldInitializeContentScript) {
   function setupBiliVideoCardLinkClickHandler() {
     document.addEventListener('click', (event) => {
       // 打开方式属于 Bewly 页面的设置，关闭后设置项已隐藏，交还给原生搜索页处理。
-      if (settings.value.useOriginalBilibiliHomepage)
+      if (settings.value.useOriginalBilibiliHomepage || settings.value.openBilibiliLinksInCurrentTab || isModifiedLinkClick(event))
         return
 
       const target = event.target as HTMLElement
@@ -1615,6 +1616,7 @@ else if (shouldInitializeContentScript) {
     // Fix #69 https://github.com/hakadao/BewlyBewly/issues/69
     // https://medium.com/@emilio_martinez/shadow-dom-open-vs-closed-1a8cf286088a - open shadow dom
     const shadowDOM = container.attachShadow?.({ mode: 'open' }) || container
+    const linkEvents = keepBewlyLinksInCurrentTab(shadowDOM)
     const resetStyleEl = document.createElement('style')
     resetStyleEl.textContent = `${RESET_BEWLY_CSS}`
     shadowDOM.appendChild(resetStyleEl)
@@ -1645,6 +1647,7 @@ else if (shouldInitializeContentScript) {
       if (appDisposed)
         return
       appDisposed = true
+      linkEvents.abort()
       app.unmount()
       delete container.__bewlyCatDisposeApp__
     }

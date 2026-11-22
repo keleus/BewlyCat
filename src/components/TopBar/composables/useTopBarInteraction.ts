@@ -16,6 +16,7 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { experimentalTopBarStyles } from '~/logic/storage'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { getLinkOpenMode } from '~/utils/bilibiliLinkOpening'
 import { isActualHomepage, isHomePage } from '~/utils/main'
 import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -231,7 +232,7 @@ export function useTopBarInteraction() {
   // 处理顶栏项点击
   function openConfiguredPageFromTopBar(page: AppPage) {
     const pageUrl = getConfiguredPageUrl(page)
-    const openMode = settings.value.topBarLinkOpenMode
+    const openMode = getLinkOpenMode(settings.value.topBarLinkOpenMode, pageUrl)
 
     if (openMode === 'background') {
       void openLinkInBackground(pageUrl)

@@ -331,6 +331,9 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.search_bar_link_opening_behavior',
   ], { keywordKeys: linkOpeningOptionKeys }),
   ...createEntries(interactionRoute, [
+    'settings.open_bilibili_links_in_current_tab',
+  ]),
+  ...createEntries(interactionRoute, [
     'settings.video_card_link_opening_behavior',
   ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
   ...createEntries(generalRoute, [

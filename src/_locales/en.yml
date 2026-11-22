@@ -569,6 +569,8 @@ settings:
   link_opening_behavior_desc: Controls where links open. "Current outside home" uses a new tab only on the home page; "Current on home" uses the current tab only on the home page.
   video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. In narrow windows, the dialog option opens a new tab instead.
   search_bar_link_opening_behavior: Search bar link opening behavior
+  open_bilibili_links_in_current_tab: Open Bilibili links in the current tab
+  open_bilibili_links_in_current_tab_desc: Keep regular Bilibili links and searches in the current tab on both original and Bewly pages. This overrides the opening modes below. Ctrl-click, Command-click, and middle-click can still open new tabs.
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
   show_drawer_esc_hint: Show the drawer's Esc shortcut hint
   show_drawer_esc_hint_desc: Show the key badge on the drawer close button and the key hint in the notifications drawer. When off, the Esc shortcut still works.

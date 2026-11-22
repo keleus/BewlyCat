@@ -585,6 +585,8 @@ settings:
   link_opening_behavior_desc: 控制撳連結之後喺邊度開。「主頁外目前分頁」：淨係喺主頁用新分頁開；「主頁內目前分頁」：淨係喺主頁用目前分頁開。
   video_card_link_opening_behavior_desc: 控制撳影片同番劇卡片之後喺邊度開。視窗太窄時彈窗會改用新分頁開。
   search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
+  open_bilibili_links_in_current_tab: 喺目前分頁開啓 B 站連結
+  open_bilibili_links_in_current_tab_desc: 喺原版 B 站同 Bewly 頁面，一般撳站內連結同搜尋都會留喺目前分頁。呢個掣優先過下面嘅開啓方式。仍然可以用 Ctrl、⌘ 或者滑鼠中鍵開新分頁。
   close_drawer_without_pressing_esc_again: 閂櫃桶嗰陣唔使再撳多次 <kbd>Esc</kbd>
   show_drawer_esc_hint: 顯示櫃桶嘅 Esc 快捷鍵提示
   show_drawer_esc_hint_desc: 喺櫃桶閂制同通知櫃桶顯示 Esc 按鍵提示；閂咗之後 Esc 快捷鍵照用得。

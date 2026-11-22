@@ -196,6 +196,7 @@ onBeforeUnmount(() => {
             :aria-hidden="playerImmersive ? 'true' : undefined"
             :tabindex="playerImmersive ? -1 : 0"
             target="_blank"
+            data-open-in-new-tab
             rel="noopener noreferrer"
             @pointerdown="syncExternalUrl"
             @focus="syncExternalUrl"

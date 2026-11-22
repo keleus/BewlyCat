@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
 import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
@@ -66,12 +67,19 @@ const videoCardOpenModeOptions = computed(() => {
 <template>
   <SettingsItemGroup :title="$t('settings.group_link_opening_behavior')">
     <SettingsItem
+      :title="$t('settings.open_bilibili_links_in_current_tab')"
+      :desc="$t('settings.open_bilibili_links_in_current_tab_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.openBilibiliLinksInCurrentTab" />
+    </SettingsItem>
+    <SettingsItem
       v-if="isBewlyTopBarEnabled"
       :title="$t('settings.top_bar_link_opening_behavior')"
       :desc="$t('settings.link_opening_behavior_desc')"
       right-width="auto"
     >
-      <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="160px" />
+      <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" :disabled="settings.openBilibiliLinksInCurrentTab" w="160px" />
     </SettingsItem>
     <SettingsItem
       v-if="!settings.useOriginalBilibiliHomepage"
@@ -82,6 +90,7 @@ const videoCardOpenModeOptions = computed(() => {
       <Select
         v-model="settings.videoCardLinkOpenMode"
         :options="videoCardOpenModeOptions"
+        :disabled="settings.openBilibiliLinksInCurrentTab"
         w="160px"
       />
     </SettingsItem>
@@ -93,6 +102,7 @@ const videoCardOpenModeOptions = computed(() => {
       <Select
         v-model="settings.searchBarLinkOpenMode"
         :options="openModeOptions"
+        :disabled="settings.openBilibiliLinksInCurrentTab"
         w="160px"
       />
     </SettingsItem>

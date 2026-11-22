@@ -6,6 +6,7 @@ import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
 import { hasVisibleVideoCardMenuAction, settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
+import { getLinkOpenMode } from '~/utils/bilibiliLinkOpening'
 import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
@@ -62,6 +63,7 @@ useUserRelationScope(() => {
 
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props, props.persistentState)
+const videoCardLinkOpenMode = computed(() => getLinkOpenMode(settings.value.videoCardLinkOpenMode, logic.videoUrl.value))
 // Keep menus, keyboard focus (handled by the grid), and fullscreen previews alive.
 defineExpose({ canRecycle: computed(() => !logic.showVideoOptions.value && !logic.isPreviewFullscreen.value && !logic.isHover.value) })
 const { mainAppRef } = useBewlyApp()
@@ -397,7 +399,7 @@ provide('getVideoType', () => props.type!)
           href: logic.videoUrl.value,
           type: 'videoCard',
           disabled: isRemoved,
-          customClickEvent: Boolean(props.customClickHandler) || settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'dialog' || settings.videoCardLinkOpenMode === 'background',
+          customClickEvent: Boolean(props.customClickHandler) || videoCardLinkOpenMode === 'drawer' || videoCardLinkOpenMode === 'dialog' || videoCardLinkOpenMode === 'background',
           customClickEventIncludesModifiers: Boolean(props.customClickHandler),
           disableDragging: shouldDisableLinkDragging,
         }"

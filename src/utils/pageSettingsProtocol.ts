@@ -21,6 +21,7 @@ export interface PageSettingsPayload {
   enableCommentReplyTreeContainer: boolean
   enableCommentReplyTreeDisplay: boolean
   language: string
+  openBilibiliLinksInCurrentTab: boolean
   preventMobileRedirect: boolean
   showCommentHostTag: boolean
   showIPLocation: boolean
@@ -93,6 +94,7 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     enableCommentReplyTreeContainer: commentsEnabled && value.enableCommentReplyTreeContainer,
     enableCommentReplyTreeDisplay: commentsEnabled && value.enableCommentReplyTreeDisplay,
     language: value.language,
+    openBilibiliLinksInCurrentTab: value.openBilibiliLinksInCurrentTab === true,
     preventMobileRedirect: value.preventMobileRedirect,
     showCommentHostTag: commentsEnabled && value.showCommentHostTag,
     showIPLocation: commentsEnabled && value.showIPLocation,

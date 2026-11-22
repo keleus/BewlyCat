@@ -556,6 +556,8 @@ settings:
   link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」：僅在首頁用新索引標籤開啟；「首頁內目前分頁」：僅在首頁用目前索引標籤開啟。
   video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置。視窗較窄時彈窗會改用新索引標籤開啟。
   search_bar_link_opening_behavior: 搜尋列連結開啟行為
+  open_bilibili_links_in_current_tab: 在目前分頁開啟 B 站連結
+  open_bilibili_links_in_current_tab_desc: 在原版 B 站和 Bewly 頁面中，一般點擊站內連結和搜尋都會留在目前分頁。此開關優先於下方的開啟方式。仍可使用 Ctrl、⌘ 或滑鼠中鍵開啟新分頁。
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   show_drawer_esc_hint: 顯示抽屜的 Esc 快速鍵提示
   show_drawer_esc_hint_desc: 在抽屜關閉按鈕與通知抽屜中顯示 Esc 按鍵提示；關閉後 Esc 快速鍵仍可使用。

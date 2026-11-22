@@ -20,6 +20,8 @@ import { createPageSettingsPayload, readPageBootSnapshot } from '~/utils/pageSet
 
 import { version } from '../../package.json'
 import { createLocalLoudnessController } from './audio/localLoudness'
+import { installNativeSameTabNavigation } from './nativeSameTabNavigation'
+import { installNativeSearchHistory } from './nativeSearchHistory'
 
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
@@ -87,6 +89,13 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializePageScript) {
+  const isTopFrame = window === window.top
+  const updateNativeSearchHistory = isTopFrame && location.hostname === 'search.bilibili.com'
+    ? installNativeSearchHistory()
+    : undefined
+  if (isTopFrame)
+    installNativeSameTabNavigation(() => currentSettings?.openBilibiliLinksInCurrentTab === true)
+
   let localLoudness: ReturnType<typeof createLocalLoudnessController> | undefined
   if (typeof AudioContext !== 'undefined') {
     try {
@@ -5122,6 +5131,7 @@ else if (shouldInitializePageScript) {
 
       const isFirstTime = !settingsReady
       currentSettings = pageSettings
+      updateNativeSearchHistory?.(pageSettings.openBilibiliLinksInCurrentTab)
       localLoudness?.update({ enabled: pageSettings.localLoudnessEnabled, target: pageSettings.localLoudnessTarget, strength: pageSettings.localLoudnessStrength / 100 })
       localLoudness?.setAudioDelayEnabled(pageSettings.audioDelayEnabled)
       preventMobileRedirectEnabled = pageSettings.preventMobileRedirect
