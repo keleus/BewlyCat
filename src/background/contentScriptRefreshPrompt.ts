@@ -3,16 +3,175 @@ import browser from 'webextension-polyfill'
 
 import type { ContentScriptIdentity } from '~/constants/contentScript'
 import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_MATCHES, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG, isContentScriptPong, isContentScriptTargetUrl, REFRESH_ALL_CONTENT_SCRIPT_TABS } from '~/constants/contentScript'
-import type { RefreshPromptDiagnostic, RefreshPromptUpdate } from '~/utils/refreshPrompt'
+import type { PageInjectionDiagnostic, RefreshPromptDiagnostic, RefreshPromptUpdate } from '~/utils/refreshPrompt'
 import { getRefreshPromptCopy, getRefreshPromptLocale, showRefreshPrompt } from '~/utils/refreshPrompt'
 
 const CONTENT_SCRIPT_STARTUP_RETRY_DELAYS = [500, 1500]
 const CONTENT_SCRIPT_PING_TIMEOUT_MS = 2000
 const CONTENT_SCRIPT_RESTORE_RETRY_MS = 1000
+const CONTENT_SCRIPT_STARTUP_AUTO_RELOAD_WINDOW_MS = 60_000
 const REFRESH_UPDATE_STORAGE_KEY = 'contentScriptRefreshUpdate'
+const STARTUP_AT_STORAGE_KEY = 'contentScriptStartupAt'
+const STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY = 'contentScriptStartupAutoReloadedTabs'
+const STARTUP_AUTO_RELOAD_SESSION_KEY = 'bewlycat-startup-auto-reload'
 
 let latestUpdate: RefreshPromptUpdate | undefined
 let updateStateReady: Promise<void> | undefined
+let startupDetectedAt: number | undefined
+let startupStateReady: Promise<void> | undefined
+const startupAutoReloadedTabs = new Set<number>()
+
+function restoreStartupState(): Promise<void> {
+  startupStateReady ??= (async () => {
+    try {
+      const stored = await browser.storage.session.get([
+        STARTUP_AT_STORAGE_KEY,
+        STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY,
+      ])
+      const storedAt = stored[STARTUP_AT_STORAGE_KEY]
+      if (startupDetectedAt === undefined && typeof storedAt === 'number' && Number.isFinite(storedAt)
+        && storedAt > 0 && storedAt <= Date.now()) {
+        startupDetectedAt = storedAt
+      }
+      const storedTabs = stored[STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY]
+      if (Array.isArray(storedTabs)) {
+        storedTabs.forEach((id) => {
+          if (typeof id === 'number' && Number.isInteger(id))
+            startupAutoReloadedTabs.add(id)
+        })
+      }
+    }
+    catch {
+      // 不支持 session storage 时退回当前后台内存状态。
+    }
+  })()
+  return startupStateReady
+}
+
+function persistStartupAutoReloadedTabs() {
+  void (async () => {
+    try {
+      await browser.storage.session.set({
+        [STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY]: Array.from(startupAutoReloadedTabs),
+      })
+    }
+    catch {
+      // Session storage may be unavailable on older browsers.
+    }
+  })()
+}
+
+function recordBrowserStartup() {
+  startupDetectedAt = Date.now()
+  startupAutoReloadedTabs.clear()
+  void (async () => {
+    try {
+      await browser.storage.session.set({
+        [STARTUP_AT_STORAGE_KEY]: startupDetectedAt,
+        [STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY]: [],
+      })
+    }
+    catch {
+      // Session storage may be unavailable on older browsers.
+    }
+  })()
+}
+
+function isWithinStartupAutoReloadWindow(): boolean {
+  if (startupDetectedAt === undefined)
+    return false
+  const elapsed = Date.now() - startupDetectedAt
+  return elapsed >= 0 && elapsed <= CONTENT_SCRIPT_STARTUP_AUTO_RELOAD_WINDOW_MS
+}
+
+function markTabStartupAutoReloaded(tabId: number) {
+  startupAutoReloadedTabs.add(tabId)
+  persistStartupAutoReloadedTabs()
+}
+
+function clearTabStartupAutoReloaded(tabId: number) {
+  if (startupAutoReloadedTabs.delete(tabId))
+    persistStartupAutoReloadedTabs()
+}
+
+interface StartupPageInspectionResult extends PageInjectionDiagnostic {
+  urlMatches: boolean
+  hasActiveMediaPlayback: boolean
+  hasDirtyFormInput: boolean
+  alreadyAutoReloaded: boolean
+  canAutoReload: boolean
+}
+
+/**
+ * Must stay self-contained: Chrome serializes this function for executeScript.
+ * Do not close over module-level bindings.
+ */
+function inspectPageForStartupAutoReload(
+  expectedUrl: string,
+  sessionKey: string,
+): StartupPageInspectionResult {
+  const isolatedGlobal = globalThis as typeof globalThis & {
+    __BEWLYCAT_PAGE_LOADING__?: unknown
+    __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
+  }
+  const urlMatches = !expectedUrl || location.href === expectedUrl
+  const pageLoadingInjected = Boolean(isolatedGlobal.__BEWLYCAT_PAGE_LOADING__)
+  const contentScriptInitialized = Boolean(isolatedGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__)
+  const hasBewlyHost = Boolean(document.getElementById('bewly'))
+  const hasActiveMediaPlayback = Array.from(document.querySelectorAll<HTMLMediaElement>('video, audio'))
+    .some(media => !media.paused && !media.ended && media.currentTime > 0)
+
+  const activeEl = document.activeElement
+  const activeIsEditable = activeEl instanceof HTMLInputElement
+    || activeEl instanceof HTMLTextAreaElement
+    || (activeEl instanceof HTMLElement && activeEl.isContentEditable)
+  const hasModifiedInput = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('textarea, input'))
+    .some((field) => {
+      if (field instanceof HTMLInputElement) {
+        const type = field.type.toLowerCase()
+        if (['hidden', 'checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'file'].includes(type))
+          return false
+      }
+      return field.value.length > 0 && field.value !== field.defaultValue
+    })
+  const hasDirtyFormInput = activeIsEditable || hasModifiedInput
+
+  let alreadyAutoReloaded = false
+  try {
+    alreadyAutoReloaded = Boolean(sessionStorage.getItem(sessionKey))
+  }
+  catch {
+    // Ignore storage restrictions.
+  }
+
+  const canAutoReload = urlMatches
+    && !contentScriptInitialized
+    && !hasBewlyHost
+    && !hasActiveMediaPlayback
+    && !hasDirtyFormInput
+    && !alreadyAutoReloaded
+
+  if (canAutoReload) {
+    try {
+      sessionStorage.setItem(sessionKey, String(Date.now()))
+    }
+    catch {
+      // Fallback to background tab tracking if sessionStorage is blocked.
+    }
+  }
+
+  return {
+    urlMatches,
+    pageLoadingInjected,
+    contentScriptInitialized,
+    hasBewlyHost,
+    hasActiveMediaPlayback,
+    hasDirtyFormInput,
+    alreadyAutoReloaded,
+    startupAutoReloadAttempted: alreadyAutoReloaded || canAutoReload,
+    canAutoReload,
+  }
+}
 
 function restoreUpdateState(): Promise<void> {
   updateStateReady ??= (async () => {
@@ -104,11 +263,11 @@ function setupRefreshAllTabsListener() {
 }
 
 export interface ContentScriptRefreshBrowser {
-  tabs: Pick<Tabs.Static, 'get' | 'sendMessage'>
+  tabs: Pick<Tabs.Static, 'get' | 'sendMessage'> & Partial<Pick<Tabs.Static, 'reload'>>
   scripting: Pick<Scripting.Static, 'executeScript'>
 }
 
-export type ContentScriptRefreshResult = 'ineligible' | 'already-injected' | 'refresh-prompted'
+export type ContentScriptRefreshResult = 'ineligible' | 'already-injected' | 'auto-reloaded' | 'refresh-prompted'
 
 type ContentScriptPingResult = { status: 'current' } | {
   status: 'unavailable' | 'outdated'
@@ -232,11 +391,62 @@ export async function promptContentScriptRefresh(
   if (result.status === 'current')
     return 'already-injected'
 
-  await restoreUpdateState()
+  await Promise.all([restoreUpdateState(), restoreStartupState()])
   const update = latestUpdate?.version === currentIdentity.version && latestUpdate.commit === currentIdentity.commit
     ? latestUpdate
     : undefined
-  const diagnostic = { ...result.diagnostic, attempts, update }
+
+  let pageInjection: PageInjectionDiagnostic | undefined
+  const isMissingReceiver = result.status === 'unavailable'
+    && result.diagnostic.reason === 'content-script-unreachable'
+    && result.diagnostic.failure === 'receiver-missing'
+
+  // 浏览器冷启动恢复会话时，标签页可能在扩展 content_scripts 注册完成前就开始导航，
+  // 导致 manifest 漏注入而停留在原版页面。启动窗口内对未交互且未挂载的干净页面仅自动重载一次恢复。
+  if (isMissingReceiver && !update && isWithinStartupAutoReloadWindow()
+    && !startupAutoReloadedTabs.has(tabId) && typeof extensionApi.tabs.reload === 'function') {
+    try {
+      const injectedResults = await extensionApi.scripting.executeScript({
+        target: { tabId, frameIds: [0] },
+        func: inspectPageForStartupAutoReload,
+        args: [initialTab.url ?? '', STARTUP_AUTO_RELOAD_SESSION_KEY],
+        world: 'ISOLATED',
+        injectImmediately: true,
+      })
+      const inspection = injectedResults?.[0]?.result as StartupPageInspectionResult | undefined
+      if (inspection) {
+        pageInjection = {
+          pageLoadingInjected: inspection.pageLoadingInjected,
+          contentScriptInitialized: inspection.contentScriptInitialized,
+          hasBewlyHost: inspection.hasBewlyHost,
+          startupAutoReloadAttempted: inspection.startupAutoReloadAttempted,
+        }
+        if (inspection.canAutoReload && await stillEligible()) {
+          markTabStartupAutoReloaded(tabId)
+          try {
+            await extensionApi.tabs.reload(tabId)
+            return 'auto-reloaded'
+          }
+          catch {
+            if (!await stillEligible())
+              return 'ineligible'
+          }
+        }
+      }
+    }
+    catch {
+      // 探测失败时回退到常规刷新提示。
+    }
+  }
+
+  const diagnostic: RefreshPromptDiagnostic = {
+    ...result.diagnostic,
+    attempts,
+    update,
+    pageInjection: pageInjection ?? (startupAutoReloadedTabs.has(tabId)
+      ? { startupAutoReloadAttempted: true }
+      : undefined),
+  }
   const copy = getRefreshPromptCopy(await getRefreshPromptLocale(), currentIdentity.version, diagnostic)
   if (!await stillEligible())
     return 'ineligible'
@@ -261,7 +471,9 @@ function queueContentScriptRefreshPrompt(tabId: number): void {
   pendingPrompts.set(tabId, check)
   void promptContentScriptRefresh(tabId, browser, () => !check.cancelled)
     .then((result) => {
-      if (result === 'refresh-prompted')
+      if (result === 'auto-reloaded')
+        console.log(`[BewlyCat] Auto-reloaded tab ${tabId} after startup content script miss.`)
+      else if (result === 'refresh-prompted')
         console.log(`[BewlyCat] Asked tab ${tabId} to refresh its content script.`)
     })
     .catch((error) => {
@@ -317,7 +529,10 @@ export function setupContentScriptRefreshPrompt(): void {
     queueContentScriptRefreshPrompt(tabId)
   })
 
-  browser.tabs.onRemoved.addListener(cancelContentScriptRefreshPrompt)
+  browser.tabs.onRemoved.addListener((tabId) => {
+    cancelContentScriptRefreshPrompt(tabId)
+    clearTabStartupAutoReloaded(tabId)
+  })
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // 即使刷新到相同 URL，也不能把上一份文档的检测结果注入新文档。
     if (changeInfo.status === 'loading' || changeInfo.url)
@@ -327,6 +542,7 @@ export function setupContentScriptRefreshPrompt(): void {
   })
 
   browser.runtime.onStartup.addListener(() => {
+    recordBrowserStartup()
     queueActiveTabsWithRestoreRetry()
   })
 

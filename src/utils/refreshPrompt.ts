@@ -17,6 +17,13 @@ export interface RefreshPromptUpdate {
   previousVersion?: string
 }
 
+export interface PageInjectionDiagnostic {
+  pageLoadingInjected?: boolean
+  contentScriptInitialized?: boolean
+  hasBewlyHost?: boolean
+  startupAutoReloadAttempted?: boolean
+}
+
 export interface RefreshPromptDiagnostic {
   reason: RefreshPromptReason
   source: 'background' | 'content-script'
@@ -27,6 +34,8 @@ export interface RefreshPromptDiagnostic {
   update?: RefreshPromptUpdate
   /** 页面中实际运行的 MAIN world 页面脚本版本；旧版本无法报告版本。 */
   pageScript?: RunningPageScriptIdentity
+  /** 页面侧隔离环境注入痕迹，用于区分冷启动漏注入与脚本中途异常。 */
+  pageInjection?: PageInjectionDiagnostic
 }
 
 export interface RefreshPromptCopy {
@@ -794,6 +803,23 @@ export function showRefreshPrompt(...args: unknown[]): void {
     addDetail(labels.attempts, copy.diagnostic.attempts?.toString())
     addDetail(labels.failure, copy.failureDescription)
     diagnosticList.textContent = diagnosticLines.join('\n')
+    const isolatedGlobal = globalThis as typeof globalThis & {
+      __BEWLYCAT_PAGE_LOADING__?: unknown
+      __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
+    }
+    let startupAutoReloadRecorded = false
+    try {
+      startupAutoReloadRecorded = Boolean(sessionStorage.getItem('bewlycat-startup-auto-reload'))
+    }
+    catch {
+      // Ignore storage restrictions.
+    }
+    const pageInjection: PageInjectionDiagnostic = {
+      pageLoadingInjected: copy.diagnostic.pageInjection?.pageLoadingInjected ?? Boolean(isolatedGlobal.__BEWLYCAT_PAGE_LOADING__),
+      contentScriptInitialized: copy.diagnostic.pageInjection?.contentScriptInitialized ?? Boolean(isolatedGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__),
+      hasBewlyHost: copy.diagnostic.pageInjection?.hasBewlyHost ?? Boolean(bewlyContainer),
+      startupAutoReloadAttempted: copy.diagnostic.pageInjection?.startupAutoReloadAttempted ?? (startupAutoReloadRecorded || undefined),
+    }
     const diagnosticText = JSON.stringify({
       reason: copy.diagnostic.reason,
       source: copy.diagnostic.source,
@@ -803,6 +829,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
       expected: copy.diagnostic.expected,
       received: copy.diagnostic.received,
       pageScript: copy.diagnostic.pageScript,
+      pageInjection,
       runningVersion,
       runningCommit,
       promptVersion: copy.currentVersion,
