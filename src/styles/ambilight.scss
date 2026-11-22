@@ -5,7 +5,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 0;
+  width: 100%;
   height: 0;
   pointer-events: none !important;
   z-index: -1;
@@ -32,6 +32,10 @@
 
 // 仅在环境光生效激活时，开启页面隔离与包裹层透明穿透，避免未开启用户样式污染
 html[data-bewly-ambilight] {
+  // 视频环境光启用时，Chromium 经典滚动条可能保留一条可滚动范围为 0 的空水平滚动条槽位；
+  // clip 仅关闭根页面横向滚动，不改变纵向滚动和播放器内部布局。
+  overflow-x: clip;
+
   // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
   --bew-comment-tree-node-bg: var(--bew-bg);
 

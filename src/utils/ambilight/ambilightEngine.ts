@@ -304,7 +304,7 @@ export class AmbilightEngine {
     host.className = 'bewly-ambilight-host is-pending'
     host.setAttribute('aria-hidden', 'true')
     // 文档层：尺寸覆盖整篇文档并裁剪，画布用文档坐标绝对定位；浏览器滚动时原生移动。
-    host.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none!important;z-index:-1;overflow:hidden;'
+    host.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none!important;z-index:-1;overflow:hidden;'
 
     const canvas = document.createElement('canvas')
     canvas.width = SAMPLE_WIDTH
@@ -517,17 +517,17 @@ export class AmbilightEngine {
     this.setSleeping(false)
   }
 
-  // 让零尺寸文档层的裁剪范围等于整篇文档，避免画布自身扩大页面滚动区域。
+  // 让文档层的裁剪范围贴合视口宽度与整篇文档高度，避免画布自身扩大页面滚动区域。
+  // 宽度使用 100% 而非写死 clientWidth 像素值，防止垂直滚动条出现滞后或非整数缩放取整撑出空水平滚动条。
   private resizeHostToDocument(): void {
     const host = this.hostElem
     if (!host)
       return
 
-    const width = document.documentElement.clientWidth || window.innerWidth
     // 宿主自身也计入 scrollHeight，先收起再测量，否则文档内容变短后滚动区域无法回缩
     host.style.height = '0px'
     const height = Math.max(document.documentElement.scrollHeight, window.innerHeight)
-    host.style.width = `${width}px`
+    host.style.width = '100%'
     host.style.height = `${height}px`
   }
 
