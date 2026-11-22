@@ -6,6 +6,12 @@
 html.bewly-video-glass.bewly-design {
   background-color: var(--bew-homepage-bg);
 
+  // 视频页玻璃与 Bewly 宽屏同时启用时，原站用户卡会作为 body 浮层盖住右侧内容。
+  // 头像与名称链接仍可正常使用，只屏蔽悬停卡片，避免打断沉浸式播放页。
+  body.bewly-widescreen-active :is(.usercard-wrap, #id-card, bili-user-profile) {
+    display: none !important;
+  }
+
   // 未叠加全页毛玻璃底衬时保留完整毛玻璃（含饱和度），叠加全页底衬后仅保留模糊避免二次叠乘饱和度
   --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 42%, transparent);
   --bew-video-glass-panel-filter: var(--bew-filter-glass-1);
