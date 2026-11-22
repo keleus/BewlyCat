@@ -175,6 +175,7 @@ function onMouseEnter() {
         truncate
         overflow="hidden"
         m="r-2"
+        class="min-h-[1.5em]"
         v-text="label === 'undefined' ? '' : label"
       />
 

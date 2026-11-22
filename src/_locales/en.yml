@@ -129,6 +129,7 @@ settings:
     preset_soft: Soft
     preset_cinema: Cinema
     preset_vivid: Vivid
+    preset_custom: Custom
     strength: Light strength
     spread: Spread range
     diffusion: Diffusion method
