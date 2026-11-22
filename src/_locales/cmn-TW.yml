@@ -129,6 +129,7 @@ settings:
     preset_soft: 柔和
     preset_cinema: 影院
     preset_vivid: 絢彩
+    preset_custom: 自訂
     strength: 光線強度
     spread: 擴散範圍
     diffusion: 擴散方式

@@ -6,6 +6,7 @@ import draggable from 'vuedraggable'
 import AppAuthorizationDialog from '~/components/AppAuthorizationDialog.vue'
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
+import Select from '~/components/Select.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
@@ -21,7 +22,6 @@ import {
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
-import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import FilterByTitleTable from './components/FilterByTitleTable.vue'
 import FilterByUserTable from './components/FilterByUserTable.vue'
@@ -248,10 +248,11 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
         </template>
       </SettingsItem>
       <SettingsItem :title="$t('settings.home_tabs_position')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="settings.homeTabsPosition"
-          :label="$t('settings.home_tabs_position')"
+          :aria-label="$t('settings.home_tabs_position')"
           :options="homeTabsPositionOptions"
+          w="160px"
         />
       </SettingsItem>
       <SettingsItem :title="$t('settings.fixed_home_tabs_on_home_page')" right-width="auto">
@@ -267,10 +268,11 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
         <template #desc>
           <p>{{ $t('settings.recommendation_mode_desc') }}</p>
         </template>
-        <SettingsSegmentedControl
+        <Select
           v-model="recommendationModeOption"
-          :label="$t('settings.recommendation_mode')"
+          :aria-label="$t('settings.recommendation_mode')"
           :options="recommendationModeOptions"
+          w="160px"
           @change="handleRecommendationModeChange"
         />
       </SettingsItem>
@@ -555,10 +557,11 @@ function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number],
         <Radio v-model="settings.useFollowingNewLayout" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.following_sort')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="settings.followingUploaderSort"
-          :label="$t('settings.following_sort')"
+          :aria-label="$t('settings.following_sort')"
           :options="followingUploaderSortOptions"
+          w="160px"
         />
       </SettingsItem>
       <SettingsItem :title="$t('settings.following_tab_show_livestreaming_videos')" right-width="auto">

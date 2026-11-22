@@ -13,7 +13,6 @@ import type { AmbilightDiffusionMode, AmbilightDiffusionQuality } from '~/utils/
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
-import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 
 const { t } = useI18n()
 
@@ -21,6 +20,8 @@ const presetOptions = computed(() => [
   { label: t('settings.ambilight.preset_soft'), value: 'soft' },
   { label: t('settings.ambilight.preset_cinema'), value: 'cinema' },
   { label: t('settings.ambilight.preset_vivid'), value: 'vivid' },
+  // 手动调参后不匹配任何预设时的兜底项；选中它不改变任何参数
+  { label: t('settings.ambilight.preset_custom'), value: '' },
 ])
 
 const fpsOptions = computed(() => [
@@ -145,10 +146,11 @@ function resetAmbilightSettings() {
 
     <template v-if="settings.ambilightEnabled">
       <SettingsItem :title="t('settings.ambilight.preset')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="currentPreset"
-          :label="t('settings.ambilight.preset')"
+          :aria-label="t('settings.ambilight.preset')"
           :options="presetOptions"
+          w="160px"
         />
       </SettingsItem>
 

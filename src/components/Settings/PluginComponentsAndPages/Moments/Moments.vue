@@ -10,7 +10,6 @@ import type { MomentsGridColumns, TabsPosition } from '~/logic/storage'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
-import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import MomentFilterSettings from './MomentFilterSettings.vue'
 import PinnedUsersManager from './PinnedUsersManager.vue'
@@ -123,18 +122,20 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         :desc="$t('settings.moments_grid_columns_desc')"
         right-width="auto"
       >
-        <SettingsSegmentedControl
+        <Select
           :model-value="settings.momentsGridColumns"
-          :label="$t('settings.moments_grid_columns')"
+          :aria-label="$t('settings.moments_grid_columns')"
           :options="gridColumnOptions"
+          w="160px"
           @update:model-value="selectGridColumns"
         />
       </SettingsItem>
       <SettingsItem :title="$t('settings.moments_tabs_position')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="settings.momentsTabsPosition"
-          :label="$t('settings.moments_tabs_position')"
+          :aria-label="$t('settings.moments_tabs_position')"
           :options="momentsTabsPositionOptions"
+          w="160px"
         />
       </SettingsItem>
       <SettingsItem

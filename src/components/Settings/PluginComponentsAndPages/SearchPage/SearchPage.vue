@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import Select from '~/components/Select.vue'
 import { resolveSearchBarCharacterUrl, SEARCH_BAR_CHARACTERS } from '~/constants/imgs'
 import { settings } from '~/logic'
 
 import ChangeWallpaper from '../../components/ChangeWallpaper.vue'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
-import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 
 const { t } = useI18n()
 
@@ -30,10 +30,11 @@ function changeSearchBarFocusCharacter(url: string) {
   <div>
     <SettingsItemGroup :title="$t('settings.group_logo')">
       <SettingsItem :title="$t('settings.logo_color')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="settings.searchPageLogoColor"
-          :label="$t('settings.logo_color')"
+          :aria-label="$t('settings.logo_color')"
           :options="logoColorOptions"
+          w="160px"
         />
       </SettingsItem>
 
@@ -122,10 +123,11 @@ function changeSearchBarFocusCharacter(url: string) {
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.search_results_pagination_mode')" right-width="auto">
-        <SettingsSegmentedControl
+        <Select
           v-model="settings.searchResultsPaginationMode"
-          :label="$t('settings.search_results_pagination_mode')"
+          :aria-label="$t('settings.search_results_pagination_mode')"
           :options="paginationModeOptions"
+          w="160px"
         />
       </SettingsItem>
     </SettingsItemGroup>
