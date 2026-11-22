@@ -55,18 +55,30 @@ const hasMoreContent = computed(() => {
   return watchLaterList.value.length < watchLaterCount.value
 })
 
+const LOAD_MORE_BOTTOM_THRESHOLD = 400
+
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
   if (isLoadingWatchLater.value || !hasMoreContent.value)
     return
 
-  topBarStore.loadMoreWatchLaterList()
+  void topBarStore.loadMoreWatchLaterList()
+}
+
+// 收起占位卡或播放并移除导致列表缩短后，如内容已不足以继续滚动则自动补拉下一页
+function checkAndLoadMoreIfUnderfilled() {
+  const container = scrollContainer.value
+  if (!container)
+    return
+
+  if (container.scrollHeight - container.scrollTop - container.clientHeight <= LOAD_MORE_BOTTOM_THRESHOLD)
+    handleReachBottom()
 }
 
 useOptimizedScroll(
   scrollContainer,
   { onReachBottom: handleReachBottom },
-  { bottomThreshold: 400, throttleDelay: 100 },
+  { bottomThreshold: LOAD_MORE_BOTTOM_THRESHOLD, throttleDelay: 100 },
 )
 
 onMounted(async () => {
@@ -107,10 +119,6 @@ function openVideoPage(url: string) {
   }
 
   window.open(url, '_top')
-}
-
-function deleteWatchLaterItem(index: number, aid: number) {
-  topBarStore.deleteWatchLaterItem(index, aid)
 }
 
 // 点击即删除，卡片保留在原位并显示可撤销遮罩
@@ -156,8 +164,10 @@ async function restoreWatchLaterItem(aid: number) {
 
 // 收起已移除的占位卡片：条目已从服务器删除，这里仅移出展示集合，触发 removable-list 离场动画
 function dismissRemovedItem(aid: number) {
-  if (removeStatuses.get(aid)?.status === 'removed')
+  if (removeStatuses.get(aid)?.status === 'removed') {
     removeStatuses.delete(aid)
+    void nextTick(checkAndLoadMoreIfUnderfilled)
+  }
 }
 
 /** progress = -1 表示已看完，直接展示总时长；角标文案形如「12:34 / 45:00」。 */
@@ -176,9 +186,13 @@ function getProgressPercentage(item: WatchLaterItem): number {
   return Math.min(100, Math.max(0, percentage))
 }
 
-function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) {
+async function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) {
   openVideoPage(getVideoPageUrl(bvid))
-  deleteWatchLaterItem(index, aid)
+  const success = await topBarStore.deleteWatchLaterItem(index, aid)
+  if (success) {
+    await nextTick()
+    checkAndLoadMoreIfUnderfilled()
+  }
 }
 </script>
 

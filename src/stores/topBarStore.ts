@@ -107,6 +107,8 @@ export const useTopBarStore = defineStore('topBar', () => {
   let watchLaterLoadingGeneration = 0
   // 列表曾被请求后，数量同步需要在失败时继续触发重试
   let watchLaterListRequested = false
+  // 稍后再看删/还原后的防抖计数同步定时器：避免多次操作触发连环重拉
+  let watchLaterMutationSyncTimer: ReturnType<typeof setTimeout> | null = null
   const favoriteStateVersion = ref(0)
   const isLoadingWatchLater = ref<boolean>(false)
   const isAddingOpenTabsToWatchLater = ref(false)
@@ -237,6 +239,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     watchLaterRefreshGeneration++
     watchLaterLoadingGeneration++
     watchLaterListRequested = false
+    clearWatchLaterMutationSyncTimer()
     moments.splice(0)
     livePage.value = 1
     momentUpdateBaseline.value = ''
@@ -630,6 +633,31 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
+  function clearWatchLaterMutationSyncTimer() {
+    if (watchLaterMutationSyncTimer) {
+      clearTimeout(watchLaterMutationSyncTimer)
+      watchLaterMutationSyncTimer = null
+    }
+  }
+
+  function scheduleWatchLaterCountSync() {
+    clearWatchLaterMutationSyncTimer()
+    const accountId = userInfo.mid
+    if (!isCurrentAccount(accountId))
+      return
+
+    // 先保留本地乐观更新与当前滚动列表；B 站写入接口返回后，列表查询偶尔仍会短暂返回旧数量。
+    // 延迟防抖仅同步计数并广播给其他标签页，避免重拉第 1 页清空已加载分页或让刚还原条目跳回顶部。
+    watchLaterMutationSyncTimer = setTimeout(() => {
+      watchLaterMutationSyncTimer = null
+      if (!isCurrentAccount(accountId))
+        return
+      void syncWatchLaterState(false).catch((error) => {
+        console.error('刷新顶栏稍后再看状态失败:', error)
+      })
+    }, 800)
+  }
+
   function invalidateWatchLaterList() {
     watchLaterList.splice(0)
     watchLaterCursor.value = 0
@@ -640,11 +668,14 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function shouldRefreshWatchLaterList(countChanged: boolean, count: number) {
-    if (countChanged) {
-      return watchLaterListRequested
-        || watchLaterList.length > 0
-        || watchLaterCursor.value > 0
-    }
+    const hasLoadedWatchLaterList = watchLaterList.length > 0 || watchLaterCursor.value > 0
+    // 弹窗打开且已有列表内容时，被动计数变化仅更新角标，
+    // 避免清空用户已滚动加载的分页或打断原位撤销；下次重新打开弹窗由 onMounted 拉取最新顺序。
+    if (popupVisible.watchLater && hasLoadedWatchLaterList)
+      return false
+
+    if (countChanged)
+      return watchLaterListRequested || hasLoadedWatchLaterList
 
     return watchLaterListRequested
       && !isLoadingWatchLater.value
@@ -857,13 +888,7 @@ export const useTopBarStore = defineStore('topBar', () => {
           isLoadingWatchLater.value = false
         }
 
-        // 先保留本地乐观更新；B 站删除接口返回后，列表查询偶尔仍会短暂返回旧数量。
-        // 延迟同步可避免把刚删除的项目/计数立即覆盖回来。
-        window.setTimeout(() => {
-          void syncWatchLaterState(true).catch((error) => {
-            console.error('刷新顶栏稍后再看状态失败:', error)
-          })
-        }, 800)
+        scheduleWatchLaterCountSync()
         return true
       }
     }
@@ -903,12 +928,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         isLoadingWatchLater.value = false
       }
 
-      // 与删除相同，延迟同步避免接口短暂返回旧数量
-      window.setTimeout(() => {
-        void syncWatchLaterState(true).catch((error) => {
-          console.error('刷新顶栏稍后再看状态失败:', error)
-        })
-      }, 800)
+      scheduleWatchLaterCountSync()
       return true
     }
     catch (error) {
