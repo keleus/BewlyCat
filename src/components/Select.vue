@@ -7,9 +7,12 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   /** 在 Dialog 内使用时，下拉菜单及其滚动遮罩需高于对话框层级 */
   inDialog?: boolean
+  /** 触发器的无障碍名称，用于设置行等无可见关联标签的场景 */
+  ariaLabel?: string
 }>(), {
   disabled: false,
   inDialog: false,
+  ariaLabel: undefined,
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -31,16 +34,17 @@ const dropdownPosition = ref({ top: 0, left: 0, width: 0, openUp: false, maxHeig
 const containerRef = ref<HTMLElement | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
 
-onUpdated(() => {
-  // fix the issue when the dropdown menu text doesn't update in real-time based on the updated page language
-  if (props.options)
-    label.value = `${props.options.find((item: OptionType) => item.value === props.modelValue)?.label}`
-})
+// 显示文本始终由真实 modelValue 派生：语言切换、选项变化或父组件拒绝/回滚取值（如取消确认框）时自动同步
+watch(
+  [() => props.modelValue, () => props.options],
+  () => {
+    if (props.options)
+      label.value = `${props.options.find((item: OptionType) => item.value === props.modelValue)?.label}`
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
-  if (props.options)
-    label.value = `${props.options.find((item: OptionType) => item.value === props.modelValue)?.label}`
-
   // 窗口大小变化时按真实高度重算位置
   window.addEventListener('resize', handleWindowResize)
 })
@@ -122,7 +126,6 @@ function onClickOption(val: OptionType) {
     return
 
   window.removeEventListener('click', closeOptions)
-  label.value = val.label
   emit('update:modelValue', val.value)
   emit('change', val.value)
   showOptions.value = false
@@ -156,6 +159,7 @@ function onMouseEnter() {
       :class="{ 'is-disabled': props.disabled }"
       :aria-disabled="props.disabled"
       :aria-expanded="showOptions"
+      :aria-label="ariaLabel"
       p="x-4 y-2"
       bg="$bew-fill-1"
       rounded="$bew-interactive-radius"
