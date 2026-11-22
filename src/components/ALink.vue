@@ -72,6 +72,11 @@ function handleClick(event: MouseEvent) {
   const link = event.currentTarget as HTMLAnchorElement
   link.target = getTarget()
 
+  // 鼠标打开的卡片不应在原标签页保留焦点，否则键盘操作会重新显示
+  // :focus-visible 描边。键盘激活的点击事件 detail 为 0，继续保留焦点反馈。
+  if (props.type === 'videoCard' && event.detail > 0)
+    setTimeout(() => link.blur(), 0)
+
   if (props.stopPropagation) {
     event.stopPropagation()
   }
