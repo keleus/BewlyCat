@@ -199,13 +199,20 @@ function handleLinkClick(event: MouseEvent) {
   clickHandler(event)
 }
 
+function handleCardMouseEnter(event: MouseEvent) {
+  if (isRemoved.value)
+    return
+
+  logic.handleMouseEnter(event)
+}
+
 const linkEvents = computed(() => ({
   activate: handleLinkActivate,
   click: handleLinkClick,
   ...(hoverPreviewOnCoverOnly.value
     ? {}
     : {
-        mouseenter: logic.handleMouseEnter,
+        mouseenter: handleCardMouseEnter,
         mouseleave: logic.handelMouseLeave,
       }),
 }))
@@ -213,7 +220,7 @@ const linkEvents = computed(() => ({
 const coverEvents = computed(() =>
   hoverPreviewOnCoverOnly.value
     ? {
-        mouseenter: logic.handleMouseEnter,
+        mouseenter: handleCardMouseEnter,
         mouseleave: logic.handelMouseLeave,
       }
     : {},

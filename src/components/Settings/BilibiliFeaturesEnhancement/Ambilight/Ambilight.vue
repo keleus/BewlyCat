@@ -20,8 +20,6 @@ const presetOptions = computed(() => [
   { label: t('settings.ambilight.preset_soft'), value: 'soft' },
   { label: t('settings.ambilight.preset_cinema'), value: 'cinema' },
   { label: t('settings.ambilight.preset_vivid'), value: 'vivid' },
-  // 手动调参后不匹配任何预设时的兜底项；选中它不改变任何参数
-  { label: t('settings.ambilight.preset_custom'), value: '' },
 ])
 
 const fpsOptions = computed(() => [
@@ -149,6 +147,7 @@ function resetAmbilightSettings() {
         <Select
           v-model="currentPreset"
           :aria-label="t('settings.ambilight.preset')"
+          :placeholder="t('settings.ambilight.preset_custom')"
           :options="presetOptions"
           w="160px"
         />
