@@ -176,7 +176,7 @@ const hoverPreviewOnCoverOnly = computed(() =>
 
 function handleLinkActivate(event: MouseEvent) {
   // 移除遮罩期间卡片不再作为链接响应
-  if (props.removedState) {
+  if (isRemoved.value) {
     event.preventDefault()
     return
   }
@@ -192,7 +192,7 @@ function handleLinkActivate(event: MouseEvent) {
 }
 
 function handleLinkClick(event: MouseEvent) {
-  if (props.removedState)
+  if (isRemoved.value)
     return
 
   const clickHandler = props.customClickHandler || logic.handleClick
@@ -368,8 +368,11 @@ provide('getVideoType', () => props.type!)
     rounded="$bew-card-radius"
     :class="[
       layout !== 'old' ? 'mb-3' : 'mb-4',
-      skeleton ? 'video-card-container--skeleton' : 'video-card-container--interactive',
-      disableContentVisibility ? 'video-card-container--layout-stable' : '',
+      {
+        'video-card-container--skeleton': skeleton,
+        'video-card-container--interactive': !skeleton && !isRemoved,
+        'video-card-container--layout-stable': disableContentVisibility,
+      },
     ]"
     :style="disableContentVisibility
       ? { contentVisibility: 'visible', containIntrinsicSize: 'none' }
@@ -386,6 +389,7 @@ provide('getVideoType', () => props.type!)
         v-bind="coverSkeleton ? {} : {
           href: logic.videoUrl.value,
           type: 'videoCard',
+          disabled: isRemoved,
           customClickEvent: Boolean(props.customClickHandler) || settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'dialog' || settings.videoCardLinkOpenMode === 'background',
           customClickEventIncludesModifiers: Boolean(props.customClickHandler),
           disableDragging: shouldDisableLinkDragging,
