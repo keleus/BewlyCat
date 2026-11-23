@@ -41,6 +41,7 @@ export const sharedConfig: UserConfig = {
     Vue(),
 
     AutoImport({
+      dts: r('src/auto-imports.d.ts'),
       imports: [
         'vue',
         {

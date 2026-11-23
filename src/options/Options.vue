@@ -11,6 +11,8 @@ import { onMessage } from '~/utils/messaging'
 import type { SettingsPageTabLocation } from '~/utils/settingsPage'
 import { NAVIGATE_SETTINGS_PAGE_MESSAGE, parseSettingsPageHash } from '~/utils/settingsPage'
 
+import { settingsMenus } from './settingsMenus'
+
 useAppearanceSettings()
 const { isDark } = useDark()
 const { activeConfirmDialog, finishConfirmDialog } = useConfirmDialogHost()
@@ -51,6 +53,7 @@ onMounted(() => {
     <Settings
       v-if="isMounted"
       v-model:pending-navigation="pendingNavigation"
+      :menus="settingsMenus"
     />
 
     <ConfirmDialogOverlay

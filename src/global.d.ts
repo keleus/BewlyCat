@@ -6,6 +6,11 @@ declare module '*.vue' {
   export default component
 }
 
+declare module '*.yml' {
+  const messages: Record<string, any>
+  export default messages
+}
+
 declare module 'virtual:bewly-inject-messages' {
   /** `inject:` section of each locale file, keyed by locale then message key. */
   const messages: Record<string, Record<string, string>>

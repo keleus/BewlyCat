@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePreferredReducedMotion } from '@vueuse/core'
-import { computed, inject, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Draggable from 'vuedraggable'
 
@@ -21,6 +21,35 @@ const manager = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
 const selectedPanel = ref<HTMLElement>()
 const toggleButton = ref<HTMLButtonElement>()
+
+const injectedSvgSpriteRoots = new WeakSet<ParentNode>()
+
+// 独立设置页首屏不再预注入整份 149 KB SVG 雪碧图，仅当进入顶栏频道管理且当前根尚未挂载时按需加载。
+async function ensureChannelSvgSprite(element: HTMLElement | undefined) {
+  const root = element?.getRootNode()
+  if (!(root instanceof ShadowRoot || root instanceof Document))
+    return
+  if (injectedSvgSpriteRoots.has(root) || root.querySelector('#channel-ai')) {
+    injectedSvgSpriteRoots.add(root)
+    return
+  }
+
+  injectedSvgSpriteRoots.add(root)
+  const { SVG_ICONS } = await import('~/utils/svgIcons')
+  if (root.querySelector('#channel-ai'))
+    return
+
+  const svgContainer = document.createElement('div')
+  svgContainer.innerHTML = SVG_ICONS
+  if (root instanceof ShadowRoot)
+    root.appendChild(svgContainer)
+  else
+    root.body?.appendChild(svgContainer)
+}
+
+onMounted(() => {
+  void ensureChannelSvgSprite(manager.value)
+})
 function clearSearch() {
   query.value = ''
   searchInput.value?.focus()

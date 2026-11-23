@@ -11,25 +11,17 @@ import './options.scss'
 
 import { createApp } from 'vue'
 
-import { localSettingsReady, settingsReady } from '~/logic'
+import { localSettingsReady, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { setBilibiliCookieSnapshot } from '~/utils/main'
-import { SVG_ICONS } from '~/utils/svgIcons'
 
+import { ensureLocaleMessages, i18n } from './i18n'
 import Options from './Options.vue'
 import { registerSettingsComponents } from './settingsComponents'
 
 const BILIBILI_URL = 'https://www.bilibili.com/'
-
-const bundledStyleText = (globalThis as typeof globalThis & {
-  __BEWLYCAT_BUNDLED_STYLE_TEXT__: string
-}).__BEWLYCAT_BUNDLED_STYLE_TEXT__
-
-const hostStyle = document.createElement('style')
-hostStyle.setAttribute('data-bewly-host-styles', '')
-hostStyle.textContent = bundledStyleText
-document.head.appendChild(hostStyle)
+const OPTIONS_SHADOW_CSS_HREF = './assets/shadow.css'
 
 // 扩展页的 document.cookie 读不到 B 站登录态，收藏夹整理等功能依赖这份快照。
 async function syncBilibiliCookies() {
@@ -43,20 +35,38 @@ async function syncBilibiliCookies() {
 }
 
 function mountOptionsPage() {
-  // 与页面内的设置面板使用相同的 Shadow DOM 样式环境。
+  // 与页面内的设置面板使用相同的 Shadow DOM 样式环境；
+  // 样式通过独立外链加载，避免内联进 JS 或双份注入 document.head。
   const host = document.createElement('div')
   host.id = 'bewly'
+  host.style.visibility = 'hidden'
 
   const shadowRoot = host.attachShadow({ mode: 'open' })
   const resetStyle = document.createElement('style')
   resetStyle.textContent = RESET_BEWLY_CSS
-  const bundledStyle = document.createElement('style')
-  bundledStyle.textContent = bundledStyleText
-  const icons = document.createElement('div')
-  icons.innerHTML = SVG_ICONS
+
+  const shadowStyleLink = document.createElement('link')
+  shadowStyleLink.rel = 'stylesheet'
+  shadowStyleLink.href = OPTIONS_SHADOW_CSS_HREF
+
+  let revealed = false
+  const revealHost = () => {
+    if (revealed)
+      return
+    revealed = true
+    host.style.visibility = ''
+  }
+  shadowStyleLink.addEventListener('load', revealHost, { once: true })
+  shadowStyleLink.addEventListener('error', revealHost, { once: true })
+
   const root = document.createElement('div')
-  shadowRoot.append(resetStyle, bundledStyle, root, icons)
+  shadowRoot.append(resetStyle, shadowStyleLink, root)
   document.body.appendChild(host)
+
+  if (shadowStyleLink.sheet)
+    revealHost()
+  else
+    window.setTimeout(revealHost, 300)
 
   const app = createApp(Options)
   setupApp(app)
@@ -73,6 +83,8 @@ async function bootstrap() {
   })
 
   await Promise.all([settingsReady, localSettingsReady, syncBilibiliCookies()])
+  const activeLocale = await ensureLocaleMessages(settings.value.language)
+  i18n.global.locale.value = activeLocale
   mountOptionsPage()
 }
 

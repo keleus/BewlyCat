@@ -17,10 +17,16 @@ import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilt
 import { useSettingsSearchNavigation } from './composables/useSettingsSearchNavigation'
 import { useSettingsSearchResults } from './composables/useSettingsSearchResults'
 import { useSettingsUrlSync } from './composables/useSettingsUrlSync'
-import { settingsMenus } from './settingsMenus'
+import type { SettingsMenuDefinition } from './settingsMenus'
+import { settingsMenus as defaultSettingsMenus } from './settingsMenus'
 import type { MenuType } from './types'
 
+const props = defineProps<{
+  menus?: SettingsMenuDefinition[]
+}>()
+
 const pendingNavigation = defineModel<SettingsNavigationTarget | undefined>('pendingNavigation')
+const menus = props.menus ?? defaultSettingsMenus
 
 const pinnedChannelHistory = createPinnedChannelHistory(computed({
   get: () => settings.value.topBarPinnedChannels,
@@ -30,7 +36,7 @@ provide(pinnedChannelHistoryKey, pinnedChannelHistory)
 
 const { t } = useI18n()
 
-const navigation = useSettingsNavigation()
+const navigation = useSettingsNavigation({ menus })
 const {
   activatedMenuItem,
   activeContent,
@@ -72,7 +78,7 @@ watch([activatedMenuItem, activeSecondaryPage], () => {
 const title = computed(() => t(activeMenu.value.titleKey))
 const titleDetail = computed(() => activeSecondaryPage.value ? t(activeSecondaryPage.value.titleKey) : undefined)
 
-const search = useSettingsSearch({ visibleMenus })
+const search = useSettingsSearch({ visibleMenus, menus })
 const {
   getSearchEntrySecondaryPage,
   getSearchEntryTitle,
@@ -125,7 +131,7 @@ const searchNavigation = useSettingsSearchNavigation({
 })
 
 function navigateToTarget(target: SettingsNavigationTarget) {
-  const storageKey = settingsMenus.find(menu => menu.value === target.menu)?.storageKey
+  const storageKey = menus.find(menu => menu.value === target.menu)?.storageKey
   searchNavigation.navigateToSearchResult({
     menu: target.menu as MenuType,
     targetTitleKey: target.targetTitleKey,
