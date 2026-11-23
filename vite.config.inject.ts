@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import packageJson from './package.json'
 import { injectMessagesPlugin } from './scripts/injectMessages'
 import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
-import { isFirefox, isSafari, r } from './scripts/utils'
+import { isDev, isFirefox, isSafari, r } from './scripts/utils'
 import { sharedConfig } from './vite.config'
 
 // bundling the content script using Vite
@@ -19,6 +19,9 @@ export default defineConfig({
     cssCodeSplit: false,
     emptyOutDir: false,
     sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
+    minify: isDev ? false : 'esbuild',
+    reportCompressedSize: !isDev,
+    ...(isDev ? { target: 'esnext' } : {}),
     lib: {
       entry: r('src/inject/index.ts'),
       name: packageJson.name,

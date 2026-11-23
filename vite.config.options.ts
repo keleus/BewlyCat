@@ -3,7 +3,7 @@ import type { Plugin } from 'vite'
 import { defineConfig, normalizePath } from 'vite'
 
 import { splitOptionsExternalStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
-import { isFirefox, isSafari, r } from './scripts/utils'
+import { isDev, isFirefox, isSafari, r } from './scripts/utils'
 import unoConfig from './unocss.config'
 import { sharedConfig } from './vite.config'
 
@@ -57,14 +57,8 @@ export default defineConfig({
     UnoCSS({
       ...unoConfig,
       configFile: false,
-      // 不继承内容脚本的全局图标 safelist，仅从设置页实际打包的模块中提取类名与图标。
+      // 不继承内容脚本的全局图标 safelist，沿用 unocss.config.ts 的精确 pipeline 扫描范围。
       safelist: [],
-      content: {
-        pipeline: {
-          include: [/\.(?:vue|[jt]sx?|html)(?:$|\?)/],
-          exclude: [/[\\/]node_modules[\\/]/, /\.(?:css|postcss|sass|scss|less|stylus|styl)(?:$|\?)/],
-        },
-      },
     }),
     ...sharedConfig.plugins!,
     ...splitOptionsExternalStyles(),
@@ -75,6 +69,10 @@ export default defineConfig({
     cssCodeSplit: false,
     emptyOutDir: true,
     sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
+    minify: isDev ? false : 'esbuild',
+    cssMinify: isDev ? false : 'esbuild',
+    reportCompressedSize: !isDev,
+    ...(isDev ? { target: 'esnext' } : {}),
     rollupOptions: {
       input: r('src/options/index.html'),
       output: {

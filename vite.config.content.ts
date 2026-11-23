@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import packageJson from './package.json'
 import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
 import { embedBundledStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
-import { isFirefox, isSafari, r } from './scripts/utils'
+import { isDev, isFirefox, isSafari, r } from './scripts/utils'
 import { sharedConfig } from './vite.config'
 
 // bundling the content script using Vite
@@ -22,6 +22,10 @@ export default defineConfig({
     cssCodeSplit: false,
     emptyOutDir: false,
     sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
+    minify: isDev ? false : 'esbuild',
+    cssMinify: isDev ? false : 'esbuild',
+    reportCompressedSize: !isDev,
+    ...(isDev ? { target: 'esnext' } : {}),
     lib: {
       entry: r('src/contentScripts/index.ts'),
       name: packageJson.name,

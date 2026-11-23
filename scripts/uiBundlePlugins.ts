@@ -4,7 +4,7 @@ import { readdirSync } from 'node:fs'
 import type { Plugin } from 'vite'
 import { isCSSRequest, normalizePath, transformWithEsbuild } from 'vite'
 
-import { r } from './utils'
+import { isDev, r } from './utils'
 
 const BUNDLED_STYLE_GLOBAL = '__BEWLYCAT_BUNDLED_STYLE_TEXT__'
 const HOST_STYLE_GLOBAL = '__BEWLYCAT_HOST_STYLE_TEXT__'
@@ -207,13 +207,12 @@ export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plu
           return
         }
 
-        const minifiedHost = await transformWithEsbuild(
-          orderedHostCss.join('\n'),
-          'bewly-host-styles.css',
-          { loader: 'css', minify: true },
-        )
+        const rawHostCss = orderedHostCss.join('\n')
+        const hostCss = isDev
+          ? rawHostCss
+          : (await transformWithEsbuild(rawHostCss, 'bewly-host-styles.css', { loader: 'css', minify: true })).code.trim()
         injectedGlobals.push(
-          `globalThis.${HOST_STYLE_GLOBAL}=${JSON.stringify(minifiedHost.code.trim())};`,
+          `globalThis.${HOST_STYLE_GLOBAL}=${JSON.stringify(hostCss)};`,
         )
       }
 
@@ -306,17 +305,16 @@ export function splitOptionsExternalStyles(): Plugin[] {
           return
         }
 
-        const minifiedHost = await transformWithEsbuild(
-          orderedHostCss.join('\n'),
-          'bewly-options-host.css',
-          { loader: 'css', minify: true },
-        )
+        const rawHostCss = orderedHostCss.join('\n')
+        const hostCss = isDev
+          ? rawHostCss
+          : (await transformWithEsbuild(rawHostCss, 'bewly-options-host.css', { loader: 'css', minify: true })).code.trim()
 
         delete bundle[cssKey]
         this.emitFile({
           type: 'asset',
           fileName: 'assets/host.css',
-          source: minifiedHost.code.trim(),
+          source: hostCss,
         })
         this.emitFile({
           type: 'asset',

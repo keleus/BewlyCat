@@ -1,9 +1,60 @@
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 
-import { defineConfig, presetAttributify, presetIcons, presetTypography, presetWind3, transformerDirectives } from 'unocss'
+import type { ExtractorContext } from 'unocss'
+import { defineConfig, extractorSplit, presetAttributify, presetIcons, presetWind3, transformerDirectives } from 'unocss'
 
 const remRE = /(-?[.\d]+)rem/g
+const STYLE_BLOCK_RE = /<style\b[^>]*>[\s\S]*?<\/style>/gi
+const SCRIPT_BLOCK_RE = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+// JS/TS 代码中的动态类名或图标只出现在字符串字面量里；跳过类型声明、变量名与注释可减少约 65% 无效 token。
+const STRING_LITERAL_RE = /'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`/g
+
+function extractTemplateOnly(code: string): string {
+  return code.replace(STYLE_BLOCK_RE, '').replace(SCRIPT_BLOCK_RE, '')
+}
+
+function extractStringLiterals(code: string): string {
+  const literals: string[] = []
+  for (const match of code.matchAll(STRING_LITERAL_RE))
+    literals.push(match[0])
+  return literals.join(' ')
+}
+
+function extractVueScopedCode(code: string): string {
+  const withoutStyle = code.replace(STYLE_BLOCK_RE, '')
+  const templatePart = withoutStyle.replace(SCRIPT_BLOCK_RE, '')
+  const scriptLiterals: string[] = []
+  for (const match of withoutStyle.matchAll(SCRIPT_BLOCK_RE)) {
+    const literalText = extractStringLiterals(match[1])
+    if (literalText)
+      scriptLiterals.push(literalText)
+  }
+  return scriptLiterals.length ? `${templatePart}\n${scriptLiterals.join('\n')}` : templatePart
+}
+
+function createTemplateScopedAttributifyPreset() {
+  const base = presetAttributify()
+  return {
+    ...base,
+    extractors: base.extractors?.map(extractor => ({
+      ...extractor,
+      extract(ctx: ExtractorContext) {
+        const id = ctx.id ?? ''
+        // 属性化语法仅存在于原始 .vue 的 <template> 与 .html，跳过 <script>、<style>、.ts 与 ?vue 虚拟子模块。
+        if (/\.vue$/.test(id)) {
+          const templateCode = extractTemplateOnly(ctx.code)
+          if (!templateCode.trim())
+            return undefined
+          return extractor.extract?.({ ...ctx, code: templateCode })
+        }
+        if (/\.html$/.test(id))
+          return extractor.extract?.(ctx)
+        return undefined
+      },
+    })),
+  }
+}
 
 // presetIcons 默认从 @iconify/json 按需加载图标集，但其缓存只在读取完成后才生效：生成 CSS 时
 // 同一图标集的图标并发请求，每个请求都会重新读取并解析整份 JSON（mingcute 曾被读取上百次），
@@ -24,9 +75,21 @@ function loadIconCollection(name: string) {
 
 export default defineConfig({
   content: {
-    filesystem: [
-      '**/*.{js,ts,vue,svelte,jsx,tsx,mdx,md,astro,elm,php,phtml,html}',
-    ],
+    // 仅从实际进入模块图的模板与声明动态图标/类名的目录提取原子类，
+    // 跳过 svgIcons.ts、inject、background、logic/storage 等大体积非 UI 文件。
+    pipeline: {
+      include: [
+        // 仅匹配原始 .vue 文件，跳过 vite:vue 拆出的 ?vue&type=script/template/style 虚拟子模块
+        /\.vue$/,
+        /\.html$/,
+        /[\\/]src[\\/](?:components|stores|constants)[\\/].*\.[jt]sx?$/,
+      ],
+      exclude: [
+        /[\\/]node_modules[\\/]/,
+        /\.(?:css|postcss|sass|scss|less|stylus|styl)(?:$|\?)/,
+        /[\\/](?:searchCatalog|usageGuide|searchApi|appClient|contentScript|globalEvents|watchLaterState)\.ts$/,
+      ],
+    },
   },
   blocklist: [
     'ps',
@@ -86,9 +149,25 @@ export default defineConfig({
     'i-mdi:undo-variant',
     'i-mdi:redo-variant',
   ],
+  extractorDefault: false,
+  extractors: [
+    {
+      name: 'bewly-scoped-split',
+      order: 0,
+      extract(ctx) {
+        const id = ctx.id ?? ''
+        let code = ctx.code
+        if (/\.vue$/.test(id))
+          code = extractVueScopedCode(ctx.code)
+        else if (/\.[jt]sx?$/.test(id))
+          code = extractStringLiterals(ctx.code)
+        return extractorSplit.extract?.({ ...ctx, code })
+      },
+    },
+  ],
   presets: [
     presetWind3(),
-    presetAttributify(),
+    createTemplateScopedAttributifyPreset(),
     presetIcons({
       collections: Object.fromEntries(ICON_COLLECTIONS.map(name => [name, () => loadIconCollection(name)])),
       extraProperties: {
@@ -98,7 +177,6 @@ export default defineConfig({
         'height': '1.2em',
       },
     }),
-    presetTypography(),
 
     {
       name: 'text-size-transformer',
