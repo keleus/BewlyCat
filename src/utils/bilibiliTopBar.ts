@@ -659,25 +659,41 @@ function setupLoginButtonClickHandlers(doc: Document) {
   const observeTarget = doc.body ?? doc.documentElement
   let observer: MutationObserver | null = null
   if (observeTarget) {
-    // Use MutationObserver to handle dynamically added popup elements
+    // Use MutationObserver to handle dynamically added popup elements inside the managed top bar
     observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          // Check if the added node is an element
-          if (node.nodeType === Node.ELEMENT_NODE) {
+      const topBar = cachedOriginalTopBar
+      if (!topBar?.isConnected)
+        return
+
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length === 0)
+          continue
+
+        if (topBar.contains(mutation.target)) {
+          for (let i = 0; i < mutation.addedNodes.length; i++) {
+            const node = mutation.addedNodes[i]
+            if (node.nodeType !== Node.ELEMENT_NODE)
+              continue
             const element = node as HTMLElement
-
-            // Check if the added node itself is a login button
-            if (element.classList.contains('login-btn')) {
+            if (element.classList.contains('login-btn'))
               bindLoginButton(element)
-            }
-
-            // Check if the added node contains login buttons
-            const loginButtons = element.querySelectorAll<HTMLElement>('.login-btn')
-            loginButtons.forEach(bindLoginButton)
+            if (element.childElementCount > 0)
+              element.querySelectorAll<HTMLElement>('.login-btn').forEach(bindLoginButton)
           }
-        })
-      })
+          continue
+        }
+
+        // 顶栏本体刚被重新挂载到父节点时补扫一次，其余页面子树（弹幕、合集、评论等）直接跳过。
+        if (mutation.target === topBar.parentElement) {
+          for (let i = 0; i < mutation.addedNodes.length; i++) {
+            const node = mutation.addedNodes[i]
+            if (node === topBar || (node instanceof Element && node.contains(topBar))) {
+              topBar.querySelectorAll<HTMLElement>('.login-btn').forEach(bindLoginButton)
+              break
+            }
+          }
+        }
+      }
     })
 
     observer.observe(observeTarget, {

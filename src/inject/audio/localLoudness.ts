@@ -147,7 +147,47 @@ export function createLocalLoudnessController() {
     active = undefined
   }
 
-  const cleanupObserver = new MutationObserver(pruneOwned)
+  let cleanupObserverActive = false
+  let hasDetachedOwned = false
+  let pruneScheduled = false
+
+  function schedulePruneOwned() {
+    if (pruneScheduled || disposed)
+      return
+    pruneScheduled = true
+    queueMicrotask(() => {
+      pruneScheduled = false
+      if (!disposed)
+        pruneOwned()
+    })
+  }
+
+  function hasAddedVideoNode(mutations: MutationRecord[]) {
+    for (const mutation of mutations) {
+      for (let i = 0; i < mutation.addedNodes.length; i++) {
+        const node = mutation.addedNodes[i]
+        if (node instanceof HTMLVideoElement)
+          return true
+        if (node instanceof Element && node.childElementCount > 0 && node.getElementsByTagName('video').length > 0)
+          return true
+      }
+    }
+    return false
+  }
+
+  const cleanupObserver = new MutationObserver((mutations) => {
+    let needsPrune = false
+    for (const record of ownedConnected) {
+      if (!record.video.isConnected) {
+        needsPrune = true
+        break
+      }
+    }
+    if (!needsPrune && hasDetachedOwned && hasAddedVideoNode(mutations))
+      needsPrune = true
+    if (needsPrune)
+      schedulePruneOwned()
+  })
 
   function pruneOwned() {
     for (const record of ownedConnected) {
@@ -159,13 +199,16 @@ export function createLocalLoudnessController() {
         removeDelay()
       record.source.disconnect()
       ownedConnected.delete(record)
+      hasDetachedOwned = true
     }
     // Detached media may be reinserted without another play event. Keep only the
     // observer (no strong media references) to reconnect its minimal bypass.
-    for (const video of Array.from(document.querySelectorAll<HTMLVideoElement>(VIDEO_SELECTOR))) {
-      const record = sources.get(video)
-      if (record?.owned)
-        reconnectOwned(record)
+    if (hasDetachedOwned) {
+      for (const video of Array.from(document.querySelectorAll<HTMLVideoElement>(VIDEO_SELECTOR))) {
+        const record = sources.get(video)
+        if (record?.owned)
+          reconnectOwned(record)
+      }
     }
     settleOwnedContext()
   }
@@ -194,7 +237,10 @@ export function createLocalLoudnessController() {
     record.source.connect(record.source.context.destination)
     ownedConnected.add(record)
     settleOwnedContext()
-    cleanupObserver.observe(document, { childList: true, subtree: true })
+    if (!cleanupObserverActive) {
+      cleanupObserver.observe(document, { childList: true, subtree: true })
+      cleanupObserverActive = true
+    }
   }
 
   // Source capture is irreversible. A small bypass survives disable;
@@ -581,6 +627,8 @@ export function createLocalLoudnessController() {
     }
     disposed = true
     cleanupObserver.disconnect()
+    cleanupObserverActive = false
+    hasDetachedOwned = false
     lifetime.abort()
     for (const record of ownedConnected) record.source.disconnect()
     ownedConnected.clear()

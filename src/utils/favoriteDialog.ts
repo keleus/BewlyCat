@@ -193,28 +193,63 @@ export function initFavoriteDialogEnhancement() {
     observer.disconnect()
   }
 
+  const PLAYER_CONTAINER_SELECTOR = '.bpx-player-container, .bilibili-player'
+  const pendingDisabledContexts = new Set<HTMLElement>()
+  let markFoldersQueued = false
+
+  const flushDisabledFolders = () => {
+    markFoldersQueued = false
+    for (const context of pendingDisabledContexts) {
+      if (context.isConnected)
+        markFullDisabledFolders(context)
+    }
+    pendingDisabledContexts.clear()
+  }
+
+  const scheduleMarkDisabledFolders = (context: HTMLElement) => {
+    pendingDisabledContexts.add(context)
+    if (markFoldersQueued)
+      return
+    markFoldersQueued = true
+    queueMicrotask(flushDisabledFolders)
+  }
+
   // 创建 MutationObserver 监听 DOM 变化
   observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-      // 检查新增的节点
-      for (const node of Array.from(mutation.addedNodes)) {
-        if (node instanceof HTMLElement) {
-          // 检查是否是收藏弹窗或包含收藏弹窗
-          const dialog = node.classList?.contains('collection-m-exp')
-            ? node
-            : node.querySelector?.('.collection-m-exp')
+      if (mutation.addedNodes.length === 0)
+        continue
+      // 跳过播放器内部高频弹幕与控件变更，收藏弹窗不会挂载在播放器内。
+      if (mutation.target instanceof Element && mutation.target.closest(PLAYER_CONTAINER_SELECTOR))
+        continue
 
+      // 检查新增的节点
+      for (let i = 0; i < mutation.addedNodes.length; i++) {
+        const node = mutation.addedNodes[i]
+        if (!(node instanceof HTMLElement))
+          continue
+
+        if (node.classList.contains('collection-m-exp')) {
+          // 延迟一点注入，确保弹窗内容已渲染
+          setTimeout(() => {
+            enhanceFavoriteDialog(node)
+          }, 100)
+          continue
+        }
+
+        // 收藏夹行异步渲染时补打灰色禁用标记（同批微任务合并）
+        const context = node.closest<HTMLElement>('.collection-m-exp')
+        if (context) {
+          scheduleMarkDisabledFolders(context)
+          continue
+        }
+
+        if (node.childElementCount > 0) {
+          const dialog = node.querySelector<HTMLElement>('.collection-m-exp')
           if (dialog) {
-            // 延迟一点注入，确保弹窗内容已渲染
             setTimeout(() => {
               enhanceFavoriteDialog(dialog)
             }, 100)
-          }
-
-          // 收藏夹行异步渲染时补打灰色禁用标记
-          const context = node.closest('.collection-m-exp')
-          if (context) {
-            markFullDisabledFolders(context)
           }
         }
       }
