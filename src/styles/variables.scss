@@ -190,6 +190,7 @@
 
   // 叠在已有饱和毛玻璃底衬之上的吸顶/吸底局部模糊层，仅保留模糊避免二次叠乘饱和度
   --bew-filter-glass-blur-1: blur(20px);
+  --bew-filter-glass-blur-2: blur(30px);
 
   // Apply this to the Bilibili icon if it is an image with the brand's original blue or pink color
   // Change it to glow effect to matches the user's theme color
@@ -493,6 +494,7 @@
   --bew-filter-glass-1: none;
   --bew-filter-glass-2: none;
   --bew-filter-glass-blur-1: none;
+  --bew-filter-glass-blur-2: none;
   --bew-shadow-edge-glow-1: 0 0 0 transparent;
   --bew-shadow-edge-glow-2: 0 0 0 transparent;
   --bew-fill-alt: var(--bew-content-solid);

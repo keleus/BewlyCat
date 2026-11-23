@@ -32,6 +32,7 @@ export function useAppearanceSettings() {
         element.style.removeProperty('--bew-filter-glass-1')
         element.style.removeProperty('--bew-filter-glass-2')
         element.style.removeProperty('--bew-filter-glass-blur-1')
+        element.style.removeProperty('--bew-filter-glass-blur-2')
       })
       return
     }
@@ -39,18 +40,21 @@ export function useAppearanceSettings() {
     const blurOnly1Value = `blur(${clampedValue}px)`
     const blur1Value = `${blurOnly1Value} saturate(180%)`
     const dialogBlur = clampedValue === 0 ? 0 : clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX
-    const blur2Value = `blur(${dialogBlur}px) saturate(180%)`
+    const blurOnly2Value = `blur(${dialogBlur}px)`
+    const blur2Value = `${blurOnly2Value} saturate(180%)`
 
     targets.forEach((element) => {
       if (Math.abs(clampedValue - DEFAULT_FROSTED_GLASS_BLUR_PX) < 0.01) {
         element.style.removeProperty('--bew-filter-glass-1')
         element.style.removeProperty('--bew-filter-glass-2')
         element.style.removeProperty('--bew-filter-glass-blur-1')
+        element.style.removeProperty('--bew-filter-glass-blur-2')
       }
       else {
         element.style.setProperty('--bew-filter-glass-1', blur1Value)
         element.style.setProperty('--bew-filter-glass-2', blur2Value)
         element.style.setProperty('--bew-filter-glass-blur-1', blurOnly1Value)
+        element.style.setProperty('--bew-filter-glass-blur-2', blurOnly2Value)
       }
     })
   }

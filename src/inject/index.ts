@@ -749,21 +749,16 @@ else if (shouldInitializePageScript) {
       id: 'bewly-comment-box-style',
       css: `
         /* 表情/@/图片等工具按钮与编辑框共用同一条适配边框（B 站原生为 var(--Ga1)） */
-        #editor:not(:hover):not(.active),
-        .tool-btn {
+        #editor:not(:hover):not(.active) {
           border-color: var(--bew-comment-box-border, var(--Ga1)) !important;
         }
 
-        /* 编辑框底色、边框与毛玻璃钩子：未设置时回落到原生样式，供视频页玻璃风格统一处理 */
+        /* 编辑框底色、边框、圆角与毛玻璃钩子：未设置时回落到原生样式，供视频页玻璃风格统一处理 */
         #editor {
+          border-radius: var(--bew-comment-box-radius, 6px) !important;
           -webkit-backdrop-filter: var(--_bew-box-filter, var(--bew-comment-box-filter, none));
           backdrop-filter: var(--_bew-box-filter, var(--bew-comment-box-filter, none));
-          box-shadow: var(--_bew-box-shadow, none);
-        }
-
-        .tool-btn {
-          -webkit-backdrop-filter: var(--_bew-box-filter, none);
-          backdrop-filter: var(--_bew-box-filter, none);
+          box-shadow: var(--_bew-box-shadow, var(--bew-comment-box-shadow, none));
         }
 
         #editor:not(:hover):not(.active) {
@@ -778,10 +773,67 @@ else if (shouldInitializePageScript) {
         #editor.active {
           background-color: var(--_bew-box-bg-active, var(--bew-comment-box-bg-active, var(--bg1))) !important;
           border-color: var(--bew-comment-box-border-active, var(--Ga2)) !important;
+          box-shadow: var(--_bew-box-shadow, var(--bew-comment-box-active-shadow, var(--bew-comment-box-shadow, none)));
+        }
+
+        .tool-btn {
+          background-color: var(--bew-comment-tool-btn-bg, var(--bg1)) !important;
+          border-color: var(--bew-comment-tool-btn-border, var(--bew-comment-box-border, var(--Ga1))) !important;
+          border-radius: var(--bew-comment-tool-btn-radius, 4px) !important;
+          -webkit-backdrop-filter: var(--_bew-box-filter, var(--bew-comment-tool-btn-filter, none));
+          backdrop-filter: var(--_bew-box-filter, var(--bew-comment-tool-btn-filter, none));
+          transition:
+            background-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
+            border-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
+            color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+        }
+
+        .tool-btn:hover:not(.disabled) {
+          background-color: var(--bew-comment-tool-btn-bg-hover, var(--bew-comment-tool-btn-bg, var(--bg1))) !important;
+          border-color: var(--bew-comment-tool-btn-border-hover, var(--bew-comment-box-border-hover, var(--Ga2))) !important;
+          color: var(--bew-text-1, var(--text1)) !important;
+        }
+
+        .tool-btn:active:not(.disabled) {
+          background-color: var(--bew-comment-tool-btn-bg-active, var(--bew-comment-tool-btn-bg-hover, var(--bg1))) !important;
+        }
+
+        .tool-btn:focus-visible {
+          outline: var(--bew-space-0-5, 2px) solid var(--bew-theme-color, #00aeec);
+          outline-offset: var(--bew-space-0-5, 2px);
+        }
+
+        #pub button {
+          border-radius: var(--bew-comment-pub-btn-radius, 4px) !important;
         }
 
         :is(#pub button, button[data-v-risk="fingerprint"]):not(:hover, :active, .active) {
           background-color: var(--bew-theme-color-60) !important;
+        }
+      `,
+    },
+    'bili-checkbox': {
+      id: 'bewly-comment-checkbox-style',
+      css: `
+        #input:not([checked]) #inner {
+          background-color: var(--bew-comment-checkbox-bg, var(--bg1_float)) !important;
+          border-color: var(--bew-comment-checkbox-border, var(--text4)) !important;
+          border-radius: var(--bew-comment-checkbox-radius, var(--bili-checkbox-border-radius, 2px));
+        }
+
+        #input:not([checked]) #inner:hover,
+        :host(:hover) #input:not([checked]) #inner {
+          background-color: var(--bew-comment-checkbox-bg-hover, var(--bew-comment-checkbox-bg, var(--bg1_float))) !important;
+          border-color: var(--bew-comment-checkbox-border-hover, var(--bili-checkbox-checked-color)) !important;
+        }
+
+        #input[checked] #inner {
+          border-radius: var(--bew-comment-checkbox-radius, var(--bili-checkbox-border-radius, 2px));
+        }
+
+        #input:has(input:focus-visible) {
+          outline: var(--bew-space-0-5, 2px) solid var(--bew-theme-color, #00aeec);
+          outline-offset: var(--bew-space-0-5, 2px);
         }
       `,
     },
@@ -4948,6 +5000,15 @@ else if (shouldInitializePageScript) {
               return
 
             ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
+            if (name === 'bili-comment-box') {
+              const checkboxPatch = COMMENT_SHADOW_STYLE_PATCHES['bili-checkbox']
+              if (checkboxPatch) {
+                root.querySelectorAll('bili-checkbox').forEach((checkbox: Element) => {
+                  if (checkbox.shadowRoot)
+                    ensureCommentShadowStyle(checkbox.shadowRoot, checkboxPatch.id, checkboxPatch.css)
+                })
+              }
+            }
             if (name === 'bili-comment-thread-renderer') {
               // 删除/屏蔽回复可能让楼层组件整体重绘，之前挂在其 shadow root
               // 内的 SVG 线条会随渲染结果一并被移除；重绘完成后从当前回复容器恢复。

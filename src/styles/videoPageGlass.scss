@@ -12,21 +12,17 @@ html.bewly-video-glass.bewly-design {
     display: none !important;
   }
 
-  // 未叠加全页毛玻璃底衬时保留完整毛玻璃（含饱和度），叠加全页底衬后仅保留模糊避免二次叠乘饱和度
-  --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 42%, transparent);
+  // 复用设置浮层的标准毛玻璃表面（--bew-elevated-alt + --bew-filter-glass-1），深色下自动跟随深色模式基准颜色，
+  // 关闭毛玻璃时随 --bew-content-opacity: 1 自动切回实底；叠加全页底衬后仅保留模糊避免二次叠乘饱和度。
+  --bew-video-glass-panel-bg: var(--bew-elevated-alt);
   --bew-video-glass-panel-filter: var(--bew-filter-glass-1);
   --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 72%, transparent);
   --bew-video-glass-sticky-filter: var(--bew-filter-glass-1);
   // 宽屏自适应抽屉滑入盖在视频画面（含 HDR 视频）上时提高底色不透明度，在保留毛玻璃质感的同时避免画面高亮穿透变透明
   --bew-video-glass-drawer-bg: color-mix(in oklab, var(--bew-content-solid) 82%, transparent);
   --bew-video-glass-drawer-filter: var(--bew-filter-glass-2);
-  --bew-video-glass-floating-input-bg: color-mix(in oklab, var(--bew-content-solid) 52%, transparent);
-  --bew-video-glass-floating-input-bg-hover: color-mix(in oklab, var(--bew-content-solid) 64%, transparent);
-
-  &.bewly-video-glass-overlay {
-    --bew-video-glass-panel-filter: var(--bew-filter-glass-blur-1);
-    --bew-video-glass-sticky-filter: var(--bew-filter-glass-blur-1);
-  }
+  --bew-video-glass-floating-input-bg: var(--bew-elevated-alt);
+  --bew-video-glass-floating-input-bg-hover: var(--bew-elevated-alt-hover);
 
   &:not(.dark) {
     // 浅色毛玻璃下原站浅灰 token（#9499a0 / #c9ccd0 / #e3e5e7）在透色底衬上会发淡或反白；
@@ -40,6 +36,7 @@ html.bewly-video-glass.bewly-design {
     --bew-border-color: rgb(24 25 28 / 14%);
     --bew-comment-tree-line-color: rgb(24 25 28 / 24%);
     --bew-ip-tag-text: var(--bew-text-2);
+    --bew-video-glass-floating-input-bg-hover: var(--bew-content);
 
     body {
       --text1: var(--bew-text-1);
@@ -56,39 +53,67 @@ html.bewly-video-glass.bewly-design {
       --graph_medium: rgb(24 25 28 / 34%);
       --graph_bold: rgb(24 25 28 / 50%);
       --graph_icon: var(--bew-text-2);
+
+      // 浅色玻璃下的评论输入框、工具按钮与勾选框复用设置毛玻璃底色，悬停/激活态提亮至透白避免偏灰发闷
+      --bew-comment-box-bg-hover: var(--bew-content);
+      --bew-comment-box-bg-active: color-mix(in oklab, var(--bew-content-solid) 35%, var(--bew-content));
+      --bew-comment-box-border-hover: color-mix(in oklab, var(--bew-text-1) 22%, transparent);
+      --bew-comment-box-border-active: var(--bew-theme-color-60);
+      --bew-comment-checkbox-border: color-mix(in oklab, var(--bew-text-1) 28%, transparent);
     }
   }
 
   &.dark {
-    --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 38%, transparent);
     --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 76%, transparent);
     --bew-video-glass-drawer-bg: color-mix(in oklab, var(--bew-content-solid) 80%, transparent);
-    --bew-video-glass-floating-input-bg: color-mix(in oklab, var(--bew-content-solid) 48%, transparent);
-    --bew-video-glass-floating-input-bg-hover: color-mix(in oklab, var(--bew-content-solid) 60%, transparent);
+  }
+
+  &.bewly-video-glass-overlay {
+    --bew-video-glass-panel-filter: var(--bew-filter-glass-blur-1);
+    --bew-video-glass-sticky-filter: var(--bew-filter-glass-blur-1);
+    --bew-video-glass-drawer-bg: var(--bew-content);
   }
 
   &.disable-frosted-glass {
-    --bew-video-glass-panel-bg: color-mix(in oklab, var(--bew-content-solid) 52%, transparent);
     --bew-video-glass-panel-filter: none;
     --bew-video-glass-sticky-bg: var(--bew-content-solid);
     --bew-video-glass-sticky-filter: none;
     --bew-video-glass-drawer-bg: var(--bew-content-solid);
     --bew-video-glass-drawer-filter: none;
-    --bew-video-glass-floating-input-bg: var(--bew-content-solid);
-    --bew-video-glass-floating-input-bg-hover: var(--bew-content-solid-hover);
   }
 
   body {
     // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
     --bew-comment-tree-node-bg: var(--bew-bg);
-    // 评论编辑框、投票卡与吸底栏（Shadow DOM 内，钩子见 inject/index.ts）统一为同色系半透明与局部模糊
-    --bew-comment-box-bg: var(--bew-fill-1);
-    --bew-comment-box-bg-hover: var(--bew-fill-2);
-    --bew-comment-box-bg-active: var(--bew-fill-2);
+    // 评论编辑框、工具按钮、勾选框、投票卡与吸底栏（Shadow DOM 内，钩子见 inject/index.ts）复用设置毛玻璃表面，
+    // 深色下随 --bew-dark-base-color 联动，关闭毛玻璃时随 --bew-content-opacity 自动转为实底。
+    --bew-comment-box-bg: var(--bew-video-glass-panel-bg);
+    --bew-comment-box-bg-hover: var(--bew-elevated-alt-hover);
+    --bew-comment-box-bg-active: color-mix(
+      in oklab,
+      var(--bew-elevated-solid-hover) 35%,
+      var(--bew-elevated-alt-hover)
+    );
     --bew-comment-box-border: var(--bew-border-color);
     --bew-comment-box-border-hover: var(--bew-border-color);
-    --bew-comment-box-border-active: var(--bew-theme-color-40);
+    --bew-comment-box-border-active: var(--bew-theme-color-50);
+    --bew-comment-box-radius: var(--bew-radius-md);
+    --bew-comment-box-shadow: var(--bew-shadow-edge-glow-1);
+    --bew-comment-box-active-shadow: var(--bew-shadow-edge-glow-1), 0 0 0 2px var(--bew-theme-color-10);
     --bew-comment-box-filter: var(--bew-video-glass-panel-filter);
+    --bew-comment-tool-btn-bg: var(--bew-comment-box-bg);
+    --bew-comment-tool-btn-bg-hover: var(--bew-comment-box-bg-hover);
+    --bew-comment-tool-btn-bg-active: var(--bew-comment-box-bg-active);
+    --bew-comment-tool-btn-border: var(--bew-border-color);
+    --bew-comment-tool-btn-border-hover: var(--bew-comment-box-border-hover);
+    --bew-comment-tool-btn-radius: var(--bew-radius-half);
+    --bew-comment-tool-btn-filter: var(--bew-comment-box-filter);
+    --bew-comment-checkbox-bg: var(--bew-comment-box-bg);
+    --bew-comment-checkbox-bg-hover: var(--bew-comment-box-bg-hover);
+    --bew-comment-checkbox-border: color-mix(in oklab, var(--bew-text-1) 26%, transparent);
+    --bew-comment-checkbox-border-hover: var(--bew-theme-color);
+    --bew-comment-checkbox-radius: var(--bew-radius-sm);
+    --bew-comment-pub-btn-radius: var(--bew-radius-half);
     --bew-comment-vote-card-bg: var(--bew-fill-1);
     --bew-comment-vote-card-bg-hover: var(--bew-fill-2);
     --bew-comment-vote-card-border: var(--bew-border-color);
@@ -102,15 +127,16 @@ html.bewly-video-glass.bewly-design {
     --bew-comment-bottom-fixed-shadow: none;
     --bew-comment-bottom-fixed-box-bg: var(--bew-video-glass-floating-input-bg);
     --bew-comment-bottom-fixed-box-bg-hover: var(--bew-video-glass-floating-input-bg-hover);
-    --bew-comment-bottom-fixed-box-bg-active: var(--bew-video-glass-floating-input-bg-hover);
+    --bew-comment-bottom-fixed-box-bg-active: var(--bew-comment-box-bg-active);
     --bew-comment-bottom-fixed-box-filter: var(--bew-video-glass-sticky-filter);
     --bew-comment-bottom-fixed-box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
-    --bew-comment-bottom-fixed-active-bg: var(--bew-content);
+    --bew-comment-bottom-fixed-active-bg: var(--bew-elevated-alt);
     --bew-comment-bottom-fixed-active-filter: var(--bew-video-glass-sticky-filter);
     --bew-comment-bottom-fixed-active-border: var(--bew-border-color);
     --bew-comment-bottom-fixed-active-radius: var(--bew-panel-radius) var(--bew-panel-radius) 0 0;
     --bew-comment-bottom-fixed-active-shadow:
-      inset 1px 0 0 var(--bew-border-color), inset -1px 0 0 var(--bew-border-color), var(--bew-shadow-2);
+      inset 1px 0 0 var(--bew-border-color), inset -1px 0 0 var(--bew-border-color), var(--bew-shadow-edge-glow-1),
+      var(--bew-shadow-2);
     --bew-comment-sticky-footer-bg: var(--bew-video-glass-sticky-bg);
     --bew-comment-sticky-footer-filter: var(--bew-video-glass-sticky-filter);
     --bew-comment-tag-color: var(--bew-text-2);
@@ -131,7 +157,6 @@ html.bewly-video-glass.bewly-design {
     .rec-footer,
     .activity-m-v1,
     .video-argue .video-argue-inner.general,
-    :is(.bb-comment, .comment-bilibili-fold) :is(.comment-send, .comment-send-lite) .textarea-container .ipt-txt,
     [class*="upinfo_upInfoCard"],
     [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
       [class*="rankList_sp_right"]
@@ -158,6 +183,13 @@ html.bewly-video-glass.bewly-design {
     .activity-m-v1,
     .video-argue .video-argue-inner.general {
       border-color: transparent !important;
+    }
+
+    // 旧版评论输入框与新版评论框共用同套设置毛玻璃底色、边框与内发光状态
+    :is(.bb-comment, .comment-bilibili-fold) :is(.comment-send, .comment-send-lite) .textarea-container .ipt-txt {
+      background: var(--bew-comment-box-bg) !important;
+      border-color: var(--bew-comment-box-border) !important;
+      box-shadow: var(--bew-comment-box-shadow) !important;
     }
 
     // UP 主操作按钮：描边「充电」按钮去白底融入玻璃，「已关注/已追番」改为同色系半透明胶囊，「+ 关注」保留主题色实底
@@ -196,12 +228,22 @@ html.bewly-video-glass.bewly-design {
       backdrop-filter: var(--bew-comment-box-filter);
     }
 
-    .bpx-player-video-inputbar:focus-within,
+    .bpx-player-video-inputbar:is(:hover, :focus-within) {
+      background: var(--bew-fill-2) !important;
+    }
+
     :is(.bb-comment, .comment-bilibili-fold)
       :is(.comment-send, .comment-send-lite)
       .textarea-container:is(:hover, .focus)
       .ipt-txt {
-      background: var(--bew-fill-2) !important;
+      background: var(--bew-comment-box-bg-hover) !important;
+      border-color: var(--bew-comment-box-border-hover) !important;
+    }
+
+    :is(.bb-comment, .comment-bilibili-fold) :is(.comment-send, .comment-send-lite) .textarea-container .ipt-txt:focus {
+      background: var(--bew-comment-box-bg-active) !important;
+      border-color: var(--bew-comment-box-border-active) !important;
+      box-shadow: var(--bew-comment-box-active-shadow) !important;
     }
 
     .tag-panel .tag-link:hover,
@@ -293,7 +335,9 @@ html.bewly-video-glass.bewly-design {
     .playlist-app .action-list-container {
       background: var(--bew-video-glass-panel-bg) !important;
       border-radius: var(--bew-radius-md);
-      box-shadow: inset 0 0 0 1px var(--bew-border-color) !important;
+      box-shadow:
+        inset 0 0 0 1px var(--bew-border-color),
+        var(--bew-shadow-edge-glow-1) !important;
       -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
       backdrop-filter: var(--bew-video-glass-panel-filter);
     }
@@ -309,7 +353,8 @@ html.bewly-video-glass.bewly-design {
       box-shadow:
         inset 1px 0 0 var(--bew-border-color),
         inset -1px 0 0 var(--bew-border-color),
-        inset 0 -1px 0 var(--bew-border-color) !important;
+        inset 0 -1px 0 var(--bew-border-color),
+        var(--bew-shadow-edge-glow-1) !important;
       -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
       backdrop-filter: var(--bew-video-glass-panel-filter);
     }
@@ -337,6 +382,7 @@ html.bewly-video-glass.bewly-design {
     .bewly-widescreen-danmaku-dock {
       background: var(--bew-video-glass-panel-bg) !important;
       border-top: 1px solid var(--bew-border-color);
+      box-shadow: var(--bew-shadow-edge-glow-1);
       -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
       backdrop-filter: var(--bew-video-glass-panel-filter);
 
@@ -349,34 +395,39 @@ html.bewly-video-glass.bewly-design {
     &[data-sidebar-mode="fit"]:not([data-sidebar-full="true"]):not([data-sidebar-custom-width="true"]):not(
         [data-wide-video-priority="true"]
       ) {
-      // 自适应抽屉背后已有 stage::before 的整体毛玻璃，内部输入框无需二次采样
+      // 自适应抽屉背后已有 stage::before/::after 的整体毛玻璃，内部输入框无需二次采样
       --bew-comment-box-filter: none;
-      --bewly-widescreen-sidebar-bg: var(--bew-video-glass-drawer-bg);
       --bew-comment-sticky-footer-bg: var(--bewly-widescreen-sidebar-bg);
 
-      .bewly-widescreen-stage::before {
-        content: "";
+      .bewly-widescreen-stage::before,
+      .bewly-widescreen-stage::after {
         position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
         z-index: 2001;
         width: var(--bewly-widescreen-sidebar-panel-width);
-        background: var(--bew-video-glass-drawer-bg);
-        -webkit-backdrop-filter: var(--bew-video-glass-drawer-filter);
-        backdrop-filter: var(--bew-video-glass-drawer-filter);
         transform: translateX(var(--bewly-widescreen-sidebar-offset));
         transition: transform 180ms ease;
         will-change: transform;
         pointer-events: none;
       }
 
-      &[data-sidebar-position="left"] .bewly-widescreen-stage::before {
+      .bewly-widescreen-stage::before {
+        content: "";
+        background: var(--bew-video-glass-drawer-bg);
+        -webkit-backdrop-filter: var(--bew-video-glass-drawer-filter);
+        backdrop-filter: var(--bew-video-glass-drawer-filter);
+      }
+
+      &[data-sidebar-position="left"] .bewly-widescreen-stage::before,
+      &[data-sidebar-position="left"] .bewly-widescreen-stage::after {
         left: 0;
         right: auto;
       }
 
-      &[data-sidebar-expanded="true"] .bewly-widescreen-stage::before {
+      &[data-sidebar-expanded="true"] .bewly-widescreen-stage::before,
+      &[data-sidebar-expanded="true"] .bewly-widescreen-stage::after {
         transform: translateX(0);
       }
     }
@@ -413,6 +464,20 @@ html.bewly-video-glass.bewly-design {
         background: var(--bew-content-hover);
       }
     }
+  }
+
+  // 开启「优化视频页玻璃文字显示」时，在宽屏自适应抽屉上同步补充第二层毛玻璃可读性底衬（stage::after），
+  // 弥补底层 .bewly-video-page-background--overlay（z-index: 999）位于宽屏播放器后方无法覆盖视频画面的缺口，
+  // 同时通过二次模糊显著改善 HDR 视频硬件层对单层 backdrop-filter 的削弱。
+  &.bewly-video-glass-overlay:not(.disable-frosted-glass)
+    #bewly-widescreen-root[data-sidebar-mode="fit"]:not([data-sidebar-full="true"]):not(
+      [data-sidebar-custom-width="true"]
+    ):not([data-wide-video-priority="true"])
+    .bewly-widescreen-stage::after {
+    content: "";
+    background: color-mix(in oklab, var(--bew-bg) calc(var(--bew-content-opacity) * 74%), transparent);
+    -webkit-backdrop-filter: var(--bew-filter-glass-blur-2);
+    backdrop-filter: var(--bew-filter-glass-blur-2);
   }
 
   #bewly-widescreen-loading {
