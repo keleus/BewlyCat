@@ -1,6 +1,13 @@
 // 网页全屏时播放器层级盖过顶栏（z-index: 999），与普通视频页表现一致。
-// 此规则不依赖页面样式适配开关，确保仅启用 Bewly 顶栏时也能生效。
-html.animePlaybackAndMoviePage .plp-player:has([class*="video_playerFullScreen"]) {
+// 此规则不依赖页面样式适配开关，确保仅启用 Bewly 顶栏时也能生效；
+// 避免在 :has() 内使用 [class*="..."]，防止在全站合并样式表中把所有 class 变更纳入 :has() 失效集。
+html.animePlaybackAndMoviePage
+  .plp-player:has(
+    [data-screen="web"],
+    [data-screen="full"],
+    .squirtle-video-pagefullscreen.bpx-state-entered,
+    .squirtle-video-fullscreen.bpx-state-entered
+  ) {
   z-index: 100000;
 }
 

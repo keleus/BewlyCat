@@ -146,7 +146,6 @@ html.bewly-video-glass.bewly-design {
     background-color: transparent !important;
 
     @include surfaces.transparent-video-page-surfaces;
-    @include surfaces.transparent-bangumi-page-surfaces;
     @include surfaces.transparent-player-sending-area;
 
     // 原生实色控件（多为写死的 #f1f2f3 / #f6f7f8 / #e3e5e7）改用插件的半透明填充，与玻璃底融合
@@ -156,33 +155,10 @@ html.bewly-video-glass.bewly-design {
     .random-play-order-select,
     .rec-footer,
     .activity-m-v1,
-    .video-argue .video-argue-inner.general,
-    [class*="upinfo_upInfoCard"],
-    [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
-      [class*="rankList_sp_right"]
-      [class*="rankList_sp_msg"],
-    .sponsor-rank-item.pos-rank-module .sp-right .sp-msg,
-    :is(.main-container, #bewly-widescreen-root) .review-module .review-list .review-item .review-body,
-    :is(.main-container, #bewly-widescreen-root) .season-list .ss-list-wrapper .expand-more,
-    :is(.main-container, #bewly-widescreen-root) .media-info .media-right .media-tool-bar .btn-rating,
-    :is(.main-container, #bewly-widescreen-root)
-      .ep-list-wrapper
-      .list-wrapper.simple
-      ul
-      .ep-item:not(.cursor):not(:hover) {
-      background: var(--bew-fill-1) !important;
-      border-color: var(--bew-border-color) !important;
-      box-shadow: none !important;
-    }
-
-    .bpx-player-video-inputbar,
-    .tag-panel .tag-link,
-    .video-tag-container .show-more-btn,
-    .random-play-order-select,
-    .rec-footer,
-    .activity-m-v1,
     .video-argue .video-argue-inner.general {
+      background: var(--bew-fill-1) !important;
       border-color: transparent !important;
+      box-shadow: none !important;
     }
 
     // 旧版评论输入框与新版评论框共用同套设置毛玻璃底色、边框与内发光状态
@@ -207,8 +183,7 @@ html.bewly-video-glass.bewly-design {
       }
     }
 
-    .upinfo-btn-panel > :is(.follow-btn, .btn-follow-up):not(.not-follow),
-    [class*="follow_btnFollow"][class*="follow_followed"] {
+    .upinfo-btn-panel > :is(.follow-btn, .btn-follow-up):not(.not-follow) {
       background: var(--bew-fill-1) !important;
       box-shadow: none !important;
 
@@ -271,6 +246,52 @@ html.bewly-video-glass.bewly-design {
       background-color: var(--bew-theme-color-10) !important;
     }
 
+    // 右下角原生悬浮按钮（视频页）浮在内容上，改为与 Dock 一致的毛玻璃
+    .fixed-sidenav-storage-item {
+      background: var(--bew-content) !important;
+      border-color: var(--bew-border-color) !important;
+      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1) !important;
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
+      backdrop-filter: var(--bew-filter-glass-1);
+    }
+
+    .fixed-sidenav-storage-item:hover {
+      background: var(--bew-content-hover) !important;
+    }
+  }
+
+  // 番剧/电影播放页专用穿透与适配规则限定在 animePlaybackAndMoviePage 下，
+  // 避免普通视频页在超长合集节点上遍历番剧专属 [class*="..."] 选择器。
+  &.animePlaybackAndMoviePage body {
+    @include surfaces.transparent-bangumi-page-surfaces;
+
+    [class*="upinfo_upInfoCard"],
+    [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
+      [class*="rankList_sp_right"]
+      [class*="rankList_sp_msg"],
+    .sponsor-rank-item.pos-rank-module .sp-right .sp-msg,
+    :is(.main-container, #bewly-widescreen-root) .review-module .review-list .review-item .review-body,
+    :is(.main-container, #bewly-widescreen-root) .season-list .ss-list-wrapper .expand-more,
+    :is(.main-container, #bewly-widescreen-root) .media-info .media-right .media-tool-bar .btn-rating,
+    :is(.main-container, #bewly-widescreen-root)
+      .ep-list-wrapper
+      .list-wrapper.simple
+      ul
+      .ep-item:not(.cursor):not(:hover) {
+      background: var(--bew-fill-1) !important;
+      border-color: var(--bew-border-color) !important;
+      box-shadow: none !important;
+    }
+
+    [class*="follow_btnFollow"][class*="follow_followed"] {
+      background: var(--bew-fill-1) !important;
+      box-shadow: none !important;
+
+      &:hover {
+        background: var(--bew-fill-2) !important;
+      }
+    }
+
     // 番剧数字选集格子（选中态保留主题色底）
     [class*="numberListItem_number_list_item"]:not([class*="numberListItem_select"]) {
       --bg1: var(--bew-fill-1);
@@ -280,8 +301,6 @@ html.bewly-video-glass.bewly-design {
       }
     }
 
-    // 右下角原生悬浮按钮（视频页与番剧页新旧版）浮在内容上，改为与 Dock 一致的毛玻璃
-    .fixed-sidenav-storage-item,
     [class*="navTools_navItem"],
     [class*="navTools_toolItem"],
     .main-container .nav-tools .tool-item:not(:hover) {
@@ -292,7 +311,6 @@ html.bewly-video-glass.bewly-design {
       backdrop-filter: var(--bew-filter-glass-1);
     }
 
-    .fixed-sidenav-storage-item:hover,
     [class*="navTools_navItem"]:hover,
     [class*="navTools_toolItem"]:hover {
       background: var(--bew-content-hover) !important;
@@ -327,11 +345,6 @@ html.bewly-video-glass.bewly-design {
     .multi-page:not(:has(.multi-page-v1)),
     .base-video-sections-v1,
     .video-sections-v1:not(.base-video-sections-v1 *),
-    [class*="eplist_ep_list_wrapper"],
-    [class*="PaginatedEpList_root"],
-    [class*="SectionPanel_panel"]:not([class*="PaginatedEpList_root"] *),
-    .main-container .ep-list-wrapper,
-    .ep-section-module:not(.ep-list-wrapper *),
     .playlist-app .action-list-container {
       background: var(--bew-video-glass-panel-bg) !important;
       border-radius: var(--bew-radius-md);
@@ -354,6 +367,22 @@ html.bewly-video-glass.bewly-design {
         inset 1px 0 0 var(--bew-border-color),
         inset -1px 0 0 var(--bew-border-color),
         inset 0 -1px 0 var(--bew-border-color),
+        var(--bew-shadow-edge-glow-1) !important;
+      -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
+      backdrop-filter: var(--bew-video-glass-panel-filter);
+    }
+  }
+
+  &.animePlaybackAndMoviePage body:not(.bewly-widescreen-active) {
+    [class*="eplist_ep_list_wrapper"],
+    [class*="PaginatedEpList_root"],
+    [class*="SectionPanel_panel"]:not([class*="PaginatedEpList_root"] *),
+    .main-container .ep-list-wrapper,
+    .ep-section-module:not(.ep-list-wrapper *) {
+      background: var(--bew-video-glass-panel-bg) !important;
+      border-radius: var(--bew-radius-md);
+      box-shadow:
+        inset 0 0 0 1px var(--bew-border-color),
         var(--bew-shadow-edge-glow-1) !important;
       -webkit-backdrop-filter: var(--bew-video-glass-panel-filter);
       backdrop-filter: var(--bew-video-glass-panel-filter);

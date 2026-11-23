@@ -56,6 +56,7 @@ interface BewlyWidescreenState {
   sidebarResizeCleanup?: () => void
   descriptionCleanup?: () => void
   escapeKeyCleanup?: () => void
+  followMenuObserver?: MutationObserver
   detailsHeight: number
   descriptionExpanded: boolean
 }
@@ -2087,7 +2088,8 @@ function injectLayoutStyle() {
       display: none;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot:has([class*="mediainfo_mediaInfoWrap"]) {
+    /* 避免在 :has() 内使用 [class*="..."]，防止浏览器把全页 class 变更纳入文档级 :has() 失效集。 */
+    html.animePlaybackAndMoviePage #${ROOT_ID} .bewly-widescreen-info-slot {
       overflow: visible;
     }
 
@@ -2192,8 +2194,8 @@ function injectLayoutStyle() {
       width: 100% !important;
     }
 
-    /* 订阅状态菜单展开时越过下方选集/评论面板，关闭后恢复原层级。 */
-    #${ROOT_ID} .bewly-widescreen-sidebar-details:has([class*="follow_followOptions"][class*="follow_shown"]) {
+    /* 订阅状态菜单展开时越过下方选集/评论面板，关闭后恢复原层级（由 JS 同步，避免 :has([class*="..."])）。 */
+    #${ROOT_ID} .bewly-widescreen-sidebar-details[data-follow-menu-open="true"] {
       z-index: 4;
     }
 
@@ -3508,14 +3510,16 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     if (currentState.root.dataset.sidebarEdgeReveal !== 'true')
       return false
 
-    const rect = currentState.root.getBoundingClientRect()
-    if (!isPointInRect(event, rect))
+    // 根节点固定铺满视口（position: fixed; inset: 0），直接用视口尺寸判定，避免每次 pointermove 触发同步布局。
+    const width = window.innerWidth
+    const height = window.innerHeight
+    if (event.clientX < 0 || event.clientX > width || event.clientY < 0 || event.clientY > height)
       return false
 
     // 给窗口边缘保留 2px 的命中容差，不额外占用视频或侧栏空间。
     return currentState.sidebarPosition === 'left'
-      ? event.clientX <= rect.left + 2
-      : event.clientX >= rect.right - 2
+      ? event.clientX <= 2
+      : event.clientX >= width - 2
   }
 
   function expandSidebar(event?: PointerEvent) {
@@ -3858,6 +3862,25 @@ function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
   })
 
   currentState.mutationObserver.observe(document.body, { childList: true, subtree: true })
+
+  // 番剧页追番菜单展开态仅监听信息槽，避免用 CSS :has([class*="..."]) 污染全页 class 失效集。
+  if (document.documentElement.classList.contains('animePlaybackAndMoviePage')) {
+    const syncFollowMenuOpen = () => {
+      const open = Boolean(currentState.infoSlot.querySelector('[class*="follow_followOptions"][class*="follow_shown"]'))
+      if (open)
+        currentState.sidebarDetails.dataset.followMenuOpen = 'true'
+      else
+        delete currentState.sidebarDetails.dataset.followMenuOpen
+    }
+    syncFollowMenuOpen()
+    currentState.followMenuObserver = new MutationObserver(syncFollowMenuOpen)
+    currentState.followMenuObserver.observe(currentState.infoSlot, {
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+      subtree: true,
+    })
+  }
 }
 
 function moveDanmakuInput(currentState: BewlyWidescreenState) {
@@ -4172,6 +4195,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
   currentState.mutationObserver?.disconnect()
+  currentState.followMenuObserver?.disconnect()
   currentState.descriptionCleanup?.()
   clearPlayerResizeSync(currentState)
   clearSidebarRefreshTimer()

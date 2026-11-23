@@ -74,7 +74,9 @@ export class AmbilightEngine {
   private scrollRafId: number | null = null
   private hostDocumentLeft = 0
   private hostDocumentTop = 0
+  private hostSized = false
   private isViewportLocked = false
+  private videoResizeObserver: ResizeObserver | null = null
   private lastBackdropSampleTime = 0
   private backdropSampleTimer: ReturnType<typeof setTimeout> | null = null
   private backdropProbe: AmbilightBackdropProbe | null
@@ -249,6 +251,7 @@ export class AmbilightEngine {
     this.layout = null
     this.hostDocumentLeft = 0
     this.hostDocumentTop = 0
+    this.hostSized = false
     this.setViewportLocked(false)
     this.layoutDirty = true
     this.resetDiffusionField()
@@ -313,7 +316,7 @@ export class AmbilightEngine {
     host.className = 'bewly-ambilight-host is-pending'
     host.setAttribute('aria-hidden', 'true')
     // 文档层：尺寸覆盖整篇文档并裁剪，画布用文档坐标绝对定位；浏览器滚动时原生移动。
-    host.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none!important;z-index:-1;overflow:hidden;'
+    host.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none!important;z-index:-1;overflow:hidden;contain:layout style;'
 
     const canvas = document.createElement('canvas')
     canvas.width = SAMPLE_WIDTH
@@ -398,9 +401,24 @@ export class AmbilightEngine {
     this.video.addEventListener('timeupdate', this.onVideoTimeUpdate)
     this.video.addEventListener('loadedmetadata', this.onVideoMetadataOrResize)
     this.video.addEventListener('resize', this.onVideoMetadataOrResize)
+    if (typeof ResizeObserver !== 'undefined') {
+      this.videoResizeObserver?.disconnect()
+      this.videoResizeObserver = new ResizeObserver(([entry]) => {
+        if (!this.layout || !entry)
+          return
+        const { width, height } = entry.contentRect
+        if (Math.abs(width - this.layout.videoRectWidth) >= 0.5
+          || Math.abs(height - this.layout.videoRectHeight) >= 0.5) {
+          this.invalidate()
+        }
+      })
+      this.videoResizeObserver.observe(this.video)
+    }
   }
 
   private unbindVideoEvents() {
+    this.videoResizeObserver?.disconnect()
+    this.videoResizeObserver = null
     if (!this.video)
       return
 
@@ -458,14 +476,10 @@ export class AmbilightEngine {
     if (this.hostElem.style.clipPath)
       this.hostElem.style.clipPath = ''
 
+    const wasViewportLocked = this.isViewportLocked
     const shouldLock = this.isVideoViewportAnchored()
     this.setViewportLocked(shouldLock)
-    if (!this.isViewportLocked) {
-      this.resizeHostToDocument()
-      const hostRect = this.hostElem.getBoundingClientRect()
-      this.hostDocumentLeft = hostRect.left + window.scrollX
-      this.hostDocumentTop = hostRect.top + window.scrollY
-    }
+    const lockChanged = wasViewportLocked !== this.isViewportLocked
 
     const glowBlur = this.usesDiffusion() ? 0 : this.options.blur
     const effectiveSpread = this.getEffectiveSpread()
@@ -494,10 +508,15 @@ export class AmbilightEngine {
     ].join(':')
 
     if (this.layout?.signature === signature) {
+      if (!this.isViewportLocked && !lockChanged && !this.hostSized)
+        this.resizeHostToDocument()
       this.applyCanvasPosition(r, true)
       this.setSleeping(false)
       return
     }
+
+    if (!this.isViewportLocked && !lockChanged)
+      this.resizeHostToDocument()
 
     const documentContentLeft = content.left + window.scrollX
     const documentContentTop = content.top + window.scrollY
@@ -539,11 +558,16 @@ export class AmbilightEngine {
     if (!host)
       return
 
-    // 宿主自身也计入 scrollHeight，先收起再测量，否则文档内容变短后滚动区域无法回缩
+    // 宿主自身也计入 scrollHeight，先收起再测量，否则文档内容变短后滚动区域无法回缩；
+    // 在同一次布局读阶段一并读取 hostRect，避免写入高度后再次强制同步重排。
     host.style.height = '0px'
     const height = Math.max(document.documentElement.scrollHeight, window.innerHeight)
+    const hostRect = host.getBoundingClientRect()
+    this.hostDocumentLeft = hostRect.left + window.scrollX
+    this.hostDocumentTop = hostRect.top + window.scrollY
     host.style.width = '100%'
     host.style.height = `${height}px`
+    this.hostSized = true
   }
 
   // 检测视频祖先是否处于 fixed 或已触发吸顶/吸底停驻的 sticky 状态。
@@ -580,13 +604,11 @@ export class AmbilightEngine {
       host.style.position = 'fixed'
       host.style.width = '100%'
       host.style.height = '100%'
+      this.hostSized = false
     }
     else {
       host.style.position = 'absolute'
       this.resizeHostToDocument()
-      const hostRect = host.getBoundingClientRect()
-      this.hostDocumentLeft = hostRect.left + window.scrollX
-      this.hostDocumentTop = hostRect.top + window.scrollY
     }
   }
 

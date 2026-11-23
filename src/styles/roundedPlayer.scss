@@ -2,8 +2,9 @@
 // 全屏、网页全屏、小窗与 Bewly 宽屏保持直角；#bilibili-player 限定主播放器，不影响卡片悬浮预览。
 @use "./videoPageSurfaces" as surfaces;
 
+// 避免在 :has() 内使用 [class*="..."]，防止浏览器将全部 class 变更纳入文档级 :has() 失效集。
 $normal-screen-player: '#bilibili-player .bpx-player-container:not(:fullscreen):not([data-screen="full"]):not([data-screen="web"]):not([data-screen="mini"])';
-$normal-screen-wrap: ':is(.player-wrap, #playerWrap, #bilibili-player-wrap:not(:is(.player-wrap, #playerWrap) *)):has(#bilibili-player):not(:has([data-screen="full"], [data-screen="web"], [data-screen="mini"], [class*="video_playerFullScreen"]))';
+$normal-screen-wrap: ':is(.player-wrap, #playerWrap, #bilibili-player-wrap:not(:is(.player-wrap, #playerWrap) *)):has(#bilibili-player):not(:has([data-screen="full"], [data-screen="web"], [data-screen="mini"], .squirtle-video-pagefullscreen.bpx-state-entered, .squirtle-video-fullscreen.bpx-state-entered))';
 
 html.rounded-video-player {
   body:not(.bewly-widescreen-active) {
@@ -75,7 +76,13 @@ html.rounded-video-player {
     @include surfaces.transparent-player-placeholders;
 
     #bilibili-player-wrap:not(
-        :has([data-screen="full"], [data-screen="web"], [data-screen="mini"], [class*="video_playerFullScreen"])
+        :has(
+          [data-screen="full"],
+          [data-screen="web"],
+          [data-screen="mini"],
+          .squirtle-video-pagefullscreen.bpx-state-entered,
+          .squirtle-video-fullscreen.bpx-state-entered
+        )
       )
       :is(
         .video_playerInner,
@@ -83,7 +90,7 @@ html.rounded-video-player {
         [class*="NanoPlayer_nonoPlayerContainer"],
         [class*="NanoPlayer_nonoPlayerPrimaryArea"],
         [class*="NanoPlayer_nanoDocker"]
-      ) {
+      ):not([class*="video_playerFullScreen"]) {
       background: transparent !important;
       box-shadow: none !important;
     }
