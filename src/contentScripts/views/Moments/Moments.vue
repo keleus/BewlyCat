@@ -88,9 +88,29 @@ interface MomentsPortalUser {
   }
 }
 
-interface MomentsSidebarLiveUser {
-  roomid: number
+interface MomentsPortalLiveUser {
+  mid?: string | number
+  room_id?: string | number
+  jump_url?: string
+  face?: string
+  uname?: string
+  title?: string
+}
+
+interface MomentsTopBarLiveUser {
+  roomid?: number | string
+  uid?: number | string
   link?: string
+  face?: string
+  uname?: string
+  title?: string
+}
+
+interface MomentsSidebarLiveUser {
+  key: string
+  roomId?: string
+  mid?: string
+  link: string
   face: string
   uname: string
   title: string
@@ -101,7 +121,7 @@ interface MomentsSidebarLiveResult {
   data?: {
     results?: number | string
     pagesize?: number | string
-    list?: MomentsSidebarLiveUser[] | null
+    list?: MomentsTopBarLiveUser[] | null
   }
 }
 
@@ -130,6 +150,10 @@ interface MomentsPortalResult {
   code: number
   data?: {
     my_info?: MomentsPortalUser
+    live_users?: {
+      count?: number | string
+      items?: MomentsPortalLiveUser[] | null
+    }
     /** 真实接口为 { has_more, items }；兼容历史数组形态 */
     up_list?: MomentsPortalUpList | MomentsPortalUpListItem[]
   }
@@ -153,9 +177,11 @@ const momentFilters = computed<Array<{ value: MomentFilter, label: string }>>(()
 ])
 const activeMomentFilter = ref<MomentFilter>('all')
 const portalUser = ref<MomentsPortalUser | null>(null)
-const sidebarLiveUsers = shallowRef<MomentsSidebarLiveUser[]>([])
+const portalLiveUsers = shallowRef<MomentsSidebarLiveUser[]>([])
+const portalLiveCount = ref<number>()
+const supplementLiveUsers = shallowRef<MomentsSidebarLiveUser[]>([])
+const supplementLiveTotal = ref<number>()
 const sidebarLiveViewportRef = ref<HTMLElement | null>(null)
-const sidebarLiveTotal = ref<number>()
 const nextSidebarLivePage = ref<number>()
 const sidebarLiveLoadFailed = ref(false)
 const sidebarLiveRequest = shallowRef<AbortController>()
@@ -163,8 +189,19 @@ const isSidebarLiveLoading = computed(() => Boolean(sidebarLiveRequest.value))
 const sidebarLiveAccount = computed(() => topBarStore.isLogin
   ? topBarStore.userInfo.mid ?? parseDedeUserID(document.cookie)
   : undefined)
+// 保留动态 portal 接口的常看排序，再用顶栏直播接口去重补全其余开播项。
+const sidebarLiveUsers = computed<MomentsSidebarLiveUser[]>(() =>
+  mergeSidebarLiveUsers(portalLiveUsers.value, supplementLiveUsers.value, false).users,
+)
+const sidebarLiveTotal = computed<number | undefined>(() => {
+  const reportedTotal = supplementLiveTotal.value ?? portalLiveCount.value
+  if (reportedTotal !== undefined)
+    return Math.max(reportedTotal, sidebarLiveUsers.value.length)
+  return sidebarLiveUsers.value.length > 0 ? sidebarLiveUsers.value.length : undefined
+})
 const showSidebarLiveCard = computed(() => settings.value.momentsSidebarShowLive
-  && (sidebarLiveUsers.value.length > 0 || isSidebarLiveLoading.value || sidebarLiveLoadFailed.value))
+  && (sidebarLiveUsers.value.length > 0
+    || (portalLiveCount.value !== 0 && (isSidebarLiveLoading.value || sidebarLiveLoadFailed.value))))
 const portalUpList = ref<MomentsPortalUpItem[]>([])
 /** 选中的经常访问 UP 主 mid；空字符串表示“全部动态” */
 const selectedHostMid = ref('')
@@ -486,6 +523,131 @@ function getSidebarAvatarUrl(url = '', size = 96) {
   if (!normalized || !/hdslb\.com|biliimg\.com|bilibili\.com/.test(normalized))
     return normalized
   return `${normalized}@${size}w_${size}h_1c.webp`
+}
+
+function parseNonNegativeInteger(value: number | string | undefined | null): number | undefined {
+  if (value === undefined || value === null || value === '')
+    return undefined
+  const parsed = Number(value)
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined
+}
+
+function normalizeLiveId(value: string | number | undefined | null): string | undefined {
+  if (value === undefined || value === null)
+    return undefined
+  const normalized = String(value).trim()
+  return normalized && normalized !== '0' ? normalized : undefined
+}
+
+function normalizeLiveLink(link: string | undefined, roomId: string | undefined): string {
+  const trimmed = link?.trim()
+  if (trimmed)
+    return httpsUrl(trimmed.startsWith('//') ? `https:${trimmed}` : trimmed)
+  return roomId ? `https://live.bilibili.com/${roomId}` : ''
+}
+
+function createSidebarLiveUser(params: {
+  roomId?: string | number
+  mid?: string | number
+  link?: string
+  face?: string
+  uname?: string
+  title?: string
+}): MomentsSidebarLiveUser | null {
+  const roomId = normalizeLiveId(params.roomId)
+  const mid = normalizeLiveId(params.mid)
+  const link = normalizeLiveLink(params.link, roomId)
+  if (!link)
+    return null
+  const key = mid ? `mid:${mid}` : roomId ? `room:${roomId}` : link
+  return {
+    key,
+    roomId,
+    mid,
+    link,
+    face: String(params.face || ''),
+    uname: String(params.uname || ''),
+    title: String(params.title || ''),
+  }
+}
+
+function mergeSidebarLiveUsers(
+  existing: MomentsSidebarLiveUser[],
+  incoming: MomentsSidebarLiveUser[],
+  overwriteExisting = true,
+): { users: MomentsSidebarLiveUser[], addedCount: number } {
+  if (!incoming.length)
+    return { users: existing, addedCount: 0 }
+
+  const merged = [...existing]
+  const indexByRoomId = new Map<string, number>()
+  const indexByMid = new Map<string, number>()
+  const indexByLink = new Map<string, number>()
+
+  const registerIndex = (user: MomentsSidebarLiveUser, index: number, onlyIfMissing = false) => {
+    if (user.roomId && (!onlyIfMissing || !indexByRoomId.has(user.roomId)))
+      indexByRoomId.set(user.roomId, index)
+    if (user.mid && (!onlyIfMissing || !indexByMid.has(user.mid)))
+      indexByMid.set(user.mid, index)
+    if (user.link && (!onlyIfMissing || !indexByLink.has(user.link)))
+      indexByLink.set(user.link, index)
+  }
+
+  merged.forEach((user, index) => registerIndex(user, index))
+
+  let addedCount = 0
+  for (const user of incoming) {
+    const existingIndex = (user.roomId !== undefined ? indexByRoomId.get(user.roomId) : undefined)
+      ?? (user.mid !== undefined ? indexByMid.get(user.mid) : undefined)
+      ?? (!user.roomId && !user.mid && user.link ? indexByLink.get(user.link) : undefined)
+
+    if (existingIndex !== undefined) {
+      if (overwriteExisting) {
+        merged[existingIndex] = user
+        registerIndex(user, existingIndex)
+      }
+      else {
+        registerIndex(user, existingIndex, true)
+      }
+      continue
+    }
+
+    const nextIndex = merged.length
+    merged.push(user)
+    registerIndex(user, nextIndex)
+    addedCount += 1
+  }
+
+  return { users: merged, addedCount }
+}
+
+function normalizePortalLiveUsers(items: MomentsPortalLiveUser[] | null | undefined): MomentsSidebarLiveUser[] {
+  if (!Array.isArray(items) || !items.length)
+    return []
+  const normalized = items
+    .map(item => createSidebarLiveUser({
+      roomId: item?.room_id,
+      mid: item?.mid,
+      link: item?.jump_url,
+      face: item?.face,
+      uname: item?.uname,
+      title: item?.title,
+    }))
+    .filter((item): item is MomentsSidebarLiveUser => item !== null)
+  return mergeSidebarLiveUsers([], normalized, false).users
+}
+
+function normalizeTopBarLiveUser(item: MomentsTopBarLiveUser | null | undefined): MomentsSidebarLiveUser | null {
+  if (!item)
+    return null
+  return createSidebarLiveUser({
+    roomId: item.roomid,
+    mid: item.uid,
+    link: item.link,
+    face: item.face,
+    uname: item.uname,
+    title: item.title,
+  })
 }
 
 function extractPortalUpListItems(
@@ -3101,6 +3263,8 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
 function clearMomentsPortalState() {
   portalUser.value = null
+  portalLiveUsers.value = []
+  portalLiveCount.value = undefined
   portalUpList.value = []
 }
 
@@ -3118,6 +3282,12 @@ async function loadMomentsPortal() {
     }
 
     portalUser.value = response.data?.my_info || null
+    const normalizedLiveUsers = normalizePortalLiveUsers(response.data?.live_users?.items)
+    portalLiveUsers.value = normalizedLiveUsers
+    const parsedLiveCount = parseNonNegativeInteger(response.data?.live_users?.count)
+    portalLiveCount.value = parsedLiveCount !== undefined
+      ? Math.max(parsedLiveCount, normalizedLiveUsers.length)
+      : (normalizedLiveUsers.length > 0 ? normalizedLiveUsers.length : undefined)
     portalUpList.value = normalizePortalUpList(response.data)
   }
   catch {
@@ -3133,17 +3303,17 @@ async function loadMomentsPortal() {
 function reloadSidebarLive() {
   sidebarLiveRequest.value?.abort()
   sidebarLiveRequest.value = undefined
-  sidebarLiveUsers.value = []
-  sidebarLiveTotal.value = undefined
+  supplementLiveUsers.value = []
+  supplementLiveTotal.value = undefined
   sidebarLiveLoadFailed.value = false
   nextSidebarLivePage.value = 1
   void loadSidebarLivePage()
 }
 
 async function loadSidebarLivePage() {
-  const page = nextSidebarLivePage.value
+  let currentPage: number | undefined = nextSidebarLivePage.value
   const account = sidebarLiveAccount.value
-  if (page === undefined || account === undefined || isMomentsDisposed
+  if (currentPage === undefined || account === undefined || isMomentsDisposed
     || !settings.value.momentsSidebarShowLive || isSidebarLiveLoading.value) {
     return
   }
@@ -3152,43 +3322,58 @@ async function loadSidebarLivePage() {
   sidebarLiveRequest.value = request
   sidebarLiveLoadFailed.value = false
   try {
-    const response: MomentsSidebarLiveResult | undefined = await api.moment.getTopBarLiveMoments({
-      page,
-      pagesize: SIDEBAR_LIVE_PAGE_SIZE,
-    }, { signal: request.signal })
-    if (request.signal.aborted || account !== sidebarLiveAccount.value)
-      return
+    while (currentPage !== undefined) {
+      const page: number = currentPage
+      const response: MomentsSidebarLiveResult | undefined = await api.moment.getTopBarLiveMoments({
+        page,
+        pagesize: SIDEBAR_LIVE_PAGE_SIZE,
+      }, { signal: request.signal })
+      if (request.signal.aborted || account !== sidebarLiveAccount.value)
+        return
 
-    if (response?.code === -101) {
-      sidebarLiveUsers.value = []
-      sidebarLiveTotal.value = undefined
-      nextSidebarLivePage.value = undefined
-      return
+      if (response?.code === -101) {
+        supplementLiveUsers.value = []
+        supplementLiveTotal.value = undefined
+        nextSidebarLivePage.value = undefined
+        return
+      }
+
+      if (response?.code !== 0 || !response.data) {
+        sidebarLiveLoadFailed.value = true
+        return
+      }
+
+      const rawItems = response.data.list ?? []
+      const items = rawItems
+        .map(normalizeTopBarLiveUser)
+        .filter((item): item is MomentsSidebarLiveUser => item !== null)
+      const reportedTotal = parseNonNegativeInteger(response.data.results)
+      const total = reportedTotal !== undefined && reportedTotal >= rawItems.length ? reportedTotal : undefined
+      const reportedPageSize = parseNonNegativeInteger(response.data.pagesize)
+      const pageSize = reportedPageSize && reportedPageSize > 0 ? reportedPageSize : SIDEBAR_LIVE_PAGE_SIZE
+
+      // 开播状态变化会让房间跨页移动，按房间号/UID 合并以免重复。
+      const visibleCountBeforeMerge = sidebarLiveUsers.value.length
+      const { users: mergedSupplementUsers, addedCount: addedSupplementCount } = mergeSidebarLiveUsers(
+        supplementLiveUsers.value,
+        items,
+      )
+      supplementLiveUsers.value = mergedSupplementUsers
+      supplementLiveTotal.value = total ?? supplementLiveTotal.value
+
+      const hasMore: boolean = rawItems.length > 0 && (total === undefined
+        ? rawItems.length >= pageSize && addedSupplementCount > 0
+        : page * pageSize < total)
+      const nextPage: number | undefined = hasMore ? page + 1 : undefined
+      nextSidebarLivePage.value = nextPage
+
+      const addedVisibleCount = sidebarLiveUsers.value.length - visibleCountBeforeMerge
+      // 当前页全部命中动态接口已展示项时继续向后翻页，避免触底补全无新增条目。
+      if (addedVisibleCount > 0 || addedSupplementCount === 0 || nextPage === undefined)
+        break
+
+      currentPage = nextPage
     }
-
-    if (response?.code !== 0 || !response.data) {
-      sidebarLiveLoadFailed.value = true
-      return
-    }
-
-    const items = response.data.list ?? []
-    const reportedTotal = Number(response.data.results)
-    const total = Number.isSafeInteger(reportedTotal) && reportedTotal >= items.length ? reportedTotal : undefined
-    const reportedPageSize = Number(response.data.pagesize)
-    const pageSize = Number.isSafeInteger(reportedPageSize) && reportedPageSize > 0 ? reportedPageSize : SIDEBAR_LIVE_PAGE_SIZE
-
-    // 开播状态变化会让房间跨页移动，按房间号合并以免重复。
-    const loadedCount = sidebarLiveUsers.value.length
-    const usersByRoom = new Map(sidebarLiveUsers.value.map(user => [user.roomid, user]))
-    for (const user of items)
-      usersByRoom.set(user.roomid, user)
-    sidebarLiveUsers.value = [...usersByRoom.values()]
-    sidebarLiveTotal.value = total ?? sidebarLiveTotal.value
-
-    const hasMore = items.length > 0 && (total === undefined
-      ? items.length >= pageSize && usersByRoom.size > loadedCount
-      : page * pageSize < total)
-    nextSidebarLivePage.value = hasMore ? page + 1 : undefined
   }
   catch {
     if (!request.signal.aborted && account === sidebarLiveAccount.value)
@@ -3376,10 +3561,26 @@ watch(
   },
 )
 
-watch([sidebarLiveAccount, () => settings.value.momentsSidebarShowLive], reloadSidebarLive)
+watch(sidebarLiveAccount, (account, prevAccount) => {
+  if (account === prevAccount)
+    return
+  portalLiveUsers.value = []
+  portalLiveCount.value = undefined
+  if (account !== undefined)
+    void loadMomentsPortal()
+  reloadSidebarLive()
+})
+
+watch(() => settings.value.momentsSidebarShowLive, () => {
+  reloadSidebarLive()
+})
 
 // 等新一页渲染后检查滚动高度，窗口尺寸变化时也重新检查。
-watch([sidebarLiveViewportRef, nextSidebarLivePage, isLayoutEditing], fillSidebarLiveViewport, { flush: 'post' })
+watch(
+  [sidebarLiveViewportRef, nextSidebarLivePage, isLayoutEditing, isSidebarLiveLoading, () => sidebarLiveUsers.value.length],
+  fillSidebarLiveViewport,
+  { flush: 'post' },
+)
 useResizeObserver(sidebarLiveViewportRef, fillSidebarLiveViewport)
 
 watch(
@@ -3583,8 +3784,8 @@ watch(
             >
               <a
                 v-for="liveUser in isLayoutEditing ? sidebarLiveUsers.slice(0, 1) : sidebarLiveUsers"
-                :key="liveUser.roomid"
-                :href="liveUser.link || `https://live.bilibili.com/${liveUser.roomid}`"
+                :key="liveUser.key"
+                :href="liveUser.link"
                 target="_blank"
                 rel="noopener noreferrer"
               >
