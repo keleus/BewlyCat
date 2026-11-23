@@ -48,6 +48,9 @@ interface BewlyWidescreenState {
   mutationObserver?: MutationObserver
   metadataListener?: () => void
   resizeSyncFrame?: number
+  layoutSyncFrame?: number
+  pendingDescriptionSync?: boolean
+  lastDescriptionLayoutKey?: string
   lastPlayerWidth?: number
   lastPlayerHeight?: number
   sidebarInteractionCleanup?: () => void
@@ -265,17 +268,23 @@ function findFirst(selectors: string[], root: ParentNode = document): HTMLElemen
   return null
 }
 
+function pickVisibleCandidate(candidates: HTMLElement[]): HTMLElement | null {
+  if (candidates.length === 0)
+    return null
+  // 只有一个候选节点时，无论是否可见回退逻辑都会选中它；跳过 offsetParent 可避免在连续搬运节点期间触发强制重排。
+  if (candidates.length === 1)
+    return candidates[0]
+  return candidates.find(candidate => candidate.offsetParent !== null) ?? candidates[0]
+}
+
 function findMovable(selectors: string[]): HTMLElement | null {
   const bangumi = isBangumiPage()
   for (const selector of selectors) {
     if (shouldSkipSelectorOnCurrentPage(selector, bangumi))
       continue
-    const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
-    const element = candidates.find(candidate =>
-      !candidate.closest(`#${ROOT_ID}`)
-      && candidate.parentNode
-      && candidate.offsetParent !== null,
-    ) || candidates.find(candidate => !candidate.closest(`#${ROOT_ID}`) && candidate.parentNode)
+    const eligible = Array.from(document.querySelectorAll<HTMLElement>(selector))
+      .filter(candidate => !candidate.closest(`#${ROOT_ID}`) && candidate.parentNode)
+    const element = pickVisibleCandidate(eligible)
 
     if (element)
       return element
@@ -319,17 +328,13 @@ function findMovablePlaylist() {
   for (const selector of selectors.playlist) {
     if (shouldSkipSelectorOnCurrentPage(selector, bangumi))
       continue
-    const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
-    const element = candidates.find(candidate =>
-      !candidate.closest(`#${ROOT_ID}`)
-      && candidate.parentNode
-      && candidate.offsetParent !== null
-      && !isBangumiPlaylistSkeleton(candidate),
-    ) || candidates.find(candidate =>
-      !candidate.closest(`#${ROOT_ID}`)
-      && candidate.parentNode
-      && !isBangumiPlaylistSkeleton(candidate),
-    )
+    const eligible = Array.from(document.querySelectorAll<HTMLElement>(selector))
+      .filter(candidate =>
+        !candidate.closest(`#${ROOT_ID}`)
+        && candidate.parentNode
+        && !isBangumiPlaylistSkeleton(candidate),
+      )
+    const element = pickVisibleCandidate(eligible)
 
     if (element)
       return resolvePlaylistMoveTarget(element)
@@ -364,7 +369,7 @@ function findCommentRoot(root: ParentNode = document, excludeWidescreenRoot = fa
     }
   }
 
-  return candidates.find(candidate => candidate.offsetParent !== null) ?? candidates[0] ?? null
+  return pickVisibleCandidate(candidates)
 }
 
 function moveNode(node: HTMLElement | null, target: HTMLElement, movedNodes: MovedNode[], allowInsideLayout = false) {
@@ -569,7 +574,7 @@ function setActiveTab(nextTab: BewlyWidescreenTab) {
   syncSidebarScrollState(state)
 }
 
-function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
+function setSidebarMode(nextMode: BewlyWidescreenSidebarMode, deferLayout = false) {
   if (!state)
     return
 
@@ -588,8 +593,10 @@ function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
     ? (isRight ? t('widescreen.show_narrow_right') : t('widescreen.show_narrow_left'))
     : (isRight ? t('widescreen.collapse_right') : t('widescreen.collapse_left'))
   state.sidebarToggleButton.setAttribute('aria-label', state.sidebarToggleButton.title)
-  updateSidebarLayoutState()
-  schedulePlayerResizeSync(state)
+  if (!deferLayout) {
+    updateSidebarLayoutState()
+    schedulePlayerResizeSync(state)
+  }
 }
 
 function getTitleText() {
@@ -3208,18 +3215,40 @@ function injectLayoutStyle() {
   `)
 }
 
-function updateAspectRatio() {
+function setCssVarIfChanged(element: HTMLElement, name: string, value: string) {
+  if (element.style.getPropertyValue(name) !== value)
+    element.style.setProperty(name, value)
+}
+
+function setDatasetIfChanged(element: HTMLElement, key: string, value: string) {
+  if (element.dataset[key] !== value)
+    element.dataset[key] = value
+}
+
+function setAttrIfChanged(element: HTMLElement, name: string, value: string) {
+  if (element.getAttribute(name) !== value)
+    element.setAttribute(name, value)
+}
+
+function syncAspectRatioVars(currentState: BewlyWidescreenState) {
   const video = getVideoElement()
   const aspect = video?.videoWidth && video.videoHeight
     ? video.videoWidth / video.videoHeight
     : 16 / 9
-  const layoutAspect = aspect
+  const aspectValue = String(aspect)
 
-  state?.root.style.setProperty('--bewly-widescreen-aspect', String(aspect))
-  state?.root.style.setProperty('--bewly-widescreen-layout-aspect', String(layoutAspect))
+  setCssVarIfChanged(currentState.root, '--bewly-widescreen-aspect', aspectValue)
+  setCssVarIfChanged(currentState.root, '--bewly-widescreen-layout-aspect', aspectValue)
+  return aspect
+}
+
+function updateAspectRatio() {
+  if (!state)
+    return
+
+  syncAspectRatioVars(state)
   updateSidebarLayoutState()
-  if (state)
-    schedulePlayerResizeSync(state)
+  schedulePlayerResizeSync(state)
 }
 
 function getSidebarResizeBounds() {
@@ -3236,7 +3265,7 @@ function getSidebarResizeBounds() {
   return { minWidth, maxWidth }
 }
 
-function applyCustomSidebarWidth(width: number, persist = false) {
+function applyCustomSidebarWidth(width: number, persist = false, deferLayout = false) {
   if (!state)
     return
 
@@ -3257,26 +3286,33 @@ function applyCustomSidebarWidth(width: number, persist = false) {
     state.root.style.removeProperty('--bewly-widescreen-sidebar-custom-width')
     state.sidebarResizeHandle.removeAttribute('aria-valuenow')
   }
+  else if (deferLayout) {
+    applyCustomSidebarWidthStyle(state)
+  }
   if (persist)
     localSettings.value.bewlyWidescreenSidebarWidth = normalizedWidth
 
-  updateSidebarLayoutState()
-  schedulePlayerResizeSync(state)
+  if (!deferLayout) {
+    updateSidebarLayoutState()
+    schedulePlayerResizeSync(state)
+  }
 }
 
 function resetCustomSidebarWidth() {
   applyCustomSidebarWidth(0, true)
 }
 
-function updateSidebarLayoutState() {
+function updateSidebarLayoutState(measuredAvailableHeight?: number) {
   if (!state)
     return
+
+  // 所有布局读取先于样式/dataset 写入，避免写后即读触发强制同步重排。
+  const availableHeight = measuredAvailableHeight ?? state.playerFrame.getBoundingClientRect().height
+  const layoutAspect = Number.parseFloat(state.root.style.getPropertyValue('--bewly-widescreen-layout-aspect')) || 16 / 9
 
   if (state.customSidebarWidth > 0)
     applyCustomSidebarWidthStyle(state)
 
-  const availableHeight = state.playerFrame.getBoundingClientRect().height
-  const layoutAspect = Number.parseFloat(state.root.style.getPropertyValue('--bewly-widescreen-layout-aspect')) || 16 / 9
   const targetWidth = availableHeight * layoutAspect
   const availableWidth = Math.max(window.innerWidth - targetWidth, 0)
   const narrowWidth = Math.min(
@@ -3297,15 +3333,15 @@ function updateSidebarLayoutState() {
   const ultrawideSpareWidth = Math.max(window.innerWidth - availableHeight * (16 / 9), 0)
   const canUltrawideCollapse = !canShowFullSidebar && ultrawideSpareWidth >= SIDEBAR_NARROW_MIN_WIDTH
   const wideVideoPriority = autoFit && canUltrawideCollapse
-  state.root.dataset.wideVideoPriority = String(wideVideoPriority)
-  state.root.dataset.sidebarFull = String(showFullSidebar)
-  if (showFullSidebar)
+  setDatasetIfChanged(state.root, 'wideVideoPriority', String(wideVideoPriority))
+  setDatasetIfChanged(state.root, 'sidebarFull', String(showFullSidebar))
+  if (showFullSidebar && 'sidebarExpanded' in state.root.dataset)
     delete state.root.dataset.sidebarExpanded
-  state.root.dataset.sidebarEdgeReveal = String(
+  setDatasetIfChanged(state.root, 'sidebarEdgeReveal', String(
     !settings.value.enableBewlyWidescreenSidebarResize
     && autoFit
     && fitWidth <= 1,
-  )
+  ))
 
   const { minWidth, maxWidth } = getSidebarResizeBounds()
   const customWidth = Math.min(Math.max(state.customSidebarWidth, minWidth), maxWidth)
@@ -3330,28 +3366,29 @@ function updateSidebarLayoutState() {
   const centerLayout = !!settings.value.bewlyWidescreenCenterVerticalVideo
     && visibleSidebarWidth > 1
     && gapWidth >= visibleSidebarWidth
-  state.root.dataset.centerLayout = String(centerLayout)
+  setDatasetIfChanged(state.root, 'centerLayout', String(centerLayout))
 
   // 仅在空间不足且自动布局确实存在收起态时提供切换入口，视频居中方式不再改变侧栏状态。
   const showToggle = !settings.value.enableBewlyWidescreenSidebarResize && !hasCustomWidth
     && !canShowFullSidebar
     && (canUltrawideCollapse || narrowWidth - fitWidth > 1)
-  state.root.dataset.sidebarToggleVisible = String(showToggle)
+  setDatasetIfChanged(state.root, 'sidebarToggleVisible', String(showToggle))
 
-  // 自动布局也要提供可访问的当前值，双击恢复后仍可继续用键盘调宽。
-  state.sidebarResizeHandle.setAttribute('aria-valuemin', String(Math.round(minWidth)))
-  state.sidebarResizeHandle.setAttribute('aria-valuemax', String(Math.round(maxWidth)))
-  state.sidebarResizeHandle.setAttribute('aria-valuenow', String(Math.round(state.sidebarEl.getBoundingClientRect().width)))
+  // 自动布局也要提供可访问的当前值，双击恢复后仍可继续用键盘调宽；
+  // 直接使用已算出的可见宽度，避免在写入多个 dataset 后再读 getBoundingClientRect() 触发二次重排。
+  setAttrIfChanged(state.sidebarResizeHandle, 'aria-valuemin', String(Math.round(minWidth)))
+  setAttrIfChanged(state.sidebarResizeHandle, 'aria-valuemax', String(Math.round(maxWidth)))
+  setAttrIfChanged(state.sidebarResizeHandle, 'aria-valuenow', String(Math.round(visibleSidebarWidth)))
 }
 
 function applyCustomSidebarWidthStyle(currentState: BewlyWidescreenState) {
   const { minWidth, maxWidth } = getSidebarResizeBounds()
   const clampedWidth = Math.round(Math.min(Math.max(currentState.customSidebarWidth, minWidth), maxWidth))
-  currentState.root.dataset.sidebarCustomWidth = 'true'
-  currentState.root.style.setProperty('--bewly-widescreen-sidebar-custom-width', `${clampedWidth}px`)
+  setDatasetIfChanged(currentState.root, 'sidebarCustomWidth', 'true')
+  setCssVarIfChanged(currentState.root, '--bewly-widescreen-sidebar-custom-width', `${clampedWidth}px`)
 }
 
-function updateDanmakuDockHeight() {
+function updateDanmakuDockHeight(deferLayout = false) {
   if (!state)
     return
 
@@ -3359,9 +3396,19 @@ function updateDanmakuDockHeight() {
     ? state.danmakuDock.getBoundingClientRect().height
     : 0
 
-  state.root.style.setProperty('--bewly-widescreen-danmaku-height', `${height}px`)
-  updateSidebarLayoutState()
-  schedulePlayerResizeSync(state)
+  setCssVarIfChanged(state.root, '--bewly-widescreen-danmaku-height', `${height}px`)
+  if (!deferLayout) {
+    updateSidebarLayoutState()
+    schedulePlayerResizeSync(state)
+  }
+}
+
+function clearLayoutSyncFrame(currentState: BewlyWidescreenState) {
+  if (currentState.layoutSyncFrame !== undefined) {
+    cancelAnimationFrame(currentState.layoutSyncFrame)
+    currentState.layoutSyncFrame = undefined
+  }
+  currentState.pendingDescriptionSync = false
 }
 
 function clearPlayerResizeSync(currentState: BewlyWidescreenState) {
@@ -3413,26 +3460,72 @@ function syncSidebarScrollState(currentState: BewlyWidescreenState) {
   }
 }
 
-function syncSidebarLayoutMetrics(currentState: BewlyWidescreenState) {
-  const { sidebarEl, sidebarTop, sidebarDetails, tabButtons } = currentState
+function syncWidescreenLayout(currentState: BewlyWidescreenState, syncDesc = false) {
+  if (state !== currentState)
+    return
+
+  if (syncDesc)
+    syncDescription(currentState)
+
+  // 批处理所有几何读取，再集中写入 CSS 变量与 dataset，避免单帧内反复触发强制同步重排。
+  const { sidebarEl, sidebarTop, sidebarDetails, tabButtons, danmakuDock, playerFrame } = currentState
+  const danmakuHeight = danmakuDock.childElementCount > 0
+    ? danmakuDock.getBoundingClientRect().height
+    : 0
+  const playerFrameHeight = playerFrame.getBoundingClientRect().height
   const headerHeight = sidebarTop.getBoundingClientRect().height
   const detailsHeight = sidebarDetails.getBoundingClientRect().height
   const tabsHeight = tabButtons.comment.parentElement?.getBoundingClientRect().height ?? 0
-  currentState.detailsHeight = detailsHeight
-  // clientLeft 已包含左边框；侧栏位于左侧时，右边框也需纳入按钮定位。
   const rightInset = sidebarEl.offsetWidth - sidebarEl.clientWidth - sidebarEl.clientLeft
+  const scrollTop = sidebarEl.scrollTop
+
+  currentState.detailsHeight = detailsHeight
+  syncAspectRatioVars(currentState)
+  setCssVarIfChanged(currentState.root, '--bewly-widescreen-danmaku-height', `${danmakuHeight}px`)
+
+  const availableHeight = playerFrameHeight > 0
+    ? playerFrameHeight
+    : Math.max(0, window.innerHeight - danmakuHeight)
+  updateSidebarLayoutState(availableHeight)
+
   // 标题换行、UP 信息异步加载和侧栏调宽后，Tab 始终贴在信息栏下方。
-  const metrics = {
-    '--bewly-widescreen-header-height': `${headerHeight}px`,
-    '--bewly-widescreen-sticky-height': `${headerHeight + tabsHeight}px`,
-    '--bewly-widescreen-details-height': `${detailsHeight}px`,
-    '--bewly-widescreen-sidebar-right-inset': `${rightInset}px`,
+  setCssVarIfChanged(sidebarEl, '--bewly-widescreen-header-height', `${headerHeight}px`)
+  setCssVarIfChanged(sidebarEl, '--bewly-widescreen-sticky-height', `${headerHeight + tabsHeight}px`)
+  setCssVarIfChanged(sidebarEl, '--bewly-widescreen-details-height', `${detailsHeight}px`)
+  setCssVarIfChanged(sidebarEl, '--bewly-widescreen-sidebar-right-inset', `${rightInset}px`)
+
+  const scrolled = scrollTop > 1
+  const tabsStuck = scrolled && scrollTop >= detailsHeight - 0.5
+  if (scrolled) {
+    setDatasetIfChanged(currentState.root, 'sidebarScrolled', 'true')
   }
-  for (const [property, value] of Object.entries(metrics)) {
-    if (sidebarEl.style.getPropertyValue(property) !== value)
-      sidebarEl.style.setProperty(property, value)
+  else if ('sidebarScrolled' in currentState.root.dataset) {
+    delete currentState.root.dataset.sidebarScrolled
   }
-  syncSidebarScrollState(currentState)
+  if (tabsStuck) {
+    setDatasetIfChanged(currentState.root, 'tabsStuck', 'true')
+  }
+  else if ('tabsStuck' in currentState.root.dataset) {
+    delete currentState.root.dataset.tabsStuck
+  }
+
+  schedulePlayerResizeSync(currentState)
+}
+
+function scheduleWidescreenLayoutSync(currentState: BewlyWidescreenState, syncDesc = false) {
+  if (state !== currentState)
+    return
+  if (syncDesc)
+    currentState.pendingDescriptionSync = true
+  if (currentState.layoutSyncFrame !== undefined)
+    return
+
+  currentState.layoutSyncFrame = requestAnimationFrame(() => {
+    currentState.layoutSyncFrame = undefined
+    const shouldSyncDesc = Boolean(currentState.pendingDescriptionSync)
+    currentState.pendingDescriptionSync = false
+    syncWidescreenLayout(currentState, shouldSyncDesc)
+  })
 }
 
 function setupAspectObservers(currentState: BewlyWidescreenState) {
@@ -3446,11 +3539,11 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   document.addEventListener('loadedmetadata', onLoadedMetadata, true)
   currentState.metadataListener = () => document.removeEventListener('loadedmetadata', onLoadedMetadata, true)
 
-  currentState.resizeObserver = new ResizeObserver(() => {
-    updateAspectRatio()
-    updateDanmakuDockHeight()
-    syncDescription(currentState)
-    syncSidebarLayoutMetrics(currentState)
+  currentState.resizeObserver = new ResizeObserver((entries) => {
+    const needsDescSync = entries.some(entry =>
+      entry.target === currentState.descriptionSlot || entry.target === currentState.sidebarEl,
+    )
+    scheduleWidescreenLayoutSync(currentState, needsDescSync)
   })
   currentState.resizeObserver.observe(currentState.root)
   currentState.resizeObserver.observe(currentState.playerSlot)
@@ -3462,9 +3555,7 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   const tablist = currentState.tabButtons.comment.parentElement
   if (tablist)
     currentState.resizeObserver.observe(tablist, { box: 'border-box' })
-  syncSidebarLayoutMetrics(currentState)
-  updateAspectRatio()
-  schedulePlayerResizeSync(currentState)
+  syncWidescreenLayout(currentState, true)
 }
 
 function isSidebarEditableElement(element: Element) {
@@ -4030,7 +4121,7 @@ function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
   }
 }
 
-function moveDanmakuInput(currentState: BewlyWidescreenState) {
+function moveDanmakuInput(currentState: BewlyWidescreenState, deferLayout = false) {
   if (currentState.danmakuDock.querySelector(selectors.danmakuInput.join(',')))
     return true
 
@@ -4038,7 +4129,8 @@ function moveDanmakuInput(currentState: BewlyWidescreenState) {
     || findMovable(selectors.danmakuInput)
 
   const moved = moveNode(inputBar, currentState.danmakuDock, currentState.movedNodes, !!inputBar?.closest(`#${ROOT_ID}`))
-  updateDanmakuDockHeight()
+  if (!deferLayout)
+    updateDanmakuDockHeight()
   return moved
 }
 
@@ -4057,10 +4149,11 @@ function expandDanmakuTab(currentState: BewlyWidescreenState) {
   }, 120)
 }
 
-function syncDescription(currentState: BewlyWidescreenState) {
+function syncDescription(currentState: BewlyWidescreenState, force = false) {
   const { descriptionSlot } = currentState
   const description = findFirst(selectors.description, descriptionSlot)
   if (!description) {
+    currentState.lastDescriptionLayoutKey = undefined
     descriptionSlot.classList.add('is-empty')
     descriptionSlot.querySelector<HTMLButtonElement>('.bewly-widescreen-description-toggle')?.setAttribute('hidden', '')
     return
@@ -4076,7 +4169,7 @@ function syncDescription(currentState: BewlyWidescreenState) {
 
     const onToggle = () => {
       currentState.descriptionExpanded = !currentState.descriptionExpanded
-      syncDescription(currentState)
+      syncDescription(currentState, true)
     }
 
     toggleButton.addEventListener('click', onToggle)
@@ -4085,18 +4178,32 @@ function syncDescription(currentState: BewlyWidescreenState) {
       toggleButton?.removeEventListener('click', onToggle)
       toggleButton?.remove()
       descriptionSlot.classList.remove('is-collapsed', 'is-expanded', 'is-empty')
+      currentState.lastDescriptionLayoutKey = undefined
     }
   }
 
-  descriptionSlot.classList.remove('is-collapsed', 'is-expanded')
-  const lineHeight = Number.parseFloat(getComputedStyle(basicDescription).lineHeight) || 20
   const subtitleList = description.querySelector<HTMLElement>('.subtitle-maker-list')
   const descriptionText = basicDescription.textContent?.replace(/\s+/g, ' ').trim() || ''
   const hasDescription = !!descriptionText && !/^[-–—]+$/.test(descriptionText) && descriptionText !== '暂无简介'
   const hasSubtitle = !!subtitleList?.childElementCount
   const hasContent = hasDescription || hasSubtitle
-  const canExpand = hasContent && (basicDescription.scrollHeight > lineHeight * 2 + 1
-    || hasSubtitle)
+  const slotWidth = Math.round(descriptionSlot.clientWidth)
+  const layoutKey = `${descriptionText.length}:${hasSubtitle ? 1 : 0}:${currentState.descriptionExpanded ? 1 : 0}:${slotWidth}`
+  if (!force && currentState.lastDescriptionLayoutKey === layoutKey)
+    return
+  currentState.lastDescriptionLayoutKey = layoutKey
+
+  let canExpand = false
+  if (hasContent) {
+    if (hasSubtitle) {
+      canExpand = true
+    }
+    else {
+      descriptionSlot.classList.remove('is-collapsed', 'is-expanded')
+      const lineHeight = Number.parseFloat(getComputedStyle(basicDescription).lineHeight) || 20
+      canExpand = basicDescription.scrollHeight > lineHeight * 2 + 1
+    }
+  }
 
   if (!hasContent || !canExpand)
     currentState.descriptionExpanded = false
@@ -4106,7 +4213,7 @@ function syncDescription(currentState: BewlyWidescreenState) {
   const toggleLabel = currentState.descriptionExpanded ? t('widescreen.collapse') : t('widescreen.expand_more')
   if (toggleButton.textContent !== toggleLabel)
     toggleButton.textContent = toggleLabel
-  toggleButton.setAttribute('aria-expanded', String(canExpand && currentState.descriptionExpanded))
+  setAttrIfChanged(toggleButton, 'aria-expanded', String(canExpand && currentState.descriptionExpanded))
   descriptionSlot.classList.toggle('is-collapsed', canExpand && !currentState.descriptionExpanded)
   descriptionSlot.classList.toggle('is-expanded', canExpand && currentState.descriptionExpanded)
 }
@@ -4230,7 +4337,7 @@ function syncPlayer(currentState: BewlyWidescreenState) {
   }
 }
 
-function fillSidebar(currentState: BewlyWidescreenState) {
+function fillSidebar(currentState: BewlyWidescreenState, deferLayout = false) {
   const bangumi = isBangumiPage()
   syncPlayer(currentState)
   syncSidebarTitle(currentState)
@@ -4255,13 +4362,16 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   moveOrReplaceNode(selectors.upPanel, currentState.upSlot, currentState.movedNodes)
 
   const descriptionResult = moveOrReplaceNode(selectors.description, currentState.descriptionSlot, currentState.movedNodes)
-  if (descriptionResult.changed)
+  if (descriptionResult.changed) {
     currentState.descriptionExpanded = false
-  syncDescription(currentState)
+    currentState.lastDescriptionLayoutKey = undefined
+  }
+  if (!deferLayout)
+    syncDescription(currentState, descriptionResult.changed)
 
   moveOrReplaceNode(selectors.tags, currentState.tagsSlot, currentState.movedNodes)
 
-  moveDanmakuInput(currentState)
+  moveDanmakuInput(currentState, deferLayout)
   const commentResult = moveCommentRoot(currentState.panels.comment, currentState.movedNodes)
   if (!commentResult.found) {
     ensureEmptyPanel(currentState.panels.comment, t('widescreen.comments_loading'))
@@ -4362,6 +4472,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.mutationObserver?.disconnect()
   currentState.followMenuObserver?.disconnect()
   currentState.descriptionCleanup?.()
+  clearLayoutSyncFrame(currentState)
   clearPlayerResizeSync(currentState)
   clearSidebarRefreshTimer()
 
@@ -4451,13 +4562,17 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   document.addEventListener('keydown', handleEscapeKey, true)
   nextState.escapeKeyCleanup = () => document.removeEventListener('keydown', handleEscapeKey, true)
 
-  applyCustomSidebarWidth(settings.value.enableBewlyWidescreenSidebarResize
-    ? localSettings.value.bewlyWidescreenSidebarWidth
-    : 0)
-  setSidebarMode(settings.value.bewlyWidescreenSidebarPriority === 'sidebar' ? 'narrow' : 'fit')
+  applyCustomSidebarWidth(
+    settings.value.enableBewlyWidescreenSidebarResize
+      ? localSettings.value.bewlyWidescreenSidebarWidth
+      : 0,
+    false,
+    true,
+  )
+  setSidebarMode(settings.value.bewlyWidescreenSidebarPriority === 'sidebar' ? 'narrow' : 'fit', true)
 
   moveNode(player, playerFrame, movedNodes)
-  fillSidebar(nextState)
+  fillSidebar(nextState, true)
   setActiveTab(playlistOverride ? 'playlist' : 'comment')
   setupAspectObservers(nextState)
   setupDomRefreshObserver(nextState)

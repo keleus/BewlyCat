@@ -1,10 +1,14 @@
 // This bundle is also injected into the native document. Generic rules must
 // stay inside our UI or pages that explicitly enable style adaptation.
-:where(.bewly-wrapper, .bewly-wrapper *, .bewly-design, .bewly-design *) {
-  outline-color: var(--bew-theme-color-80);
+// `font-feature-settings` is inherited, so scoping to the root avoids matching `*`
+// on every element during full-page style recalculations; `outline-color` only
+// takes effect on focused elements.
+:where(.bewly-wrapper, .bewly-design) {
   font-feature-settings: "tnum";
-  // outline-width: 2px;
-  // outline-offset: 2px;
+}
+
+:where(.bewly-wrapper, .bewly-design) :focus {
+  outline-color: var(--bew-theme-color-80);
 }
 
 // 仅在自定义首页（#bewly 为 fixed 视口层叠上下文）打开设置浮层时提升宿主层级，

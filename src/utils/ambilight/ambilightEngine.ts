@@ -75,6 +75,7 @@ export class AmbilightEngine {
   private hostDocumentLeft = 0
   private hostDocumentTop = 0
   private hostSized = false
+  private hostResizeTimer: ReturnType<typeof setTimeout> | null = null
   private isViewportLocked = false
   private videoResizeObserver: ResizeObserver | null = null
   private lastBackdropSampleTime = 0
@@ -181,6 +182,24 @@ export class AmbilightEngine {
     }
   }
 
+  private cancelHostResize() {
+    if (this.hostResizeTimer !== null) {
+      clearTimeout(this.hostResizeTimer)
+      this.hostResizeTimer = null
+    }
+  }
+
+  private scheduleHostResizeToDocument() {
+    this.cancelHostResize()
+    this.hostResizeTimer = setTimeout(() => {
+      this.hostResizeTimer = null
+      if (!this.isViewportLocked && this.hostElem && this.video && !this.isHidden && !this.isSleeping) {
+        this.resizeHostToDocument()
+        this.applyCanvasPosition(this.video.getBoundingClientRect(), true)
+      }
+    }, 250)
+  }
+
   public setSleeping(sleeping: boolean) {
     if (this.isSleeping === sleeping)
       return
@@ -242,6 +261,7 @@ export class AmbilightEngine {
     this.stopLoop()
     this.cancelBackdropSample()
     this.cancelScrollRefresh()
+    this.cancelHostResize()
     if (this.layoutRafId !== null) {
       cancelAnimationFrame(this.layoutRafId)
       this.layoutRafId = null
@@ -287,6 +307,7 @@ export class AmbilightEngine {
     this.unbindVideo()
     this.stopLoop()
     this.cancelScrollRefresh()
+    this.cancelHostResize()
     if (this.layoutRafId !== null) {
       cancelAnimationFrame(this.layoutRafId)
       this.layoutRafId = null
@@ -515,8 +536,14 @@ export class AmbilightEngine {
       return
     }
 
-    if (!this.isViewportLocked && !lockChanged)
-      this.resizeHostToDocument()
+    if (!this.isViewportLocked && !lockChanged) {
+      // 首次布局需立即测量宿主原点；后续播放器缩放/模式切换期间延后重测文档高度，
+      // 避免写 height: 0px 后立即可见地触发整页强制同步重排。
+      if (!this.hostSized)
+        this.resizeHostToDocument()
+      else
+        this.scheduleHostResizeToDocument()
+    }
 
     const documentContentLeft = content.left + window.scrollX
     const documentContentTop = content.top + window.scrollY
@@ -601,12 +628,14 @@ export class AmbilightEngine {
     this.isViewportLocked = locked
     host.classList.toggle('is-viewport-locked', locked)
     if (locked) {
+      this.cancelHostResize()
       host.style.position = 'fixed'
       host.style.width = '100%'
       host.style.height = '100%'
       this.hostSized = false
     }
     else {
+      this.cancelHostResize()
       host.style.position = 'absolute'
       this.resizeHostToDocument()
     }
@@ -667,15 +696,17 @@ export class AmbilightEngine {
 
     const now = frameTime ?? performance.now()
     const dt = this.lastDrawTime ? Math.min(500, now - this.lastDrawTime) : 1000
-    const blend = (!this.hasPainted || force) ? 1 : blendAlpha(dt, this.options.smoothing)
+    const isInitialPaint = !this.hasPainted
+    const blend = (isInitialPaint || force) ? 1 : blendAlpha(dt, this.options.smoothing)
 
     if (this.usesDiffusion()) {
       try {
-        if (this.drawDiffusionFrame(force, blend)) {
+        if (this.drawDiffusionFrame(force, blend, isInitialPaint)) {
           this.hasPainted = true
           this.hostElem?.classList.remove('is-pending')
           this.lastDrawTime = now
-          this.sampleBackdrop(now, force)
+          // 仅首帧强制采样文字对比度；后续尺寸/模式变更沿用 500ms 节流，避免在动画帧内触发同步重排与样式重算。
+          this.sampleBackdrop(now, isInitialPaint)
         }
         // 扩散场暂不可用时跳过本帧：画布此时没有模糊滤镜，不能直接画清晰视频
         return
@@ -715,7 +746,7 @@ export class AmbilightEngine {
       this.hasPainted = true
       this.hostElem?.classList.remove('is-pending')
       this.lastDrawTime = now
-      this.sampleBackdrop(now, force)
+      this.sampleBackdrop(now, isInitialPaint)
     }
     catch {
       // 捕获跨域或未就绪异常
@@ -873,7 +904,7 @@ export class AmbilightEngine {
     return ctx.getImageData(0, 0, geometry.width, geometry.height)
   }
 
-  private drawDiffusionFrame(force: boolean, blend: number): boolean {
+  private drawDiffusionFrame(force: boolean, blend: number, isInitialPaint = false): boolean {
     const layout = this.diffusionLayout
     const canvas = this.canvas
     const ctx = this.ctx
@@ -901,7 +932,8 @@ export class AmbilightEngine {
     }
 
     const configuredIterations = this.getConfiguredIterations()
-    const iterations = force || !field.hasSolution
+    // 仅首帧初始化跑满 32 轮收敛；播放器缩放/模式切换时使用当前自适应迭代次数，避免单帧阻塞动画。
+    const iterations = isInitialPaint
       ? Math.max(DIFFUSION_INITIAL_ITERATIONS, configuredIterations)
       : this.diffusionIterations
     const started = performance.now()

@@ -62,6 +62,18 @@ watch(settingsOverlayVisible, (visible) => {
 // lazily initialize in a persistent scope so toggling settings or SPA navigation takes effect immediately.
 const currentPageUrl = ref(window.location.href)
 const isWidescreenActive = ref(isBewlyWidescreenActive())
+function readBrowserFullscreen() {
+  return Boolean(
+    document.fullscreenElement
+    || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement,
+  )
+}
+const isBrowserFullscreen = ref(readBrowserFullscreen())
+function syncBrowserFullscreen() {
+  isBrowserFullscreen.value = readBrowserFullscreen()
+}
+useEventListener(document, 'fullscreenchange', syncBrowserFullscreen)
+useEventListener(document, 'webkitfullscreenchange', syncBrowserFullscreen)
 let widescreenStateObserver: MutationObserver | undefined
 onMounted(() => {
   isWidescreenActive.value = isBewlyWidescreenActive()
@@ -1943,6 +1955,7 @@ if (settings.value.cleanUrlArgument) {
     </template>
     <div
       v-else-if="isVideoPageGlassStyleEnabled(currentPageUrl)"
+      v-show="!isBrowserFullscreen"
       class="bewly-video-page-background"
       :class="{
         'bewly-video-page-background--widescreen': isWidescreenActive,

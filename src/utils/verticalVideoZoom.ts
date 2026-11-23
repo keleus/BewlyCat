@@ -325,12 +325,19 @@ function syncButtonLabel() {
   button.textContent = currentHost.classList.contains(ZOOMED_CLASS) ? t('vertical_video.zoom_out') : t('vertical_video.zoom_in')
 }
 
+function isVerticalZoomActive() {
+  return Boolean(
+    currentHost?.classList.contains(VERTICAL_CLASS)
+    && currentHost.classList.contains(ZOOMED_CLASS),
+  )
+}
+
 function syncZoomPosition() {
   if (!currentHost)
     return
 
   currentHost.style.setProperty('--bewly-vertical-video-zoom-y', `${zoomPositionY}%`)
-  if (mapElement && viewportElement) {
+  if (mapElement && viewportElement && currentHost.classList.contains(ZOOMED_CLASS)) {
     syncMinimapGeometry()
     const trackHeight = mapElement.clientHeight || MAP_HEIGHT
     const viewportHeight = viewportElement.offsetHeight || getViewportHeight()
@@ -472,6 +479,9 @@ function syncMinimapGeometry() {
 }
 
 function renderMinimapFrame() {
+  if (!isVerticalZoomActive())
+    return
+
   const video = getVideoElement()
   if (!canvasElement || !video?.videoWidth || !video.videoHeight)
     return
@@ -549,6 +559,8 @@ function isCanvasFrameEffectivelyBlack(ctx: CanvasRenderingContext2D, width: num
 }
 
 function scheduleMinimapFrameRender(delay = 80, force = false) {
+  if (!isVerticalZoomActive())
+    return
   if (!force && Date.now() - lastMinimapRenderAt < MINIMAP_FRAME_REFRESH_INTERVAL)
     return
 
@@ -569,10 +581,23 @@ function syncVideoState() {
   const vertical = !!(video?.videoWidth && video.videoHeight && video.videoWidth < video.videoHeight)
   currentHost.classList.toggle(VERTICAL_CLASS, vertical)
   if (!vertical) {
+    if (minimapRenderTimer) {
+      clearTimeout(minimapRenderTimer)
+      minimapRenderTimer = null
+    }
+    hostActivityCleanup?.()
+    hostActivityCleanup = null
     currentHost.classList.remove(ZOOMED_CLASS)
     resetZoomPosition()
+    syncButtonLabel()
+    return
   }
 
+  // 仅竖屏视频挂载 ResizeObserver、全屏与指针监听及控件，避免横屏视频在加载和模式切换时产生无效重排。
+  if (!hostActivityCleanup)
+    bindHostActivity(currentHost)
+  ensureButton(currentHost)
+  ensureControl(currentHost)
   syncButtonLabel()
 }
 
@@ -636,10 +661,10 @@ function refreshVerticalVideoZoom() {
   const hostChanged = currentHost !== host
   currentHost = host
   currentHost.classList.add(HOST_CLASS)
-  if (hostChanged)
-    bindHostActivity(currentHost)
-  ensureButton(currentHost)
-  ensureControl(currentHost)
+  if (hostChanged) {
+    hostActivityCleanup?.()
+    hostActivityCleanup = null
+  }
   bindVideoMetadata(video)
   syncVideoState()
 

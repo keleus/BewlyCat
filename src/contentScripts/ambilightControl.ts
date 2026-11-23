@@ -17,6 +17,9 @@ let playerObserver: MutationObserver | null = null
 let observedModeTargets: Element[] = []
 let pageStateObserver: MutationObserver | null = null
 let syncTimer: ReturnType<typeof setTimeout> | null = null
+let pendingTeardownTimer: ReturnType<typeof setTimeout> | null = null
+let pendingResumeFrame: number | null = null
+const MODE_TEARDOWN_DEFER_MS = 350
 // 功能开启期间的视频发现与播放器形态监听；关闭时整体撤销，不在页面上保留任何监听
 let discoveryLifetime: AbortController | null = null
 // 引擎存在期间的布局与可见性监听
@@ -457,17 +460,70 @@ function updateLayout() {
   engine.invalidate()
 }
 
+function cancelPendingModeTransitions() {
+  if (pendingTeardownTimer !== null) {
+    clearTimeout(pendingTeardownTimer)
+    pendingTeardownTimer = null
+  }
+  if (pendingResumeFrame !== null) {
+    cancelAnimationFrame(pendingResumeFrame)
+    pendingResumeFrame = null
+  }
+}
+
 // 进出全屏、网页全屏、Bewly 宽屏或抽屉时启停环境光；仅在模式或启停状态真正变化时更新布局，
 // 避免播放器悬停、暂停、控制栏显隐等频繁改写 class 时反复触发整页布局重算
 function handlePlayerModeChange() {
-  const mode = isFeatureActive() ? resolveDisplayMode() : null
-  if (!mode) {
+  if (!isFeatureActive()) {
+    cancelPendingModeTransitions()
     if (engine)
       teardownEngine()
     return
   }
+
+  const mode = resolveDisplayMode()
+  if (!mode) {
+    if (pendingResumeFrame !== null) {
+      cancelAnimationFrame(pendingResumeFrame)
+      pendingResumeFrame = null
+    }
+    if (engine) {
+      // Bewly 宽屏仍显示侧栏文字，需立即恢复页面变量；
+      // 全屏/网页全屏覆盖整屏，先休眠并隐藏画布，把整页样式重算延后到过渡结束后执行。
+      if (isBewlyWidescreenActive()) {
+        teardownEngine()
+        return
+      }
+      engine.setSleeping(true)
+      if (pendingTeardownTimer === null) {
+        pendingTeardownTimer = setTimeout(() => {
+          pendingTeardownTimer = null
+          if (!isFeatureActive() || !resolveDisplayMode())
+            teardownEngine()
+        }, MODE_TEARDOWN_DEFER_MS)
+      }
+    }
+    return
+  }
+
+  if (pendingTeardownTimer !== null) {
+    clearTimeout(pendingTeardownTimer)
+    pendingTeardownTimer = null
+    if (engine) {
+      lastDisplayMode = mode
+      engine.setDisplayMode(mode)
+      engine.invalidate()
+      return
+    }
+  }
+
   if (!engine) {
-    sync()
+    if (pendingResumeFrame === null) {
+      pendingResumeFrame = requestAnimationFrame(() => {
+        pendingResumeFrame = null
+        sync()
+      })
+    }
     return
   }
   if (mode !== lastDisplayMode) {
@@ -540,6 +596,7 @@ function attachDiscoveryListeners() {
 }
 
 function detachDiscoveryListeners() {
+  cancelPendingModeTransitions()
   discoveryLifetime?.abort()
   discoveryLifetime = null
   pageStateObserver?.disconnect()
@@ -567,6 +624,7 @@ function attachEngineListeners() {
 }
 
 function teardownEngine() {
+  cancelPendingModeTransitions()
   engineLifetime?.abort()
   engineLifetime = null
   if (engine) {
@@ -580,6 +638,7 @@ function teardownEngine() {
 }
 
 function sync() {
+  cancelPendingModeTransitions()
   if (!isFeatureActive()) {
     stopObservingPlayerContainer()
     teardownEngine()
