@@ -172,10 +172,10 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode iframe,
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode table {
   max-width: 100% !important;
 }
-/* 目录所在侧栏在 article 模式重新显示（基础样式里可能被隐藏） */
-html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .right-sidebar-wrap:has(.catalog, .catalog-panel, [class*="catalog"], [class*="Catalog"]),
-html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .right-side-bar:has(.catalog, .catalog-panel, [class*="catalog"], [class*="Catalog"]),
-html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .side-toolbar:has(.catalog, .catalog-panel, [class*="catalog"], [class*="Catalog"]) {
+/* 目录所在侧栏在 article 模式重新显示（基础样式里可能被隐藏；由 JS 同步属性，避免 :has([class*="..."])） */
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .right-sidebar-wrap[data-bewly-opus-has-catalog="true"],
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .right-side-bar[data-bewly-opus-has-catalog="true"],
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .side-toolbar[data-bewly-opus-has-catalog="true"] {
   display: block !important;
   visibility: visible !important;
   pointer-events: auto !important;
@@ -1333,12 +1333,27 @@ function markTextOnly(enabled: boolean) {
   }
 }
 
+const ARTICLE_CATALOG_SIDEBAR_SELECTOR = '.right-sidebar-wrap, .right-side-bar, .side-toolbar'
+const ARTICLE_CATALOG_MARKER_SELECTOR = '.catalog, .catalog-panel, [class*="catalog"], [class*="Catalog"]'
+
+function syncArticleCatalogSidebars(enabled: boolean) {
+  const sidebars = document.querySelectorAll<HTMLElement>(ARTICLE_CATALOG_SIDEBAR_SELECTOR)
+  sidebars.forEach((sidebar) => {
+    const hasCatalog = enabled && Boolean(sidebar.querySelector(ARTICLE_CATALOG_MARKER_SELECTOR))
+    if (hasCatalog)
+      sidebar.dataset.bewlyOpusHasCatalog = 'true'
+    else
+      delete sidebar.dataset.bewlyOpusHasCatalog
+  })
+}
+
 function markArticleMode(enabled: boolean) {
   document.documentElement.classList.toggle('bewly-opus-article-mode', enabled)
   if (enabled) {
     markSplitReady(false)
     document.documentElement.classList.remove('bewly-opus-text-only')
   }
+  syncArticleCatalogSidebars(enabled)
 }
 
 const BILIBILI_IMAGE_HOST_RE = /(?:^|\.)(?:hdslb|biliimg)\.com$/i
@@ -2895,7 +2910,11 @@ export function setupOpusDetailDrawerLayout() {
 
   if (!observer) {
     observer = new MutationObserver(() => {
-      if (disabledSplit || layoutMode === 'disabled' || layoutMode === 'text' || layoutMode === 'article')
+      if (layoutMode === 'article') {
+        syncArticleCatalogSidebars(true)
+        return
+      }
+      if (disabledSplit || layoutMode === 'disabled' || layoutMode === 'text')
         return
 
       if (appliedSuccessfully && layoutMode === 'split') {

@@ -9,12 +9,17 @@ import {
 } from './originalMomentsFeed'
 
 const HIDDEN_CLASS = 'bewly-filtered-original-moment'
+const IGNORED_CARD_SUBTREE_SELECTOR = '.bili-comment-container, .bb-comment, .bpx-player-container, .bilibili-player'
 
-function shouldHide(card: HTMLElement) {
+function getBlockedKeywords(): string[] {
   const config = settings.value
-  const keywords = config.momentsEnableKeywordFilter
+  return config.momentsEnableKeywordFilter
     ? config.momentsBlockedKeywords.split(/[\n,，;；]+/).map(word => word.trim().toLowerCase()).filter(Boolean)
     : []
+}
+
+function shouldHide(card: HTMLElement, keywords = getBlockedKeywords()) {
+  const config = settings.value
   const content = card.querySelector('.bili-dyn-content')
   const searchableText = `${card.querySelector('.bili-dyn-title__text')?.textContent || ''} ${content?.textContent || ''}`.toLowerCase()
   if (keywords.some(word => searchableText.includes(word)))
@@ -62,26 +67,48 @@ export function setupOriginalMomentsFilter() {
   const feedObservers = new Map<Element, MutationObserver>()
   let style: HTMLStyleElement | undefined
   let frame: number | undefined
+  let feedRefreshFrame: number | undefined
   const pending = new Set<HTMLElement>()
 
   function scan(root: Element) {
-    root.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(card => card.classList.toggle(HIDDEN_CLASS, shouldHide(card)))
+    const keywords = getBlockedKeywords()
+    root.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(card => card.classList.toggle(HIDDEN_CLASS, shouldHide(card, keywords)))
   }
 
   function flush() {
     frame = undefined
-    pending.forEach(card => card.isConnected && card.classList.toggle(HIDDEN_CLASS, shouldHide(card)))
+    const keywords = getBlockedKeywords()
+    pending.forEach(card => card.isConnected && card.classList.toggle(HIDDEN_CLASS, shouldHide(card, keywords)))
     pending.clear()
   }
 
   function queue(element: Element, includeDescendants = false) {
+    if (element.closest(IGNORED_CARD_SUBTREE_SELECTOR))
+      return
     const card = element.closest<HTMLElement>(CARD_SELECTOR)
     if (card)
       pending.add(card)
-    if (includeDescendants)
+    if (includeDescendants && element.childElementCount > 0)
       element.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(item => pending.add(item))
     if (pending.size && frame === undefined)
       frame = requestAnimationFrame(flush)
+  }
+
+  function isObservedFeedNode(target: Node): boolean {
+    for (const root of feedObservers.keys()) {
+      if (root.contains(target))
+        return true
+    }
+    return false
+  }
+
+  function scheduleObserveFeed() {
+    if (feedRefreshFrame !== undefined)
+      return
+    feedRefreshFrame = requestAnimationFrame(() => {
+      feedRefreshFrame = undefined
+      observeFeed()
+    })
   }
 
   function observeFeed() {
@@ -124,6 +151,9 @@ export function setupOriginalMomentsFilter() {
       if (frame !== undefined)
         cancelAnimationFrame(frame)
       frame = undefined
+      if (feedRefreshFrame !== undefined)
+        cancelAnimationFrame(feedRefreshFrame)
+      feedRefreshFrame = undefined
       pending.clear()
       document.querySelectorAll<HTMLElement>(`.${HIDDEN_CLASS}`).forEach(card => card.classList.remove(HIDDEN_CLASS))
       return
@@ -134,8 +164,8 @@ export function setupOriginalMomentsFilter() {
       style.textContent = `.${HIDDEN_CLASS}, .bili-dyn-list__item:has(.${HIDDEN_CLASS}) { display: none !important; }`
       document.documentElement.append(style)
       pageObserver = new MutationObserver((mutations) => {
-        if (mutations.some(mutation => !Array.from(feedObservers.keys()).some(root => root.contains(mutation.target))))
-          observeFeed()
+        if (mutations.some(mutation => !isObservedFeedNode(mutation.target)))
+          scheduleObserveFeed()
       })
       pageObserver.observe(document.body || document.documentElement, { childList: true, subtree: true })
       observeFeed()

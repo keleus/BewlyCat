@@ -1,11 +1,62 @@
 import { runWhenIdle } from '~/utils/lazyLoad'
-import { isPhotoViewerOpen } from '~/utils/photoViewer'
+import { findOpenPhotoViewer, PHOTO_VIEWER_OPEN_SELECTOR } from '~/utils/photoViewer'
+
+const PLAYER_CONTAINER_SELECTOR = '.bpx-player-container, .bilibili-player'
 
 let observer: MutationObserver | null = null
 let wasPhotoViewerOpen = false
+let activeViewer: Element | null = null
+let checkScheduled = false
 let idleSetup: ReturnType<typeof runWhenIdle> | null = null
 let domReadyListener: (() => void) | null = null
 let rootReadyRetryTimer: number | null = null
+
+function isPhotoViewerElement(element: Element): boolean {
+  return element.classList.contains('pswp') || element.classList.contains('bewly-opus-viewer')
+}
+
+function isRelevantMutation(mutation: MutationRecord): boolean {
+  if (mutation.type === 'attributes') {
+    const target = mutation.target
+    if (!(target instanceof Element))
+      return false
+    return isPhotoViewerElement(target) || (wasPhotoViewerOpen && (!activeViewer || target === activeViewer))
+  }
+
+  if (wasPhotoViewerOpen && mutation.removedNodes.length > 0) {
+    if (!activeViewer?.isConnected || !activeViewer.matches(PHOTO_VIEWER_OPEN_SELECTOR))
+      return true
+  }
+
+  if (mutation.addedNodes.length === 0)
+    return false
+
+  // 播放器内部的弹幕与控件频繁增删，不会挂载图片查看器。
+  if (mutation.target instanceof Element && mutation.target.closest(PLAYER_CONTAINER_SELECTOR))
+    return false
+
+  for (let i = 0; i < mutation.addedNodes.length; i++) {
+    const node = mutation.addedNodes[i]
+    if (!(node instanceof Element))
+      continue
+    if (isPhotoViewerElement(node))
+      return true
+    if (node.childElementCount > 0 && findOpenPhotoViewer(node) !== null)
+      return true
+  }
+  return false
+}
+
+function scheduleCheckPhotoViewerState() {
+  if (checkScheduled)
+    return
+  checkScheduled = true
+  queueMicrotask(() => {
+    checkScheduled = false
+    if (observer)
+      checkPhotoViewerState()
+  })
+}
 
 function clearDeferredSetup() {
   idleSetup?.dispose()
@@ -46,8 +97,9 @@ function setupObserverWhenReady() {
     return
   }
 
-  observer = new MutationObserver(() => {
-    checkPhotoViewerState()
+  observer = new MutationObserver((mutations) => {
+    if (mutations.some(isRelevantMutation))
+      scheduleCheckPhotoViewerState()
   })
 
   observer.observe(target, {
@@ -81,7 +133,11 @@ export function setupIframePhotoViewerDetector() {
 }
 
 function checkPhotoViewerState() {
-  const isOpen = isPhotoViewerOpen()
+  const openViewer = activeViewer?.isConnected && activeViewer.matches(PHOTO_VIEWER_OPEN_SELECTOR)
+    ? activeViewer
+    : findOpenPhotoViewer()
+  activeViewer = openViewer
+  const isOpen = openViewer !== null
 
   // 只在状态变化时发送消息
   if (isOpen !== wasPhotoViewerOpen) {
@@ -99,5 +155,7 @@ export function cleanupIframePhotoViewerDetector() {
   clearDeferredSetup()
   observer?.disconnect()
   observer = null
+  activeViewer = null
+  checkScheduled = false
   wasPhotoViewerOpen = false
 }
