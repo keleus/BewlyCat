@@ -27,6 +27,10 @@ function withCompactI18nMessages(plugins: Plugin | Plugin[]): Plugin[] {
 // 内容脚本与页面脚本的共享配置，实际构建入口见 vite.config.content.ts 和 vite.config.inject.ts。
 export const sharedConfig: UserConfig = {
   root: r('src'),
+  css: {
+    // 启用多核 worker 并行编译 200+ 个 SCSS 模块，避免纯 JS 版 Dart Sass 阻塞主线程。
+    preprocessorMaxWorkers: true,
+  },
   resolve: {
     alias: [
       { find: '~/', replacement: `${r('src')}/` },
