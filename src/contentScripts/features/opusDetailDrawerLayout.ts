@@ -436,28 +436,29 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   display: flex !important;
   width: 300% !important;
   height: 100% !important;
-  will-change: transform !important;
-  transform: translate3d(-33.3333%, 0, 0);
+  transform: translate3d(calc(-100% / 3), 0, 0);
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__track.is-pos-left {
   transform: translate3d(0, 0, 0);
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__track.is-pos-center {
-  transform: translate3d(-33.3333%, 0, 0);
+  transform: translate3d(calc(-100% / 3), 0, 0);
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__track.is-pos-right {
-  transform: translate3d(-66.6667%, 0, 0);
+  transform: translate3d(calc(-200% / 3), 0, 0);
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__track.is-animating {
-  transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+  will-change: transform !important;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__slide {
-  flex: 0 0 33.3333% !important;
-  width: 33.3333% !important;
+  flex: 0 0 calc(100% / 3) !important;
+  width: calc(100% / 3) !important;
   height: 100% !important;
   min-width: 0 !important;
   position: relative !important;
   overflow: hidden !important;
+  contain: layout style paint !important;
   background: var(--bewly-opus-media-surface) !important;
 }
 /* 每页舞台：完整显示；横图宽度不够时宽度优先、上下留白；长图宽占满可纵向滚动 */
@@ -639,6 +640,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   box-sizing: border-box !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
+  contain: layout style !important;
   scrollbar-width: none !important;
   background: transparent !important;
   -webkit-overflow-scrolling: touch;
@@ -708,6 +710,8 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   white-space: nowrap !important;
   pointer-events: none !important;
   opacity: 0 !important;
+  visibility: hidden !important;
+  content-visibility: hidden !important;
 }
 /* 图片查看器 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer {
@@ -1337,6 +1341,20 @@ function markArticleMode(enabled: boolean) {
   }
 }
 
+const BILIBILI_IMAGE_HOST_RE = /(?:^|\.)(?:hdslb|biliimg)\.com$/i
+const BFS_HASH_FILENAME_RE = /\/bfs\/[^/]+\/(?:[^/]+\/)*([0-9a-f]{32,40})$/i
+const GALLERY_THUMB_SIZE = 120
+const GALLERY_STAGE_MAX_WIDTH = 1600
+
+function isBilibiliImageUrl(url: string): boolean {
+  try {
+    return BILIBILI_IMAGE_HOST_RE.test(new URL(url).hostname)
+  }
+  catch {
+    return false
+  }
+}
+
 function normalizeImageUrl(url = ''): string {
   const raw = url.trim()
   if (!raw)
@@ -1361,7 +1379,9 @@ function normalizeImageUrl(url = ''): string {
   if (parsed.protocol !== 'https:')
     return ''
 
-  parsed.pathname = parsed.pathname.replace(/@[^/?#]*(?=[?#]|$)/, '')
+  parsed.pathname = parsed.pathname.replace(/(?:@|%40)[^/?#]*$/, '')
+  if (BILIBILI_IMAGE_HOST_RE.test(parsed.hostname))
+    parsed.pathname = parsed.pathname.replace(/![^/?#]*$/, '')
   // URL.href already canonicalizes URL components. encodeURI additionally keeps
   // any remaining HTML/URL metacharacters from flowing into an image src while
   // the replacement preserves existing percent-encoded octets.
@@ -1370,6 +1390,33 @@ function normalizeImageUrl(url = ''): string {
   if (/\/face\/|\/bfs\/face\/|emoji|emote|static\.hdslb\.com\/images\/|\/garb\/|\/activity-plat\/|\/game\/|icon\.png|icon\.webp|favicon|avatar/i.test(next))
     return ''
   return next
+}
+
+function getGalleryThumbnailUrl(url: string): string {
+  if (!isBilibiliImageUrl(url))
+    return url
+  try {
+    const parsed = new URL(url)
+    parsed.pathname = `${parsed.pathname.replace(/(?:@|%40)[^/?#]*$/, '')}@${GALLERY_THUMB_SIZE}w_${GALLERY_THUMB_SIZE}h_1c.webp`
+    return parsed.href
+  }
+  catch {
+    return url
+  }
+}
+
+function getGalleryStageUrl(url: string): string {
+  // 动图保留原图以维持播放；静态大图按舞台所需尺寸加载 WebP，减少高分辨率原图解码与合成卡顿
+  if (/\.gif(?:[?#]|$)/i.test(url) || !isBilibiliImageUrl(url))
+    return url
+  try {
+    const parsed = new URL(url)
+    parsed.pathname = `${parsed.pathname.replace(/(?:@|%40)[^/?#]*$/, '')}@${GALLERY_STAGE_MAX_WIDTH}w.webp`
+    return parsed.href
+  }
+  catch {
+    return url
+  }
 }
 
 function isLikelyContentImage(img: HTMLImageElement): boolean {
@@ -1397,64 +1444,167 @@ function isLikelyContentImage(img: HTMLImageElement): boolean {
   return false
 }
 
-function getImageUrlKey(url: string) {
+function getImageUrlKey(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname.toLowerCase()
+    const cleanPath = parsed.pathname
+      .replace(/(?:@|%40)[^/]*$/, '')
+      .replace(/![^/]*$/, '')
+      .replace(/(?:_?\.(?:avif|webp|gif|jpe?g|png|heic|bmp))+$/i, '')
+      .toLowerCase()
+
+    if (BILIBILI_IMAGE_HOST_RE.test(host)) {
+      // 同一 BFS 图片在不同 CDN 节点（i0/i1/i2）或不同子路径下共享同一内容哈希
+      const hashMatch = BFS_HASH_FILENAME_RE.exec(cleanPath)
+      if (hashMatch)
+        return `bili-bfs:${hashMatch[1]}`
+      return `bili-cdn:${cleanPath}`
+    }
+
+    return `${host}${cleanPath}`
+  }
+  catch {
+    return url
+      .split(/[?#]/, 1)[0]
+      .replace(/(?:@|%40)[^/]*$/, '')
+      .replace(/![^/]*$/, '')
+      .replace(/(?:_?\.(?:avif|webp|gif|jpe?g|png|heic|bmp))+$/i, '')
+      .toLowerCase()
+  }
+}
+
+function getImageFormatPriority(url: string): number {
   const path = url.split(/[?#]/, 1)[0]
-  const isGif = /\.gif$/i.test(path)
-  return `${path.replace(/\.(?:avif|webp|gif|jpe?g|png)$/i, '').toLowerCase()}|${isGif ? 'gif' : 'static'}`
+  if (/\.gif$/i.test(path))
+    return 3
+  if (/\.(?:png|jpe?g)$/i.test(path))
+    return 2
+  if (/\.(?:webp|avif)$/i.test(path))
+    return 1
+  return 0
 }
 
-function isOriginalImageUrl(url: string) {
-  return /\.(?:gif|jpe?g|png)$/i.test(url.split(/[?#]/, 1)[0])
-}
-
-function extractImageUrls(albumNodes: HTMLElement[]): string[] {
+function dedupeImageUrls(rawUrls: string[]): string[] {
   const urls: string[] = []
   const urlIndexes = new Map<string, number>()
-  const push = (raw?: string | null) => {
+
+  for (const raw of rawUrls) {
     const url = normalizeImageUrl(raw || '')
     if (!url)
-      return
+      continue
     const key = getImageUrlKey(url)
     const existingIndex = urlIndexes.get(key)
     if (existingIndex !== undefined) {
-      // GIF 原图优先于同一资源的 webp/jpg 缩略图，避免详情查看器出现两页相同动图。
-      if (isOriginalImageUrl(url) && !isOriginalImageUrl(urls[existingIndex]))
+      // 优先保留原图格式（GIF > JPG/PNG > WebP/AVIF），避免同一资源出现重复页
+      if (getImageFormatPriority(url) > getImageFormatPriority(urls[existingIndex]))
         urls[existingIndex] = url
-      return
+      continue
     }
     urlIndexes.set(key, urls.length)
     urls.push(url)
   }
 
-  albumNodes.forEach((node) => {
-    if (node instanceof HTMLImageElement) {
-      if (isLikelyContentImage(node))
-        push(node.getAttribute('data-src') || node.getAttribute('src') || node.currentSrc)
+  return urls
+}
+
+function parseFirstSrcsetUrl(srcset: string): string {
+  return srcset.split(',')[0]?.trim().split(/\s+/)[0] || ''
+}
+
+function extractImageUrls(albumNodes: HTMLElement[]): string[] {
+  const urls: string[] = []
+  const urlIndexes = new Map<string, number>()
+  const handledPictures = new WeakSet<HTMLPictureElement>()
+  const handledImages = new WeakSet<HTMLImageElement>()
+
+  const push = (raw?: string | null): boolean => {
+    const url = normalizeImageUrl(raw || '')
+    if (!url)
+      return false
+    const key = getImageUrlKey(url)
+    const existingIndex = urlIndexes.get(key)
+    if (existingIndex !== undefined) {
+      // 优先保留原图格式（GIF > JPG/PNG > WebP/AVIF），避免同一资源出现重复页
+      if (getImageFormatPriority(url) > getImageFormatPriority(urls[existingIndex]))
+        urls[existingIndex] = url
+      return true
+    }
+    urlIndexes.set(key, urls.length)
+    urls.push(url)
+    return true
+  }
+
+  const extractFromContainer = (container: HTMLElement) => {
+    const countBeforeContainer = urls.length
+
+    if (container instanceof HTMLImageElement) {
+      if (isLikelyContentImage(container))
+        push(container.getAttribute('data-src') || container.getAttribute('src') || container.currentSrc)
       return
     }
 
-    node.querySelectorAll('img').forEach((img) => {
+    container.querySelectorAll('img').forEach((img) => {
       if (!isLikelyContentImage(img))
         return
-      push(img.getAttribute('data-src') || img.getAttribute('src') || img.currentSrc)
+      const accepted = push(img.getAttribute('data-src') || img.getAttribute('src') || img.currentSrc)
+      if (!accepted)
+        return
+      handledImages.add(img)
+      const picture = img.closest('picture')
+      if (picture)
+        handledPictures.add(picture)
     })
 
-    node.querySelectorAll('source[srcset], img[srcset]').forEach((el) => {
-      if (el instanceof HTMLImageElement && !isLikelyContentImage(el))
+    // <source> 属于同一 <picture> 的候选格式源，仅在对应 <img> 未取到有效地址时兜底，避免整组图片被二次收集
+    container.querySelectorAll('source[srcset], img[srcset]').forEach((el) => {
+      if (el instanceof HTMLImageElement) {
+        if (handledImages.has(el) || !isLikelyContentImage(el))
+          return
+        const accepted = push(parseFirstSrcsetUrl(el.getAttribute('srcset') || ''))
+        if (!accepted)
+          return
+        handledImages.add(el)
+        const picture = el.closest('picture')
+        if (picture)
+          handledPictures.add(picture)
         return
+      }
       if (isExcludedMediaNode(el))
         return
-      const srcset = el.getAttribute('srcset') || ''
-      const first = srcset.split(',')[0]?.trim().split(/\s+/)[0]
-      push(first)
+      const picture = el.closest('picture')
+      if (picture && handledPictures.has(picture))
+        return
+      const accepted = push(parseFirstSrcsetUrl(el.getAttribute('srcset') || ''))
+      if (accepted && picture)
+        handledPictures.add(picture)
     })
 
-    node.querySelectorAll<HTMLElement>('[style*="background-image"]').forEach((el) => {
-      if (isExcludedMediaNode(el))
+    // 仅在容器未提取到 <img>/<picture> 时回退读取背景图，避免收集模糊底图或装饰层
+    if (urls.length === countBeforeContainer) {
+      container.querySelectorAll<HTMLElement>('[style*="background-image"]').forEach((el) => {
+        if (isExcludedMediaNode(el))
+          return
+        const match = /url\(["']?(.*?)["']?\)/.exec(el.style.backgroundImage || '')
+        push(match?.[1])
+      })
+    }
+  }
+
+  albumNodes.forEach((node) => {
+    // .bili-album 同时包含 .bili-album__preview 与原生查看器轨道 .bili-album__watch（同一组图两份 DOM），
+    // 优先只扫 preview，未取到图时再回退扫整个相册容器。
+    const previewNode = node.matches('.bili-album')
+      ? node.querySelector<HTMLElement>(':scope > .bili-album__preview')
+      : null
+    if (previewNode) {
+      const countBeforePreview = urls.length
+      extractFromContainer(previewNode)
+      if (urls.length > countBeforePreview)
         return
-      const match = /url\(["']?(.*?)["']?\)/.exec(el.style.backgroundImage || '')
-      push(match?.[1])
-    })
+    }
+
+    extractFromContainer(node)
   })
 
   return urls
@@ -1488,9 +1638,7 @@ function unmountGalleryIcons() {
 }
 
 function createImageGallery(rawUrls: string[]): HTMLElement {
-  const urls = rawUrls
-    .map(url => normalizeImageUrl(url))
-    .filter((url): url is string => Boolean(url))
+  const urls = dedupeImageUrls(rawUrls)
   unmountGalleryIcons()
   const gallery = document.createElement('div')
   gallery.className = 'bewly-opus-gallery'
@@ -1514,7 +1662,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   const track = document.createElement('div')
   track.className = 'bewly-opus-gallery__track'
 
-  /** 三页窗口：左 / 中 / 右，切换时整轨平移 */
+  /** 三页窗口：左 / 中 / 右，切换时整轨平移并在结束后轮转节点 */
   const slides = [0, 1, 2].map(() => {
     const slide = document.createElement('div')
     slide.className = 'bewly-opus-gallery__slide'
@@ -1527,7 +1675,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     stage.appendChild(image)
     slide.appendChild(stage)
     track.appendChild(slide)
-    return { slide, stage, image }
+    return {
+      slide,
+      stage,
+      image,
+      urlIndex: null as number | null,
+    }
   })
 
   const counter = document.createElement('div')
@@ -1627,6 +1780,8 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
 
   let index = 0
   let isAnimating = false
+  let pendingMoveDir: -1 | 0 | 1 = 0
+  let animTimer: ReturnType<typeof setTimeout> | null = null
   let viewerOpen = false
   let viewerHostedByParent = false
   let viewerIndex = 0
@@ -1644,9 +1799,10 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   let wheelResetTimer: ReturnType<typeof setTimeout> | null = null
   let scrollHideTimer: ReturnType<typeof setTimeout> | null = null
   const WHEEL_THRESHOLD = 96
-  const WHEEL_LOCK_MS = 520
-  const ANIM_MS = 320
+  const WHEEL_LOCK_MS = 380
+  const ANIM_MS = 280
   const preloaded = new Set<string>()
+  const thumbButtons: HTMLButtonElement[] = []
 
   const setTrackPos = (pos: 'left' | 'center' | 'right', animate: boolean) => {
     track.classList.toggle('is-animating', animate)
@@ -1709,6 +1865,13 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       syncOpusImageFit(stage, image)
       if (stage === getCenterStage())
         syncOverlayScrollbar()
+    })
+    image.addEventListener('error', () => {
+      const fallback = image.dataset.bewlyFallbackSrc
+      if (fallback && image.src !== fallback) {
+        image.dataset.bewlyFallbackSrc = ''
+        image.src = fallback
+      }
     })
   })
 
@@ -1783,27 +1946,43 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   const preloadAround = (center: number) => {
-    if (!urls.length)
+    if (urls.length <= 1)
       return
 
-    // 预加载相邻与再外侧一张，减少切页白闪
-    const neighborIndexes = [center - 2, center - 1, center, center + 1, center + 2]
+    // 预加载相邻与再外侧一张舞台尺寸图，减少切页白闪与高分原图解码压力
+    const neighborIndexes = [center - 2, center - 1, center + 1, center + 2]
+    neighborIndexes.forEach((i) => {
+      preloadUrl(getGalleryStageUrl(urls[wrapIndex(i)]))
+    })
+  }
+
+  const preloadViewerAround = (center: number) => {
+    if (urls.length <= 1)
+      return
+
+    const neighborIndexes = [center - 1, center + 1]
     neighborIndexes.forEach((i) => {
       preloadUrl(urls[wrapIndex(i)])
     })
   }
 
   const setSlideImage = (slot: number, urlIndex: number) => {
-    const { image, stage } = slides[slot]
-    const url = urls[wrapIndex(urlIndex)]
-    if (image.src !== url) {
-      stage.classList.remove('is-long', 'is-fit-width', 'is-cover-fill')
-      image.src = url
-      preloadUrl(url)
+    const item = slides[slot]
+    const normalizedIndex = wrapIndex(urlIndex)
+    if (item.urlIndex === normalizedIndex && item.image.getAttribute('src')) {
+      if (slot !== 1)
+        item.stage.scrollTop = 0
+      return
     }
-    if (image.complete && image.naturalWidth)
-      syncOpusImageFit(stage, image)
-    stage.scrollTop = 0
+    const originalUrl = urls[normalizedIndex]
+    const stageUrl = getGalleryStageUrl(originalUrl)
+    item.urlIndex = normalizedIndex
+    item.stage.classList.remove('is-long', 'is-fit-width', 'is-cover-fill')
+    item.image.dataset.bewlyFallbackSrc = stageUrl !== originalUrl ? originalUrl : ''
+    item.image.src = stageUrl
+    if (item.image.complete && item.image.naturalWidth)
+      syncOpusImageFit(item.stage, item.image)
+    item.stage.scrollTop = 0
   }
 
   const fillWindow = () => {
@@ -1820,8 +1999,6 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       setSlideImage(2, index + 1)
     }
     setTrackPos('center', false)
-    // 强制回流，保证下次过渡生效
-    void track.offsetWidth
     preloadAround(index)
     requestAnimationFrame(() => syncOverlayScrollbar())
   }
@@ -1830,12 +2007,62 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     counter.textContent = `${index + 1}/${urls.length}`
     prevBtn.disabled = urls.length <= 1
     nextBtn.disabled = urls.length <= 1
-    Array.from(thumbs.querySelectorAll<HTMLElement>('.bewly-opus-gallery__thumb')).forEach((thumb, i) => {
+    thumbButtons.forEach((thumb, i) => {
       thumb.classList.toggle('is-active', i === index)
     })
-    const activeThumb = thumbs.querySelector<HTMLElement>('.bewly-opus-gallery__thumb.is-active')
-    activeThumb?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    const activeThumb = thumbButtons[index]
+    if (activeThumb && thumbs.scrollWidth > thumbs.clientWidth) {
+      const targetLeft = activeThumb.offsetLeft - (thumbs.clientWidth - activeThumb.offsetWidth) / 2
+      thumbs.scrollTo({
+        left: Math.max(0, Math.min(thumbs.scrollWidth - thumbs.clientWidth, targetLeft)),
+        behavior: 'smooth',
+      })
+    }
   }
+
+  const finishAnimation = () => {
+    if (animTimer) {
+      clearTimeout(animTimer)
+      animTimer = null
+    }
+    if (!isAnimating)
+      return
+    isAnimating = false
+    const dir = pendingMoveDir
+    pendingMoveDir = 0
+    if (!track.isConnected)
+      return
+
+    // 轮转滑轨 DOM 节点，保留当前与上一张已解码的纹理，避免切页后三张图同时重设 src
+    if (dir > 0) {
+      const recycled = slides.shift()
+      if (recycled) {
+        slides.push(recycled)
+        track.appendChild(recycled.slide)
+      }
+    }
+    else if (dir < 0) {
+      const recycled = slides.pop()
+      if (recycled) {
+        slides.unshift(recycled)
+        track.prepend(recycled.slide)
+      }
+    }
+
+    setTrackPos('center', false)
+    if (urls.length > 1) {
+      setSlideImage(0, index - 1)
+      setSlideImage(1, index)
+      setSlideImage(2, index + 1)
+    }
+    preloadAround(index)
+    requestAnimationFrame(() => syncOverlayScrollbar())
+  }
+
+  track.addEventListener('transitionend', (e) => {
+    if (e.target === track && e.propertyName === 'transform')
+      finishAnimation()
+  })
 
   /**
    * 平移切换
@@ -1843,8 +2070,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
    * @param dir 1=下一张(向左平移) -1=上一张(向右平移) 0=自动判断方向
    */
   const go = (nextIndex: number, dir: -1 | 0 | 1 = 0) => {
-    if (!urls.length || isAnimating)
+    if (!urls.length)
       return
+    const wasAnimating = isAnimating
+    if (wasAnimating)
+      finishAnimation()
+
     const target = wrapIndex(nextIndex)
     if (target === index)
       return
@@ -1870,19 +2101,19 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     else
       setSlideImage(0, target)
 
+    index = target
+    syncChrome()
+
     isAnimating = true
+    pendingMoveDir = moveDir
     wheelAccum = 0
-    // 强制当前为 center 无过渡，再开启动画滑到左/右
-    setTrackPos('center', false)
-    void track.offsetWidth
+    if (wasAnimating || !track.classList.contains('is-pos-center') || track.classList.contains('is-animating')) {
+      setTrackPos('center', false)
+      void track.offsetWidth
+    }
     setTrackPos(moveDir > 0 ? 'right' : 'left', true)
 
-    window.setTimeout(() => {
-      index = target
-      fillWindow()
-      syncChrome()
-      isAnimating = false
-    }, ANIM_MS)
+    animTimer = setTimeout(finishAnimation, ANIM_MS + 80)
   }
 
   const syncViewerTransform = () => {
@@ -1926,7 +2157,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     viewerPrev.disabled = urls.length <= 1
     viewerNext.disabled = urls.length <= 1
     resetViewerTransform()
-    preloadAround(viewerIndex)
+    preloadViewerAround(viewerIndex)
   }
 
   const openLocalViewer = (nextIndex: number) => {
@@ -1970,11 +2201,11 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       go(viewerIndex, 0)
   }
 
-  slides.forEach(({ image }, slot) => {
-    image.addEventListener('click', (e) => {
+  slides.forEach((item) => {
+    item.image.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
-      openViewer(index + slot - 1)
+      openViewer(item.urlIndex ?? index)
     })
   })
 
@@ -2109,20 +2340,25 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       thumb.className = 'bewly-opus-gallery__thumb'
       thumb.setAttribute('aria-label', `查看第 ${i + 1} 张`)
       const thumbImg = document.createElement('img')
-      thumbImg.src = url
+      const thumbSrc = getGalleryThumbnailUrl(url)
+      thumbImg.src = thumbSrc
+      if (thumbSrc !== url) {
+        thumbImg.addEventListener('error', () => {
+          if (thumbImg.src !== url)
+            thumbImg.src = url
+        }, { once: true })
+      }
       thumbImg.alt = ''
       thumbImg.decoding = 'async'
-      thumbImg.loading = i < 6 ? 'eager' : 'lazy'
+      thumbImg.loading = i < 8 ? 'eager' : 'lazy'
       thumb.appendChild(thumbImg)
       thumb.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
         go(i, 0)
       })
+      thumbButtons.push(thumb)
       thumbs.appendChild(thumb)
-      // 缩略图也算预加载入口
-      if (i < 8)
-        preloadUrl(url)
     })
 
     footer.appendChild(thumbs)

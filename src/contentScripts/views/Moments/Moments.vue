@@ -405,16 +405,46 @@ onBeforeUnmount(() => {
     clearTimeout(pinnedListCollapseTimer)
 })
 
+const BILIBILI_DETAIL_IMAGE_HOST_RE = /(?:^|\.)(?:hdslb|biliimg)\.com$/i
+const BILIBILI_DETAIL_BFS_HASH_RE = /\/bfs\/[^/]+\/(?:[^/]+\/)*([0-9a-f]{32,40})$/i
+
 function getDetailImageUrlKey(url: string) {
-  const path = httpsUrl(url.trim())
-    .replace(/@[^/?#]*(?=[?#]|$)/, '')
-    .split(/[?#]/, 1)[0]
-  const isGif = /\.gif$/i.test(path)
-  return `${path.replace(/\.(?:avif|webp|gif|jpe?g|png)$/i, '').toLowerCase()}|${isGif ? 'gif' : 'static'}`
+  const normalized = httpsUrl(url.trim())
+  try {
+    const parsed = new URL(normalized)
+    const host = parsed.hostname.toLowerCase()
+    const cleanPath = parsed.pathname
+      .replace(/(?:@|%40)[^/]*$/, '')
+      .replace(/![^/]*$/, '')
+      .replace(/(?:_?\.(?:avif|webp|gif|jpe?g|png|heic|bmp))+$/i, '')
+      .toLowerCase()
+    if (BILIBILI_DETAIL_IMAGE_HOST_RE.test(host)) {
+      const hashMatch = BILIBILI_DETAIL_BFS_HASH_RE.exec(cleanPath)
+      if (hashMatch)
+        return `bili-bfs:${hashMatch[1]}`
+      return `bili-cdn:${cleanPath}`
+    }
+    return `${host}${cleanPath}`
+  }
+  catch {
+    return normalized
+      .split(/[?#]/, 1)[0]
+      .replace(/(?:@|%40)[^/]*$/, '')
+      .replace(/![^/]*$/, '')
+      .replace(/(?:_?\.(?:avif|webp|gif|jpe?g|png|heic|bmp))+$/i, '')
+      .toLowerCase()
+  }
 }
 
-function isOriginalDetailImageUrl(url: string) {
-  return /\.(?:gif|jpe?g|png)$/i.test(url.split(/[?#]/, 1)[0])
+function getDetailImageFormatPriority(url: string) {
+  const path = url.split(/[?#]/, 1)[0]
+  if (/\.gif$/i.test(path))
+    return 3
+  if (/\.(?:png|jpe?g)$/i.test(path))
+    return 2
+  if (/\.(?:webp|avif)$/i.test(path))
+    return 1
+  return 0
 }
 
 function normalizeDetailImageViewerPayload(value: unknown, requestedIndex: unknown) {
@@ -430,7 +460,7 @@ function normalizeDetailImageViewerPayload(value: unknown, requestedIndex: unkno
       const existingIndex = urlIndexes.get(key)
       if (existingIndex !== undefined) {
         sourceIndexes[sourceIndex] = existingIndex
-        if (isOriginalDetailImageUrl(url) && !isOriginalDetailImageUrl(urls[existingIndex]))
+        if (getDetailImageFormatPriority(url) > getDetailImageFormatPriority(urls[existingIndex]))
           urls[existingIndex] = url
         return
       }
