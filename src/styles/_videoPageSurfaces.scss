@@ -31,7 +31,6 @@
   .bpx-player-video-inputbar-wrap,
   .bilibili-player-video-sendbar,
   .bilibili-player-video-inputbar,
-  [class*="NanoPlayer_nonoPlayerSendingBar"],
   .bpx-player-sending-area::before,
   .bpx-player-sending-area::after {
     background: transparent !important;
@@ -62,7 +61,6 @@
   .video-desc-container,
   .bpx-player-dm-wrap,
   #danmukuBox,
-  [class*="DanmukuBox_wrap"],
   .danmaku-box,
   .danmaku-wrap,
   .bpx-docker,
@@ -72,7 +70,7 @@
   .bpx-player-collapse .bui-collapse-wrap,
   .bpx-player-collapse .bui-collapse-header,
   .bpx-player-collapse .bui-collapse-body,
-  :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap)
+  :is(#danmukuBox, .danmaku-box, .danmaku-wrap)
     :is(
       .bui-collapse-wrap,
       .bui-collapse-header,
@@ -182,6 +180,21 @@
     box-shadow: none !important;
   }
 
+  [class*="NanoPlayer_nonoPlayerSendingBar"],
+  [class*="DanmukuBox_wrap"],
+  [class*="DanmukuBox_wrap"]
+    :is(
+      .bui-collapse-wrap,
+      .bui-collapse-header,
+      .bui-collapse-body,
+      .bui-area,
+      .bpx-player-wraplist,
+      .bpx-player-filter-wrap,
+      .bpx-player-dm-container,
+      .bui-long-list-wrap,
+      .bui-long-list-list,
+      .bui-long-list-item
+    ),
   [class*="eplist_ep_list_wrapper"],
   [class*="PaginatedEpList_root"],
   [class*="SectionPanel_panel"],

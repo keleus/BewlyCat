@@ -72,9 +72,13 @@ html.rounded-video-player {
       }
     }
 
-    // 占位层与番剧内层黑底为直角，需清除背景与方角阴影以免从圆角外侧露出
+    // 占位层为直角，需清除背景与方角阴影以免从圆角外侧露出
     @include surfaces.transparent-player-placeholders;
+  }
 
+  // 番剧/电影播放页内层黑底透明穿透限定在 animePlaybackAndMoviePage 下，
+  // 避免普通视频页遍历番剧专属 [class*="..."] 选择器。
+  &.animePlaybackAndMoviePage body:not(.bewly-widescreen-active) {
     #bilibili-player-wrap:not(
         :has(
           [data-screen="full"],
