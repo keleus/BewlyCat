@@ -63,8 +63,10 @@ interface BewlyWidescreenState {
 
 const ROOT_ID = 'bewly-widescreen-root'
 const DANMAKU_DOCK_SENDING_BAR = '.bewly-widescreen-danmaku-dock .bpx-player-sending-bar'
-const REVISED_SENDING_BAR = `#${ROOT_ID}:has(.bpx-player-container:is([data-revision="1"], [data-revision="2"])) ${DANMAKU_DOCK_SENDING_BAR}`
-const REVISION_2_SENDING_BAR = `#${ROOT_ID}:has(.bpx-player-container[data-revision="2"]) ${DANMAKU_DOCK_SENDING_BAR}`
+// 播放器 data-revision 由 JS 同步到根容器，避免在包含超长合集/评论的根容器上挂 :has()
+const REVISED_SENDING_BAR = `#${ROOT_ID}:is([data-player-revision="1"], [data-player-revision="2"]) ${DANMAKU_DOCK_SENDING_BAR}`
+const REVISION_2_SENDING_BAR = `#${ROOT_ID}[data-player-revision="2"] ${DANMAKU_DOCK_SENDING_BAR}`
+const BANGUMI_SCOPE = 'html.animePlaybackAndMoviePage'
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const SWITCH_HINT_ID = 'bewly-widescreen-switch-hint'
 export const BEWLY_WIDESCREEN_USER_EXIT = 'bewly-widescreen-user-exit'
@@ -242,8 +244,20 @@ const selectors = {
   ],
 }
 
+function isBangumiPage(): boolean {
+  return document.documentElement.classList.contains('animePlaybackAndMoviePage')
+    || /\/bangumi\/play\//.test(location.pathname)
+}
+
+function shouldSkipSelectorOnCurrentPage(selector: string, bangumi: boolean): boolean {
+  return !bangumi && selector.includes('[class*=')
+}
+
 function findFirst(selectors: string[], root: ParentNode = document): HTMLElement | null {
+  const bangumi = isBangumiPage()
   for (const selector of selectors) {
+    if (shouldSkipSelectorOnCurrentPage(selector, bangumi))
+      continue
     const element = root.querySelector<HTMLElement>(selector)
     if (element)
       return element
@@ -252,7 +266,10 @@ function findFirst(selectors: string[], root: ParentNode = document): HTMLElemen
 }
 
 function findMovable(selectors: string[]): HTMLElement | null {
+  const bangumi = isBangumiPage()
   for (const selector of selectors) {
+    if (shouldSkipSelectorOnCurrentPage(selector, bangumi))
+      continue
     const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
     const element = candidates.find(candidate =>
       !candidate.closest(`#${ROOT_ID}`)
@@ -298,7 +315,10 @@ function unbindReactEventBridge(node: HTMLElement) {
 }
 
 function findMovablePlaylist() {
+  const bangumi = isBangumiPage()
   for (const selector of selectors.playlist) {
+    if (shouldSkipSelectorOnCurrentPage(selector, bangumi))
+      continue
     const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
     const element = candidates.find(candidate =>
       !candidate.closest(`#${ROOT_ID}`)
@@ -1619,8 +1639,8 @@ function injectLayoutStyle() {
       height: 100% !important;
     }
 
-    #${ROOT_ID} #bilibili-player-wrap .video_playerInner,
-    #${ROOT_ID} #bilibili-player-wrap [class*="video_playerInner"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} #bilibili-player-wrap .video_playerInner,
+    ${BANGUMI_SCOPE} #${ROOT_ID} #bilibili-player-wrap [class*="video_playerInner"] {
       position: absolute !important;
       inset: 0 !important;
       width: 100% !important;
@@ -1629,9 +1649,9 @@ function injectLayoutStyle() {
       margin: 0 !important;
     }
 
-    #${ROOT_ID} #bilibili-player-wrap [class*="NanoPlayer_nonoPlayerContainer"],
-    #${ROOT_ID} #bilibili-player-wrap [class*="NanoPlayer_nonoPlayerPrimaryArea"],
-    #${ROOT_ID} #bilibili-player-wrap [class*="NanoPlayer_nanoDocker"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} #bilibili-player-wrap [class*="NanoPlayer_nonoPlayerContainer"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} #bilibili-player-wrap [class*="NanoPlayer_nonoPlayerPrimaryArea"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} #bilibili-player-wrap [class*="NanoPlayer_nanoDocker"] {
       width: 100% !important;
       height: 100% !important;
       min-width: 0 !important;
@@ -2127,8 +2147,8 @@ function injectLayoutStyle() {
     }
 
     /* PGC 播放页的 mediaInfo 原本按整栏宽度排版，搬入窄侧栏后收紧封面和
-       标题间距，保留评分、简介与「追番」入口的可见性。 */
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaInfoWrap"] {
+       标题间距，保留评分、简介与「追番」入口的可见性。限定番剧页避免普通视频页遍历 [class*="..."]。 */
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaInfoWrap"] {
       display: flex !important;
       width: 100% !important;
       min-width: 0 !important;
@@ -2137,7 +2157,7 @@ function injectLayoutStyle() {
       overflow: visible !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaCover"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaCover"] {
       width: 72px !important;
       height: 96px !important;
       flex: 0 0 72px !important;
@@ -2145,11 +2165,11 @@ function injectLayoutStyle() {
       border-radius: var(--bew-radius-md, 8px) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaRight"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaRight"] {
       min-width: 0 !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaTitle"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaTitle"] {
       height: auto !important;
       max-height: 40px !important;
       padding-right: 0 !important;
@@ -2160,7 +2180,7 @@ function injectLayoutStyle() {
       -webkit-line-clamp: 2 !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaDesc"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaDesc"] {
       height: auto !important;
       max-height: 32px !important;
       margin-bottom: 4px !important;
@@ -2169,7 +2189,7 @@ function injectLayoutStyle() {
       line-height: var(--bew-line-height-caption, 16px) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_media_desc_section"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_media_desc_section"] {
       height: 36px !important;
       margin-bottom: 4px !important;
       color: var(--bewly-widescreen-text-secondary) !important;
@@ -2177,8 +2197,8 @@ function injectLayoutStyle() {
       line-height: var(--bew-line-height-caption, 18px) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_bottomBar"],
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaToolbar"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_bottomBar"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaToolbar"] {
       display: flex !important;
       align-items: center !important;
       flex-wrap: wrap !important;
@@ -2188,7 +2208,7 @@ function injectLayoutStyle() {
     }
 
     /* 原站把追番工具栏绝对定位在标题右侧；窄侧栏改为独立一行。 */
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaToolbar"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaToolbar"] {
       position: static !important;
       inset: auto !important;
       width: 100% !important;
@@ -2199,11 +2219,11 @@ function injectLayoutStyle() {
       z-index: 4;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaToolbar"] > * {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="mediainfo_mediaToolbar"] > * {
       min-width: 0 !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-info-slot [class*="follow_btnFollow"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-info-slot [class*="follow_btnFollow"] {
       padding: 4px 12px !important;
       font-size: var(--bew-font-size-caption, 12px) !important;
       line-height: var(--bew-line-height-caption, 16px) !important;
@@ -2854,23 +2874,23 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-panel-playlist .video-sections-v1,
     #${ROOT_ID} .bewly-widescreen-panel-playlist .video-sections-content-list,
     #${ROOT_ID} .bewly-widescreen-panel-playlist #eplist_module,
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="eplist_ep_list_wrapper"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="numberList_wrapper"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="imageList_wrap"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="eplist_ep_list_wrapper"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="numberList_wrapper"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="imageList_wrap"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"] {
       height: auto !important;
       min-height: 0 !important;
       max-height: none !important;
       overflow: visible !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel [class*="eplist_ep_list_wrapper"],
-    #${ROOT_ID} .bewly-widescreen-panel [class*="PaginatedEpList_root"],
-    #${ROOT_ID} .bewly-widescreen-panel [class*="SectionPanel_panel"],
-    #${ROOT_ID} .bewly-widescreen-panel [class*="recommend_wrap"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="eplist_ep_list_wrapper"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="PaginatedEpList_root"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="SectionPanel_panel"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="recommend_wrap"],
     #${ROOT_ID} .bewly-widescreen-panel #danmukuBox,
-    #${ROOT_ID} .bewly-widescreen-panel [class*="DanmukuBox_wrap"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="DanmukuBox_wrap"],
     #${ROOT_ID} .bewly-widescreen-panel #comment-module,
     #${ROOT_ID} .bewly-widescreen-panel #comment-body {
       position: relative !important;
@@ -2885,8 +2905,8 @@ function injectLayoutStyle() {
       z-index: auto !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel [class*="numberList_wrapper"],
-    #${ROOT_ID} .bewly-widescreen-panel [class*="imageList_wrap"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="numberList_wrapper"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel [class*="imageList_wrap"] {
       width: 100% !important;
       max-width: 100% !important;
     }
@@ -2895,7 +2915,8 @@ function injectLayoutStyle() {
        由内联高度定死 .bpx-player-wraplist 与 .bpx-player-dm-wrap，这里只改写
        这两层：前者扣除 44px 折叠标题栏，后者再扣除原站列头、底部按钮与
        间距共 71px；收起时（-folded）保持原站高度与动画。 */
-    #${ROOT_ID} .bewly-widescreen-panel-danmaku > :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap) {
+    #${ROOT_ID} .bewly-widescreen-panel-danmaku > :is(#danmukuBox, .danmaku-box, .danmaku-wrap),
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-danmaku > [class*="DanmukuBox_wrap"] {
       margin-bottom: 0 !important;
     }
 
@@ -2928,8 +2949,8 @@ function injectLayoutStyle() {
 
     /* New bangumi lists already scroll inside EpisodeVirtualList. Keep the
        outer module in the panel flow so header/tabs stay visible. */
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"].${EPISODE_SECTION_CLASS},
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"].${EPISODE_SECTION_CLASS} {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"].${EPISODE_SECTION_CLASS},
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"].${EPISODE_SECTION_CLASS} {
       max-height: none !important;
       overflow: visible !important;
     }
@@ -2972,7 +2993,7 @@ function injectLayoutStyle() {
     /* New bangumi pages keep the episode list in a hidden player popover.
        Once moved into the sidebar, give the original virtualized list a
        stable flex height and let its own scroll container remain in charge. */
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_panel"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_panel"] {
       display: flex !important;
       flex-direction: column !important;
       position: relative !important;
@@ -2987,37 +3008,37 @@ function injectLayoutStyle() {
       visibility: visible !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeScrollFrame"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeScrollFrame"] {
       flex: 1 1 auto !important;
       width: 100% !important;
       height: auto !important;
       min-height: 0 !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class^="PlayerEpisodePanel_episodeScroll__"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class^="PlayerEpisodePanel_episodeScroll__"] {
       width: 100% !important;
       height: 100% !important;
       min-height: 0 !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_header"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_pageTab"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_header"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_pageTab"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"] {
       color: var(--bewly-widescreen-text-primary) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_pageTabActive"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRowActive"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_rowPlaying"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_pageTabActive"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRowActive"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_rowPlaying"] {
       color: var(--bew-theme-color, #00aeec) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"]:hover {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"]:hover {
       background: var(--bewly-widescreen-control-bg) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"] {
       display: flex !important;
       flex-direction: column !important;
       position: relative !important;
@@ -3028,40 +3049,40 @@ function injectLayoutStyle() {
       visibility: visible !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_scroll"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_scroll"] {
       width: 100% !important;
       max-height: min(40dvh, 420px) !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_header"] h3,
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_titleWrap"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PageTabs_tab"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionTabs_tab"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_listItem"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_copy"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_header"] h3,
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_titleWrap"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PageTabs_tab"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionTabs_tab"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_listItem"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_copy"] {
       color: var(--bewly-widescreen-text-primary) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"] {
       background: var(--bewly-widescreen-control-bg) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PageTabs_active"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionTabs_active"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeItem"] {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PageTabs_active"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionTabs_active"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeItem"] {
       color: var(--bew-theme-color, #00aeec) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"]:hover:not([class*="EpisodeVirtualList_activeNumber"]) {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"]:hover:not([class*="EpisodeVirtualList_activeNumber"]) {
       background: var(--bewly-widescreen-control-hover-bg) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"]:hover {
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"],
+    ${BANGUMI_SCOPE} #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"]:hover {
       color: #fff !important;
       background: var(--bew-theme-color, #00aeec) !important;
       border-color: var(--bew-theme-color, #00aeec) !important;
@@ -3462,6 +3483,11 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   // 离开侧栏时若正在输入或按住按键，先记下待收起，等条件解除且指针仍在侧栏外时再收起。
   let collapsePending = false
   let focusOutTimer: number | undefined
+  let cachedSidebarRect: DOMRect | null = null
+
+  function invalidateSidebarRect() {
+    cachedSidebarRect = null
+  }
 
   function isPointInRect({ clientX, clientY }: PointerEvent, rect: DOMRect) {
     return clientX >= rect.left
@@ -3471,8 +3497,10 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   }
 
   function isPointInSidebar(event: PointerEvent) {
-    return (event.target instanceof Node && sidebar.contains(event.target))
-      || isPointInRect(event, sidebar.getBoundingClientRect())
+    if (event.target instanceof Node && sidebar.contains(event.target))
+      return true
+    cachedSidebarRect ??= sidebar.getBoundingClientRect()
+    return isPointInRect(event, cachedSidebarRect)
   }
 
   // 评论框位于多层 Shadow DOM 内，需沿 shadowRoot 的焦点元素向下查找。
@@ -3532,9 +3560,11 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
       return
     // 点击前不平移收起状态的侧栏，避免展开动画把指针下的 Tab 换成相邻项。
     // 移入内容区仍可展开；点击 Tab 则先完成选中，再展开面板。
-    if (event && tablist && isPointInRect(event, tablist.getBoundingClientRect()))
+    // 用 DOM 包含判定替代 getBoundingClientRect()，避免每次 pointermove 触发同步布局。
+    if (event && tablist && event.target instanceof Node && tablist.contains(event.target))
       return
     collapsePending = false
+    invalidateSidebarRect()
     currentState.root.dataset.sidebarExpanded = 'true'
     updateSidebarLayoutState()
     schedulePlayerResizeSync(currentState)
@@ -3542,6 +3572,7 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
 
   function collapseSidebar() {
     collapsePending = false
+    invalidateSidebarRect()
     root.dataset.sidebarExpanded = 'false'
     updateSidebarLayoutState()
     schedulePlayerResizeSync(currentState)
@@ -3605,22 +3636,27 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   sidebar.addEventListener('pointerenter', expandSidebar)
   sidebar.addEventListener('pointermove', expandSidebar)
   sidebar.addEventListener('focusout', onSidebarFocusOut)
+  sidebar.addEventListener('transitionend', invalidateSidebarRect)
   tablist?.addEventListener('click', expandAfterTabClick)
   root.addEventListener('pointerover', onRootPointerMove)
   root.addEventListener('pointermove', onRootPointerMove)
   document.addEventListener('pointerout', onDocumentPointerOut)
   document.addEventListener('pointerup', retryPendingCollapse, true)
+  window.addEventListener('resize', invalidateSidebarRect, { passive: true })
 
   currentState.sidebarInteractionCleanup = () => {
     sidebar.removeEventListener('pointerenter', expandSidebar)
     sidebar.removeEventListener('pointermove', expandSidebar)
     sidebar.removeEventListener('focusout', onSidebarFocusOut)
+    sidebar.removeEventListener('transitionend', invalidateSidebarRect)
     tablist?.removeEventListener('click', expandAfterTabClick)
     root.removeEventListener('pointerover', onRootPointerMove)
     root.removeEventListener('pointermove', onRootPointerMove)
     document.removeEventListener('pointerout', onDocumentPointerOut)
     document.removeEventListener('pointerup', retryPendingCollapse, true)
+    window.removeEventListener('resize', invalidateSidebarRect)
     window.clearTimeout(focusOutTimer)
+    cachedSidebarRect = null
     delete root.dataset.sidebarExpanded
   }
 }
@@ -3793,6 +3829,7 @@ function setupSidebarToggleAutoHide(currentState: BewlyWidescreenState) {
 
 function setupIdleProgress(currentState: BewlyWidescreenState) {
   const { playerFrame, playerSlot } = currentState
+  const CONTROLS_SELECTOR = '.bpx-player-control-bottom, .bilibili-player-video-control, .squirtle-controller'
   const progress = document.createElement('div')
   progress.className = 'bewly-widescreen-idle-progress'
   progress.setAttribute('aria-hidden', 'true')
@@ -3802,50 +3839,153 @@ function setupIdleProgress(currentState: BewlyWidescreenState) {
   progress.append(value)
   playerSlot.append(progress)
 
-  function update() {
-    // 每次从当前播放器取节点，兼容换集时 video 和控制栏被替换。
-    const video = getVideoElement()
-    const controls = playerFrame.querySelector<HTMLElement>('.bpx-player-control-bottom, .bilibili-player-video-control, .squirtle-controller')
-    if (!video || !playerFrame.contains(video) || video.paused || video.ended
-      || !Number.isFinite(video.duration) || video.duration <= 0 || !controls) {
-      progress.hidden = true
+  let cachedVideo: ReturnType<typeof getVideoElement> = null
+  let cachedControls: HTMLElement | null = null
+  let observedControls: HTMLElement | null = null
+  let controlsHidden = false
+  let lastHidden = true
+  let lastRatio = -1
+  let postTransitionTimer: number | undefined
+  let visibilityCheckQueued = false
+
+  function getCachedVideo() {
+    if (cachedVideo && cachedVideo.isConnected && playerFrame.contains(cachedVideo))
+      return cachedVideo
+    const next = getVideoElement()
+    cachedVideo = next && playerFrame.contains(next) ? next : null
+    return cachedVideo
+  }
+
+  function getCachedControls() {
+    if (cachedControls && cachedControls.isConnected && playerFrame.contains(cachedControls))
+      return cachedControls
+    cachedControls = playerFrame.querySelector<HTMLElement>(CONTROLS_SELECTOR)
+    return cachedControls
+  }
+
+  function setProgressHidden(hidden: boolean) {
+    if (hidden === lastHidden)
+      return
+    lastHidden = hidden
+    progress.hidden = hidden
+  }
+
+  function syncProgressRatio(video: NonNullable<ReturnType<typeof getVideoElement>>) {
+    const ratio = Math.min(1, Math.max(0, video.currentTime / video.duration))
+    if (Math.abs(ratio - lastRatio) < 0.0005)
+      return
+    lastRatio = ratio
+    value.style.transform = `scaleX(${ratio})`
+  }
+
+  const controlsObserver = new MutationObserver(() => {
+    scheduleVisibilityCheck()
+    // 覆盖控制栏淡入/淡出过渡结束后的最终状态
+    window.clearTimeout(postTransitionTimer)
+    postTransitionTimer = window.setTimeout(checkVisibilityAndProgress, 350)
+  })
+
+  function observeControlsChain(controls: HTMLElement | null) {
+    if (controls === observedControls && controls?.isConnected)
+      return
+    controlsObserver.disconnect()
+    observedControls = controls
+    if (!controls)
+      return
+    for (let element: HTMLElement | null = controls; element && element !== playerFrame; element = element.parentElement) {
+      controlsObserver.observe(element, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+      })
+    }
+  }
+
+  function checkVisibilityAndProgress() {
+    visibilityCheckQueued = false
+    const video = getCachedVideo()
+    const controls = getCachedControls()
+    observeControlsChain(controls)
+    if (!video || video.paused || video.ended || !Number.isFinite(video.duration) || video.duration <= 0 || !controls) {
+      controlsHidden = false
+      setProgressHidden(true)
       return
     }
 
-    // 跟随原生控制栏实际隐藏状态，不另设鼠标闲置倒计时。
-    let controlsHidden = false
+    // 跟随原生控制栏实际隐藏状态，仅在控件 class/style 变化或低频兜底时测量，
+    // 避免播放期间每次 timeupdate 或每 200ms 触发同步布局重排。
+    let nextHidden = false
     for (let element: HTMLElement | null = controls; element && element !== playerFrame; element = element.parentElement) {
       const style = getComputedStyle(element)
       if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
-        controlsHidden = true
+        nextHidden = true
         break
       }
     }
-    if (!controlsHidden) {
+    if (!nextHidden) {
       const rect = controls.getBoundingClientRect()
       const frameRect = playerFrame.getBoundingClientRect()
-      controlsHidden = rect.width === 0 || rect.height === 0
+      nextHidden = rect.width === 0 || rect.height === 0
         || rect.top >= frameRect.bottom || rect.bottom <= frameRect.top
     }
 
-    progress.hidden = !controlsHidden
-    if (controlsHidden)
-      value.style.transform = `scaleX(${Math.min(1, Math.max(0, video.currentTime / video.duration))})`
+    controlsHidden = nextHidden
+    setProgressHidden(!nextHidden)
+    if (nextHidden)
+      syncProgressRatio(video)
   }
 
-  // 同时覆盖原生控件的 CSS 过渡和自定义 bwp-video 的播放进度。
-  const timer = window.setInterval(update, 200)
-  const mediaEvents = ['timeupdate', 'seeking', 'play', 'pause', 'ended', 'emptied', 'durationchange']
-  mediaEvents.forEach(event => playerFrame.addEventListener(event, update, true))
-  update()
+  function scheduleVisibilityCheck() {
+    if (visibilityCheckQueued)
+      return
+    visibilityCheckQueued = true
+    queueMicrotask(checkVisibilityAndProgress)
+  }
+
+  // 播放进度更新（含自定义 bwp-video）仅在控制栏已隐藏时更新 transform，不做布局/样式读取。
+  function updateProgressOnly() {
+    if (!controlsHidden)
+      return
+    const video = getCachedVideo()
+    if (!video || video.paused || video.ended || !Number.isFinite(video.duration) || video.duration <= 0) {
+      controlsHidden = false
+      setProgressHidden(true)
+      return
+    }
+    syncProgressRatio(video)
+  }
+
+  const progressTimer = window.setInterval(updateProgressOnly, 250)
+  const visibilityFallbackTimer = window.setInterval(() => {
+    const video = getCachedVideo()
+    if (video && !video.paused && !video.ended)
+      checkVisibilityAndProgress()
+  }, 1000)
+
+  const stateMediaEvents = ['seeking', 'play', 'pause', 'ended', 'emptied', 'durationchange']
+  stateMediaEvents.forEach(event => playerFrame.addEventListener(event, checkVisibilityAndProgress, true))
+  playerFrame.addEventListener('timeupdate', updateProgressOnly, true)
+  playerSlot.addEventListener('pointerenter', scheduleVisibilityCheck)
+  playerSlot.addEventListener('pointerleave', scheduleVisibilityCheck)
+  playerFrame.addEventListener('transitionend', scheduleVisibilityCheck, true)
+  checkVisibilityAndProgress()
+
   currentState.idleProgressCleanup = () => {
-    window.clearInterval(timer)
-    mediaEvents.forEach(event => playerFrame.removeEventListener(event, update, true))
+    window.clearInterval(progressTimer)
+    window.clearInterval(visibilityFallbackTimer)
+    window.clearTimeout(postTransitionTimer)
+    controlsObserver.disconnect()
+    stateMediaEvents.forEach(event => playerFrame.removeEventListener(event, checkVisibilityAndProgress, true))
+    playerFrame.removeEventListener('timeupdate', updateProgressOnly, true)
+    playerSlot.removeEventListener('pointerenter', scheduleVisibilityCheck)
+    playerSlot.removeEventListener('pointerleave', scheduleVisibilityCheck)
+    playerFrame.removeEventListener('transitionend', scheduleVisibilityCheck, true)
     progress.remove()
   }
 }
 
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
+  let titleSyncQueued = false
+
   currentState.mutationObserver = new MutationObserver((mutations) => {
     if (!state || state !== currentState)
       return
@@ -3856,15 +3996,22 @@ function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
     if (mutations.every(mutation => currentState.root.contains(mutation.target)))
       return
 
-    // 标题是复制的文本而非搬运节点，切集后立即同步，不等侧栏的延迟刷新。
-    syncSidebarTitle(currentState)
+    // 标题是复制的文本而非搬运节点，切集后按微任务合并同步，避免批量 DOM 变更重复全页查询。
+    if (!titleSyncQueued) {
+      titleSyncQueued = true
+      queueMicrotask(() => {
+        titleSyncQueued = false
+        if (state === currentState)
+          syncSidebarTitle(currentState)
+      })
+    }
     scheduleSidebarRefresh()
   })
 
   currentState.mutationObserver.observe(document.body, { childList: true, subtree: true })
 
   // 番剧页追番菜单展开态仅监听信息槽，避免用 CSS :has([class*="..."]) 污染全页 class 失效集。
-  if (document.documentElement.classList.contains('animePlaybackAndMoviePage')) {
+  if (isBangumiPage()) {
     const syncFollowMenuOpen = () => {
       const open = Boolean(currentState.infoSlot.querySelector('[class*="follow_followOptions"][class*="follow_shown"]'))
       if (open)
@@ -4048,10 +4195,21 @@ function hasPlaybackElement(player: HTMLElement) {
   return !!player.querySelector('video, bwp-video')
 }
 
+function syncPlayerRevision(currentState: BewlyWidescreenState) {
+  const playerContainer = currentState.playerFrame.querySelector<HTMLElement>('.bpx-player-container')
+  const revision = playerContainer?.getAttribute('data-revision')
+  if (revision)
+    currentState.root.dataset.playerRevision = revision
+  else
+    delete currentState.root.dataset.playerRevision
+}
+
 function syncPlayer(currentState: BewlyWidescreenState) {
   const framePlayer = findFirst(selectors.player, currentState.playerFrame)
-  if (framePlayer && hasPlaybackElement(framePlayer))
+  if (framePlayer && hasPlaybackElement(framePlayer)) {
+    syncPlayerRevision(currentState)
     return
+  }
 
   // 切集时 B 站若在原位置重建播放器，接管新播放器并丢弃已脱离的旧节点，
   // 不退出宽屏，避免露出原网页。
@@ -4067,16 +4225,20 @@ function syncPlayer(currentState: BewlyWidescreenState) {
     if (staleDanmakuInput)
       removeMovedNode(staleDanmakuInput, currentState.movedNodes)
     moveDanmakuInput(currentState)
+    syncPlayerRevision(currentState)
     updateAspectRatio()
   }
 }
 
 function fillSidebar(currentState: BewlyWidescreenState) {
+  const bangumi = isBangumiPage()
   syncPlayer(currentState)
   syncSidebarTitle(currentState)
 
   moveOrReplaceNode(selectors.info, currentState.infoSlot, currentState.movedNodes)
-  const movedMediaInfo = currentState.infoSlot.querySelector<HTMLElement>('[class*="mediainfo_mediaInfoWrap"]')
+  const movedMediaInfo = bangumi
+    ? currentState.infoSlot.querySelector<HTMLElement>('[class*="mediainfo_mediaInfoWrap"]')
+    : null
   // 番剧信息包含简介和评分，整块留在滚动区；保留原生 React 节点与事件。
   const infoParent = movedMediaInfo ? currentState.sidebarDetails : currentState.sidebarTop
   if (currentState.infoSlot.parentElement !== infoParent)
@@ -4121,16 +4283,17 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   }
 
   movePlaylistControls(currentState.panels.playlist, currentState.movedNodes)
-  moveMatchingNodes(['[class*="eplist_ep_list_wrapper"]'], currentState.panels.playlist, currentState.movedNodes)
-  let existingPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(selectors.playlist.join(','))
-    ?? currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
-    ?? currentState.panels.playlist.querySelector<HTMLElement>('[class*="SectionPanel_panel"]')
-  const existingRecommend = currentState.panels.playlist.querySelector<HTMLElement>(selectors.recommend.join(','))
-  if (existingPlaylist && isDetachedBangumiSection(existingPlaylist)) {
+  if (bangumi)
+    moveMatchingNodes(['[class*="eplist_ep_list_wrapper"]'], currentState.panels.playlist, currentState.movedNodes)
+  let existingPlaylist = findFirst(selectors.playlist, currentState.panels.playlist)
+    ?? (bangumi ? currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR) : null)
+    ?? (bangumi ? currentState.panels.playlist.querySelector<HTMLElement>('[class*="SectionPanel_panel"]') : null)
+  const existingRecommend = findFirst(selectors.recommend, currentState.panels.playlist)
+  if (bangumi && existingPlaylist && isDetachedBangumiSection(existingPlaylist)) {
     restoreMovedNode(existingPlaylist, currentState.movedNodes)
     existingPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
   }
-  const shouldReplacePlaylist = !!existingPlaylist && isBangumiPlaylistSkeleton(existingPlaylist)
+  const shouldReplacePlaylist = bangumi && !!existingPlaylist && isBangumiPlaylistSkeleton(existingPlaylist)
   const playlist = (existingPlaylist && !shouldReplacePlaylist) ? null : findMovablePlaylist()
   if (shouldReplacePlaylist && existingPlaylist && playlist && playlist !== existingPlaylist)
     removeMovedNode(existingPlaylist, currentState.movedNodes)
@@ -4138,7 +4301,9 @@ function fillSidebar(currentState: BewlyWidescreenState) {
     || moveNode(playlist, currentState.panels.playlist, currentState.movedNodes)
   if (playlistMoved && (!existingPlaylist || shouldReplacePlaylist))
     schedulePlayerResizeSync(currentState)
-  const liveBangumiPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
+  const liveBangumiPlaylist = bangumi
+    ? currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
+    : null
   if (liveBangumiPlaylist)
     bindReactEventBridge(liveBangumiPlaylist)
   // 推荐列表与选集是同一侧栏面板中的两个连续区块；即使选集已经存在，
