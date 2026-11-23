@@ -13,7 +13,7 @@ export default defineConfig({
   plugins: [
     UnoCSS(),
     ...sharedConfig.plugins!,
-    embedBundledStyles(),
+    embedBundledStyles({ splitHostStyles: true }),
     watchLocaleFiles(),
     thirdPartyLicensesVitePlugin('content'),
   ],

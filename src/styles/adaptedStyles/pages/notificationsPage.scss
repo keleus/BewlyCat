@@ -7,6 +7,18 @@
     font-weight: 400 !important;
   }
 
+  .photo-imager-container {
+    // 不再设置 top 和 height，避免与抽屉 iframe 样式冲突
+    position: fixed !important;
+    height: calc(100% - var(--bew-top-bar-height)) !important;
+    margin-top: var(--bew-top-bar-height) !important;
+
+    .control-buttons {
+      top: 20px !important; // 增加顶部距离，避免与抽屉顶部按钮重叠
+      right: 20px !important;
+    }
+  }
+
   &.drawer {
     body {
       background: unset;

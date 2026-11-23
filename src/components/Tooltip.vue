@@ -201,61 +201,85 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
+// 该组件同时在 Shadow DOM 与原生顶栏 Teleport（宿主文档）中使用，
+// 不依赖 uno.css preflight 变量（如 --un-ring-offset-shadow / --un-translate-x）。
 .b-tooltip-wrapper {
-  --uno: "flex items-center relative";
+  position: relative;
+  display: flex;
+  align-items: center;
 
   .b-tooltip {
-    --uno: "absolute px-2 rounded-$bew-radius-half pointer-events-none opacity-0 duration-300 shadow-$bew-shadow-2 whitespace-nowrap z-9999";
-
-    padding-block: var(--bew-space-1);
+    position: absolute;
+    z-index: 9999;
+    padding: var(--bew-space-1) var(--bew-space-2);
+    border-radius: var(--bew-radius-half);
+    pointer-events: none;
+    opacity: 0;
+    white-space: nowrap;
+    box-shadow: var(--bew-shadow-2);
+    transition-duration: 300ms;
     font-size: var(--bew-font-size-control);
     font-weight: var(--bew-font-weight-medium);
     line-height: var(--bew-line-height-control);
 
     &--placement-right {
-      --uno: "left-[calc(100%+0.5em)]";
+      left: calc(100% + 0.5em);
     }
 
     &--placement-left {
-      --uno: "right-[calc(100%+0.5em)]";
+      right: calc(100% + 0.5em);
     }
 
     &--placement-top {
-      --uno: "top--2.5em left-1/2 translate-x--1/2";
+      top: -2.5em;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     &--placement-bottom {
-      --uno: "bottom--2.5em left-1/2 translate-x--1/2";
+      bottom: -2.5em;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     &--placement-bottom-left {
-      --uno: "bottom--2.5em left--2";
+      bottom: -2.5em;
+      left: calc(var(--bew-base-font-size) * -0.5);
     }
 
     &--placement-bottom-right {
-      --uno: "bottom--2.5em right--2";
+      bottom: -2.5em;
+      right: calc(var(--bew-base-font-size) * -0.5);
     }
 
     &--type-default {
-      --uno: "text-white dark:text-black bg-black dark:bg-white";
+      color: #fff;
+      background-color: #000;
+
+      .dark & {
+        color: #000;
+        background-color: #fff;
+      }
     }
 
     &--type-dark {
-      --uno: "text-white bg-black";
+      color: #fff;
+      background-color: #000;
     }
 
     &--type-white {
-      --uno: "text-black bg-white";
+      color: #000;
+      background-color: #fff;
     }
   }
 
   &:hover .b-tooltip {
-    --uno: "opacity-100";
+    opacity: 1;
   }
 }
 
 /* floating 模式样式自包含（不与上方 .b-tooltip 共享类，避免 opacity/定位优先级冲突）；
-   传送后仍带本组件 scope id，故 --uno 工具类照常生效，配色与原位浮层完全一致。 */
+   传送后仍带本组件 scope id，配色与原位浮层完全一致。 */
 .b-tooltip-floating {
   position: fixed;
   z-index: 9999;
@@ -269,15 +293,23 @@ onBeforeUnmount(() => {
   line-height: var(--bew-line-height-control);
 
   &--type-default {
-    --uno: "text-white dark:text-black bg-black dark:bg-white";
+    color: #fff;
+    background-color: #000;
+
+    .dark & {
+      color: #000;
+      background-color: #fff;
+    }
   }
 
   &--type-dark {
-    --uno: "text-white bg-black";
+    color: #fff;
+    background-color: #000;
   }
 
   &--type-white {
-    --uno: "text-black bg-white";
+    color: #000;
+    background-color: #fff;
   }
 }
 

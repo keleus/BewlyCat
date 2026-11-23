@@ -542,19 +542,6 @@ function handleFocusDrawer(e?: Event) {
   }
 }
 
-/* 修改全局样式，避免重复设置 */
-:global(.photo-imager-container) {
-  /* 不再设置 top 和 height，避免与 iframe 样式冲突 */
-  position: fixed !important;
-  height: calc(100% - var(--bew-top-bar-height)) !important;
-  margin-top: var(--bew-top-bar-height) !important;
-}
-
-:global(.photo-imager-container .control-buttons) {
-  top: 20px !important; /* 增加顶部距离，避免与抽屉顶部按钮重叠 */
-  right: 20px !important;
-}
-
 .notifications-drawer__loading-layer {
   display: flex;
   align-items: center;

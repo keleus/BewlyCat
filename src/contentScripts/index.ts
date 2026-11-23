@@ -83,6 +83,7 @@ function disposeBewlyHost(element: Element) {
 
 const contentScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_BUNDLED_STYLE_TEXT__: string
+  __BEWLYCAT_HOST_STYLE_TEXT__: string
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
   __BEWLYCAT_PAGE_LOADING__?: PageLoadingGuard
 }
@@ -90,6 +91,7 @@ const contentScriptGlobal = globalThis as typeof globalThis & {
 const shouldInitializeContentScript = !contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__
   && !isInBilibiliLiveContext()
 const bundledShadowStyleText = contentScriptGlobal.__BEWLYCAT_BUNDLED_STYLE_TEXT__
+const bundledHostStyleText = contentScriptGlobal.__BEWLYCAT_HOST_STYLE_TEXT__
 const contentScriptManifest = browser.runtime.getManifest()
 const contentScriptRuntimeUrl = browser.runtime.getURL('')
 
@@ -245,7 +247,7 @@ else if (shouldInitializeContentScript) {
         stale.remove()
       const hostStyleEl = document.createElement('style')
       hostStyleEl.setAttribute('data-bewly-host-styles', '')
-      hostStyleEl.textContent = bundledShadowStyleText
+      hostStyleEl.textContent = bundledHostStyleText
       root.prepend(hostStyleEl)
       return true
     }

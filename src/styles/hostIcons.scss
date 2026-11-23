@@ -1,0 +1,13 @@
+// 宿主文档（Shadow DOM 外）中直接挂载或 Teleport 到原站 DOM 的图标。
+// 宿主文档不加载完整 uno.css，由 UnoCSS transformerDirectives 在此按需展开所需图标。
+.i-mingcute\:carplay-line {
+  --uno: "i-mingcute:carplay-line";
+}
+
+.i-line-md\:arrow-small-up {
+  --uno: "i-line-md:arrow-small-up";
+}
+
+.i-mingcute\:refresh-2-line {
+  --uno: "i-mingcute:refresh-2-line";
+}
