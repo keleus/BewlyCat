@@ -2,6 +2,7 @@ import type { UserConfig } from 'vite'
 import { defineConfig } from 'vite'
 
 import packageJson from './package.json' with { type: 'json' }
+import { createViteBuildReportPlugin } from './scripts/buildReport.ts'
 import { injectMessagesPlugin } from './scripts/injectMessages.ts'
 import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses.ts'
 import { isDev, isFirefox, isSafari, r } from './scripts/utils.ts'
@@ -12,10 +13,12 @@ export function createInjectConfig(): UserConfig {
   const sharedConfig = createSharedConfig()
   return {
     ...sharedConfig,
+    logLevel: 'warn',
     plugins: [
       ...sharedConfig.plugins!,
       injectMessagesPlugin(),
       thirdPartyLicensesVitePlugin('inject'),
+      createViteBuildReportPlugin('inject'),
     ],
     build: {
       outDir: r(
@@ -29,7 +32,7 @@ export function createInjectConfig(): UserConfig {
       emptyOutDir: false,
       sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
       minify: !isDev,
-      reportCompressedSize: !isDev,
+      reportCompressedSize: false,
       ...(isDev ? { target: 'esnext' } : {}),
       lib: {
         entry: r('src/inject/index.ts'),

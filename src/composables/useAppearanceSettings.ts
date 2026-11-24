@@ -1,5 +1,3 @@
-import { useI18n } from 'vue-i18n'
-
 import { LanguageType } from '~/enums/appEnums'
 import {
   FROSTED_GLASS_BLUR_MAX_PX,
@@ -8,11 +6,12 @@ import {
   settings,
 } from '~/logic'
 import { syncActionAnimationFilter } from '~/utils/actionAnimationTheme'
+import { setActiveLocale } from '~/utils/i18n'
 import { injectCSS } from '~/utils/main'
 
 /** 同步插件界面本身的语言与外观；页面内 App 和独立设置页共用，不改写 B 站页面行为。 */
 export function useAppearanceSettings() {
-  const { locale } = useI18n()
+  let languageSyncToken = 0
 
   const DEFAULT_FROSTED_GLASS_BLUR_PX = originalSettings.frostedGlassBlurIntensity
   const FROSTED_GLASS_DIALOG_OFFSET_PX = 10
@@ -73,6 +72,7 @@ export function useAppearanceSettings() {
   watch(
     () => settings.value.language,
     async () => {
+      const token = ++languageSyncToken
       // if there is first-time load extension, set the default language by browser display language
       if (!settings.value.language) {
         if (browser.i18n.getUILanguage() === 'zh-CN') {
@@ -91,13 +91,14 @@ export function useAppearanceSettings() {
         }
       }
 
-      locale.value = settings.value.language
+      const activeLocale = await setActiveLocale(settings.value.language)
+      if (token !== languageSyncToken) return
 
-      if (locale.value === LanguageType.Mandarin_CN) {
+      if (activeLocale === LanguageType.Mandarin_CN) {
         document.documentElement.lang = 'zh-CN'
-      } else if (locale.value === LanguageType.Mandarin_TW) {
+      } else if (activeLocale === LanguageType.Mandarin_TW) {
         document.documentElement.lang = 'zh-TW'
-      } else if (locale.value === LanguageType.Cantonese) {
+      } else if (activeLocale === LanguageType.Cantonese) {
         document.documentElement.lang = 'zh-HK'
       } else {
         document.documentElement.lang = 'en'

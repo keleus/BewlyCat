@@ -13,6 +13,7 @@ import {
 import { channelCategories } from '~/components/TopBar/constants/channelCategories'
 import { allChannelConfigs } from '~/components/TopBar/constants/channels'
 import { settings } from '~/logic'
+import { loadSvgIcons } from '~/utils/svgIconsLoader'
 import { getComponentConfig, isComponentVisible } from '~/utils/topBarBadge'
 
 import { pinnedChannelHistoryKey } from '../../composables/usePinnedChannelHistory'
@@ -37,11 +38,11 @@ async function ensureChannelSvgSprite(element: HTMLElement | undefined) {
   }
 
   injectedSvgSpriteRoots.add(root)
-  const { SVG_ICONS } = await import('~/utils/svgIcons')
+  const svgIcons = await loadSvgIcons()
   if (root.querySelector('#channel-ai')) return
 
   const svgContainer = document.createElement('div')
-  svgContainer.innerHTML = SVG_ICONS
+  svgContainer.innerHTML = svgIcons
   if (root instanceof ShadowRoot) root.appendChild(svgContainer)
   else root.body?.appendChild(svgContainer)
 }

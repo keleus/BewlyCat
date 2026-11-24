@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "incremental": false,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/vue-tsc/tsconfig.tsbuildinfo",
     "target": "es2016",
     "jsx": "preserve",
     "lib": ["DOM", "ESNext"],
@@ -21,5 +22,5 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "extension", "extension-firefox", "extension-safari", "node_modules"]
 }

@@ -1,51 +1,56 @@
-import About from './About/About.vue'
-import Appearance from './Appearance/Appearance.vue'
-import Ambilight from './BilibiliFeaturesEnhancement/Ambilight/Ambilight.vue'
-import AutoPlay from './BilibiliFeaturesEnhancement/AutoPlay/AutoPlay.vue'
-import Comments from './BilibiliFeaturesEnhancement/Comments/Comments.vue'
-import FavoriteOrganizer from './BilibiliFeaturesEnhancement/FavoriteOrganizer/Favorites.vue'
-import OriginalMoments from './BilibiliFeaturesEnhancement/OriginalMoments/OriginalMoments.vue'
-import VideoPlayback from './BilibiliFeaturesEnhancement/VideoPlayback/VideoPlayback.vue'
-import VipFeatures from './BilibiliFeaturesEnhancement/VipFeatures/VipFeatures.vue'
-import VolumeBalance from './BilibiliFeaturesEnhancement/VolumeBalance/VolumeBalance.vue'
-import Compatibility from './Compatibility/Compatibility.vue'
-import Data from './Data/Data.vue'
-import DockAndSidebar from './PluginComponentsAndPages/DockAndSidebar/DockAndSidebar.vue'
-import General from './PluginComponentsAndPages/General/General.vue'
-import Home from './PluginComponentsAndPages/Home/Home.vue'
-import Interaction from './PluginComponentsAndPages/Interaction/Interaction.vue'
-import Moments from './PluginComponentsAndPages/Moments/Moments.vue'
-import SearchPage from './PluginComponentsAndPages/SearchPage/SearchPage.vue'
-import TopBar from './PluginComponentsAndPages/TopBar/TopBar.vue'
-import VideoCard from './PluginComponentsAndPages/VideoCard/VideoCard.vue'
+import { defineAsyncComponent } from 'vue'
+
 import type { SettingsMenuDefinition, SettingsSecondaryPage } from './settingsMenuDefinitions'
 import { createSettingsMenus } from './settingsMenuDefinitions'
-import Shortcuts from './Shortcuts/Shortcuts.vue'
 
 export type { SettingsMenuDefinition, SettingsSecondaryPage }
 
-// 内容脚本内的设置浮层使用同步引入，切换时不会出现空白帧；
-// 独立设置页通过 vite.config.options.ts 替换为按需分包的 src/options/settingsMenus.ts。
+// 内容脚本与独立设置页均运行在原生 ESM 环境，将 21 个设置子页拆分为按需加载的独立 chunk，
+// 避免首屏解析设置子页及其重型依赖（vuedraggable / sortablejs / qrcode 等）。
 export const settingsMenus: SettingsMenuDefinition[] = createSettingsMenus({
-  About,
-  Appearance,
-  Ambilight,
-  AutoPlay,
-  Comments,
-  FavoriteOrganizer,
-  OriginalMoments,
-  VideoPlayback,
-  VipFeatures,
-  VolumeBalance,
-  Compatibility,
-  Data,
-  DockAndSidebar,
-  General,
-  Home,
-  Interaction,
-  Moments,
-  SearchPage,
-  TopBar,
-  VideoCard,
-  Shortcuts,
+  About: defineAsyncComponent(() => import('./About/About.vue')),
+  Appearance: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
+  Ambilight: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/Ambilight/Ambilight.vue'),
+  ),
+  AutoPlay: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/AutoPlay/AutoPlay.vue'),
+  ),
+  Comments: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/Comments/Comments.vue'),
+  ),
+  FavoriteOrganizer: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/FavoriteOrganizer/Favorites.vue'),
+  ),
+  OriginalMoments: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/OriginalMoments/OriginalMoments.vue'),
+  ),
+  VideoPlayback: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/VideoPlayback/VideoPlayback.vue'),
+  ),
+  VipFeatures: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/VipFeatures/VipFeatures.vue'),
+  ),
+  VolumeBalance: defineAsyncComponent(
+    () => import('./BilibiliFeaturesEnhancement/VolumeBalance/VolumeBalance.vue'),
+  ),
+  Compatibility: defineAsyncComponent(() => import('./Compatibility/Compatibility.vue')),
+  Data: defineAsyncComponent(() => import('./Data/Data.vue')),
+  DockAndSidebar: defineAsyncComponent(
+    () => import('./PluginComponentsAndPages/DockAndSidebar/DockAndSidebar.vue'),
+  ),
+  General: defineAsyncComponent(() => import('./PluginComponentsAndPages/General/General.vue')),
+  Home: defineAsyncComponent(() => import('./PluginComponentsAndPages/Home/Home.vue')),
+  Interaction: defineAsyncComponent(
+    () => import('./PluginComponentsAndPages/Interaction/Interaction.vue'),
+  ),
+  Moments: defineAsyncComponent(() => import('./PluginComponentsAndPages/Moments/Moments.vue')),
+  SearchPage: defineAsyncComponent(
+    () => import('./PluginComponentsAndPages/SearchPage/SearchPage.vue'),
+  ),
+  TopBar: defineAsyncComponent(() => import('./PluginComponentsAndPages/TopBar/TopBar.vue')),
+  VideoCard: defineAsyncComponent(
+    () => import('./PluginComponentsAndPages/VideoCard/VideoCard.vue'),
+  ),
+  Shortcuts: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
 })

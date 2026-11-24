@@ -507,13 +507,16 @@ function isPlaylistHandoffEnabled(): boolean {
   return autoHandoffRadio?.checked === true
 }
 
-async function hasHigherPriorityEndPlaybackBehavior(): Promise<boolean> {
-  if (isLoopEnabled() || isAutoPlayEnabled() || isPlaylistHandoffEnabled()) {
-    return true
-  }
+let randomPlayActiveGetter: () => boolean = () => false
 
-  const { isRandomPlayActive } = await import('~/utils/randomPlay')
-  return isRandomPlayActive()
+export function registerRandomPlayStateGetter(getter: () => boolean): void {
+  randomPlayActiveGetter = getter
+}
+
+function hasHigherPriorityEndPlaybackBehavior(): boolean {
+  return (
+    isLoopEnabled() || isAutoPlayEnabled() || isPlaylistHandoffEnabled() || randomPlayActiveGetter()
+  )
 }
 
 // 视频类型枚举
@@ -1858,7 +1861,7 @@ function tryStartAutoExitFullscreenMonitoring() {
   video.setAttribute('bewly-auto-exit-listener', 'true')
 
   // 监听视频结束事件
-  video.addEventListener('ended', async () => {
+  video.addEventListener('ended', () => {
     // 如果是互动视频，不处理（因为URL变化会由pushstate处理）
     if (isInteractiveVideo()) {
       return
@@ -1873,7 +1876,7 @@ function tryStartAutoExitFullscreenMonitoring() {
     // 非互动视频且开启了自动退出全屏
     if (settings.value.autoExitFullscreenOnEnd) {
       // 单集循环、随机播放、自动连播等播放行为优先级高于自动退出全屏
-      if (await hasHigherPriorityEndPlaybackBehavior()) {
+      if (hasHigherPriorityEndPlaybackBehavior()) {
         return
       }
 

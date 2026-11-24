@@ -1,6 +1,7 @@
 import type { UserConfig } from 'tsdown'
 import { defineConfig } from 'tsdown'
 
+import { createTsdownBuildReportCollector } from './scripts/buildReport.ts'
 import { createThirdPartyLicensesTsdownCollector } from './scripts/thirdPartyLicenses.ts'
 import { buildCommit, isDev, isFirefox, isSafari } from './scripts/utils.ts'
 
@@ -25,6 +26,7 @@ const sharedConfig: UserConfig = {
   outDir,
   clean: false,
   dts: false,
+  logLevel: 'warn',
   format: ['esm'],
   fixedExtension: false,
   hash: false,
@@ -58,11 +60,12 @@ const sharedConfig: UserConfig = {
 
 export function createTsdownConfigs(): UserConfig[] {
   const createLicensePlugin = createThirdPartyLicensesTsdownCollector('background')
+  const createReportPlugin = createTsdownBuildReportCollector(entries.map(({ name }) => name))
   return entries.map(({ name, entry }) => ({
     ...sharedConfig,
     name,
     entry,
-    plugins: [createLicensePlugin(name)],
+    plugins: [createLicensePlugin(name), createReportPlugin(name)],
   }))
 }
 

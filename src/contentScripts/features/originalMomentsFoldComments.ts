@@ -2,7 +2,7 @@ import { watch } from 'vue'
 
 import { settings, settingsReady } from '~/logic'
 import { findLeafActiveElement } from '~/utils/element'
-import { i18n } from '~/utils/i18n'
+import { ensureLocaleMessages, i18n } from '~/utils/i18n'
 
 import {
   isOriginalMomentsFeed,
@@ -107,8 +107,7 @@ function isPointInsideContentCard(x: number, y: number) {
 }
 
 function getCollapseLabel() {
-  const locale = settings.value.language || i18n.global.locale.value
-  return String(i18n.global.t('moment_card.collapse_comments', {}, { locale }))
+  return String(i18n.global.t('moment_card.collapse_comments'))
 }
 
 function updateCollapseButtonLabel(button: HTMLButtonElement) {
@@ -512,9 +511,10 @@ export function setupOriginalMomentsFoldComments() {
     observeFeed()
   }
 
-  void settingsReady.then(() => {
+  void settingsReady.then(async () => {
+    await ensureLocaleMessages(settings.value.language)
     refresh()
-    watch([() => settings.value.language, i18n.global.locale], () => {
+    watch(i18n.global.locale, () => {
       document
         .querySelectorAll<HTMLButtonElement>(`.${COLLAPSE_BUTTON_CLASS}`)
         .forEach(updateCollapseButtonLabel)

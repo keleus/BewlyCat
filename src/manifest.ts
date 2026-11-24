@@ -67,7 +67,7 @@ export async function getManifest() {
     ],
     web_accessible_resources: [
       {
-        resources: ['assets/*', 'dist/contentScripts/flvPlayer.js'],
+        resources: ['assets/*', 'dist/contentScripts/*.js', 'dist/chunks/*.js'],
         matches: [...CONTENT_SCRIPT_MATCHES],
       },
     ],

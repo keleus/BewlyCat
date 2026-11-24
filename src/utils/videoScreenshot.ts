@@ -1,11 +1,10 @@
-import { settings } from '~/logic'
 import { i18n } from '~/utils/i18n'
 import { showState } from '~/utils/player'
 
 let isCapturing = false
 
 function translate(key: string): string {
-  return String(i18n.global.t(key, settings.value.language))
+  return String(i18n.global.t(key))
 }
 
 function findCurrentVideo(trigger?: HTMLElement): HTMLVideoElement | null {

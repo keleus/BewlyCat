@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import { settings, settingsReady } from '~/logic'
-import { i18n } from '~/utils/i18n'
+import { ensureLocaleMessages, i18n } from '~/utils/i18n'
 import { isHomePage, isInIframe } from '~/utils/main'
 
 type Cards = HTMLElement[]
@@ -251,12 +251,13 @@ export function setupNativeHomeFeedHistory() {
     }
   }
 
-  void settingsReady.then(() => {
+  void settingsReady.then(async () => {
+    await ensureLocaleMessages(settings.value.language)
     watch(
       () => [
         settings.value.enableNativeHomeFeedHistory,
         settings.value.useOriginalBilibiliHomepage,
-        settings.value.language,
+        i18n.global.locale.value,
       ],
       sync,
       { immediate: true },

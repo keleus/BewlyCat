@@ -22,6 +22,7 @@ import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/grid
 import emitter from '~/utils/mitt'
 
 import SmoothLoading from './SmoothLoading.vue'
+import VideoCard from './VideoCard/VideoCard.vue'
 
 /**
  * 统一的 VideoCard Grid 组件

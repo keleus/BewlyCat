@@ -4,6 +4,7 @@ import process from 'node:process'
 import chokidar from 'chokidar'
 import fs from 'fs-extra'
 
+import { clearSavedBuildSummaries } from './buildReport'
 import { compressContributorsSvg, isCompressedContributorsSvg } from './compressContributorsSvg'
 import { isDev, isFirefox, isSafari, log, r } from './utils'
 
@@ -93,22 +94,23 @@ async function syncCompressedContributorsImage() {
 async function prepareContributorsImage() {
   if (await hasUsableImage(contributorsImageCachePath)) {
     await syncCompressedContributorsImage()
-    log('PRE', 'use cached contributors image')
+    log('pre', 'use cached contributors image')
     return
   }
 
   if (isDev) {
-    log('PRE', 'skip contributors image download in dev; About page will use the cloud image')
+    log('pre', 'skip contributors image download in dev; About page will use the cloud image')
     return
   }
 
   if (await downloadContributorsImage()) {
     await syncCompressedContributorsImage()
-    log('PRE', 'download contributors image')
+    log('pre', 'download contributors image')
   }
 }
 
 async function prepare() {
+  if (!isDev) clearSavedBuildSummaries()
   fs.ensureDirSync(r(extensionDirectory))
   fs.copySync(r('assets'), r(extensionDirectory, 'assets'))
   await prepareContributorsImage()

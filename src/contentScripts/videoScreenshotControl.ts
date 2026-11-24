@@ -31,7 +31,7 @@ let discoveryRetryDeadline = 0
 let controlSyncQueued = false
 
 function translate(key: string): string {
-  return String(i18n.global.t(key, settings.value.language))
+  return String(i18n.global.t(key))
 }
 
 function findPlayerControlBar(): HTMLElement | null {

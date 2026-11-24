@@ -11,8 +11,6 @@ import { onMessage } from '~/utils/messaging'
 import type { SettingsPageTabLocation } from '~/utils/settingsPage'
 import { NAVIGATE_SETTINGS_PAGE_MESSAGE, parseSettingsPageHash } from '~/utils/settingsPage'
 
-import { settingsMenus } from './settingsMenus'
-
 useAppearanceSettings()
 const { isDark } = useDark()
 const { activeConfirmDialog, finishConfirmDialog } = useConfirmDialogHost()
@@ -54,11 +52,7 @@ onMounted(() => {
     :class="{ dark: isDark }"
     text="$bew-text-1"
   >
-    <Settings
-      v-if="isMounted"
-      v-model:pending-navigation="pendingNavigation"
-      :menus="settingsMenus"
-    />
+    <Settings v-if="isMounted" v-model:pending-navigation="pendingNavigation" />
 
     <ConfirmDialogOverlay
       v-if="activeConfirmDialog"

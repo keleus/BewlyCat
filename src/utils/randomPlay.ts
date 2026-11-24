@@ -14,6 +14,7 @@ import {
   getVideoElement,
   isPlayerEndingPanelVisible,
   isPlayerShowingAdvertisement,
+  registerRandomPlayStateGetter,
   setCustomEndPlaybackHandlerActive,
   supportsCustomPlaybackForVideoType,
   VideoType,
@@ -76,8 +77,7 @@ function queryEpisodeItems(selector: string): HTMLElement[] {
 }
 
 function t(key: string): string {
-  const locale = settings.value.language || i18n.global.locale.value
-  return String(i18n.global.t(key, {}, { locale }))
+  return String(i18n.global.t(key))
 }
 
 function getActivePlayOrder(): RandomPlayOrder {
@@ -1126,6 +1126,8 @@ export function applyPreservedOrDefaultCustomPlay(): void {
 export function isRandomPlayActive(): boolean {
   return isRandomPlayEnabled
 }
+
+registerRandomPlayStateGetter(isRandomPlayActive)
 
 export function applyRandomPlayActivationSettings(): void {
   if (!isCustomPlayPage()) return

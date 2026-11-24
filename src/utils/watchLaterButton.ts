@@ -65,7 +65,7 @@ function getVideoKey({ bvid, aid }: VideoIds): string {
 }
 
 function translate(key: string): string {
-  return String(i18n.global.t(key, settings.value.language))
+  return String(i18n.global.t(key))
 }
 
 function updateButtonState(button: HTMLButtonElement, isInWatchLater: boolean) {

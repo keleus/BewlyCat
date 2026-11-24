@@ -10,11 +10,9 @@ import type { Ref } from 'vue'
 import { effectScope, onScopeDispose, provide, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ApiErrorDetailsDialog from '~/components/ApiErrorDetailsDialog.vue'
 import ConfirmDialogOverlay from '~/components/ConfirmDialogOverlay.vue'
 import FirefoxScrollbar from '~/components/FirefoxScrollbar.vue'
 import Icon from '~/components/Icon.vue'
-import SettingsOverlay from '~/components/Settings/SettingsOverlay.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
 import { useAccountSync } from '~/composables/useAccountSync'
 import { useActiveApiErrorSource } from '~/composables/useApiErrorDetails'
@@ -347,6 +345,12 @@ watch(
     if (homeActivatedPage.value !== defaultHomeSubPage) homeActivatedPage.value = defaultHomeSubPage
   },
   { deep: true, immediate: true },
+)
+const ApiErrorDetailsDialog = defineAsyncComponent(
+  () => import('~/components/ApiErrorDetailsDialog.vue'),
+)
+const SettingsOverlay = defineAsyncComponent(
+  () => import('~/components/Settings/SettingsOverlay.vue'),
 )
 const pages = {
   [AppPage.Home]: defineAsyncComponent(() => import('./Home/Home.vue')),

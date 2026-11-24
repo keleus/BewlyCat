@@ -55,7 +55,7 @@ let isApplying = false
 let hasInitialized = false
 
 function translate(key: string): string {
-  return String(i18n.global.t(key, settings.value.language))
+  return String(i18n.global.t(key))
 }
 
 function getButtonLabel(active = isBewlyWidescreenActive()) {
@@ -388,7 +388,7 @@ export function initBewlyWidescreenControl() {
   ensureNativePlayerModeGuard()
   setupPageObserver()
   watch(
-    [() => settings.value.showBewlyWidescreenButton, () => settings.value.language],
+    [() => settings.value.showBewlyWidescreenButton, () => i18n.global.locale.value],
     ([enabled]) => {
       if (enabled) restartControlDiscovery()
       else stopManagingControl()

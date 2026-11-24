@@ -47,7 +47,7 @@ import {
   SELECTION_FALLBACK_CLASS,
   supportsHighlightInheritance,
 } from '~/utils/highlightInheritance'
-import { i18n } from '~/utils/i18n'
+import { setActiveLocale } from '~/utils/i18n'
 import { reportScrollbarGutterToParent } from '~/utils/iframeScrollbarGutter'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import {
@@ -108,7 +108,7 @@ import {
   shouldUsePluginSearchResultsPage,
 } from '~/utils/searchNavigation'
 import { installShortcutListener, setupShortcutHandlers } from '~/utils/shortcuts'
-import { SVG_ICONS } from '~/utils/svgIcons'
+import { loadSvgIcons } from '~/utils/svgIconsLoader'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
 import { applyBewlyDesignClasses, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
@@ -116,6 +116,10 @@ import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 import { LOCAL_WALLPAPER_SLOT_KEYS, WALLPAPER_SETTING_KEYS } from '~/utils/wallpaper'
+import {
+  mountWatchLaterButtonWhenToolbarReady,
+  removeWatchLaterButton,
+} from '~/utils/watchLaterButton'
 
 import { version } from '../../package.json'
 import { initAmbilightControl } from './ambilightControl'
@@ -425,15 +429,10 @@ if (isElectronEnv) {
   let playerModeResumeQueued = false
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
-  // 设置水合后立即同步 i18n 语言。宽屏切换提示等轻 DOM 元素在 App 挂载前就会
-  // 用 t() 渲染一次性文案，若等到 App.vue 里的语言 watcher 才切换 locale，
-  // 这些元素会以默认英文显示。Promise 回调按注册顺序执行，需先于下方
-  // applyDefaultPlayerMode 的回调注册。
-  void settingsReady.then(() => {
-    if (settings.value.language) i18n.global.locale.value = settings.value.language
-  })
+  // 设置水合后立即按需拉取当前语言包并同步全局 locale，避免宽屏提示等轻 DOM 文案和首屏 UI 出现未加载键名。
+  const localeReady = settingsReady.then(() => setActiveLocale(settings.value.language))
 
-  void settingsReady.then(() => {
+  void localeReady.then(() => {
     playerModeSettingsReady = true
     recordVideoVisitFromUrl(lastUrl)
     applyDefaultPlayerMode()
@@ -977,8 +976,7 @@ if (isElectronEnv) {
 
     // 与其他播放器伴随设置在同一时间线触发；实际挂载时机由工具栏 DOM 就绪决定
     // （见 mountWatchLaterButtonWhenToolbarReady），不再盲等固定延迟
-    import('~/utils/watchLaterButton')
-      .then(({ mountWatchLaterButtonWhenToolbarReady }) => mountWatchLaterButtonWhenToolbarReady())
+    void mountWatchLaterButtonWhenToolbarReady()
       .then((added) => {
         watchLaterButtonAdded = added
       })
@@ -1648,6 +1646,9 @@ if (isElectronEnv) {
     */
     }
 
+    // 确保首屏语言包就绪后再挂载 UI 与轻 DOM 增强，避免首次渲染闪现未翻译键名。
+    await localeReady
+
     // 首屏 UI 不等待空闲回调，否则繁忙页面会长时间保留原站外观。
     if (isSupportedPages() || isSupportedIframePages()) injectApp()
 
@@ -1747,10 +1748,17 @@ if (isElectronEnv) {
 
     // startShadowDOMStyleInjection()
 
-    // inject svg icons
+    // inject svg icons asynchronously so the sprite sheet stays out of the entry chunk
     const svgDiv = document.createElement('div')
-    svgDiv.innerHTML = SVG_ICONS
     shadowDOM.appendChild(svgDiv)
+    void loadSvgIcons()
+      .then((svgIcons) => {
+        if (svgDiv.isConnected && !shadowDOM.querySelector('#channel-ai'))
+          svgDiv.innerHTML = svgIcons
+      })
+      .catch((error) => {
+        console.error('[BewlyCat] 加载 SVG 图标集失败:', error)
+      })
 
     document.body.appendChild(container)
 
@@ -1842,7 +1850,11 @@ if (isElectronEnv) {
 
   watch(
     () => settings.value.language,
-    () => syncRandomPlayUI(),
+    (nextLanguage) => {
+      void setActiveLocale(nextLanguage).then(() => {
+        syncRandomPlayUI()
+      })
+    },
   )
 
   watch([() => settings.value.keyboard, () => settings.value.enablePlayerEnhancements], () => {
@@ -1884,9 +1896,11 @@ if (isElectronEnv) {
         scheduleAddWatchLaterButton()
       } else {
         // 移除稍后再看按钮，并取消尚未完成的挂载等待。
-        import('~/utils/watchLaterButton')
-          .then(({ removeWatchLaterButton }) => removeWatchLaterButton())
-          .catch((err) => console.error('移除稍后再看按钮失败:', err))
+        try {
+          removeWatchLaterButton()
+        } catch (err) {
+          console.error('移除稍后再看按钮失败:', err)
+        }
       }
     },
   )
