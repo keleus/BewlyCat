@@ -1,7 +1,8 @@
 // 开发模式入口：在单个进程中构建内容脚本、页面脚本、设置页（Vite）与后台脚本（tsup）。
 // - 内容脚本改动最频繁，使用 Rollup 监听模式，保留转换缓存以加快重建。
 // - 监听模式只保留上一轮构建对象供 Rollup 向插件派发 watchChange，不做手动清理，避免改文件后插件缓存不刷新。
-// - 页面脚本与设置页按需单次构建：构建结束后整个模块图即可释放，只在其模块图内的文件变化时重建。
+// - 页面脚本与设置页按需单次构建：直接调用配置工厂并设置 configFile: false，避免 Vite 每次重建都生成带时间戳的
+//   `.vite-temp/*.mjs` 并通过 ESM `import()` 加载进 Node 永久模块缓存，导致图标集缓存、UnoCSS 上下文与 Rollup 模块图泄漏。
 // - Vite 构建串行执行，避免同时达到内存峰值；每个目标开始/完成都输出日志，文件变动先提示再触发重建。
 // 各构建的实际配置仍以 vite.config.*.ts 与 tsup.config.ts 为准。
 import './prepare'
@@ -11,9 +12,12 @@ import process from 'node:process'
 
 import chokidar from 'chokidar'
 import { build as buildWithTsup } from 'tsup'
-import type { Plugin, Rollup } from 'vite'
-import { build as buildWithVite } from 'vite'
+import type { Plugin, Rollup, UserConfig } from 'vite'
+import { build as buildWithVite, mergeConfig } from 'vite'
 
+import { createContentConfig } from '../vite.config.content'
+import { createInjectConfig } from '../vite.config.inject'
+import { createOptionsConfig } from '../vite.config.options'
 import { log, r } from './utils'
 
 const REBUILD_DELAY = 100
@@ -52,13 +56,13 @@ function watchContentScript(): Promise<void> {
   }
 
   void (async () => {
-    const watcher = await buildWithVite({
-      configFile: r('vite.config.content.ts'),
+    const watcher = await buildWithVite(mergeConfig(createContentConfig(), {
+      configFile: false,
       mode: 'development',
       logLevel: 'warn',
       plugins: [devPlugin],
       build: { watch: {} },
-    }) as Rollup.RollupWatcher
+    })) as Rollup.RollupWatcher
 
     // 文件变动先于重建开始，提示是哪个文件触发了内容脚本重建。
     watcher.on('change', (id) => {
@@ -87,7 +91,7 @@ function watchContentScript(): Promise<void> {
 
 interface OnDemandBuild {
   name: string
-  configFile: string
+  createConfig: () => UserConfig
   files: Set<string>
   running: boolean
   rerun: boolean
@@ -152,12 +156,12 @@ async function runOnDemandBuild(target: OnDemandBuild) {
   log('VITE', `${target.name} building...`)
   const startTime = Date.now()
   try {
-    await buildWithVite({
-      configFile: r(target.configFile),
+    await buildWithVite(mergeConfig(target.createConfig(), {
+      configFile: false,
       mode: 'development',
       logLevel: 'warn',
       plugins: [collectWatchFiles],
-    })
+    }))
     updateWatchedFiles(target, watchFiles, false)
     log('VITE', `${target.name} built in ${Date.now() - startTime}ms`)
   }
@@ -198,8 +202,8 @@ fileWatcher.on('all', (_event, file) => {
 })
 
 const onDemandBuilds: OnDemandBuild[] = [
-  { name: 'inject', configFile: 'vite.config.inject.ts', files: new Set(), running: false, rerun: false },
-  { name: 'options', configFile: 'vite.config.options.ts', files: new Set(), running: false, rerun: false },
+  { name: 'inject', createConfig: createInjectConfig, files: new Set(), running: false, rerun: false },
+  { name: 'options', createConfig: createOptionsConfig, files: new Set(), running: false, rerun: false },
 ]
 
 async function dev() {

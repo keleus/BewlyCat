@@ -24,58 +24,60 @@ function withCompactI18nMessages(plugins: Plugin | Plugin[]): Plugin[] {
   })
 }
 
-// 内容脚本与页面脚本的共享配置，实际构建入口见 vite.config.content.ts 和 vite.config.inject.ts。
-export const sharedConfig: UserConfig = {
-  root: r('src'),
-  css: {
-    // 启用多核 worker 并行编译 200+ 个 SCSS 模块，避免纯 JS 版 Dart Sass 阻塞主线程。
-    preprocessorMaxWorkers: true,
-  },
-  resolve: {
-    alias: [
-      { find: '~/', replacement: `${r('src')}/` },
-      { find: '~', replacement: r('src') },
-      // vuedraggable's UMD entry `require`s `vue`, which resolves to the CJS
-      // build and drags the template compiler into the content script.
-      // Templates are precompiled, so every consumer can share the runtime build.
-      { find: /^vue$/, replacement: 'vue/dist/vue.runtime.esm-bundler.js' },
-    ],
-  },
-  plugins: [
-    Vue(),
-
-    AutoImport({
-      dts: r('src/auto-imports.d.ts'),
-      imports: [
-        'vue',
-        {
-          'webextension-polyfill': [
-            ['*', 'browser'],
-          ],
-        },
+// 内容脚本、页面脚本与设置页的共享配置工厂；每次构建生成独立插件实例，
+// 避免多构建共享可变插件状态，也避免开发模式通过 configFile 反复动态加载配置泄漏 ESM 模块缓存。
+export function createSharedConfig(): UserConfig {
+  return {
+    root: r('src'),
+    css: {
+      // 启用多核 worker 并行编译 200+ 个 SCSS 模块，避免纯 JS 版 Dart Sass 阻塞主线程。
+      preprocessorMaxWorkers: true,
+    },
+    resolve: {
+      alias: [
+        { find: '~/', replacement: `${r('src')}/` },
+        { find: '~', replacement: r('src') },
+        // vuedraggable's UMD entry `require`s `vue`, which resolves to the CJS
+        // build and drags the template compiler into the content script.
+        // Templates are precompiled, so every consumer can share the runtime build.
+        { find: /^vue$/, replacement: 'vue/dist/vue.runtime.esm-bundler.js' },
       ],
-    }),
+    },
+    plugins: [
+      Vue(),
 
-    // https://github.com/intlify/bundle-tools/tree/main/packages/unplugin-vue-i18n
-    withCompactI18nMessages(VueI18nPlugin({
-      runtimeOnly: true,
-      compositionOnly: true,
-      strictMessage: false,
-      include: [r('./src/_locales/**')],
-    })),
+      AutoImport({
+        dts: r('src/auto-imports.d.ts'),
+        imports: [
+          'vue',
+          {
+            'webextension-polyfill': [
+              ['*', 'browser'],
+            ],
+          },
+        ],
+      }),
 
-    // https://github.com/unocss/unocss
-    // UnoCSS(),
+      // https://github.com/intlify/bundle-tools/tree/main/packages/unplugin-vue-i18n
+      withCompactI18nMessages(VueI18nPlugin({
+        runtimeOnly: true,
+        compositionOnly: true,
+        strictMessage: false,
+        include: [r('./src/_locales/**')],
+      })),
 
-    replace({
-      '__DEV__': JSON.stringify(isDev),
-      '__BUILD_COMMIT__': JSON.stringify(buildCommit),
-      'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
-      'process.env.FIREFOX': JSON.stringify(isFirefox),
-      '__VUE_OPTIONS_API__': JSON.stringify(true),
-      '__VUE_PROD_DEVTOOLS__': JSON.stringify(false),
-      'preventAssignment': true,
-    }),
+      // https://github.com/unocss/unocss
+      // UnoCSS(),
 
-  ],
+      replace({
+        '__DEV__': JSON.stringify(isDev),
+        '__BUILD_COMMIT__': JSON.stringify(buildCommit),
+        'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
+        'process.env.FIREFOX': JSON.stringify(isFirefox),
+        '__VUE_OPTIONS_API__': JSON.stringify(true),
+        '__VUE_PROD_DEVTOOLS__': JSON.stringify(false),
+        'preventAssignment': true,
+      }),
+    ],
+  }
 }

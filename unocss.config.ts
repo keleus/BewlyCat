@@ -73,127 +73,131 @@ function loadIconCollection(name: string) {
   return collection
 }
 
-export default defineConfig({
-  content: {
-    // 仅从实际进入模块图的模板与声明动态图标/类名的目录提取原子类，
-    // 跳过 svgIcons.ts、inject、background、logic/storage 等大体积非 UI 文件。
-    pipeline: {
-      include: [
-        // 仅匹配原始 .vue 文件，跳过 vite:vue 拆出的 ?vue&type=script/template/style 虚拟子模块
-        /\.vue$/,
-        /\.html$/,
-        /[\\/]src[\\/](?:components|stores|constants)[\\/].*\.[jt]sx?$/,
-      ],
-      exclude: [
-        /[\\/]node_modules[\\/]/,
-        /\.(?:css|postcss|sass|scss|less|stylus|styl)(?:$|\?)/,
-        /[\\/](?:searchCatalog|usageGuide|searchApi|appClient|contentScript|globalEvents|watchLaterState)\.ts$/,
-      ],
-    },
-  },
-  blocklist: [
-    'ps',
-    'container',
-  ],
-  safelist: [
-    'i-mingcute:home-5-line',
-    'i-mingcute:home-5-fill',
-    'i-mingcute:search-2-line',
-    'i-mingcute:search-2-fill',
-    'i-mingcute:tv-2-line',
-    'i-mingcute:bilibili-line',
-    'i-mingcute:bilibili-fill',
-    'i-mingcute:star-line',
-    'i-mingcute:star-fill',
-    'i-mingcute:time-line',
-    'i-mingcute:time-fill',
-    'i-mingcute:carplay-line',
-    'i-mingcute:carplay-fill',
-    'i-tabler:windmill',
-    'i-tabler:windmill-filled',
-    'i-mingcute:game-2-fill',
-    'i-mingcute:store-fill',
-    'i-mingcute:cat-fill',
-    'i-mingcute:sword-fill',
-    // Runtime Icon components resolve to these local UnoCSS icons. Keeping the
-    // finite list here prevents @iconify/vue from fetching icons after mount.
-    'i-tabler:eye',
-    'i-tabler:eye-off',
-    'i-tabler:chevron-left',
-    'i-tabler:chevron-right',
-    'i-tabler:x',
-    'i-mingcute:settings-3-line',
-    'i-mingcute:check-line',
-    'i-mingcute:edit-3-line',
-    'i-mingcute:cursor-3-line',
-    'i-mingcute:transfer-3-line',
-    'i-mingcute:navigation-line',
-    'i-mingcute:eye-line',
-    'i-mingcute:eye-close-line',
-    'i-mingcute:play-circle-line',
-    'i-mingcute:danmaku-line',
-    'i-mingcute:thumb-up-2-line',
-    'i-mingcute:table-3-line',
-    'i-mingcute:table-3-fill',
-    'i-mingcute:layout-grid-line',
-    'i-mingcute:layout-grid-fill',
-    'i-mingcute:list-check-3-line',
-    'i-mingcute:list-check-3-fill',
-    'i-line-md:sunny-outline-to-moon-loop-transition',
-    'i-line-md:moon-alt-to-sunny-outline-loop-transition',
-    'i-line-md:sunny-outline-to-moon-transition',
-    'i-line-md:moon-to-sunny-outline-transition',
-    'i-tabler:reload',
-    'i-line-md:arrow-small-up',
-    'i-line-md:confirm',
-    'i-mdi:undo-variant',
-    'i-mdi:redo-variant',
-  ],
-  extractorDefault: false,
-  extractors: [
-    {
-      name: 'bewly-scoped-split',
-      order: 0,
-      extract(ctx) {
-        const id = ctx.id ?? ''
-        let code = ctx.code
-        if (/\.vue$/.test(id))
-          code = extractVueScopedCode(ctx.code)
-        else if (/\.[jt]sx?$/.test(id))
-          code = extractStringLiterals(ctx.code)
-        return extractorSplit.extract?.({ ...ctx, code })
+export function createUnoConfig() {
+  return defineConfig({
+    content: {
+      // 仅从实际进入模块图的模板与声明动态图标/类名的目录提取原子类，
+      // 跳过 svgIcons.ts、inject、background、logic/storage 等大体积非 UI 文件。
+      pipeline: {
+        include: [
+          // 仅匹配原始 .vue 文件，跳过 vite:vue 拆出的 ?vue&type=script/template/style 虚拟子模块
+          /\.vue$/,
+          /\.html$/,
+          /[\\/]src[\\/](?:components|stores|constants)[\\/].*\.[jt]sx?$/,
+        ],
+        exclude: [
+          /[\\/]node_modules[\\/]/,
+          /\.(?:css|postcss|sass|scss|less|stylus|styl)(?:$|\?)/,
+          /[\\/](?:searchCatalog|usageGuide|searchApi|appClient|contentScript|globalEvents|watchLaterState)\.ts$/,
+        ],
       },
     },
-  ],
-  presets: [
-    presetWind3(),
-    createTemplateScopedAttributifyPreset(),
-    presetIcons({
-      collections: Object.fromEntries(ICON_COLLECTIONS.map(name => [name, () => loadIconCollection(name)])),
-      extraProperties: {
-        'display': 'inline-block',
-        'vertical-align': 'middle',
-        'width': '1.2em',
-        'height': '1.2em',
+    blocklist: [
+      'ps',
+      'container',
+    ],
+    safelist: [
+      'i-mingcute:home-5-line',
+      'i-mingcute:home-5-fill',
+      'i-mingcute:search-2-line',
+      'i-mingcute:search-2-fill',
+      'i-mingcute:tv-2-line',
+      'i-mingcute:bilibili-line',
+      'i-mingcute:bilibili-fill',
+      'i-mingcute:star-line',
+      'i-mingcute:star-fill',
+      'i-mingcute:time-line',
+      'i-mingcute:time-fill',
+      'i-mingcute:carplay-line',
+      'i-mingcute:carplay-fill',
+      'i-tabler:windmill',
+      'i-tabler:windmill-filled',
+      'i-mingcute:game-2-fill',
+      'i-mingcute:store-fill',
+      'i-mingcute:cat-fill',
+      'i-mingcute:sword-fill',
+      // Runtime Icon components resolve to these local UnoCSS icons. Keeping the
+      // finite list here prevents @iconify/vue from fetching icons after mount.
+      'i-tabler:eye',
+      'i-tabler:eye-off',
+      'i-tabler:chevron-left',
+      'i-tabler:chevron-right',
+      'i-tabler:x',
+      'i-mingcute:settings-3-line',
+      'i-mingcute:check-line',
+      'i-mingcute:edit-3-line',
+      'i-mingcute:cursor-3-line',
+      'i-mingcute:transfer-3-line',
+      'i-mingcute:navigation-line',
+      'i-mingcute:eye-line',
+      'i-mingcute:eye-close-line',
+      'i-mingcute:play-circle-line',
+      'i-mingcute:danmaku-line',
+      'i-mingcute:thumb-up-2-line',
+      'i-mingcute:table-3-line',
+      'i-mingcute:table-3-fill',
+      'i-mingcute:layout-grid-line',
+      'i-mingcute:layout-grid-fill',
+      'i-mingcute:list-check-3-line',
+      'i-mingcute:list-check-3-fill',
+      'i-line-md:sunny-outline-to-moon-loop-transition',
+      'i-line-md:moon-alt-to-sunny-outline-loop-transition',
+      'i-line-md:sunny-outline-to-moon-transition',
+      'i-line-md:moon-to-sunny-outline-transition',
+      'i-tabler:reload',
+      'i-line-md:arrow-small-up',
+      'i-line-md:confirm',
+      'i-mdi:undo-variant',
+      'i-mdi:redo-variant',
+    ],
+    extractorDefault: false,
+    extractors: [
+      {
+        name: 'bewly-scoped-split',
+        order: 0,
+        extract(ctx) {
+          const id = ctx.id ?? ''
+          let code = ctx.code
+          if (/\.vue$/.test(id))
+            code = extractVueScopedCode(ctx.code)
+          else if (/\.[jt]sx?$/.test(id))
+            code = extractStringLiterals(ctx.code)
+          return extractorSplit.extract?.({ ...ctx, code })
+        },
       },
-    }),
+    ],
+    presets: [
+      presetWind3(),
+      createTemplateScopedAttributifyPreset(),
+      presetIcons({
+        collections: Object.fromEntries(ICON_COLLECTIONS.map(name => [name, () => loadIconCollection(name)])),
+        extraProperties: {
+          'display': 'inline-block',
+          'vertical-align': 'middle',
+          'width': '1.2em',
+          'height': '1.2em',
+        },
+      }),
 
-    {
-      name: 'text-size-transformer',
-      postprocess: (util) => {
-        util.entries.forEach((i) => {
-          const value = i[1]
+      {
+        name: 'text-size-transformer',
+        postprocess: (util) => {
+          util.entries.forEach((i) => {
+            const value = i[1]
 
-          if (typeof value === 'string' && remRE.test(value)) {
-            i[1] = value.replace(remRE, (_, num: number) => {
-              return `calc(var(--bew-base-font-size) * ${num})`
-            })
-          }
-        })
+            if (typeof value === 'string' && remRE.test(value)) {
+              i[1] = value.replace(remRE, (_, num: number) => {
+                return `calc(var(--bew-base-font-size) * ${num})`
+              })
+            }
+          })
+        },
       },
-    },
-  ],
-  transformers: [
-    transformerDirectives(),
-  ],
-})
+    ],
+    transformers: [
+      transformerDirectives(),
+    ],
+  })
+}
+
+export default createUnoConfig()

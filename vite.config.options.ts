@@ -1,11 +1,11 @@
 import UnoCSS from 'unocss/vite'
-import type { Plugin } from 'vite'
+import type { Plugin, UserConfig } from 'vite'
 import { defineConfig, normalizePath } from 'vite'
 
 import { splitOptionsExternalStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
 import { isDev, isFirefox, isSafari, r } from './scripts/utils'
-import unoConfig from './unocss.config'
-import { sharedConfig } from './vite.config'
+import { createUnoConfig } from './unocss.config'
+import { createSharedConfig } from './vite.config'
 
 const CONTENT_I18N_PATH = normalizePath(r('src/utils/i18n.ts'))
 const OPTIONS_I18N_PATH = normalizePath(r('src/options/i18n.ts'))
@@ -48,41 +48,46 @@ function optionsManualChunks(id: string): string | undefined {
 }
 
 // 独立设置页。它用到的模块都已包含在内容脚本中，第三方许可由内容脚本的清单覆盖。
-export default defineConfig({
-  ...sharedConfig,
-  root: r('src/options'),
-  base: './',
-  plugins: [
-    optionsModuleOverrides(),
-    UnoCSS({
-      ...unoConfig,
-      configFile: false,
-      // 不继承内容脚本的全局图标 safelist，沿用 unocss.config.ts 的精确 pipeline 扫描范围。
-      safelist: [],
-    }),
-    ...sharedConfig.plugins!,
-    ...splitOptionsExternalStyles(),
-    watchLocaleFiles(),
-  ],
-  build: {
-    outDir: r(isFirefox ? 'extension-firefox/dist/options' : isSafari ? 'extension-safari/dist/options' : 'extension/dist/options'),
-    cssCodeSplit: false,
-    emptyOutDir: true,
-    sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
-    minify: isDev ? false : 'esbuild',
-    cssMinify: isDev ? false : 'esbuild',
-    reportCompressedSize: !isDev,
-    ...(isDev ? { target: 'esnext' } : {}),
-    rollupOptions: {
-      input: r('src/options/index.html'),
-      output: {
-        format: 'es',
-        entryFileNames: 'assets/[name].js',
-        // 扩展本地资源无需 CDN 缓存哈希；固定分块名也能避免开发模式重建后已打开的设置页找不到旧哈希分块。
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name][extname]',
-        manualChunks: optionsManualChunks,
+export function createOptionsConfig(): UserConfig {
+  const sharedConfig = createSharedConfig()
+  return {
+    ...sharedConfig,
+    root: r('src/options'),
+    base: './',
+    plugins: [
+      optionsModuleOverrides(),
+      UnoCSS({
+        ...createUnoConfig(),
+        configFile: false,
+        // 不继承内容脚本的全局图标 safelist，沿用 unocss.config.ts 的精确 pipeline 扫描范围。
+        safelist: [],
+      }),
+      ...sharedConfig.plugins!,
+      ...splitOptionsExternalStyles(),
+      watchLocaleFiles(),
+    ],
+    build: {
+      outDir: r(isFirefox ? 'extension-firefox/dist/options' : isSafari ? 'extension-safari/dist/options' : 'extension/dist/options'),
+      cssCodeSplit: false,
+      emptyOutDir: true,
+      sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
+      minify: isDev ? false : 'esbuild',
+      cssMinify: isDev ? false : 'esbuild',
+      reportCompressedSize: !isDev,
+      ...(isDev ? { target: 'esnext' } : {}),
+      rollupOptions: {
+        input: r('src/options/index.html'),
+        output: {
+          format: 'es',
+          entryFileNames: 'assets/[name].js',
+          // 扩展本地资源无需 CDN 缓存哈希；固定分块名也能避免开发模式重建后已打开的设置页找不到旧哈希分块。
+          chunkFileNames: 'assets/[name].js',
+          assetFileNames: 'assets/[name][extname]',
+          manualChunks: optionsManualChunks,
+        },
       },
     },
-  },
-})
+  }
+}
+
+export default defineConfig(createOptionsConfig)
