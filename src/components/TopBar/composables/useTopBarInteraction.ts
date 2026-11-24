@@ -20,6 +20,7 @@ import { isActualHomepage, isHomePage } from '~/utils/main'
 import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 import { createTransformer } from '~/utils/transformer'
+import { getEffectiveGlobalWallpaper, getEffectiveSearchPageWallpaper } from '~/utils/wallpaper'
 
 const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
   channels: AppPage.Home,
@@ -89,21 +90,24 @@ export function useTopBarInteraction() {
     if (!isHomePage() || !activatedPage?.value)
       return false
 
+    const globalWallpaper = getEffectiveGlobalWallpaper(settings.value, isDark.value)
+    const searchPageWallpaper = getEffectiveSearchPageWallpaper(settings.value, isDark.value)
+
     if (activatedPage.value === AppPage.Search) {
       if (settings.value.individuallySetSearchPageWallpaper)
-        return !!settings.value.searchPageWallpaper
-      return !!settings.value.wallpaper
+        return !!searchPageWallpaper
+      return !!globalWallpaper
     }
 
     if (activatedPage.value === AppPage.SearchResults)
-      return !!settings.value.wallpaper
+      return !!globalWallpaper
 
-    if (settings.value.wallpaper)
+    if (globalWallpaper)
       return true
 
     return settings.value.useSearchPageModeOnHomePage
       && settings.value.individuallySetSearchPageWallpaper
-      && !!settings.value.searchPageWallpaper
+      && !!searchPageWallpaper
   })
 
   // 实验三档使用余弦渐变管线与其配套色调判定。

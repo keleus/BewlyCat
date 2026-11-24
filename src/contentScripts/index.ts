@@ -26,7 +26,7 @@ import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/
 import { i18n } from '~/utils/i18n'
 import { reportScrollbarGutterToParent } from '~/utils/iframeScrollbarGutter'
 import { runWhenIdle } from '~/utils/lazyLoad'
-import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl, localWallpapersLoaded } from '~/utils/localWallpaper'
+import { extractWallpaperId, getLocalWallpaper, hasLocalWallpaper, localWallpapersLoaded } from '~/utils/localWallpaper'
 import { getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { createPageSettingsPayload, writePageBootSnapshot } from '~/utils/pageSettingsProtocol'
@@ -44,6 +44,7 @@ import { applyBewlyDesignClasses, isVideoPageGlassStyleEnabled } from '~/utils/v
 import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
+import { LOCAL_WALLPAPER_SLOT_KEYS, WALLPAPER_SETTING_KEYS } from '~/utils/wallpaper'
 
 import { version } from '../../package.json'
 import { initAmbilightControl } from './ambilightControl'
@@ -1882,33 +1883,35 @@ else if (shouldInitializeContentScript) {
     if (!wallpapersLoaded)
       return
 
-    const localWallpaper = localSettings.value.locallyUploadedWallpaper
-    if (localWallpaper?.isLocal && localWallpaper.id) {
-      if (!hasLocalWallpaper(localWallpaper.id)) {
-        localSettings.value.locallyUploadedWallpaper = null
+    for (const slotKey of LOCAL_WALLPAPER_SLOT_KEYS) {
+      const localWallpaper = localSettings.value[slotKey]
+      if (!localWallpaper?.isLocal || !localWallpaper.id)
+        continue
 
-        // 如果当前壁纸使用的是丢失的本地壁纸，也清理掉
-        if (isLocalWallpaperUrl(settings.value.wallpaper)) {
-          settings.value.wallpaper = ''
-        }
-        if (isLocalWallpaperUrl(settings.value.searchPageWallpaper)) {
-          settings.value.searchPageWallpaper = ''
-        }
+      if (!hasLocalWallpaper(localWallpaper.id)) {
+        localSettings.value[slotKey] = null
       }
       else {
-      // 如果本地壁纸存在，确保当前壁纸URL使用正确的格式
+        // 如果本地壁纸存在，确保当前壁纸URL使用正确的格式
         const expectedUrl = `local-wallpaper:${localWallpaper.id}`
         const base64Data = getLocalWallpaper(localWallpaper.id)
 
         if (base64Data) {
-        // 检查当前壁纸是否需要更新格式（从旧的base64格式迁移到新格式）
-          if (settings.value.wallpaper.startsWith('data:image/') && settings.value.wallpaper === base64Data) {
-            settings.value.wallpaper = expectedUrl
-          }
-          if (settings.value.searchPageWallpaper.startsWith('data:image/') && settings.value.searchPageWallpaper === base64Data) {
-            settings.value.searchPageWallpaper = expectedUrl
+          // 检查当前壁纸是否需要更新格式（从旧的base64格式迁移到新格式）
+          for (const settingKey of WALLPAPER_SETTING_KEYS) {
+            if (settings.value[settingKey].startsWith('data:image/') && settings.value[settingKey] === base64Data) {
+              settings.value[settingKey] = expectedUrl
+            }
           }
         }
+      }
+    }
+
+    // 清理引用了已丢失本地壁纸的设置项
+    for (const settingKey of WALLPAPER_SETTING_KEYS) {
+      const wallpaperId = extractWallpaperId(settings.value[settingKey])
+      if (wallpaperId && !hasLocalWallpaper(wallpaperId)) {
+        settings.value[settingKey] = ''
       }
     }
   }

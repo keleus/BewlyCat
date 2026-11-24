@@ -11,6 +11,8 @@ const LOCAL_WALLPAPERS_STORAGE_KEY = 'localWallpapers'
 
 /** 备份文件中存放本地上传壁纸的字段，与设置项并列；旧版本导入时会按未知设置忽略。 */
 export const LOCAL_WALLPAPER_BACKUP_KEY = 'localWallpaperBackup'
+/** 备份文件中存放深色模式本地上传壁纸的字段。 */
+export const LOCAL_DARK_WALLPAPER_BACKUP_KEY = 'localDarkWallpaperBackup'
 
 const WALLPAPER_DATA_URL_PATTERN = /^data:image\/[\w.+-]+;base64,[A-Z0-9+/]+=*$/i
 
@@ -165,28 +167,32 @@ export function convertLegacyUploadedWallpaper(value: unknown): LocalWallpaperDa
 }
 
 /**
- * 从备份恢复本地壁纸。上传入口只保留一张本地壁纸，这里同样整体替换以释放旧图占用的配额。
- * 备份内容无效、现有数据未读取成功或存储写入失败时抛出错误，且不改动现有壁纸。
- * @param value 备份中的壁纸数据
- * @returns 壁纸引用对象
+ * 从备份恢复本地壁纸（支持同时恢复浅色/默认与深色本地壁纸）。
+ * 与上传入口一致，这里整体替换本地壁纸存储以释放旧图占用的配额。
+ * 任意备份项无效、现有数据未读取成功或存储写入失败时抛出错误，且不改动现有壁纸。
+ * @param values 备份中的壁纸数据列表
+ * @returns 壁纸引用对象列表（顺序与输入一一对应）
  */
-export async function restoreLocalWallpaper(value: unknown): Promise<LocalWallpaperRef> {
-  if (!isLocalWallpaperData(value))
+export async function restoreLocalWallpapers(values: unknown[]): Promise<LocalWallpaperRef[]> {
+  if (values.length === 0 || !values.every(isLocalWallpaperData))
     throw new TypeError('Invalid local wallpaper backup')
   if (!await localWallpapersLoaded)
     throw new Error('Local wallpapers are unavailable')
 
-  const wallpapers = { [value.id]: value }
+  const wallpapers: Record<string, LocalWallpaperData> = {}
+  for (const value of values)
+    wallpapers[value.id] = value
+
   // 响应式写入不会返回结果，先直接写入存储，让配额不足等错误回到导入流程。
   await browser.storage.local.set({ [LOCAL_WALLPAPERS_STORAGE_KEY]: JSON.stringify(wallpapers) })
   // 存储事件的到达时机不确定，同步更新当前页面，确保随后导入的设置能解析到新壁纸。
   localWallpapers.value = wallpapers
 
-  return {
+  return values.map(value => ({
     id: value.id,
     name: value.name,
     isLocal: true,
-  }
+  }))
 }
 
 /**

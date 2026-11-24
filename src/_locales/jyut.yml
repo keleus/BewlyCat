@@ -764,6 +764,9 @@ settings:
   theme_color: 主題色
   dark_mode_base_color: 深色模式基準顏色
   gradient_theme_color_background: 使用漸層主題色作爲深色模式嘅背景
+  individually_set_dark_mode_wallpaper: 分別為深、淺色模式設定背景圖片
+  individually_set_dark_mode_wallpaper_desc: 熄咗嗰陣深、淺色模式共用同一張背景圖片；開咗之後可以分別為淺色同深色模式指定唔同背景。
+  wallpaper_theme_target: 而家編輯嘅色系模式
   wallpaper_mode: 背景圖片模式
   wallpaper_mode_desc: 揀內建/本機上傳圖片，或者直接填寫網上圖片連結。
   wallpaper_mode_opt:

@@ -47,15 +47,21 @@ const BLOCKED_FIELDS = new Set(['__proto__', 'constructor', 'prototype'])
 // Wallpaper data and its rendering configuration stay device-local. Uploaded
 // files and caches already use separate local-only storage keys.
 const LOCAL_ONLY_WALLPAPER_FIELDS = new Set([
+  'individuallySetDarkModeWallpaper',
   'wallpaperMode',
   'wallpaper',
+  'darkModeWallpaperMode',
+  'darkModeWallpaper',
   'enableWallpaperMasking',
   'wallpaperMaskOpacity',
   'wallpaperBlurIntensity',
   'wallpaperCacheTime',
   'individuallySetSearchPageWallpaper',
+  'searchPageIndividuallySetDarkModeWallpaper',
   'searchPageWallpaperMode',
   'searchPageWallpaper',
+  'searchPageDarkModeWallpaperMode',
+  'searchPageDarkModeWallpaper',
   'searchPageEnableWallpaperMasking',
   'searchPageWallpaperMaskOpacity',
   'searchPageWallpaperBlurIntensity',
@@ -64,6 +70,7 @@ const LOCAL_ONLY_WALLPAPER_FIELDS = new Set([
   // Legacy fields are denied as a final guard if an old settings object has
   // not completed its local-only migration yet.
   'locallyUploadedWallpaper',
+  'locallyUploadedDarkWallpaper',
   'customizeCSS',
   'customizeCSSContent',
 ])

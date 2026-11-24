@@ -802,6 +802,9 @@ settings:
   theme_color: Theme color
   dark_mode_base_color: Dark mode base color
   gradient_theme_color_background: Use a gradient theme color as the background in dark mode
+  individually_set_dark_mode_wallpaper: Separate light and dark wallpapers
+  individually_set_dark_mode_wallpaper_desc: Use the same wallpaper in both themes when off; turn on to configure light and dark mode wallpapers separately.
+  wallpaper_theme_target: Editing wallpaper for
   wallpaper_mode: Wallpaper mode
   wallpaper_mode_desc: >
     Choose a built-in or uploaded image, or enter a direct image URL.

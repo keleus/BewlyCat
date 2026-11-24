@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { CSSProperties } from 'vue'
+import type { ComputedRef, CSSProperties } from 'vue'
 
 import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
-import { isLocalWallpaperUrl, localWallpapersLoaded, resolveWallpaperUrl } from '~/utils/localWallpaper'
 import { hexToHSL } from '~/utils/main'
-import { cleanupExpiredCache, getOrCacheWallpaper } from '~/utils/wallpaperCache'
+import { resolveWallpaperSource } from '~/utils/wallpaper'
+import { cleanupExpiredCache } from '~/utils/wallpaperCache'
 
 const props = defineProps<{ activatedPage: AppPage }>()
 const emit = defineEmits<{ wallpaperReady: [ready: boolean] }>()
@@ -18,9 +18,6 @@ onMounted(() => {
   cleanupExpiredCache()
 })
 
-// 计算解析后的壁纸URL(支持本地壁纸和缓存控制)
-const resolvedWallpaper = ref('')
-const resolvedSearchPageWallpaper = ref('')
 function waitForWallpaperDecode(url: string, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -89,82 +86,91 @@ function waitForWallpaperDecode(url: string, signal: AbortSignal): Promise<void>
   })
 }
 
-async function resolveWallpaperSource(originalUrl: string, cacheTime: number): Promise<string> {
-  if (isLocalWallpaperUrl(originalUrl)) {
-    // 读取完成前解析结果为空，且这里不会因数据到达而重新执行。
-    await localWallpapersLoaded
-    return resolveWallpaperUrl(originalUrl) || ''
-  }
+function useResolvedWallpaper(sourceUrl: ComputedRef<string>, cacheTime: ComputedRef<number>) {
+  const resolved = ref('')
 
-  return originalUrl ? await getOrCacheWallpaper(originalUrl, cacheTime) : ''
+  // 逐项监听壁纸来源和缓存时间，避免无关设置触发大图重复加载、解码。
+  watch([sourceUrl, cacheTime], ([originalUrl, newCacheTime], oldValue, onCleanup) => {
+    const controller = new AbortController()
+    onCleanup(() => controller.abort())
+    // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
+    if (oldValue && newCacheTime !== oldValue[1]) {
+      cleanupExpiredCache(newCacheTime)
+    }
+
+    void (async () => {
+      const resolvedUrl = await resolveWallpaperSource(originalUrl, newCacheTime)
+      if (controller.signal.aborted)
+        return
+
+      if (!resolvedUrl) {
+        resolved.value = ''
+        return
+      }
+
+      try {
+        await waitForWallpaperDecode(resolvedUrl, controller.signal)
+        if (!controller.signal.aborted)
+          resolved.value = resolvedUrl
+      }
+      catch {
+        if (!controller.signal.aborted)
+          resolved.value = ''
+      }
+    })()
+  }, { immediate: true })
+
+  return resolved
 }
 
-// 解析全局壁纸
-async function resolveGlobalWallpaper(signal: AbortSignal) {
-  const originalUrl = settings.value.wallpaper
-  const resolvedUrl = await resolveWallpaperSource(originalUrl, settings.value.wallpaperCacheTime)
-  if (signal.aborted)
-    return
+const globalCacheTime = computed(() => settings.value.wallpaperCacheTime)
+const searchPageCacheTime = computed(() => settings.value.searchPageWallpaperCacheTime)
 
-  if (!resolvedUrl) {
-    resolvedWallpaper.value = ''
-    return
-  }
+const globalLightWallpaperSource = computed(() => settings.value.wallpaper)
+const globalDarkWallpaperSource = computed(() => {
+  if (!settings.value.individuallySetDarkModeWallpaper)
+    return ''
+  return settings.value.darkModeWallpaper === settings.value.wallpaper
+    ? ''
+    : settings.value.darkModeWallpaper
+})
 
-  try {
-    await waitForWallpaperDecode(resolvedUrl, signal)
-    if (!signal.aborted)
-      resolvedWallpaper.value = resolvedUrl
-  }
-  catch {
-    if (!signal.aborted)
-      resolvedWallpaper.value = ''
-  }
-}
+const searchLightWallpaperSource = computed(() =>
+  settings.value.individuallySetSearchPageWallpaper
+    ? settings.value.searchPageWallpaper
+    : '',
+)
+const searchDarkWallpaperSource = computed(() => {
+  if (!settings.value.individuallySetSearchPageWallpaper || !settings.value.searchPageIndividuallySetDarkModeWallpaper)
+    return ''
+  return settings.value.searchPageDarkModeWallpaper === settings.value.searchPageWallpaper
+    ? ''
+    : settings.value.searchPageDarkModeWallpaper
+})
 
-// 解析搜索页壁纸
-async function resolveSearchWallpaper(signal: AbortSignal) {
-  const originalUrl = settings.value.searchPageWallpaper
-  const resolvedUrl = await resolveWallpaperSource(originalUrl, settings.value.searchPageWallpaperCacheTime)
-  if (signal.aborted)
-    return
+// 开启深浅色独立壁纸时预解码两套壁纸，切换主题时可同步切换，避免过渡闪烁。
+const resolvedGlobalLightWallpaper = useResolvedWallpaper(globalLightWallpaperSource, globalCacheTime)
+const resolvedGlobalDarkWallpaper = useResolvedWallpaper(globalDarkWallpaperSource, globalCacheTime)
+const resolvedSearchLightWallpaper = useResolvedWallpaper(searchLightWallpaperSource, searchPageCacheTime)
+const resolvedSearchDarkWallpaper = useResolvedWallpaper(searchDarkWallpaperSource, searchPageCacheTime)
 
-  if (!resolvedUrl) {
-    resolvedSearchPageWallpaper.value = ''
-    return
+const resolvedWallpaper = computed(() => {
+  if (isDark.value && settings.value.individuallySetDarkModeWallpaper) {
+    return settings.value.darkModeWallpaper === settings.value.wallpaper
+      ? resolvedGlobalLightWallpaper.value
+      : resolvedGlobalDarkWallpaper.value
   }
+  return resolvedGlobalLightWallpaper.value
+})
 
-  try {
-    await waitForWallpaperDecode(resolvedUrl, signal)
-    if (!signal.aborted)
-      resolvedSearchPageWallpaper.value = resolvedUrl
+const resolvedSearchPageWallpaper = computed(() => {
+  if (isDark.value && settings.value.searchPageIndividuallySetDarkModeWallpaper) {
+    return settings.value.searchPageDarkModeWallpaper === settings.value.searchPageWallpaper
+      ? resolvedSearchLightWallpaper.value
+      : resolvedSearchDarkWallpaper.value
   }
-  catch {
-    if (!signal.aborted)
-      resolvedSearchPageWallpaper.value = ''
-  }
-}
-
-// 逐项监听壁纸来源和缓存时间，避免无关设置触发大图重复加载、解码。
-watch([() => settings.value.wallpaper, () => settings.value.wallpaperCacheTime], ([, newCacheTime], oldValue, onCleanup) => {
-  const controller = new AbortController()
-  onCleanup(() => controller.abort())
-  // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
-  if (oldValue && newCacheTime !== oldValue[1]) {
-    cleanupExpiredCache(newCacheTime)
-  }
-  void resolveGlobalWallpaper(controller.signal)
-}, { immediate: true })
-
-watch([() => settings.value.searchPageWallpaper, () => settings.value.searchPageWallpaperCacheTime], ([, newCacheTime], oldValue, onCleanup) => {
-  const controller = new AbortController()
-  onCleanup(() => controller.abort())
-  // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
-  if (oldValue && newCacheTime !== oldValue[1]) {
-    cleanupExpiredCache(newCacheTime)
-  }
-  void resolveSearchWallpaper(controller.signal)
-}, { immediate: true })
+  return resolvedSearchLightWallpaper.value
+})
 
 // 计算当前页面使用的壁纸URL
 const currentWallpaperUrl = computed(() => {
@@ -269,7 +275,7 @@ setAppWallpaperMaskingOpacity()
         <div
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
           z--1
-          :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
+          :style="{ backgroundImage: currentWallpaperUrl ? `url('${currentWallpaperUrl}')` : 'none' }"
         />
         <!-- background mask -->
         <Transition name="fade">
@@ -284,7 +290,7 @@ setAppWallpaperMaskingOpacity()
       <div v-else>
         <!-- background -->
         <div
-          :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
+          :style="{ backgroundImage: currentWallpaperUrl ? `url('${currentWallpaperUrl}')` : 'none' }"
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
           z--1
         />

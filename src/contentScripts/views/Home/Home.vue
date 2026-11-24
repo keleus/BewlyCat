@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useDark } from '~/composables/useDark'
 import { provideHomeTabCache } from '~/composables/useHomeTabState'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
@@ -18,6 +19,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { cancelProgrammaticScroll, jumpScrollTo } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
+import { getEffectiveSearchPageWallpaper, resolveWallpaperSource } from '~/utils/wallpaper'
 
 import RecommendationFilterEntry from './components/RecommendationFilterEntry.vue'
 import VersionReminder from './components/VersionReminder.vue'
@@ -29,6 +31,7 @@ const mainStore = useMainStore()
 const topBarStore = useTopBarStore()
 const forYouStore = useForYouStore()
 const { t } = useI18n()
+const { isDark } = useDark()
 const { isLayoutEditing } = useLayoutEditMode()
 const {
   handleBackToTop,
@@ -319,6 +322,39 @@ function openImmersiveMode() {
   tabPageRef.value?.openImmersiveMode?.()
 }
 
+const resolvedSearchPageModeWallpaper = ref('')
+const searchPageModeWallpaperSource = computed(() => {
+  if (!settings.value.useSearchPageModeOnHomePage || !settings.value.individuallySetSearchPageWallpaper || !settings.value.enableBackground)
+    return ''
+  return getEffectiveSearchPageWallpaper(settings.value, isDark.value)
+})
+
+watch(
+  [searchPageModeWallpaperSource, () => settings.value.searchPageWallpaperCacheTime],
+  ([originalUrl, cacheTime], _oldValue, onCleanup) => {
+    let aborted = false
+    onCleanup(() => {
+      aborted = true
+    })
+
+    if (!originalUrl) {
+      resolvedSearchPageModeWallpaper.value = ''
+      return
+    }
+
+    void resolveWallpaperSource(originalUrl, cacheTime)
+      .then((resolvedUrl) => {
+        if (!aborted)
+          resolvedSearchPageModeWallpaper.value = resolvedUrl
+      })
+      .catch(() => {
+        if (!aborted)
+          resolvedSearchPageModeWallpaper.value = ''
+      })
+  },
+  { immediate: true },
+)
+
 function toggleTabContentLoading(loading: boolean) {
   tabContentLoading.value = loading
 }
@@ -341,14 +377,14 @@ function toggleTabContentLoading(loading: boolean) {
           pos="absolute left-0 top-0" w-full h-inherit bg="cover center" z-1
           pointer-events-none
           :style="{
-            backgroundImage: `url('${settings.searchPageWallpaper}')`,
+            backgroundImage: resolvedSearchPageModeWallpaper ? `url('${resolvedSearchPageModeWallpaper}')` : 'none',
             backgroundAttachment: settings.searchPageModeWallpaperFixed ? 'fixed' : 'unset',
           }"
         />
         <!-- background mask -->
         <Transition name="fade">
           <div
-            v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
+            v-if="resolvedSearchPageModeWallpaper && ((!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || settings.searchPageEnableWallpaperMasking)"
             pos="relative left-0 top-0" w-full h-inherit pointer-events-none
             z-1
             :style="{

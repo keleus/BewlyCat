@@ -118,10 +118,6 @@ const themeOptions = computed<Array<{ value: string, label: string }>>(() => {
   ]
 })
 
-watch(() => settings.value.wallpaper, (newValue) => {
-  changeWallpaper(newValue)
-})
-
 // 插件页面和视频页玻璃风格共用同一套壁纸与渐变设置，两者任一生效都要保留入口。
 const showGlobalBackgroundSettings = computed(() => {
   return (!settings.value.useOriginalBilibiliHomepage && settings.value.enableBackground)
@@ -137,16 +133,6 @@ function changeDarkModeBaseColor(color: string) {
   settings.value.darkModeBaseColor = color
 }
 const changeDarkModeBaseColorThrottle = useThrottleFn((color: string) => changeDarkModeBaseColor(color), 100)
-
-function changeWallpaper(url: string) {
-  // If you had already set the wallpaper, it enables the wallpaper masking to prevent text hard to see
-  if (url)
-    settings.value.enableWallpaperMasking = true
-  else
-    settings.value.enableWallpaperMasking = false
-
-  settings.value.wallpaper = url
-}
 </script>
 
 <template>

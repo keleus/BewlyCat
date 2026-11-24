@@ -194,6 +194,7 @@ export type MomentsVideoCardOpenMode = MomentsCardOpenMode | 'inherit' | 'curren
 export interface LocalSettings {
   // 壁纸相关
   locallyUploadedWallpaper: wallpaperItem | null
+  locallyUploadedDarkWallpaper: wallpaperItem | null
 
   // 自定义CSS
   customizeCSS: boolean
@@ -507,8 +508,11 @@ export interface Settings {
   darkModeBaseColor: string // 深色模式基准颜色
   useLinearGradientThemeColorBackground: boolean
   enableBackground: boolean
+  individuallySetDarkModeWallpaper: boolean
   wallpaperMode: 'buildIn' | 'byUrl'
   wallpaper: string
+  darkModeWallpaperMode: 'buildIn' | 'byUrl'
+  darkModeWallpaper: string
   enableWallpaperMasking: boolean
   wallpaperMaskOpacity: number
   wallpaperBlurIntensity: number
@@ -521,8 +525,11 @@ export interface Settings {
   searchPageShowLogo: boolean
   searchPageSearchBarFocusCharacter: string
   individuallySetSearchPageWallpaper: boolean
+  searchPageIndividuallySetDarkModeWallpaper: boolean
   searchPageWallpaperMode: 'buildIn' | 'byUrl'
   searchPageWallpaper: string
+  searchPageDarkModeWallpaperMode: 'buildIn' | 'byUrl'
+  searchPageDarkModeWallpaper: string
   searchPageEnableWallpaperMasking: boolean
   searchPageWallpaperMaskOpacity: number
   searchPageWallpaperBlurIntensity: number
@@ -681,6 +688,7 @@ export interface Settings {
 // 本地存储配置默认值
 export const originalLocalSettings: LocalSettings = {
   locallyUploadedWallpaper: null,
+  locallyUploadedDarkWallpaper: null,
   customizeCSS: false,
   customizeCSSContent: '',
   bewlyWidescreenSidebarWidth: 0,
@@ -886,8 +894,11 @@ export const originalSettings: Settings = {
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
   useLinearGradientThemeColorBackground: false,
   enableBackground: true,
+  individuallySetDarkModeWallpaper: false,
   wallpaperMode: 'buildIn',
   wallpaper: '',
+  darkModeWallpaperMode: 'buildIn',
+  darkModeWallpaper: '',
   enableWallpaperMasking: false,
   wallpaperMaskOpacity: 80,
   wallpaperBlurIntensity: 0,
@@ -900,8 +911,11 @@ export const originalSettings: Settings = {
   searchPageShowLogo: true,
   searchPageSearchBarFocusCharacter: DEFAULT_SEARCH_BAR_CHARACTER,
   individuallySetSearchPageWallpaper: false,
+  searchPageIndividuallySetDarkModeWallpaper: false,
   searchPageWallpaperMode: 'buildIn',
   searchPageWallpaper: '',
+  searchPageDarkModeWallpaperMode: 'buildIn',
+  searchPageDarkModeWallpaper: '',
   searchPageEnableWallpaperMasking: false,
   searchPageWallpaperMaskOpacity: 80,
   searchPageWallpaperBlurIntensity: 0,
@@ -1628,6 +1642,20 @@ export const settings = useSettingsStorage(originalSettings, {
       if (typeof record[nextKey] !== 'boolean')
         record[nextKey] = originalSettings[nextKey]
     }
+
+    if (typeof record.individuallySetDarkModeWallpaper !== 'boolean')
+      record.individuallySetDarkModeWallpaper = originalSettings.individuallySetDarkModeWallpaper
+    if (record.darkModeWallpaperMode !== 'buildIn' && record.darkModeWallpaperMode !== 'byUrl')
+      record.darkModeWallpaperMode = originalSettings.darkModeWallpaperMode
+    if (typeof record.darkModeWallpaper !== 'string')
+      record.darkModeWallpaper = originalSettings.darkModeWallpaper
+
+    if (typeof record.searchPageIndividuallySetDarkModeWallpaper !== 'boolean')
+      record.searchPageIndividuallySetDarkModeWallpaper = originalSettings.searchPageIndividuallySetDarkModeWallpaper
+    if (record.searchPageDarkModeWallpaperMode !== 'buildIn' && record.searchPageDarkModeWallpaperMode !== 'byUrl')
+      record.searchPageDarkModeWallpaperMode = originalSettings.searchPageDarkModeWallpaperMode
+    if (typeof record.searchPageDarkModeWallpaper !== 'string')
+      record.searchPageDarkModeWallpaper = originalSettings.searchPageDarkModeWallpaper
 
     // 迁移旧的 locallyUploadedWallpaper/customizeCSS/customizeCSSContent 到 localSettings
     if ('locallyUploadedWallpaper' in record || 'customizeCSS' in record || 'customizeCSSContent' in record) {
