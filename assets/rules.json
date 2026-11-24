@@ -73,5 +73,30 @@
       "resourceTypes": ["xmlhttprequest"],
       "requestMethods": ["post"]
     }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "origin",
+          "operation": "set",
+          "value": "https://www.bilibili.com"
+        },
+        {
+          "header": "referer",
+          "operation": "set",
+          "value": "https://www.bilibili.com/"
+        }
+      ]
+    },
+    "condition": {
+      "domainType": "thirdParty",
+      "regexFilter": "^https://api\\.bilibili\\.com/x/web-interface/(wbi/)?search/",
+      "resourceTypes": ["xmlhttprequest"],
+      "requestMethods": ["get"]
+    }
   }
 ]
