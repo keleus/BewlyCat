@@ -13,6 +13,7 @@
     "types": [
       "vite/client"
     ],
+    "allowImportingTsExtensions": true,
     "strict": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,

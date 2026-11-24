@@ -27,7 +27,7 @@ function readBuildCommit(): string {
   }
 }
 
-// Vite 与 tsup 都在启动时读取，避免已打开页面的标识随后续提交变化。
+// Vite 与 tsdown 都在启动时读取，避免已打开页面的标识随后续提交变化。
 export const buildCommit = readBuildCommit()
 
 export function log(name: string, message: string) {

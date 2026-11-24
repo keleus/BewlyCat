@@ -3,7 +3,7 @@ import { basename } from 'node:path'
 
 import type { Plugin } from 'vite'
 
-import { r } from './utils'
+import { r } from './utils.ts'
 
 const VIRTUAL_ID = 'virtual:bewly-inject-messages'
 const RESOLVED_ID = `\0${VIRTUAL_ID}`

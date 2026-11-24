@@ -3,10 +3,10 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import fs from 'fs-extra'
-import type { Options as TsupOptions } from 'tsup'
+import type { TsdownPlugin } from 'tsdown'
 import type { Plugin as VitePlugin } from 'vite'
 
-import { isFirefox, isSafari, r } from './utils'
+import { isFirefox, isSafari, r } from './utils.ts'
 
 export interface ThirdPartyLicense {
   name: string
@@ -16,19 +16,22 @@ export interface ThirdPartyLicense {
   licenseText?: string
 }
 
+interface BundleChunkLike {
+  type: string
+  modules?: Record<string, { renderedLength: number }>
+}
+
 const extensionDirectory = isFirefox
   ? 'extension-firefox'
   : isSafari ? 'extension-safari' : 'extension'
 const NODE_MODULES_SEGMENT = '/node_modules/'
 const LICENSE_FILE_PATTERN = /^(?:licen[cs]e|copying|notice)(?:[.\-_].*)?$/i
 
-type EsbuildPlugin = NonNullable<TsupOptions['esbuildPlugins']>[number]
-
 function resolvePackageDirectory(moduleId: string): string | undefined {
   if (moduleId.startsWith('\0'))
     return undefined
 
-  // Vite 的模块 ID 使用 POSIX 分隔符，esbuild 在 Windows 下给出原生路径，这里统一处理。
+  // 统一为 POSIX 分隔符，兼容 Windows 原生路径。
   const filePath = moduleId.split('?')[0].replaceAll('\\', '/')
   const index = filePath.lastIndexOf(NODE_MODULES_SEGMENT)
   if (index < 0)
@@ -104,47 +107,50 @@ async function writeLicenses(buildName: string, packageDirectories: Iterable<str
   )
 }
 
+function collectPackageDirectories(bundle: Record<string, BundleChunkLike>): Set<string> {
+  const packageDirectories = new Set<string>()
+  for (const output of Object.values(bundle)) {
+    if (output.type !== 'chunk' || !output.modules)
+      continue
+    for (const [moduleId, info] of Object.entries(output.modules)) {
+      // 被 tree-shaking 完全移除的模块不计入。
+      if (info.renderedLength === 0)
+        continue
+      const directory = resolvePackageDirectory(moduleId)
+      if (directory)
+        packageDirectories.add(directory)
+    }
+  }
+  return packageDirectories
+}
+
 export function thirdPartyLicensesVitePlugin(buildName: string): VitePlugin {
   return {
     name: 'third-party-licenses',
     apply: 'build',
     async generateBundle(_options, bundle) {
-      const packageDirectories = new Set<string>()
-      for (const output of Object.values(bundle)) {
-        if (output.type !== 'chunk')
-          continue
-        for (const [moduleId, info] of Object.entries(output.modules)) {
-          // 被 tree-shaking 完全移除的模块不计入。
-          if (info.renderedLength === 0)
-            continue
-          const directory = resolvePackageDirectory(moduleId)
-          if (directory)
-            packageDirectories.add(directory)
-        }
-      }
-      await writeLicenses(buildName, packageDirectories)
+      await writeLicenses(buildName, collectPackageDirectories(bundle))
     },
   }
 }
 
-export function thirdPartyLicensesEsbuildPlugin(buildName: string): EsbuildPlugin {
-  return {
-    name: 'third-party-licenses',
-    setup(build) {
-      const packageDirectories = new Set<string>()
-      build.onStart(() => {
-        packageDirectories.clear()
+export function createThirdPartyLicensesTsdownCollector(buildName: string) {
+  const packagesByEntry = new Map<string, Set<string>>()
+  let writeQueue = Promise.resolve()
+
+  return (entryName: string): TsdownPlugin => ({
+    name: `third-party-licenses:${entryName}`,
+    generateBundle(_options, bundle) {
+      packagesByEntry.set(entryName, collectPackageDirectories(bundle))
+      writeQueue = writeQueue.then(async () => {
+        const merged = new Set<string>()
+        for (const directories of packagesByEntry.values()) {
+          for (const directory of directories)
+            merged.add(directory)
+        }
+        await writeLicenses(buildName, merged)
       })
-      build.onLoad({ filter: /[\\/]node_modules[\\/]/ }, (args) => {
-        const directory = resolvePackageDirectory(args.path)
-        if (directory)
-          packageDirectories.add(directory)
-        return undefined
-      })
-      build.onEnd(async (result) => {
-        if (result.errors.length === 0)
-          await writeLicenses(buildName, packageDirectories)
-      })
+      return writeQueue
     },
-  }
+  })
 }

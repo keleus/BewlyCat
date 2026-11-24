@@ -1,10 +1,21 @@
 // 内容脚本与设置页共用的 UI 打包插件：两者都把界面渲染在 Shadow DOM 内。
+import { Buffer } from 'node:buffer'
 import { readdirSync } from 'node:fs'
 
+import { transform as transformCss } from 'lightningcss'
 import type { Plugin } from 'vite'
-import { isCSSRequest, normalizePath, transformWithEsbuild } from 'vite'
+import { isCSSRequest, normalizePath } from 'vite'
 
-import { isDev, r } from './utils'
+import { isDev, r } from './utils.ts'
+
+function minifyHostCss(css: string, filename: string): string {
+  const { code } = transformCss({
+    filename,
+    code: Buffer.from(css),
+    minify: true,
+  })
+  return new TextDecoder().decode(code).trim()
+}
 
 const BUNDLED_STYLE_GLOBAL = '__BEWLYCAT_BUNDLED_STYLE_TEXT__'
 const HOST_STYLE_GLOBAL = '__BEWLYCAT_HOST_STYLE_TEXT__'
@@ -130,7 +141,7 @@ export interface EmbedBundledStylesOptions {
 
 export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plugin[] {
   const { splitHostStyles = false } = options
-  // Rollup 监听模式会复用未改动模块的转换缓存，不能在 buildStart 中清空，
+  // Rolldown 监听模式会复用未改动模块的转换缓存，不能在 buildStart 中清空，
   // 而是由 generateBundle 按当次构建的 entryChunk.moduleIds 精确挑选有效模块。
   const hostCssById = new Map<string, string>()
 
@@ -210,7 +221,7 @@ export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plu
         const rawHostCss = orderedHostCss.join('\n')
         const hostCss = isDev
           ? rawHostCss
-          : (await transformWithEsbuild(rawHostCss, 'bewly-host-styles.css', { loader: 'css', minify: true })).code.trim()
+          : minifyHostCss(rawHostCss, 'bewly-host-styles.css')
         injectedGlobals.push(
           `globalThis.${HOST_STYLE_GLOBAL}=${JSON.stringify(hostCss)};`,
         )
@@ -308,7 +319,7 @@ export function splitOptionsExternalStyles(): Plugin[] {
         const rawHostCss = orderedHostCss.join('\n')
         const hostCss = isDev
           ? rawHostCss
-          : (await transformWithEsbuild(rawHostCss, 'bewly-options-host.css', { loader: 'css', minify: true })).code.trim()
+          : minifyHostCss(rawHostCss, 'bewly-options-host.css')
 
         delete bundle[cssKey]
         this.emitFile({
@@ -340,7 +351,7 @@ export function splitOptionsExternalStyles(): Plugin[] {
 }
 
 // unplugin-vue-i18n 的虚拟 messages 模块直接读取并内联 locale 文件，不会登记为监听文件；
-// 这里补登记，开发模式下改动翻译才会触发重建。虚拟模块的 load 钩子每轮都会重新执行，Rollup 缓存不影响翻译更新。
+// 这里补登记，开发模式下改动翻译才会触发重建。虚拟模块的 load 钩子每轮都会重新执行，Rolldown 缓存不影响翻译更新。
 // 单次构建也登记，scripts/dev.ts 据此决定设置页何时重建。
 export function watchLocaleFiles(): Plugin {
   const localesDir = r('src/_locales')

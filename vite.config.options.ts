@@ -2,10 +2,10 @@ import UnoCSS from 'unocss/vite'
 import type { Plugin, UserConfig } from 'vite'
 import { defineConfig, normalizePath } from 'vite'
 
-import { splitOptionsExternalStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
-import { isDev, isFirefox, isSafari, r } from './scripts/utils'
-import { createUnoConfig } from './unocss.config'
-import { createSharedConfig } from './vite.config'
+import { splitOptionsExternalStyles, watchLocaleFiles } from './scripts/uiBundlePlugins.ts'
+import { isDev, isFirefox, isSafari, r } from './scripts/utils.ts'
+import { createUnoConfig } from './unocss.config.ts'
+import { createSharedConfig } from './vite.config.ts'
 
 const CONTENT_I18N_PATH = normalizePath(r('src/utils/i18n.ts'))
 const OPTIONS_I18N_PATH = normalizePath(r('src/options/i18n.ts'))
@@ -37,15 +37,7 @@ function optionsModuleOverrides(): Plugin {
   }
 }
 
-function optionsManualChunks(id: string): string | undefined {
-  const normalized = normalizePath(id)
-  if (!normalized.includes('/node_modules/'))
-    return undefined
-  // 保持 vuedraggable / sortablejs / qrcode 跟随各自异步子页按需加载，不打入首屏 vendor。
-  if (/\/node_modules\/(?:\.pnpm\/)?(?:vue|@vue|vue-i18n|@intlify|pinia|@vueuse|vue-toastification)[/@+]/.test(normalized))
-    return 'vendor'
-  return undefined
-}
+const OPTIONS_VENDOR_RE = /[\\/]node_modules[\\/](?:\.pnpm[\\/])?(?:vue|@vue|vue-i18n|@intlify|pinia|@vueuse|vue-toastification)[\\/@+]/
 
 // 独立设置页。它用到的模块都已包含在内容脚本中，第三方许可由内容脚本的清单覆盖。
 export function createOptionsConfig(): UserConfig {
@@ -71,11 +63,11 @@ export function createOptionsConfig(): UserConfig {
       cssCodeSplit: false,
       emptyOutDir: true,
       sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
-      minify: isDev ? false : 'esbuild',
-      cssMinify: isDev ? false : 'esbuild',
+      minify: !isDev,
+      cssMinify: !isDev,
       reportCompressedSize: !isDev,
       ...(isDev ? { target: 'esnext' } : {}),
-      rollupOptions: {
+      rolldownOptions: {
         input: r('src/options/index.html'),
         output: {
           format: 'es',
@@ -83,7 +75,15 @@ export function createOptionsConfig(): UserConfig {
           // 扩展本地资源无需 CDN 缓存哈希；固定分块名也能避免开发模式重建后已打开的设置页找不到旧哈希分块。
           chunkFileNames: 'assets/[name].js',
           assetFileNames: 'assets/[name][extname]',
-          manualChunks: optionsManualChunks,
+          codeSplitting: {
+            groups: [
+              {
+                name: 'vendor',
+                // 保持 vuedraggable / sortablejs / qrcode 跟随各自异步子页按需加载，不打入首屏 vendor。
+                test: OPTIONS_VENDOR_RE,
+              },
+            ],
+          },
         },
       },
     },

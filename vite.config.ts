@@ -4,7 +4,7 @@ import Vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import type { Plugin, UserConfig } from 'vite'
 
-import { buildCommit, isDev, isFirefox, r } from './scripts/utils'
+import { buildCommit, isDev, isFirefox, r } from './scripts/utils.ts'
 
 // unplugin-vue-i18n 按 config.isProduction 选择消息格式：开发模式下每条消息都编译为带 start/end/loc/source
 // 位置信息的完整 AST，4 个语言约 3.5 MB，是生产格式的十倍左右，显著拖慢内容脚本与设置页的构建。

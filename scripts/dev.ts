@@ -1,18 +1,19 @@
-// 开发模式入口：在单个进程中构建内容脚本、页面脚本、设置页（Vite）与后台脚本（tsup）。
-// - 内容脚本改动最频繁，使用 Rollup 监听模式，保留转换缓存以加快重建。
-// - 监听模式只保留上一轮构建对象供 Rollup 向插件派发 watchChange，不做手动清理，避免改文件后插件缓存不刷新。
+// 开发模式入口：在单个进程中构建内容脚本、页面脚本、设置页（Vite）与后台脚本（tsdown）。
+// - 内容脚本改动最频繁，使用 Rolldown 监听模式，保留转换缓存以加快重建。
+// - 监听模式只保留上一轮构建对象供 Rolldown 向插件派发 watchChange，不做手动清理，避免改文件后插件缓存不刷新。
 // - 页面脚本与设置页按需单次构建：直接调用配置工厂并设置 configFile: false，避免 Vite 每次重建都生成带时间戳的
-//   `.vite-temp/*.mjs` 并通过 ESM `import()` 加载进 Node 永久模块缓存，导致图标集缓存、UnoCSS 上下文与 Rollup 模块图泄漏。
+//   `.vite-temp/*.mjs` 并通过 ESM `import()` 加载进 Node 永久模块缓存，导致图标集缓存、UnoCSS 上下文与模块图泄漏。
 // - Vite 构建串行执行，避免同时达到内存峰值；每个目标开始/完成都输出日志，文件变动先提示再触发重建。
-// 各构建的实际配置仍以 vite.config.*.ts 与 tsup.config.ts 为准。
+// 各构建的实际配置仍以 vite.config.*.ts 与 tsdown.config.ts 为准。
 import './prepare'
 
+import { readdirSync } from 'node:fs'
 import { isAbsolute, relative } from 'node:path'
 import process from 'node:process'
 
 import chokidar from 'chokidar'
-import { build as buildWithTsup } from 'tsup'
-import type { Plugin, Rollup, UserConfig } from 'vite'
+import { build as buildWithTsdown } from 'tsdown'
+import type { Plugin, Rolldown, UserConfig } from 'vite'
 import { build as buildWithVite, mergeConfig } from 'vite'
 
 import { createContentConfig } from '../vite.config.content'
@@ -46,7 +47,7 @@ function watchContentScript(): Promise<void> {
   const devPlugin: Plugin = {
     name: 'bewly:dev-content',
     apply: 'build',
-    // Rollup 每轮构建开始时都会调用 options 钩子，在此等待构建槽；
+    // Rolldown 每轮构建开始时都会调用 options 钩子，在此等待构建槽；
     // 拿到槽后再打印开始日志，避免排队中的构建提前显示为正在构建。
     async options() {
       releaseSlot = await acquireBuildSlot()
@@ -62,7 +63,7 @@ function watchContentScript(): Promise<void> {
       logLevel: 'warn',
       plugins: [devPlugin],
       build: { watch: {} },
-    })) as Rollup.RollupWatcher
+    })) as Rolldown.RolldownWatcher
 
     // 文件变动先于重建开始，提示是哪个文件触发了内容脚本重建。
     watcher.on('change', (id) => {
@@ -72,10 +73,10 @@ function watchContentScript(): Promise<void> {
     watcher.on('event', (event) => {
       if (event.code === 'BUNDLE_END')
         log('VITE', `content built in ${Date.now() - buildStartTime}ms`)
-      // 出错时 Rollup 同样会在 ERROR 之后发出 END。
+      // 出错时 Rolldown 同样会在 ERROR 之后发出 END。
       if (event.code !== 'END')
         return
-      // 接下来会由 Rollup 调用上一轮插件的 watchChange 钩子（用于清理插件内部缓存），
+      // 接下来会由 Rolldown 调用上一轮插件的 watchChange 钩子（用于清理插件内部缓存），
       // 因此保留上一轮构建对象，不做手动释放，仅在此交出构建槽并标记首轮完成。
       releaseSlot?.()
       releaseSlot = undefined
@@ -140,14 +141,23 @@ function updateWatchedFiles(target: OnDemandBuild, ids: string[], keepPrevious: 
   target.files = next
 }
 
+function listLocaleFiles(): string[] {
+  const localesDir = r('src/_locales')
+  return readdirSync(localesDir)
+    .filter(name => /\.ya?ml$/.test(name))
+    .map(name => r('src/_locales', name))
+}
+
 async function runOnDemandBuild(target: OnDemandBuild) {
   let watchFiles: string[] = []
   const collectWatchFiles: Plugin = {
     name: 'bewly:collect-watch-files',
     apply: 'build',
     // 构建失败时同样会调用 buildEnd，此时拿到的是已解析部分的文件。
+    // Rolldown 的 PluginContext 不再提供 getWatchFiles()，这里采集模块图中的全部文件，
+    // 再补上虚拟模块读取的翻译 YAML（injectMessagesPlugin / unplugin-vue-i18n）。
     buildEnd() {
-      watchFiles = this.getWatchFiles()
+      watchFiles = [...this.getModuleIds(), ...listLocaleFiles()]
     },
   }
 
@@ -207,7 +217,7 @@ const onDemandBuilds: OnDemandBuild[] = [
 ]
 
 async function dev() {
-  const backgroundBuild = buildWithTsup({ watch: './src' })
+  const backgroundBuild = buildWithTsdown({ watch: './src' })
   // 内容脚本的首轮构建先占用构建槽，之后注入脚本与设置页依次排队重建。
   await watchContentScript()
   await Promise.all([backgroundBuild, ...onDemandBuilds.map(rebuild)])

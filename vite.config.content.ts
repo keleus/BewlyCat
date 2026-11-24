@@ -2,12 +2,12 @@ import UnoCSS from 'unocss/vite'
 import type { UserConfig } from 'vite'
 import { defineConfig } from 'vite'
 
-import packageJson from './package.json'
-import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
-import { embedBundledStyles, watchLocaleFiles } from './scripts/uiBundlePlugins'
-import { isDev, isFirefox, isSafari, r } from './scripts/utils'
-import { createUnoConfig } from './unocss.config'
-import { createSharedConfig } from './vite.config'
+import packageJson from './package.json' with { type: 'json' }
+import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses.ts'
+import { embedBundledStyles, watchLocaleFiles } from './scripts/uiBundlePlugins.ts'
+import { isDev, isFirefox, isSafari, r } from './scripts/utils.ts'
+import { createUnoConfig } from './unocss.config.ts'
+import { createSharedConfig } from './vite.config.ts'
 
 // bundling the content script using Vite
 export function createContentConfig(): UserConfig {
@@ -29,8 +29,8 @@ export function createContentConfig(): UserConfig {
       cssCodeSplit: false,
       emptyOutDir: false,
       sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
-      minify: isDev ? false : 'esbuild',
-      cssMinify: isDev ? false : 'esbuild',
+      minify: !isDev,
+      cssMinify: !isDev,
       reportCompressedSize: !isDev,
       ...(isDev ? { target: 'esnext' } : {}),
       lib: {
@@ -38,7 +38,7 @@ export function createContentConfig(): UserConfig {
         name: packageJson.name,
         formats: ['iife'],
       },
-      rollupOptions: {
+      rolldownOptions: {
         // 开发模式跳过全量树摇，减少 885 个模块与 i18n AST 的副作用分析耗时；生产构建保持完整树摇。
         treeshake: !isDev,
         output: {

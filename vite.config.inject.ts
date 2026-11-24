@@ -1,11 +1,11 @@
 import type { UserConfig } from 'vite'
 import { defineConfig } from 'vite'
 
-import packageJson from './package.json'
-import { injectMessagesPlugin } from './scripts/injectMessages'
-import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
-import { isDev, isFirefox, isSafari, r } from './scripts/utils'
-import { createSharedConfig } from './vite.config'
+import packageJson from './package.json' with { type: 'json' }
+import { injectMessagesPlugin } from './scripts/injectMessages.ts'
+import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses.ts'
+import { isDev, isFirefox, isSafari, r } from './scripts/utils.ts'
+import { createSharedConfig } from './vite.config.ts'
 
 // bundling the page-world inject script using Vite
 export function createInjectConfig(): UserConfig {
@@ -22,7 +22,7 @@ export function createInjectConfig(): UserConfig {
       cssCodeSplit: false,
       emptyOutDir: false,
       sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
-      minify: isDev ? false : 'esbuild',
+      minify: !isDev,
       reportCompressedSize: !isDev,
       ...(isDev ? { target: 'esnext' } : {}),
       lib: {
@@ -30,7 +30,7 @@ export function createInjectConfig(): UserConfig {
         name: packageJson.name,
         formats: ['iife'],
       },
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           entryFileNames: 'inject.global.js',
           extend: true,
