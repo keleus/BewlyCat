@@ -8,10 +8,7 @@
     "scripts/*.ts",
     "*.config.*"
   ],
-  "ignoreDependencies": [
-    "@iconify/json",
-    "uno.css"
-  ],
+  "ignoreDependencies": ["@iconify/json", "uno.css"],
   "ignoreBinaries": ["gh", "xcrun"],
   "rules": {
     "types": "off",

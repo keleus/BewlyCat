@@ -95,8 +95,7 @@ async function cacheWallpaper(url: string, cacheTimeHours: number): Promise<void
     }
 
     wallpaperCache.value = cache
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to cache wallpaper:', error)
   }
 }
@@ -129,7 +128,7 @@ export async function getOrCacheWallpaper(url: string, cacheTimeHours: number): 
   }
 
   // 异步缓存图片(不阻塞返回)
-  cacheWallpaper(url, cacheTimeHours).catch(err =>
+  cacheWallpaper(url, cacheTimeHours).catch((err) =>
     console.error('Failed to cache wallpaper:', err),
   )
 
@@ -149,7 +148,8 @@ export function cleanupExpiredCache(currentCacheTimeHours?: number): void {
   Object.keys(cache).forEach((url) => {
     const cached = cache[url]
     // 如果提供了当前缓存时间,用它来判断;否则使用存储时的缓存时间
-    const cacheTimeToUse = currentCacheTimeHours !== undefined ? currentCacheTimeHours : cached.cacheTime
+    const cacheTimeToUse =
+      currentCacheTimeHours !== undefined ? currentCacheTimeHours : cached.cacheTime
     const maxAge = cacheTimeToUse * 60 * 60 * 1000
     const cacheAge = now - cached.timestamp
 

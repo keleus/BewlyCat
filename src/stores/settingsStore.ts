@@ -12,11 +12,11 @@ export interface DockItemConfig {
 
 export const useSettingsStore = defineStore('settings', () => {
   function getDockItemConfigByPage(page: AppPage): DockItemConfig | undefined {
-    return settings.value.dockItemsConfig.find(e => e.page === page)
+    return settings.value.dockItemsConfig.find((e) => e.page === page)
   }
 
   function getDockItemIsUseOriginalBiliPage(page: AppPage): boolean {
-    return settings.value.dockItemsConfig.find(e => e.page === page)?.useOriginalBiliPage || false
+    return settings.value.dockItemsConfig.find((e) => e.page === page)?.useOriginalBiliPage || false
   }
 
   return { getDockItemConfigByPage, getDockItemIsUseOriginalBiliPage }

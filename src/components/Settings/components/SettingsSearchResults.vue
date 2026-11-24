@@ -15,16 +15,14 @@ defineProps<{
     icon="i-mingcute:search-2-fill"
   />
   <div v-if="sections.length" class="settings-search-results">
-    <section
-      v-for="section in sections"
-      :key="section.key"
-      class="settings-search-result-section"
-    >
+    <section v-for="section in sections" :key="section.key" class="settings-search-result-section">
       <header class="settings-search-result-source">
         <span class="settings-search-result-source__menu">{{ $t(section.menuTitleKey) }}</span>
         <template v-if="section.page">
           <i i-mingcute:right-line />
-          <strong class="settings-search-result-source__page">{{ $t(section.page.titleKey) }}</strong>
+          <strong class="settings-search-result-source__page">{{
+            $t(section.page.titleKey)
+          }}</strong>
         </template>
       </header>
       <Component :is="section.component" />
@@ -41,7 +39,8 @@ defineProps<{
     class="settings-search-status"
     role="status"
     aria-live="polite"
-  >{{ summary }}</span>
+    >{{ summary }}</span
+  >
 </template>
 
 <style lang="scss" scoped>
@@ -148,7 +147,7 @@ defineProps<{
   z-index: 0;
   background: var(--bew-theme-color);
   border-radius: var(--bew-panel-radius);
-  content: "";
+  content: '';
   opacity: 0;
   pointer-events: none;
   animation: settings-search-target-flash 2.4s ease-in-out;

@@ -1,6 +1,4 @@
-<script setup lang="ts">
-
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div
@@ -18,11 +16,11 @@
 <style lang="scss" scoped>
 .b-list-item {
   > * {
-    --uno: "flex items-center flex-1 shrink-0";
+    --uno: 'flex items-center flex-1 shrink-0';
   }
 
   & + & {
-    --uno: "mt-1 border-$bew-border-color";
+    --uno: 'mt-1 border-$bew-border-color';
   }
 }
 </style>

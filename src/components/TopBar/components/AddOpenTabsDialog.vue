@@ -8,7 +8,8 @@ import { useTopBarStore } from '~/stores/topBarStore'
 
 const emit = defineEmits<{ close: [] }>()
 const topBarStore = useTopBarStore()
-const { isAddingOpenTabsToWatchLater, openTabsWatchLaterProgress, openTabsWatchLaterError } = storeToRefs(topBarStore)
+const { isAddingOpenTabsToWatchLater, openTabsWatchLaterProgress, openTabsWatchLaterError } =
+  storeToRefs(topBarStore)
 const dialogRef = ref<InstanceType<typeof Dialog>>()
 const hasStarted = ref(isAddingOpenTabsToWatchLater.value)
 
@@ -17,11 +18,12 @@ const completed = computed(() => {
   const progress = openTabsWatchLaterProgress.value
   return progress ? progress.added + progress.skipped + progress.failed : 0
 })
-const percentage = computed(() => total.value > 0 ? Math.min(100, completed.value / total.value * 100) : 0)
+const percentage = computed(() =>
+  total.value > 0 ? Math.min(100, (completed.value / total.value) * 100) : 0,
+)
 
 function handleConfirm() {
-  if (isAddingOpenTabsToWatchLater.value)
-    return
+  if (isAddingOpenTabsToWatchLater.value) return
 
   if (hasStarted.value) {
     dialogRef.value?.close()
@@ -78,13 +80,19 @@ function handleConfirm() {
         </p>
 
         <p v-if="openTabsWatchLaterProgress && total > 0">
-          {{ $t('watch_later.add_open_tabs_result', {
-            added: openTabsWatchLaterProgress.added,
-            skipped: openTabsWatchLaterProgress.skipped,
-            failed: openTabsWatchLaterProgress.failed,
-          }) }}
+          {{
+            $t('watch_later.add_open_tabs_result', {
+              added: openTabsWatchLaterProgress.added,
+              skipped: openTabsWatchLaterProgress.skipped,
+              failed: openTabsWatchLaterProgress.failed,
+            })
+          }}
         </p>
-        <p v-if="openTabsWatchLaterError || openTabsWatchLaterProgress?.message" class="open-tabs-dialog__error" role="alert">
+        <p
+          v-if="openTabsWatchLaterError || openTabsWatchLaterProgress?.message"
+          class="open-tabs-dialog__error"
+          role="alert"
+        >
           {{ openTabsWatchLaterError || openTabsWatchLaterProgress?.message }}
         </p>
       </div>
@@ -98,8 +106,19 @@ function handleConfirm() {
             {{ $t('watch_later.confirm_add_open_tabs') }}
           </Button>
         </template>
-        <Button v-else type="primary" :disabled="isAddingOpenTabsToWatchLater" @click="dialogRef?.close()">
-          {{ $t(isAddingOpenTabsToWatchLater ? 'watch_later.adding_open_tabs' : 'common.operation.close') }}
+        <Button
+          v-else
+          type="primary"
+          :disabled="isAddingOpenTabsToWatchLater"
+          @click="dialogRef?.close()"
+        >
+          {{
+            $t(
+              isAddingOpenTabsToWatchLater
+                ? 'watch_later.adding_open_tabs'
+                : 'common.operation.close',
+            )
+          }}
         </Button>
       </div>
     </div>

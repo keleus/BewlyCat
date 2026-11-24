@@ -52,7 +52,9 @@ function handleUserTypeSelect(value: number) {
       </div>
       <button
         class="more-filters-btn"
-        flex items-center gap-1
+        flex
+        items-center
+        gap-1
         type="button"
         @click="isMoreFiltersExpanded = !isMoreFiltersExpanded"
       >

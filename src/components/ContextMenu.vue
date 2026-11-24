@@ -16,7 +16,7 @@ export interface ContextMenuOption {
 const props = defineProps<{
   options: ContextMenuOption[]
   menuStyles: CSSProperties
-  cursorPosition?: { x: number, y: number }
+  cursorPosition?: { x: number; y: number }
   restoreFocus?: boolean
 }>()
 
@@ -29,11 +29,12 @@ const { mainAppRef } = useBewlyApp()
 const activeIndex = ref(0)
 const menuRef = ref<HTMLElement>()
 const cursorStyles = ref<CSSProperties>()
-const containerStyles = computed(() => props.cursorPosition ? cursorStyles.value : props.menuStyles)
+const containerStyles = computed(() =>
+  props.cursorPosition ? cursorStyles.value : props.menuStyles,
+)
 
 function positionAtCursor() {
-  if (!props.cursorPosition || !menuRef.value)
-    return
+  if (!props.cursorPosition || !menuRef.value) return
 
   const inset = 8
   const { width, height } = menuRef.value.getBoundingClientRect()
@@ -55,7 +56,9 @@ let shouldRestoreFocus = true
 
 function getRootActiveElement() {
   const root = mainAppRef.value?.getRootNode()
-  return root instanceof ShadowRoot ? root.activeElement ?? document.activeElement : document.activeElement
+  return root instanceof ShadowRoot
+    ? (root.activeElement ?? document.activeElement)
+    : document.activeElement
 }
 
 function setItemRef(element: Element | ComponentPublicInstance | null, index: number) {
@@ -64,20 +67,17 @@ function setItemRef(element: Element | ComponentPublicInstance | null, index: nu
 
 function focusItem(index: number) {
   const itemCount = props.options.length
-  if (!itemCount)
-    return
+  if (!itemCount) return
 
   activeIndex.value = (index + itemCount) % itemCount
   nextTick(() => {
     const item = itemRefs.value[activeIndex.value]
     item?.focus({ preventScroll: true })
-    if (!props.cursorPosition || !item || !menuRef.value)
-      return
+    if (!props.cursorPosition || !item || !menuRef.value) return
 
     const menuRect = menuRef.value.getBoundingClientRect()
     const itemRect = item.getBoundingClientRect()
-    if (itemRect.top < menuRect.top)
-      menuRef.value.scrollTop -= menuRect.top - itemRect.top
+    if (itemRect.top < menuRect.top) menuRef.value.scrollTop -= menuRect.top - itemRect.top
     else if (itemRect.bottom > menuRect.bottom)
       menuRef.value.scrollTop += itemRect.bottom - menuRect.bottom
   })
@@ -90,8 +90,7 @@ function dismissFromPointer() {
 
 function selectOption(option: ContextMenuOption) {
   emit('select', option.value)
-  if (option.checked === undefined)
-    emit('close')
+  if (option.checked === undefined) emit('close')
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -120,8 +119,7 @@ function handleKeydown(event: KeyboardEvent) {
     case ' ':
       event.preventDefault()
       event.stopPropagation()
-      if (props.options[activeIndex.value])
-        selectOption(props.options[activeIndex.value])
+      if (props.options[activeIndex.value]) selectOption(props.options[activeIndex.value])
       break
     case 'Escape':
       event.preventDefault()
@@ -156,10 +154,15 @@ onBeforeUnmount(() => {
       class="context-menu-container"
       :class="{ 'context-menu-container--cursor': cursorPosition }"
       :style="containerStyles"
-      style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-1); z-index: 9999;"
+      style="
+        backdrop-filter: var(--bew-filter-glass-1);
+        box-shadow: var(--bew-shadow-1);
+        z-index: 9999;
+      "
       bg="$bew-elevated"
       min-w-140px
-      m="t-1 l-[calc(-140px+0.5rem)]" border="1 $bew-popover-border-color"
+      m="t-1 l-[calc(-140px+0.5rem)]"
+      border="1 $bew-popover-border-color"
       @contextmenu.prevent.stop
     >
       <ul
@@ -169,15 +172,17 @@ onBeforeUnmount(() => {
         flex="~ col gap-1"
         @keydown="handleKeydown"
       >
-        <li
-          v-for="(option, index) in options"
-          :key="option.value"
-          role="none"
-        >
+        <li v-for="(option, index) in options" :key="option.value" role="none">
           <button
-            :ref="element => setItemRef(element, index)"
+            :ref="(element) => setItemRef(element, index)"
             type="button"
-            :role="option.type === 'radio' ? 'menuitemradio' : option.checked === undefined ? 'menuitem' : 'menuitemcheckbox'"
+            :role="
+              option.type === 'radio'
+                ? 'menuitemradio'
+                : option.checked === undefined
+                  ? 'menuitem'
+                  : 'menuitemcheckbox'
+            "
             :aria-checked="option.checked"
             class="context-menu-item"
             :class="{ danger: option.danger, active: activeIndex === index }"
@@ -188,7 +193,12 @@ onBeforeUnmount(() => {
           >
             <i class="item-icon" :class="option.icon" />
             <span class="item-label">{{ option.label }}</span>
-            <i v-if="option.checked !== undefined" class="item-check" :class="{ 'i-mingcute:check-line': option.checked }" aria-hidden="true" />
+            <i
+              v-if="option.checked !== undefined"
+              class="item-check"
+              :class="{ 'i-mingcute:check-line': option.checked }"
+              aria-hidden="true"
+            />
           </button>
         </li>
       </ul>
@@ -196,8 +206,10 @@ onBeforeUnmount(() => {
 
     <!-- 点击遮罩关闭菜单 -->
     <div
-      pos="fixed top-0 left-0" w-full h-full
-      style="z-index: 9998;"
+      pos="fixed top-0 left-0"
+      w-full
+      h-full
+      style="z-index: 9998"
       @click="dismissFromPointer"
       @contextmenu.prevent.stop="dismissFromPointer"
     />
@@ -244,7 +256,7 @@ onBeforeUnmount(() => {
 }
 
 .context-menu-item {
-  --uno: "flex items-center cursor-pointer";
+  --uno: 'flex items-center cursor-pointer';
 
   width: 100%;
   min-height: 32px;
@@ -283,7 +295,7 @@ onBeforeUnmount(() => {
 }
 
 .item-icon {
-  --uno: "inline-block color-$bew-text-color-2";
+  --uno: 'inline-block color-$bew-text-color-2';
 
   width: var(--bew-control-icon-size);
   height: var(--bew-control-icon-size);

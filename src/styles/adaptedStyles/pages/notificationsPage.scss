@@ -62,7 +62,7 @@ html.bewly-design.notificationsPage {
       height: calc(100vh - var(--bew-top-bar-height));
 
       &::after {
-        content: "";
+        content: '';
         top: 0;
         left: 0;
         position: absolute;
@@ -228,7 +228,13 @@ html.bewly-design.notificationsPage {
       background-color: var(--bew-theme-color-20);
     }
 
-    .space-right .space-right-bottom .bili-im .right .dialog .send-box .btn-box.send-btn.active:hover,
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .right
+      .dialog
+      .send-box
+      .btn-box.send-btn.active:hover,
     .bl-button--primary:hover {
       background-color: var(--bew-theme-color-80);
     }
@@ -289,7 +295,15 @@ html.bewly-design.notificationsPage {
       .msg-item
       .message
       .message-content,
-    .space-right .space-right-bottom .bili-im .msg-notify .cover-container .table-container .modules .module .detail,
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .msg-notify
+      .cover-container
+      .table-container
+      .modules
+      .module
+      .detail,
     .space-right .space-right-bottom .bili-im .core-style,
     .detail .content,
     .follow-btn.active,
@@ -330,7 +344,13 @@ html.bewly-design.notificationsPage {
       .notify-wrapper
       .notify-text,
     .msg-time .time,
-    .space-right .space-right-bottom .bili-im .right .dialog .send-box .btn-box.send-btn:not(.active),
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .right
+      .dialog
+      .send-box
+      .btn-box.send-btn:not(.active),
     .orginal-reply,
     .content .input-section .row .emoji-btn,
     .content .btnrow .btn.save.disabled,
@@ -341,13 +361,29 @@ html.bewly-design.notificationsPage {
     .ar-recommend-item__info--desc .time,
     .ar-recommend-item__info--view,
     .content .row .left .desc,
-    .space-right .space-right-bottom .bili-im .left .list-container .list .list-item .name-box .last-word {
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .left
+      .list-container
+      .list
+      .list-item
+      .name-box
+      .last-word {
       color: var(--bew-text-2);
     }
 
     .line-3,
     .line-3 *,
-    .space-right .space-right-bottom .bili-im .msg-notify .cover-container .table-container .modules .module .mtitle,
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .msg-notify
+      .cover-container
+      .table-container
+      .modules
+      .module
+      .mtitle,
     .content .btnrow .btn.clear:hover {
       color: var(--bew-text-3);
     }
@@ -368,7 +404,13 @@ html.bewly-design.notificationsPage {
     .follow-btn.active,
     .divided-line,
     .static-popup,
-    .space-right .space-right-bottom .bili-im .right .dialog .send-box .btn-box.send-btn:not(.active),
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .right
+      .dialog
+      .send-box
+      .btn-box.send-btn:not(.active),
     .content .input-section,
     .content .input-section .row .emoji-btn,
     .content .btnrow .btn.clear,
@@ -438,7 +480,13 @@ html.bewly-design.notificationsPage {
       .notify-text,
     .bp-emoji-box .pagination,
     .bp-emoji-box2 .pagination,
-    .space-right .space-right-bottom .bili-im .right .dialog .send-box .btn-box.send-btn:not(.active),
+    .space-right
+      .space-right-bottom
+      .bili-im
+      .right
+      .dialog
+      .send-box
+      .btn-box.send-btn:not(.active),
     .toggle,
     .content .btnrow .btn.save.disabled,
     .reply-textarea,

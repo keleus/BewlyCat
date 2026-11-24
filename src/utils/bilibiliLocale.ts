@@ -17,7 +17,12 @@ const BILIBILI_LOCALE_PATH_SEGMENTS = new Set([
   'ms',
 ])
 
-const BILIBILI_LOCALE_HOSTS = new Set(['www.bilibili.com', 'bilibili.com', 't.bilibili.com', 'space.bilibili.com'])
+const BILIBILI_LOCALE_HOSTS = new Set([
+  'www.bilibili.com',
+  'bilibili.com',
+  't.bilibili.com',
+  'space.bilibili.com',
+])
 
 const LOCALE_PATH_PREFIX_PATTERN = /^\/([^/]+)(?=\/|$)/
 
@@ -32,13 +37,11 @@ const BILIBILI_ORIGINAL_TITLE_KEY = 'bewlyOriginalTitle'
 function getPageLocaleSegment(): string {
   try {
     const { hostname, pathname } = new URL(location.href)
-    if (!BILIBILI_LOCALE_HOSTS.has(hostname))
-      return ''
+    if (!BILIBILI_LOCALE_HOSTS.has(hostname)) return ''
 
     const segment = pathname.match(LOCALE_PATH_PREFIX_PATTERN)?.[1]
     return segment && BILIBILI_LOCALE_PATH_SEGMENTS.has(segment.toLowerCase()) ? segment : ''
-  }
-  catch {
+  } catch {
     return ''
   }
 }
@@ -48,14 +51,15 @@ function getPageLocaleSegment(): string {
  */
 export function getBilibiliLocaleRequestParam(): string {
   const segment = getPageLocaleSegment().toLowerCase()
-  if (!segment)
-    return ''
+  if (!segment) return ''
 
   const { language, script, region } = new Intl.Locale(segment)
   const alwaysTranslate = document.cookie.match(/(?:^|;\s*)always_translate=([^;]*)/)?.[1]
   return JSON.stringify({
     c_locale: { language, script, region },
-    always_translate: BILIBILI_ALWAYS_TRANSLATE_LANGUAGES.has(language) && (!alwaysTranslate || alwaysTranslate === '1'),
+    always_translate:
+      BILIBILI_ALWAYS_TRANSLATE_LANGUAGES.has(language) &&
+      (!alwaysTranslate || alwaysTranslate === '1'),
   })
 }
 
@@ -66,10 +70,14 @@ export function getBilibiliLocaleRequestParam(): string {
 export function applyBilibiliTranslatedTitles<T>(data: T): T {
   if (Array.isArray(data)) {
     data.forEach(applyBilibiliTranslatedTitles)
-  }
-  else if (data && typeof data === 'object') {
+  } else if (data && typeof data === 'object') {
     const item = data as Record<string, unknown>
-    if (typeof item.translated_title === 'string' && item.translated_title && typeof item.title === 'string' && !item.title.includes('<em')) {
+    if (
+      typeof item.translated_title === 'string' &&
+      item.translated_title &&
+      typeof item.title === 'string' &&
+      !item.title.includes('<em')
+    ) {
       item[BILIBILI_ORIGINAL_TITLE_KEY] = item.title
       item.title = item.translated_title
     }
@@ -89,18 +97,19 @@ export function getBilibiliOriginalTitle(item: any): string | undefined {
  */
 export function localizeBilibiliUrl(url: string): string {
   const locale = getPageLocaleSegment()
-  if (!locale)
-    return url
+  if (!locale) return url
 
   try {
     const urlObj = new URL(url, location.href)
-    if (!BILIBILI_LOCALIZED_TARGET_HOSTS.has(urlObj.hostname) || !BILIBILI_LOCALIZED_PATH_PATTERN.test(urlObj.pathname))
+    if (
+      !BILIBILI_LOCALIZED_TARGET_HOSTS.has(urlObj.hostname) ||
+      !BILIBILI_LOCALIZED_PATH_PATTERN.test(urlObj.pathname)
+    )
       return url
 
     urlObj.pathname = `/${locale}${urlObj.pathname}`
     return urlObj.href
-  }
-  catch {
+  } catch {
     return url
   }
 }
@@ -110,8 +119,7 @@ export function localizeBilibiliUrl(url: string): string {
  */
 export function stripBilibiliLocalePathname(pathname: string): string {
   const segment = pathname.match(LOCALE_PATH_PREFIX_PATTERN)?.[1]
-  if (!segment || !BILIBILI_LOCALE_PATH_SEGMENTS.has(segment.toLowerCase()))
-    return pathname
+  if (!segment || !BILIBILI_LOCALE_PATH_SEGMENTS.has(segment.toLowerCase())) return pathname
 
   return pathname.slice(segment.length + 1) || '/'
 }
@@ -122,17 +130,14 @@ export function stripBilibiliLocalePathname(pathname: string): string {
 export function stripBilibiliLocaleUrl(url: string): string {
   try {
     const urlObj = new URL(url)
-    if (!BILIBILI_LOCALE_HOSTS.has(urlObj.hostname))
-      return url
+    if (!BILIBILI_LOCALE_HOSTS.has(urlObj.hostname)) return url
 
     const pathname = stripBilibiliLocalePathname(urlObj.pathname)
-    if (pathname === urlObj.pathname)
-      return url
+    if (pathname === urlObj.pathname) return url
 
     urlObj.pathname = pathname
     return urlObj.href
-  }
-  catch {
+  } catch {
     return url
   }
 }

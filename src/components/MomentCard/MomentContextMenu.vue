@@ -42,12 +42,22 @@ const deleting = ref(false)
 let removed = false
 
 const authorMid = computed(() => Number(props.moment.author.mid) || undefined)
-const isOwnMoment = computed(() => Boolean(authorMid.value && authorMid.value === userRelationStore.accountMid))
+const isOwnMoment = computed(() =>
+  Boolean(authorMid.value && authorMid.value === userRelationStore.accountMid),
+)
 // 旧缓存没有三点菜单字段，按作者是否为当前账号推断，与 Web 端的展示一致。
 const canDelete = computed(() => props.moment.canDelete ?? isOwnMoment.value)
-const canReport = computed(() => Boolean(authorMid.value) && (props.moment.canReport ?? Boolean(userRelationStore.accountMid && !isOwnMoment.value)))
+const canReport = computed(
+  () =>
+    Boolean(authorMid.value) &&
+    (props.moment.canReport ?? Boolean(userRelationStore.accountMid && !isOwnMoment.value)),
+)
 const dialogAuthor = computed(() => ({
-  author: { name: props.moment.author.name, authorFace: props.moment.author.face, mid: authorMid.value },
+  author: {
+    name: props.moment.author.name,
+    authorFace: props.moment.author.face,
+    mid: authorMid.value,
+  },
 }))
 
 function openDialog(dialog: MomentDialog) {
@@ -55,58 +65,98 @@ function openDialog(dialog: MomentDialog) {
 }
 
 function isFollowOptionVisible() {
-  return settings.value.videoCardContextMenuConfig.find(item => item.key === 'followUser')?.visible ?? true
+  return (
+    settings.value.videoCardContextMenuConfig.find((item) => item.key === 'followUser')?.visible ??
+    true
+  )
 }
 
 // 视频动态的打开、复制与关注选项由视频卡片菜单提供，这里只补充非视频动态所需的部分。
 const baseGroups = computed((): ContextMenuPanelItem[][] => {
-  if (props.video)
-    return []
+  if (props.video) return []
 
-  const groups: ContextMenuPanelItem[][] = [[
-    {
-      key: 'open',
-      name: t('video_card.operation.open_in_new_tab'),
-      icon: 'i-solar:square-top-down-bold-duotone',
-      select: () => {
-        openLinkToNewTab(props.moment.url)
-        emit('close')
+  const groups: ContextMenuPanelItem[][] = [
+    [
+      {
+        key: 'open',
+        name: t('video_card.operation.open_in_new_tab'),
+        icon: 'i-solar:square-top-down-bold-duotone',
+        select: () => {
+          openLinkToNewTab(props.moment.url)
+          emit('close')
+        },
       },
-    },
-    {
-      key: 'copy',
-      name: t('moment_card.copy_link'),
-      icon: 'i-solar:copy-bold-duotone',
-      select: () => {
-        void navigator.clipboard.writeText(props.moment.url)
-        emit('close')
+      {
+        key: 'copy',
+        name: t('moment_card.copy_link'),
+        icon: 'i-solar:copy-bold-duotone',
+        select: () => {
+          void navigator.clipboard.writeText(props.moment.url)
+          emit('close')
+        },
       },
-    },
-  ]]
+    ],
+  ]
 
   const following = userRelationStore.getFollowing(authorMid.value)
-  if (authorMid.value && userRelationStore.accountMid && !isOwnMoment.value && following !== undefined && isFollowOptionVisible()) {
-    groups.push([following
-      ? { key: 'unfollow', name: t('video_card.operation.unfollow_user'), icon: 'i-solar:user-minus-bold-duotone', color: 'text-orange-500', select: () => openDialog('unfollow') }
-      : { key: 'follow', name: t('video_card.operation.follow_user'), icon: 'i-solar:user-plus-bold-duotone', color: 'text-blue-500', select: () => openDialog('follow') }])
+  if (
+    authorMid.value &&
+    userRelationStore.accountMid &&
+    !isOwnMoment.value &&
+    following !== undefined &&
+    isFollowOptionVisible()
+  ) {
+    groups.push([
+      following
+        ? {
+            key: 'unfollow',
+            name: t('video_card.operation.unfollow_user'),
+            icon: 'i-solar:user-minus-bold-duotone',
+            color: 'text-orange-500',
+            select: () => openDialog('unfollow'),
+          }
+        : {
+            key: 'follow',
+            name: t('video_card.operation.follow_user'),
+            icon: 'i-solar:user-plus-bold-duotone',
+            color: 'text-blue-500',
+            select: () => openDialog('follow'),
+          },
+    ])
   }
   return groups
 })
 
-const momentGroups = computed((): ContextMenuPanelItem[][] => [[
-  ...(canReport.value
-    ? [{ key: 'report', name: t('moment_card.report'), icon: 'i-solar:danger-triangle-bold-duotone', select: () => openDialog('report') }]
-    : []),
-  ...(canDelete.value
-    ? [{ key: 'delete', name: t('moment_card.delete'), icon: 'i-solar:trash-bin-trash-bold-duotone', color: 'text-red-500', select: () => openDialog('delete') }]
-    : []),
-]])
+const momentGroups = computed((): ContextMenuPanelItem[][] => [
+  [
+    ...(canReport.value
+      ? [
+          {
+            key: 'report',
+            name: t('moment_card.report'),
+            icon: 'i-solar:danger-triangle-bold-duotone',
+            select: () => openDialog('report'),
+          },
+        ]
+      : []),
+    ...(canDelete.value
+      ? [
+          {
+            key: 'delete',
+            name: t('moment_card.delete'),
+            icon: 'i-solar:trash-bin-trash-bold-duotone',
+            color: 'text-red-500',
+            select: () => openDialog('delete'),
+          },
+        ]
+      : []),
+  ],
+])
 
 async function setFollowing(follow: boolean) {
   const mid = authorMid.value
   const accountMid = userRelationStore.accountMid
-  if (!mid)
-    return
+  if (!mid) return
   try {
     const response = await api.user.relationModify({
       fid: String(mid),
@@ -114,18 +164,15 @@ async function setFollowing(follow: boolean) {
       re_src: 11,
       csrf: getCSRF(),
     })
-    if (response?.code !== 0)
-      throw new Error(response?.message)
+    if (response?.code !== 0) throw new Error(response?.message)
     userRelationStore.setFollowing(mid, follow, accountMid)
-  }
-  catch (error) {
+  } catch (error) {
     console.error(follow ? 'Follow user failed:' : 'Unfollow user failed:', error)
   }
 }
 
 async function deleteMoment() {
-  if (deleting.value)
-    return
+  if (deleting.value) return
   const csrf = getCSRF()
   if (!csrf || !getUserID()) {
     toast.warning(t('common.please_log_in_first'))
@@ -139,15 +186,12 @@ async function deleteMoment() {
       extra: props.moment.deleteParams ?? {},
       csrf,
     })
-    if (response?.code !== 0)
-      throw new Error(response?.message || t('moment_card.delete_failed'))
+    if (response?.code !== 0) throw new Error(response?.message || t('moment_card.delete_failed'))
     toast.success(t('moment_card.delete_success'))
     removed = true
-  }
-  catch (error) {
+  } catch (error) {
     toast.error(error instanceof Error ? error.message : t('moment_card.delete_failed'))
-  }
-  finally {
+  } finally {
     deleting.value = false
   }
   // Dialog 在 loading 期间拒绝关闭，等 loading 回传后再关闭；移除卡片放到对话框离场之后。
@@ -158,8 +202,7 @@ async function deleteMoment() {
 }
 
 function handleDialogClose() {
-  if (removed)
-    emit('removed')
+  if (removed) emit('removed')
   emit('close')
 }
 </script>

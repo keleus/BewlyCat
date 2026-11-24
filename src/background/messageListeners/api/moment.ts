@@ -14,8 +14,7 @@ function serializeMomentVoteBody(body: Record<string, any>) {
 function serializeCommentForm(body: Record<string, any>) {
   const form = new URLSearchParams()
   for (const [key, value] of Object.entries(body)) {
-    if (value !== undefined && value !== null && value !== '')
-      form.append(key, String(value))
+    if (value !== undefined && value !== null && value !== '') form.append(key, String(value))
   }
   return form
 }
@@ -28,12 +27,10 @@ function serializeMomentRemoveBody(body: Record<string, any>) {
 // 运行时消息只能传可序列化数据，图片以 data URL 进入后台后再还原为 multipart 文件。
 function serializeImageUpload(body: Record<string, any>) {
   const match = /^data:([^;,]+);base64,([\w+/=]+)$/.exec(String(body.file_up || ''))
-  if (!match)
-    throw new Error('Invalid image data')
+  if (!match) throw new Error('Invalid image data')
   const binary = atob(match[2])
   const bytes = new Uint8Array(binary.length)
-  for (let index = 0; index < binary.length; index++)
-    bytes[index] = binary.charCodeAt(index)
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index)
   const form = new FormData()
   form.append('file_up', new Blob([bytes], { type: match[1] }), String(body.file_name || 'image'))
   form.append('category', String(body.category || 'daily'))
@@ -147,7 +144,8 @@ const API_MOMENT = {
       offset: '',
       update_baseline: '',
       // itemOpusStyle: 图文/纯文字走 opus 结构；listOnlyfans: 充电专属列表字段
-      features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard',
+      features:
+        'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard',
     },
     afterHandle: AHS.J_D,
   },
@@ -169,7 +167,8 @@ const API_MOMENT = {
     },
     params: {
       id: '',
-      features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,htmlNewStyle',
+      features:
+        'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,htmlNewStyle',
     },
     afterHandle: AHS.J_D,
   },
@@ -249,7 +248,11 @@ const API_MOMENT = {
     _fetch: {
       method: 'post',
       headers: { 'Content-Type': 'application/json' },
-      body: { content: {} as Record<string, unknown>, scene: 4, attach_card: undefined as Record<string, unknown> | undefined },
+      body: {
+        content: {} as Record<string, unknown>,
+        scene: 4,
+        attach_card: undefined as Record<string, unknown> | undefined,
+      },
     },
     params: { csrf: '' },
     afterHandle: AHS.J_D,
@@ -339,7 +342,8 @@ const API_MOMENT = {
       page: 1,
       platform: 'web',
       // itemOpusStyle: 图文/纯文字走 opus 结构；listOnlyfans: 充电专属列表字段
-      features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard',
+      features:
+        'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard',
       web_location: '333.1365',
     },
     afterHandle: AHS.J_D,

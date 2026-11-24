@@ -8,21 +8,34 @@ import api from '~/utils/api'
 import type { RepostNode } from './repostEditor'
 import { findRepostCompletion, isRepostCompletionBoundary, readRepostEditor } from './repostEditor'
 
-export interface RichEditorChoice { id: string, name: string, image?: string, animated?: boolean, type?: number }
-interface EmotePackage { id: string, name: string, items: RichEditorChoice[] }
+export interface RichEditorChoice {
+  id: string
+  name: string
+  image?: string
+  animated?: boolean
+  type?: number
+}
+interface EmotePackage {
+  id: string
+  name: string
+  items: RichEditorChoice[]
+}
 
 // 转发与评论共用的富文本输入：表情、@ 用户与话题都作为不可拆分的节点保存。
-const props = withDefaults(defineProps<{
-  placeholder: string
-  maxLength: number
-  maxMentions?: number
-  disabled?: boolean
-  commercialAllowed?: boolean
-  autofocus?: boolean
-  acceptsFiles?: boolean
-  /** 失焦时仍保持工具栏展开（如转发面板、宿主有附件或正在提交），避免发送按钮被收起 */
-  toolbarPinned?: boolean
-}>(), { maxMentions: 20 })
+const props = withDefaults(
+  defineProps<{
+    placeholder: string
+    maxLength: number
+    maxMentions?: number
+    disabled?: boolean
+    commercialAllowed?: boolean
+    autofocus?: boolean
+    acceptsFiles?: boolean
+    /** 失焦时仍保持工具栏展开（如转发面板、宿主有附件或正在提交），避免发送按钮被收起 */
+    toolbarPinned?: boolean
+  }>(),
+  { maxMentions: 20 },
+)
 const emit = defineEmits<{
   submit: []
   commercial: [choice: RichEditorChoice]
@@ -43,7 +56,9 @@ const editor = ref<HTMLElement | null>(null)
 const nodes = ref<RepostNode[]>([])
 const panel = ref<'' | 'emoji' | 'mention' | 'topic' | 'commercial'>('')
 // @/#/商单共用同一选项列表结构，键盘导航与 ARIA 关联规则一致。
-const isChoicePanel = computed(() => panel.value === 'mention' || panel.value === 'topic' || panel.value === 'commercial')
+const isChoicePanel = computed(
+  () => panel.value === 'mention' || panel.value === 'topic' || panel.value === 'commercial',
+)
 const query = ref('')
 const choices = ref<RichEditorChoice[]>([])
 const packages = ref<EmotePackage[]>([])
@@ -53,11 +68,15 @@ const panelError = ref('')
 const length = computed(() => nodes.value.reduce((sum, node) => sum + node.raw_text.length, 0))
 const remaining = computed(() => props.maxLength - length.value)
 const showCount = computed(() => remaining.value <= 100)
-const hasContent = computed(() => nodes.value.some(node => node.raw_text.trim()))
+const hasContent = computed(() => nodes.value.some((node) => node.raw_text.trim()))
 // 空编辑器失焦才收起工具栏；有草稿、面板打开或宿主要求时保持展开。
 // 提交时编辑器变为不可编辑会丢失焦点，也靠这里保住加载态与发送按钮。
-const toolbarExpanded = computed(() => props.toolbarPinned || panel.value !== '' || hasContent.value)
-const emotes = computed(() => packages.value.find(item => item.id === packageId.value)?.items || [])
+const toolbarExpanded = computed(
+  () => props.toolbarPinned || panel.value !== '' || hasContent.value,
+)
+const emotes = computed(
+  () => packages.value.find((item) => item.id === packageId.value)?.items || [],
+)
 let savedRange: Range | null = null
 let completionRange: Range | null = null
 let sequence = 0
@@ -71,17 +90,19 @@ function recordHistory() {
   if (restoringHistory || JSON.stringify(history[historyIndex]) === JSON.stringify(nodes.value))
     return
   history = history.slice(0, historyIndex + 1)
-  history.push(nodes.value.map(node => ({ ...node })))
-  if (history.length > 100)
-    history.shift()
+  history.push(nodes.value.map((node) => ({ ...node })))
+  if (history.length > 100) history.shift()
   historyIndex = history.length - 1
 }
 function render(value: RepostNode[]) {
-  editor.value?.replaceChildren(...value.map(node => node.type === 1 && !node.topic ? document.createTextNode(node.raw_text) : token(node)))
+  editor.value?.replaceChildren(
+    ...value.map((node) =>
+      node.type === 1 && !node.topic ? document.createTextNode(node.raw_text) : token(node),
+    ),
+  )
 }
 function moveCaretToEnd() {
-  if (!editor.value)
-    return
+  if (!editor.value) return
   const range = document.createRange()
   range.selectNodeContents(editor.value)
   range.collapse(false)
@@ -92,8 +113,7 @@ function moveCaretToEnd() {
 }
 function restoreHistory(direction: -1 | 1) {
   const index = historyIndex + direction
-  if (props.disabled || index < 0 || index >= history.length || !editor.value)
-    return
+  if (props.disabled || index < 0 || index >= history.length || !editor.value) return
   historyIndex = index
   restoringHistory = true
   closePanel()
@@ -110,7 +130,10 @@ function selection() {
 }
 function rememberSelection() {
   const selected = selection()
-  if (selected?.rangeCount && editor.value?.contains(selected.getRangeAt(0).commonAncestorContainer))
+  if (
+    selected?.rangeCount &&
+    editor.value?.contains(selected.getRangeAt(0).commonAncestorContainer)
+  )
     savedRange = selected.getRangeAt(0).cloneRange()
 }
 function sync() {
@@ -118,7 +141,10 @@ function sync() {
     nodes.value = readRepostEditor(editor.value)
     // 全选删除后 contenteditable 常残留 <br>，清干净让占位符的 :empty 重新成立。
     // 只清纯换行残留，用户刚键入的空格等内容需保留。
-    if (editor.value.hasChildNodes() && nodes.value.every(node => node.type === 1 && !node.topic && /^\n*$/.test(node.raw_text)))
+    if (
+      editor.value.hasChildNodes() &&
+      nodes.value.every((node) => node.type === 1 && !node.topic && /^\n*$/.test(node.raw_text))
+    )
       editor.value.innerHTML = ''
   }
   rememberSelection()
@@ -136,19 +162,20 @@ function closePanel() {
 }
 function updateCompletion(event?: Event) {
   rememberSelection()
-  if ((event as KeyboardEvent)?.isComposing || ['Escape', 'ArrowUp', 'ArrowDown', 'Enter'].includes((event as KeyboardEvent)?.key))
+  if (
+    (event as KeyboardEvent)?.isComposing ||
+    ['Escape', 'ArrowUp', 'ArrowDown', 'Enter'].includes((event as KeyboardEvent)?.key)
+  )
     return
   const match = editor.value && savedRange ? findRepostCompletion(editor.value, savedRange) : null
   if (!match) {
-    if (panel.value === 'mention' || panel.value === 'topic')
-      closePanel()
+    if (panel.value === 'mention' || panel.value === 'topic') closePanel()
     return
   }
   completionRange = match.range
   anchorButton = null
   schedulePosition()
-  if (panel.value === match.kind && query.value === match.query)
-    return
+  if (panel.value === match.kind && query.value === match.query) return
   ++sequence
   clearTimeout(timer)
   panel.value = match.kind
@@ -162,18 +189,19 @@ function updateCompletion(event?: Event) {
 function input(event: Event) {
   sync()
   if ((event as InputEvent).isComposing) {
-    if (panel.value === 'mention' || panel.value === 'topic')
-      closePanel()
+    if (panel.value === 'mention' || panel.value === 'topic') closePanel()
     return
   }
   updateCompletion()
 }
 function insert(node: Node) {
   const root = editor.value
-  if (!root || props.disabled)
-    return
+  if (!root || props.disabled) return
   root.focus({ preventScroll: true })
-  const range = savedRange && root.contains(savedRange.commonAncestorContainer) ? savedRange : document.createRange()
+  const range =
+    savedRange && root.contains(savedRange.commonAncestorContainer)
+      ? savedRange
+      : document.createRange()
   if (range !== savedRange) {
     range.selectNodeContents(root)
     range.collapse(false)
@@ -184,8 +212,7 @@ function insert(node: Node) {
   range.deleteContents()
   const end = node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? node.lastChild : node
   range.insertNode(node)
-  if (end)
-    range.setStartAfter(end)
+  if (end) range.setStartAfter(end)
   range.collapse(true)
   selected?.removeAllRanges()
   selected?.addRange(range)
@@ -217,8 +244,7 @@ function token(node: RepostNode, image = node.image) {
     img.src = image
     img.alt = node.raw_text
     el.append(img)
-  }
-  else {
+  } else {
     el.textContent = node.raw_text
   }
   return el
@@ -229,38 +255,37 @@ function insertText(text: string) {
 function paste(event: ClipboardEvent) {
   event.preventDefault()
   rememberSelection()
-  const files = Array.from(event.clipboardData?.files || []).filter(file => file.type.startsWith('image/'))
-  if (files.length && props.acceptsFiles)
-    emit('pasteFiles', files)
+  const files = Array.from(event.clipboardData?.files || []).filter((file) =>
+    file.type.startsWith('image/'),
+  )
+  if (files.length && props.acceptsFiles) emit('pasteFiles', files)
   const text = event.clipboardData?.getData('text/plain') || ''
-  if (text || !files.length)
-    insertText(text)
+  if (text || !files.length) insertText(text)
   updateCompletion()
 }
 // 拖拽图片入框：与粘贴共用 pasteFiles 通道，二者都仅在宿主声明收图时启用。
 const dragging = ref(false)
 let dragTimer: ReturnType<typeof setTimeout> | undefined
 function dragOver(event: DragEvent) {
-  if (!props.acceptsFiles || props.disabled || !event.dataTransfer?.types.includes('Files'))
-    return
+  if (!props.acceptsFiles || props.disabled || !event.dataTransfer?.types.includes('Files')) return
   event.preventDefault()
   dragging.value = true
   clearTimeout(dragTimer)
-  dragTimer = setTimeout(() => dragging.value = false, 500)
+  dragTimer = setTimeout(() => (dragging.value = false), 500)
 }
 function dragLeave() {
   // 进入子元素会先触发 leave 再触发 over，延迟收起避免高亮闪烁。
   clearTimeout(dragTimer)
-  dragTimer = setTimeout(() => dragging.value = false, 100)
+  dragTimer = setTimeout(() => (dragging.value = false), 100)
 }
 function drop(event: DragEvent) {
   clearTimeout(dragTimer)
   dragging.value = false
-  if (!props.acceptsFiles || props.disabled)
-    return
-  const files = Array.from(event.dataTransfer?.files || []).filter(file => file.type.startsWith('image/'))
-  if (files.length)
-    emit('pasteFiles', files)
+  if (!props.acceptsFiles || props.disabled) return
+  const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+    file.type.startsWith('image/'),
+  )
+  if (files.length) emit('pasteFiles', files)
 }
 function beforeInput(event: Event) {
   const input = event as InputEvent
@@ -277,10 +302,12 @@ function beforeInput(event: Event) {
   }
 }
 function keyboard(event: KeyboardEvent) {
-  if (event.isComposing)
-    return
-  if (editor.value?.contains(event.target as Node)
-    && (event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
+  if (event.isComposing) return
+  if (
+    editor.value?.contains(event.target as Node) &&
+    (event.ctrlKey || event.metaKey) &&
+    ['z', 'y'].includes(event.key.toLowerCase())
+  ) {
     event.preventDefault()
     restoreHistory(event.key.toLowerCase() === 'y' || event.shiftKey ? 1 : -1)
     return
@@ -288,8 +315,12 @@ function keyboard(event: KeyboardEvent) {
   if (isChoicePanel.value && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
     if (['ArrowDown', 'ArrowUp'].includes(event.key) && choices.value.length) {
       event.preventDefault()
-      activeChoice.value = (activeChoice.value + (event.key === 'ArrowDown' ? 1 : -1) + choices.value.length) % choices.value.length
-      void nextTick(() => popup.value?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }))
+      activeChoice.value =
+        (activeChoice.value + (event.key === 'ArrowDown' ? 1 : -1) + choices.value.length) %
+        choices.value.length
+      void nextTick(() =>
+        popup.value?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }),
+      )
       return
     }
     if (event.key === 'Enter' && choices.value[activeChoice.value]) {
@@ -320,15 +351,13 @@ async function loadPanel() {
   activeChoice.value = 0
   panelError.value = ''
   choices.value = []
-  if (!kind)
-    return
+  if (!kind) return
   loading.value = true
   try {
     if (kind === 'emoji') {
       if (!packages.value.length) {
         const data = checkResponse(await api.moment.getRepostEmotes())
-        if (!alive || current !== sequence)
-          return
+        if (!alive || current !== sequence) return
         packages.value = (data?.packages || []).map((pack: any) => ({
           id: String(pack.id),
           name: String(pack.text),
@@ -336,41 +365,53 @@ async function loadPanel() {
             id: String(item.id),
             name: String(item.text),
             type: Number(item.type ?? pack.type),
-            image: String(item.webp_url || item.gif_url || item.url || '').replace(/^http:/, 'https:'),
+            image: String(item.webp_url || item.gif_url || item.url || '').replace(
+              /^http:/,
+              'https:',
+            ),
             animated: Boolean(item.gif_url),
           })),
         }))
         packageId.value = packages.value[0]?.id || ''
       }
-    }
-    else {
-      const response = kind === 'mention'
-        ? await api.moment.searchRepostMentions({ keyword: query.value })
-        : kind === 'topic'
-          ? await api.moment.searchRepostTopics({ keywords: query.value })
-          : await api.moment.getRepostCommercialOrders()
-      if (!alive || current !== sequence)
-        return
+    } else {
+      const response =
+        kind === 'mention'
+          ? await api.moment.searchRepostMentions({ keyword: query.value })
+          : kind === 'topic'
+            ? await api.moment.searchRepostTopics({ keywords: query.value })
+            : await api.moment.getRepostCommercialOrders()
+      if (!alive || current !== sequence) return
       if (kind === 'commercial') {
         if (response?.code !== 0)
           throw new Error(response?.message || t('moment_card.editor_load_failed'))
-        choices.value = (response.result || []).map((item: any) => ({ id: String(item.id), name: item.title }))
-      }
-      else {
+        choices.value = (response.result || []).map((item: any) => ({
+          id: String(item.id),
+          name: item.title,
+        }))
+      } else {
         const data = checkResponse(response)
-        choices.value = kind === 'mention'
-          ? (data.groups || []).flatMap((group: any) => (group.items || []).map((item: any) => ({ id: String(item.uid), name: item.name, image: item.face })))
-          : (data.topic_items || []).map((item: any) => ({ id: String(item.id), name: item.name }))
+        choices.value =
+          kind === 'mention'
+            ? (data.groups || []).flatMap((group: any) =>
+                (group.items || []).map((item: any) => ({
+                  id: String(item.uid),
+                  name: item.name,
+                  image: item.face,
+                })),
+              )
+            : (data.topic_items || []).map((item: any) => ({
+                id: String(item.id),
+                name: item.name,
+              }))
       }
     }
-  }
-  catch (cause) {
+  } catch (cause) {
     if (alive && current === sequence)
-      panelError.value = cause instanceof Error ? cause.message : t('moment_card.editor_load_failed')
-  }
-  finally {
-    if (alive && current === sequence)
-      loading.value = false
+      panelError.value =
+        cause instanceof Error ? cause.message : t('moment_card.editor_load_failed')
+  } finally {
+    if (alive && current === sequence) loading.value = false
   }
 }
 function openPanel(kind: typeof panel.value, event?: MouseEvent) {
@@ -382,8 +423,12 @@ function openPanel(kind: typeof panel.value, event?: MouseEvent) {
   }
   closePanel()
   if (kind === 'mention' || kind === 'topic') {
-    const prefix = editor.value && savedRange && !isRepostCompletionBoundary(editor.value, savedRange) ? ' ' : ''
-    const suffix = editor.value && savedRange && !isRepostCompletionBoundary(editor.value, savedRange, 'after') ? ' ' : ''
+    const prefix =
+      editor.value && savedRange && !isRepostCompletionBoundary(editor.value, savedRange) ? ' ' : ''
+    const suffix =
+      editor.value && savedRange && !isRepostCompletionBoundary(editor.value, savedRange, 'after')
+        ? ' '
+        : ''
     const trigger = document.createTextNode(`${prefix}${kind === 'mention' ? '@' : '#'}${suffix}`)
     insert(trigger)
     if (suffix && savedRange) {
@@ -405,52 +450,56 @@ function openPanel(kind: typeof panel.value, event?: MouseEvent) {
 }
 function choose(item: RichEditorChoice) {
   if (panel.value === 'mention') {
-    if (nodes.value.filter(node => node.type === 2).length >= props.maxMentions) {
+    if (nodes.value.filter((node) => node.type === 2).length >= props.maxMentions) {
       panelError.value = t('moment_card.repost_mentions_limit', { count: props.maxMentions })
       return
     }
-    if (!completionRange)
-      return
+    if (!completionRange) return
     savedRange = completionRange.cloneRange()
     const fragment = document.createDocumentFragment()
-    fragment.append(token({ type: 2, raw_text: `@${item.name}`, biz_id: item.id }), document.createTextNode(' '))
+    fragment.append(
+      token({ type: 2, raw_text: `@${item.name}`, biz_id: item.id }),
+      document.createTextNode(' '),
+    )
     insert(fragment)
-  }
-  else if (panel.value === 'emoji') {
-    if (item.animated && nodes.value.filter(node => node.animated).length >= 20) {
+  } else if (panel.value === 'emoji') {
+    if (item.animated && nodes.value.filter((node) => node.animated).length >= 20) {
       panelError.value = t('moment_card.repost_emoji_limit')
       return
     }
-    if (item.type === 4)
-      insertText(item.name)
+    if (item.type === 4) insertText(item.name)
     else
-      insert(token({ type: 9, raw_text: item.name, biz_id: '', animated: item.animated }, item.image))
-  }
-  else if (panel.value === 'topic') {
-    if (!completionRange)
-      return
+      insert(
+        token({ type: 9, raw_text: item.name, biz_id: '', animated: item.animated }, item.image),
+      )
+  } else if (panel.value === 'topic') {
+    if (!completionRange) return
     savedRange = completionRange.cloneRange()
     const fragment = document.createDocumentFragment()
-    fragment.append(token({ type: 1, raw_text: `#${item.name}#`, biz_id: '', topic: { id: Number(item.id), name: item.name } }), document.createTextNode(' '))
+    fragment.append(
+      token({
+        type: 1,
+        raw_text: `#${item.name}#`,
+        biz_id: '',
+        topic: { id: Number(item.id), name: item.name },
+      }),
+      document.createTextNode(' '),
+    )
     insert(fragment)
-  }
-  else {
+  } else {
     emit('commercial', item)
   }
-  if (panel.value !== 'emoji')
-    closePanel()
+  if (panel.value !== 'emoji') closePanel()
 }
 function schedulePosition() {
-  if (positionFrame || !panel.value)
-    return
+  if (positionFrame || !panel.value) return
   positionFrame = requestAnimationFrame(() => {
     positionFrame = 0
     positionPopup()
   })
 }
 function positionPopup() {
-  if (!panel.value || !editor.value || !popup.value)
-    return
+  if (!panel.value || !editor.value || !popup.value) return
   const editorRect = editor.value.getBoundingClientRect()
   if (editorRect.bottom < 0 || editorRect.top > window.innerHeight) {
     closePanel()
@@ -459,7 +508,8 @@ function positionPopup() {
   const caret = savedRange?.cloneRange()
   caret?.collapse(false)
   const caretRect = caret?.getClientRects()[0]
-  const anchor = anchorButton?.getBoundingClientRect() || (caretRect?.height ? caretRect : editorRect)
+  const anchor =
+    anchorButton?.getBoundingClientRect() || (caretRect?.height ? caretRect : editorRect)
   const margin = 8
   const width = Math.min(320, window.innerWidth - margin * 2)
   const below = window.innerHeight - anchor.bottom - margin * 2
@@ -484,26 +534,26 @@ function positionPopup() {
       }
 }
 function onOutsideInteraction(event: Event) {
-  if (!panel.value)
-    return
+  if (!panel.value) return
   const path = event.composedPath()
-  if (path.includes(popup.value!)
-    || path.some(target => target instanceof HTMLButtonElement && panelTriggers.value?.contains(target))) {
+  if (
+    path.includes(popup.value!) ||
+    path.some(
+      (target) => target instanceof HTMLButtonElement && panelTriggers.value?.contains(target),
+    )
+  ) {
     return
   }
   // Opening a picker and inserting a choice both return focus to the editor.
-  if (event.type === 'focusin' && path.includes(editor.value!))
-    return
+  if (event.type === 'focusin' && path.includes(editor.value!)) return
   closePanel()
 }
 function onEditorClick(event: MouseEvent) {
-  if ((event.target as Element).closest('a'))
-    event.preventDefault()
+  if ((event.target as Element).closest('a')) event.preventDefault()
 }
 function focus() {
   editor.value?.focus({ preventScroll: true })
-  if (!savedRange)
-    moveCaretToEnd()
+  if (!savedRange) moveCaretToEnd()
 }
 /** 用草稿或发送后的空内容替换编辑器，并以此作为撤销历史起点。 */
 function setNodes(value: RepostNode[]) {
@@ -511,17 +561,23 @@ function setNodes(value: RepostNode[]) {
   render(value)
   savedRange = null
   sync()
-  history = [nodes.value.map(node => ({ ...node }))]
+  history = [nodes.value.map((node) => ({ ...node }))]
   historyIndex = 0
 }
 watch([panel, choices, loading, packageId], () => {
   void nextTick(schedulePosition)
 })
-watch(packageId, () => {
-  if (popupContent.value)
-    popupContent.value.scrollTop = 0
-}, { flush: 'post' })
-watch(() => props.disabled, disabled => disabled && closePanel())
+watch(
+  packageId,
+  () => {
+    if (popupContent.value) popupContent.value.scrollTop = 0
+  },
+  { flush: 'post' },
+)
+watch(
+  () => props.disabled,
+  (disabled) => disabled && closePanel(),
+)
 onMounted(() => {
   eventRoot = editor.value?.getRootNode() || document
   eventRoot.addEventListener('pointerdown', onOutsideInteraction, true)
@@ -533,8 +589,7 @@ onMounted(() => {
   }
   window.addEventListener('resize', schedulePosition)
   window.addEventListener('scroll', schedulePosition, true)
-  if (props.autofocus)
-    editor.value?.focus({ preventScroll: true })
+  if (props.autofocus) editor.value?.focus({ preventScroll: true })
 })
 onBeforeUnmount(() => {
   eventRoot?.removeEventListener('pointerdown', onOutsideInteraction, true)
@@ -555,7 +610,13 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 
 <template>
   <div class="moment-rich-editor" @keydown="keyboard">
-    <div class="moment-rich-editor__wrap" :class="{ 'is-dropping': dragging }" @dragover="dragOver" @dragleave="dragLeave" @drop.prevent="drop">
+    <div
+      class="moment-rich-editor__wrap"
+      :class="{ 'is-dropping': dragging }"
+      @dragover="dragOver"
+      @dragleave="dragLeave"
+      @drop.prevent="drop"
+    >
       <div
         ref="editor"
         class="moment-rich-editor__input"
@@ -563,7 +624,9 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         aria-multiline="true"
         aria-autocomplete="list"
         :aria-controls="isChoicePanel ? popupId : undefined"
-        :aria-activedescendant="isChoicePanel && choices.length ? `${popupId}-${activeChoice}` : undefined"
+        :aria-activedescendant="
+          isChoicePanel && choices.length ? `${popupId}-${activeChoice}` : undefined
+        "
         :aria-label="placeholder"
         :data-placeholder="placeholder"
         :contenteditable="!disabled"
@@ -580,12 +643,22 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
       />
       <slot name="attachments" />
       <!-- 工具栏与正文共用浅填充容器；聚焦时展开，失焦后按 toolbarExpanded 决定是否收起 -->
-      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': toolbarExpanded }">
+      <div
+        class="bew-expand-host moment-rich-editor__toolbar-host"
+        :class="{ 'is-entered': toolbarExpanded }"
+      >
         <div class="moment-rich-editor__toolbar">
-          <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
+          <div
+            ref="panelTriggers"
+            class="moment-rich-editor__tools bew-segment-control bew-segment-control--static"
+          >
             <button
               class="bew-segment-control__item bew-segment-control__item--icon"
-              type="button" :title="t('moments.emoji')" :aria-label="t('moments.emoji')" :aria-expanded="panel === 'emoji'" :data-active="panel === 'emoji'"
+              type="button"
+              :title="t('moments.emoji')"
+              :aria-label="t('moments.emoji')"
+              :aria-expanded="panel === 'emoji'"
+              :data-active="panel === 'emoji'"
               :disabled="disabled"
               @mousedown.prevent
               @click="openPanel('emoji', $event)"
@@ -594,7 +667,11 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             </button>
             <button
               class="bew-segment-control__item bew-segment-control__item--icon"
-              type="button" :title="t('moment_card.repost_mention')" :aria-label="t('moment_card.repost_mention')" :aria-expanded="panel === 'mention'" :data-active="panel === 'mention'"
+              type="button"
+              :title="t('moment_card.repost_mention')"
+              :aria-label="t('moment_card.repost_mention')"
+              :aria-expanded="panel === 'mention'"
+              :data-active="panel === 'mention'"
               :disabled="disabled"
               @mousedown.prevent
               @click="openPanel('mention', $event)"
@@ -603,7 +680,11 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             </button>
             <button
               class="bew-segment-control__item bew-segment-control__item--icon"
-              type="button" :title="t('moment_card.repost_topic')" :aria-label="t('moment_card.repost_topic')" :aria-expanded="panel === 'topic'" :data-active="panel === 'topic'"
+              type="button"
+              :title="t('moment_card.repost_topic')"
+              :aria-label="t('moment_card.repost_topic')"
+              :aria-expanded="panel === 'topic'"
+              :data-active="panel === 'topic'"
               :disabled="disabled"
               @mousedown.prevent
               @click="openPanel('topic', $event)"
@@ -612,7 +693,11 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             </button>
             <button
               v-if="commercialAllowed"
-              class="bew-segment-control__item bew-segment-control__item--icon" :data-active="panel === 'commercial'" type="button" :title="t('moment_card.repost_commercial')" :aria-label="t('moment_card.repost_commercial')"
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              :data-active="panel === 'commercial'"
+              type="button"
+              :title="t('moment_card.repost_commercial')"
+              :aria-label="t('moment_card.repost_commercial')"
               :aria-expanded="panel === 'commercial'"
               :disabled="disabled"
               @mousedown.prevent
@@ -622,7 +707,13 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             </button>
             <slot name="tools" />
           </div>
-          <span v-if="showCount" class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
+          <span
+            v-if="showCount"
+            class="moment-rich-editor__count"
+            :class="{ 'is-over': remaining < 0 }"
+            aria-live="polite"
+            >{{ remaining }}</span
+          >
           <div class="moment-rich-editor__actions">
             <slot name="actions" />
           </div>
@@ -632,14 +723,24 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
     <Teleport :to="mainAppRef" :disabled="!mainAppRef">
       <Transition name="bew-pop">
         <div
-          v-if="panel" :id="popupId" ref="popup" class="moment-rich-editor__panel bew-popover-surface"
-          style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1));"
-          :class="{ 'moment-rich-editor__panel--emoji': panel === 'emoji' }" :style="popupStyle"
-          @click.stop @keydown.stop="keyboard" @mousedown.prevent
+          v-if="panel"
+          :id="popupId"
+          ref="popup"
+          class="moment-rich-editor__panel bew-popover-surface"
+          style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1))"
+          :class="{ 'moment-rich-editor__panel--emoji': panel === 'emoji' }"
+          :style="popupStyle"
+          @click.stop
+          @keydown.stop="keyboard"
+          @mousedown.prevent
         >
           <div v-if="panel === 'emoji' && packages.length" class="moment-rich-editor__packages">
             <button
-              v-for="pack in packages" :key="pack.id" class="bew-ghost-button" type="button" :aria-pressed="pack.id === packageId"
+              v-for="pack in packages"
+              :key="pack.id"
+              class="bew-ghost-button"
+              type="button"
+              :aria-pressed="pack.id === packageId"
               @click="packageId = pack.id"
             >
               {{ pack.name }}
@@ -657,25 +758,51 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
               </button>
             </p>
             <div
-              v-else-if="panel === 'emoji'" class="moment-rich-editor__emotes"
-              :class="{ 'moment-rich-editor__emotes--text': emotes.some(item => item.type === 4) }"
+              v-else-if="panel === 'emoji'"
+              class="moment-rich-editor__emotes"
+              :class="{
+                'moment-rich-editor__emotes--text': emotes.some((item) => item.type === 4),
+              }"
             >
               <button
-                v-for="item in emotes" :key="item.id" class="bew-ghost-button" type="button" :title="item.name"
+                v-for="item in emotes"
+                :key="item.id"
+                class="bew-ghost-button"
+                type="button"
+                :title="item.name"
                 :aria-label="item.name"
                 @click="choose(item)"
               >
                 <span v-if="item.type === 4">{{ item.name }}</span>
-                <img v-else :src="item.image" :alt="item.name" loading="lazy">
+                <img v-else :src="item.image" :alt="item.name" loading="lazy" />
               </button>
             </div>
-            <div v-else class="moment-rich-editor__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : panel === 'topic' ? 'moment_card.repost_topic' : 'moment_card.repost_commercial')">
+            <div
+              v-else
+              class="moment-rich-editor__choices"
+              role="listbox"
+              :aria-label="
+                t(
+                  panel === 'mention'
+                    ? 'moment_card.repost_mention'
+                    : panel === 'topic'
+                      ? 'moment_card.repost_topic'
+                      : 'moment_card.repost_commercial',
+                )
+              "
+            >
               <button
-                v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" class="bew-ghost-button" type="button"
+                v-for="(item, index) in choices"
+                :id="`${popupId}-${index}`"
+                :key="`${item.id}-${index}`"
+                class="bew-ghost-button"
+                type="button"
                 role="option"
-                :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
+                :aria-selected="activeChoice === index"
+                @mouseenter="activeChoice = index"
+                @click="choose(item)"
               >
-                <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
+                <img v-if="item.image" :src="item.image" alt="" loading="lazy" />{{ item.name }}
               </button>
               <p v-if="!choices.length">
                 {{ t('moment_card.repost_no_results') }}

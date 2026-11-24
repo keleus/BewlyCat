@@ -39,26 +39,21 @@ interface MountedWatchLaterButton {
 export function extractVideoIds(url: string = location.href): VideoIds {
   // 提取路径中的 BVID（普通视频页）
   const bvidMatch = url.match(/\/video\/(BV[a-zA-Z0-9]+)/)
-  if (bvidMatch)
-    return { bvid: bvidMatch[1] }
+  if (bvidMatch) return { bvid: bvidMatch[1] }
 
   // 提取路径中的 AID
   const aidMatch = url.match(/\/video\/av(\d+)/i)
-  if (aidMatch)
-    return { aid: Number.parseInt(aidMatch[1]) }
+  if (aidMatch) return { aid: Number.parseInt(aidMatch[1]) }
 
   // 合集/列表页：ID 在 query 中（SPA 切集时 pathname 不变，bvid/avid 会变）
   try {
     const searchParams = new URL(url).searchParams
     const bvid = searchParams.get('bvid')
-    if (bvid)
-      return { bvid }
+    if (bvid) return { bvid }
 
     const avid = searchParams.get('avid') || searchParams.get('aid')
-    if (avid)
-      return { aid: Number.parseInt(avid) }
-  }
-  catch {
+    if (avid) return { aid: Number.parseInt(avid) }
+  } catch {
     // ignore invalid URL
   }
 
@@ -76,9 +71,7 @@ function translate(key: string): string {
 function updateButtonState(button: HTMLButtonElement, isInWatchLater: boolean) {
   const icon = button.querySelector<HTMLElement>('.bewly-watch-later-btn__icon')
   const addLabel = translate('common.add_to_watch_later')
-  const actionLabel = isInWatchLater
-    ? translate('common.remove_from_watch_later')
-    : addLabel
+  const actionLabel = isInWatchLater ? translate('common.remove_from_watch_later') : addLabel
 
   button.classList.toggle('is-active', isInWatchLater)
   button.dataset.inWatchLater = String(isInWatchLater)
@@ -91,14 +84,15 @@ function updateButtonState(button: HTMLButtonElement, isInWatchLater: boolean) {
 
   if (isInWatchLater) {
     button.style.backgroundColor = 'rgba(0, 174, 236, 0.12)'
-    button.style.setProperty('background-color', 'color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, transparent)')
-  }
-  else {
+    button.style.setProperty(
+      'background-color',
+      'color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, transparent)',
+    )
+  } else {
     button.style.backgroundColor = 'transparent'
   }
 
-  if (icon)
-    icon.className = `${WATCH_LATER_ICON_CLASS} bewly-watch-later-btn__icon`
+  if (icon) icon.className = `${WATCH_LATER_ICON_CLASS} bewly-watch-later-btn__icon`
 }
 
 function setButtonBusy(button: HTMLButtonElement, isBusy: boolean) {
@@ -111,20 +105,17 @@ function setButtonBusy(button: HTMLButtonElement, isBusy: boolean) {
 function animateButton(button: HTMLButtonElement) {
   button.style.transform = 'scale(1.05)'
   window.setTimeout(() => {
-    if (button.isConnected)
-      button.style.transform = 'scale(1)'
+    if (button.isConnected) button.style.transform = 'scale(1)'
   }, 150)
 }
 
 // 后台恢复的视频页在可见前用不到按钮状态；多个标签页同时拉取完整列表会挤占后台请求。
 function waitUntilPageVisible(): Promise<void> {
-  if (document.visibilityState === 'visible')
-    return Promise.resolve()
+  if (document.visibilityState === 'visible') return Promise.resolve()
 
   return new Promise((resolve) => {
     const onVisibilityChange = () => {
-      if (document.visibilityState !== 'visible')
-        return
+      if (document.visibilityState !== 'visible') return
       document.removeEventListener('visibilitychange', onVisibilityChange)
       resolve()
     }
@@ -135,12 +126,9 @@ function waitUntilPageVisible(): Promise<void> {
 async function initializeButtonState(button: HTMLButtonElement) {
   try {
     await waitUntilPageVisible()
-    if (button.isConnected)
-      await ensureWatchLaterState({ maxAge: WATCH_LATER_STATE_MAX_AGE })
-  }
-  finally {
-    if (button.isConnected)
-      setButtonBusy(button, false)
+    if (button.isConnected) await ensureWatchLaterState({ maxAge: WATCH_LATER_STATE_MAX_AGE })
+  } finally {
+    if (button.isConnected) setButtonBusy(button, false)
   }
 }
 
@@ -169,12 +157,9 @@ async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds) {
   try {
     // 增删、epid/bvid 解析、状态广播与顶栏同步全部走共享动作；成功后 watcher 会刷新按钮。
     const succeeded = await toggleWatchLaterTarget(ids, { silent: true })
-    if (succeeded && button.isConnected)
-      animateButton(button)
-  }
-  finally {
-    if (button.isConnected)
-      setButtonBusy(button, false)
+    if (succeeded && button.isConnected) animateButton(button)
+  } finally {
+    if (button.isConnected) setButtonBusy(button, false)
   }
 }
 
@@ -216,8 +201,7 @@ function createButton(ids: VideoIds): HTMLButtonElement {
 
 function mountWatchLaterButton(ids: VideoIds): MountedWatchLaterButton | undefined {
   const moreButton = document.querySelector('.video-tool-more')
-  if (!moreButton?.parentNode)
-    return undefined
+  if (!moreButton?.parentNode) return undefined
 
   const button = createButton(ids)
   const mounted: MountedWatchLaterButton = {
@@ -240,14 +224,12 @@ async function handleButtonClick(mounted: MountedWatchLaterButton) {
   // 合集/列表页切集后必须以点击瞬间的 URL 为准，不能继续使用旧按钮闭包中的视频 ID。
   const currentIds = extractVideoIds()
   const currentVideoKey = getVideoKey(currentIds)
-  if (!currentVideoKey)
-    return
+  if (!currentVideoKey) return
 
   if (currentVideoKey !== getVideoKey(mounted.ids)) {
     mounted.button.remove()
     const replacement = mountWatchLaterButton(currentIds)
-    if (!replacement)
-      return
+    if (!replacement) return
 
     await replacement.ready
     if (!replacement.button.isConnected || getVideoKey(extractVideoIds()) !== currentVideoKey)
@@ -258,8 +240,7 @@ async function handleButtonClick(mounted: MountedWatchLaterButton) {
   }
 
   await mounted.ready
-  if (!mounted.button.isConnected || getVideoKey(extractVideoIds()) !== currentVideoKey)
-    return
+  if (!mounted.button.isConnected || getVideoKey(extractVideoIds()) !== currentVideoKey) return
 
   await toggleWatchLater(mounted.button, currentIds)
 }
@@ -271,8 +252,7 @@ async function handleButtonClick(mounted: MountedWatchLaterButton) {
  * 已添加状态下 hover 保持主题色。宽屏模式有更高优先级的专属规则。
  */
 function ensureHoverStyle() {
-  if (hoverStyleInjected)
-    return
+  if (hoverStyleInjected) return
   hoverStyleInjected = true
 
   const style = document.createElement('style')
@@ -296,12 +276,10 @@ function ensureHoverStyle() {
 export function addWatchLaterButton(): boolean {
   const ids = extractVideoIds()
   const videoKey = getVideoKey(ids)
-  if (!videoKey)
-    return false
+  if (!videoKey) return false
 
   const existingButton = document.querySelector<HTMLButtonElement>(`.${BUTTON_CLASS}`)
-  if (existingButton?.dataset.videoKey === videoKey)
-    return true
+  if (existingButton?.dataset.videoKey === videoKey) return true
   existingButton?.remove()
   stopWatchingButtonState()
 
@@ -331,23 +309,18 @@ function stopWaitingForToolbar(mounted = false) {
  * @returns 是否已成功挂载（false 表示设置关闭或超时放弃）
  */
 export function mountWatchLaterButtonWhenToolbarReady(): Promise<boolean> {
-  if (!settings.value.externalWatchLaterButton)
-    return Promise.resolve(false)
+  if (!settings.value.externalWatchLaterButton) return Promise.resolve(false)
 
   const mounted = addWatchLaterButton()
   stopWaitingForToolbar(mounted)
-  if (mounted)
-    return Promise.resolve(true)
+  if (mounted) return Promise.resolve(true)
 
   return new Promise((resolve) => {
     pendingToolbarResolve = resolve
     pendingToolbarObserver = new MutationObserver((mutations) => {
       // 工具栏由 B 站 Vue 水合插入，仅在存在新增节点时尝试，避免空回调开销
-      if (!mutations.some(mutation => mutation.addedNodes.length > 0))
-        return
-      stopWaitingForToolbar(
-        settings.value.externalWatchLaterButton && addWatchLaterButton(),
-      )
+      if (!mutations.some((mutation) => mutation.addedNodes.length > 0)) return
+      stopWaitingForToolbar(settings.value.externalWatchLaterButton && addWatchLaterButton())
     })
     pendingToolbarObserver.observe(document.body, { childList: true, subtree: true })
 

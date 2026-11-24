@@ -8,8 +8,8 @@ html.bewly-design.forceDark.dark {
     img,
     video,
     iframe,
-    [style*="background-image: url"],
-    [style*="background: url"] {
+    [style*='background-image: url'],
+    [style*='background: url'] {
       filter: var(--bew-filter-force-dark);
     }
   }

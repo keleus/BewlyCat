@@ -18,11 +18,13 @@ export enum FilterType {
   publishTime,
 }
 
-type FuncMap = { [key in FilterType]: {
-  func: (item: any, keyPath: string[], filterValue: any) => boolean
-  enabledKey: string
-  valueKey: string
-} }
+type FuncMap = {
+  [key in FilterType]: {
+    func: (item: any, keyPath: string[], filterValue: any) => boolean
+    enabledKey: string
+    valueKey: string
+  }
+}
 
 type KeyPath = Array<string>[]
 
@@ -79,8 +81,11 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
     // 标题可能已被替换为译文，关键词同时匹配原标题，否则中文关键词在多语言页面上会失效。
     const titles = [get(item, keyPath), getBilibiliOriginalTitle(get(item, keyPath.slice(0, -1)))]
 
-    return !titles.some(value => filterByTitleStringValues.some(keyword => `${value}`.toUpperCase().includes(keyword))
-      || filterByTitleRegExpValues.some(regex => regex.test(value)))
+    return !titles.some(
+      (value) =>
+        filterByTitleStringValues.some((keyword) => `${value}`.toUpperCase().includes(keyword)) ||
+        filterByTitleRegExpValues.some((regex) => regex.test(value)),
+    )
   }
   // #endregion
 
@@ -95,12 +100,10 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
       if (item.keyword.startsWith('/') && item.keyword.endsWith('/')) {
         try {
           filterByTitleRegExpValues.push(new RegExp(item.keyword.slice(1, -1), 'i'))
-        }
-        catch {
+        } catch {
           filterByTitleStringValues.push(item.keyword.toUpperCase())
         }
-      }
-      else {
+      } else {
         filterByTitleStringValues.push(item.keyword.toUpperCase())
       }
     })
@@ -111,12 +114,10 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
       if (item.keyword.startsWith('/') && item.keyword.endsWith('/')) {
         try {
           filterByUserRegExpValues.push(new RegExp(item.keyword.slice(1, -1), 'i'))
-        }
-        catch {
+        } catch {
           filterByUserStringValues.push(item.keyword.toUpperCase())
         }
-      }
-      else {
+      } else {
         filterByUserStringValues.push(item.keyword.toUpperCase())
       }
     })
@@ -131,8 +132,10 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
   function compareUser(item: any, keyPath: string[], _filterValue: string) {
     const value = get(item, keyPath)
 
-    return !(filterByUserStringValues.includes(`${value}`.toUpperCase())
-      || filterByUserRegExpValues.some(regex => regex.test(value)))
+    return !(
+      filterByUserStringValues.includes(`${value}`.toUpperCase()) ||
+      filterByUserRegExpValues.some((regex) => regex.test(value))
+    )
   }
   // #endregion
 
@@ -146,8 +149,7 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
    */
   function comparePublishTime(item: any, keyPath: string[], filterValue: number) {
     const publishTimestamp = get(item, keyPath)
-    if (!publishTimestamp)
-      return false
+    if (!publishTimestamp) return false
 
     const now = Math.floor(Date.now() / 1000) // 当前时间戳（秒）
     const dayInSeconds = 24 * 60 * 60
@@ -202,31 +204,55 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
 
   const filter = ref<((item: any) => boolean) | null>(null)
 
-  watch(() => [
-    settings.value.filterOutVerticalVideos,
-    settings.value.enableFilterByDuration,
-    settings.value.enableFilterByViewCount,
-    settings.value.enableFilterByLikeCount,
-    settings.value.enableFilterByTitle,
-    settings.value.enableFilterByUser,
-    settings.value.enableFilterByPublishTime,
-    settings.value.filterByDuration,
-    settings.value.filterByViewCount,
-    settings.value.filterByLikeCount,
-    settings.value.filterByTitle,
-    settings.value.filterByUser,
-    settings.value.filterByPublishTime,
-  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, likeCountFilter, titleFilter, userFilter, publishTimeFilter]) => {
-    rebuildKeywordValues()
+  watch(
+    () => [
+      settings.value.filterOutVerticalVideos,
+      settings.value.enableFilterByDuration,
+      settings.value.enableFilterByViewCount,
+      settings.value.enableFilterByLikeCount,
+      settings.value.enableFilterByTitle,
+      settings.value.enableFilterByUser,
+      settings.value.enableFilterByPublishTime,
+      settings.value.filterByDuration,
+      settings.value.filterByViewCount,
+      settings.value.filterByLikeCount,
+      settings.value.filterByTitle,
+      settings.value.filterByUser,
+      settings.value.filterByPublishTime,
+    ],
+    ([
+      filterOutVerticalVideos,
+      durationFilter,
+      viewCountFilter,
+      likeCountFilter,
+      titleFilter,
+      userFilter,
+      publishTimeFilter,
+    ]) => {
+      rebuildKeywordValues()
 
-    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !likeCountFilter && !titleFilter && !userFilter && !publishTimeFilter) {
-      filter.value = null
-      return
-    }
-    filter.value = factoryFilter(funcMap, filterOpt, keyList)
-  }, { immediate: true, deep: true })
+      if (
+        !filterOutVerticalVideos &&
+        !durationFilter &&
+        !viewCountFilter &&
+        !likeCountFilter &&
+        !titleFilter &&
+        !userFilter &&
+        !publishTimeFilter
+      ) {
+        filter.value = null
+        return
+      }
+      filter.value = factoryFilter(funcMap, filterOpt, keyList)
+    },
+    { immediate: true, deep: true },
+  )
 
-  function factoryFilter(funcMap: FuncMap, filterOpt: FilterType[], keyList: KeyPath): (item: any) => boolean {
+  function factoryFilter(
+    funcMap: FuncMap,
+    filterOpt: FilterType[],
+    keyList: KeyPath,
+  ): (item: any) => boolean {
     interface FuncParams {
       keyPath: string[]
       func: (item: any, keyPath: string[], filterValue: any) => boolean
@@ -256,8 +282,7 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
         //   // console.log('当前项目被拦截! 原因: ', '目标路径值 :>> ', keyPath, '大于', value, 'currentValue :>> ', get(item, keyPath))
         //   console.log('当前项目被拦截! 原因: ', '目标路径值 :>> ', keyPath, '過濾內容', value, 'currentValue :>> ', get(item, keyPath))
         // }
-        if (isAllowedContent(item))
-          return true
+        if (isAllowedContent(item)) return true
 
         return func(item, keyPath, value)
       })

@@ -70,8 +70,7 @@ const currentPageRef = computed(() => {
 // 处理滚动到底部事件
 function handleReachBottom() {
   const page = currentPageRef.value
-  if (page?.isLoading)
-    return
+  if (page?.isLoading) return
 
   if (page && page.requestLoadMore) {
     page.requestLoadMore()

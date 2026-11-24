@@ -29,7 +29,7 @@ const { t } = useI18n()
 const account = useTopBarStore()
 const editor = ref<InstanceType<typeof MomentRichEditor> | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const images = ref<Array<{ id: number, file: File, preview: string }>>([])
+const images = ref<Array<{ id: number; file: File; preview: string }>>([])
 const submitting = ref(false)
 const syncToDynamic = ref(false)
 const error = ref('')
@@ -39,7 +39,9 @@ const MAX_IMAGE_SIZE = 20 * 1024 * 1024
 let imageId = 0
 let alive = true
 const remaining = computed(() => editor.value?.remaining ?? MAX_LENGTH)
-const empty = computed(() => !editor.value?.nodes.some(node => node.raw_text.trim()) && !images.value.length)
+const empty = computed(
+  () => !editor.value?.nodes.some((node) => node.raw_text.trim()) && !images.value.length,
+)
 
 function addImages(files: File[]) {
   error.value = ''
@@ -66,26 +68,28 @@ function pickImages(event: Event) {
   editor.value?.focus()
 }
 function removeImage(id: number) {
-  const image = images.value.find(item => item.id === id)
-  if (image)
-    URL.revokeObjectURL(image.preview)
-  images.value = images.value.filter(item => item.id !== id)
+  const image = images.value.find((item) => item.id === id)
+  if (image) URL.revokeObjectURL(image.preview)
+  images.value = images.value.filter((item) => item.id !== id)
 }
 function previewImage(index: number, event: Event) {
-  emit('openImagePreview', images.value.map(image => image.preview), index, event.currentTarget instanceof HTMLElement ? event.currentTarget : null)
+  emit(
+    'openImagePreview',
+    images.value.map((image) => image.preview),
+    index,
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null,
+  )
 }
 
 async function send() {
-  if (submitting.value || props.disabled || !editor.value)
-    return
+  if (submitting.value || props.disabled || !editor.value) return
   editor.value.sync()
   error.value = ''
   if (remaining.value < 0) {
     error.value = t('moment_card.repost_too_long')
     return
   }
-  if (empty.value)
-    return
+  if (empty.value) return
   const nodes = editor.value.nodes
   const atNameToMid: Record<string, number> = {}
   for (const node of nodes) {
@@ -94,57 +98,56 @@ async function send() {
   }
   submitting.value = true
   try {
-    const pictures = await Promise.all(images.value.map(image => props.upload(image.file)))
+    const pictures = await Promise.all(images.value.map((image) => props.upload(image.file)))
     await props.submit({
-      message: nodes.map(node => node.raw_text).join('').trim(),
+      message: nodes
+        .map((node) => node.raw_text)
+        .join('')
+        .trim(),
       atNameToMid,
       pictures,
       syncToDynamic: !props.replyName && props.canSyncToDynamic && syncToDynamic.value,
     })
     // 发送途中收起评论区时卸载钩子已存下草稿，成功后一并清除。
     commentDrafts.delete(props.draftKey)
-    if (!alive)
-      return
-    images.value.forEach(image => URL.revokeObjectURL(image.preview))
+    if (!alive) return
+    images.value.forEach((image) => URL.revokeObjectURL(image.preview))
     images.value = []
     syncToDynamic.value = false
     editor.value?.setNodes([])
-    if (props.replyName)
-      emit('cancel')
-  }
-  catch (cause) {
+    if (props.replyName) emit('cancel')
+  } catch (cause) {
     if (alive)
       error.value = cause instanceof Error ? cause.message : t('moment_card.comment_send_failed')
-  }
-  finally {
-    if (alive)
-      submitting.value = false
+  } finally {
+    if (alive) submitting.value = false
   }
 }
 
 onMounted(() => {
   const draft = commentDrafts.get(props.draftKey)
-  if (!draft)
-    return
+  if (!draft) return
   editor.value?.setNodes(draft.nodes)
-  images.value = draft.files.map(file => ({ id: ++imageId, file, preview: URL.createObjectURL(file) }))
+  images.value = draft.files.map((file) => ({
+    id: ++imageId,
+    file,
+    preview: URL.createObjectURL(file),
+  }))
 })
 // 父组件先于编辑器卸载，此时编辑器 DOM 仍在，可以读出最终草稿。
 // 正文与图片一起保留，与转发草稿一致：切换转发/评论或收起后再展开都能接着写。
 onBeforeUnmount(() => {
   alive = false
-  images.value.forEach(image => URL.revokeObjectURL(image.preview))
-  if (!editor.value)
-    return
+  images.value.forEach((image) => URL.revokeObjectURL(image.preview))
+  if (!editor.value) return
   editor.value.sync()
   const nodes = editor.value.nodes
-  const files = images.value.map(image => image.file)
-  if (nodes.some(node => node.raw_text.trim()) || files.length) {
+  const files = images.value.map((image) => image.file)
+  if (nodes.some((node) => node.raw_text.trim()) || files.length) {
     if (commentDrafts.size >= 50 && !commentDrafts.has(props.draftKey))
       commentDrafts.delete(commentDrafts.keys().next().value!)
     commentDrafts.set(props.draftKey, { nodes, files })
-  }
-  else {
+  } else {
     commentDrafts.delete(props.draftKey)
   }
 })
@@ -154,11 +157,20 @@ onBeforeUnmount(() => {
   <section
     class="moment-comment-composer"
     :class="{ 'is-reply': replyName }"
-    :aria-label="replyName ? t('moment_card.comment_reply_to', { name: replyName }) : t('moment_card.comment_send')"
+    :aria-label="
+      replyName
+        ? t('moment_card.comment_reply_to', { name: replyName })
+        : t('moment_card.comment_send')
+    "
     @click.stop
     @keydown.stop
   >
-    <img v-if="!replyName && account.userInfo.face" class="moment-comment-composer__avatar" :src="account.userInfo.face" alt="">
+    <img
+      v-if="!replyName && account.userInfo.face"
+      class="moment-comment-composer__avatar"
+      :src="account.userInfo.face"
+      alt=""
+    />
     <div class="moment-comment-composer__body">
       <p v-if="replyName" class="moment-comment-composer__target">
         {{ t('moment_card.comment_reply_to', { name: replyName }) }}
@@ -185,7 +197,7 @@ onBeforeUnmount(() => {
                 :title="t('moment_card.comment_image', { index: index + 1 })"
                 @click="previewImage(index, $event)"
               >
-                <img :src="image.preview" alt="">
+                <img :src="image.preview" alt="" />
               </button>
               <button
                 type="button"
@@ -234,7 +246,9 @@ onBeforeUnmount(() => {
           <Button v-if="replyName" size="small" :disabled="submitting" @click="emit('cancel')">
             {{ t('common.operation.cancel') }}
           </Button>
-          <span class="moment-comment-composer__shortcut">{{ t('moment_card.comment_send_keys') }}</span>
+          <span class="moment-comment-composer__shortcut">{{
+            t('moment_card.comment_send_keys')
+          }}</span>
           <Button
             type="primary"
             size="small"
@@ -244,7 +258,11 @@ onBeforeUnmount(() => {
             :title="t('moment_card.comment_send_shortcut')"
             @click="send"
           >
-            <span v-if="submitting" class="bew-submit-spinner" aria-hidden="true" /><span class="bew-submit-label" :class="{ 'is-hidden': submitting }">{{ t(replyName ? 'moment_card.comment_reply' : 'moment_card.comment_send') }}</span>
+            <span v-if="submitting" class="bew-submit-spinner" aria-hidden="true" /><span
+              class="bew-submit-label"
+              :class="{ 'is-hidden': submitting }"
+              >{{ t(replyName ? 'moment_card.comment_reply' : 'moment_card.comment_send') }}</span
+            >
           </Button>
         </template>
       </MomentRichEditor>
@@ -257,7 +275,7 @@ onBeforeUnmount(() => {
         tabindex="-1"
         aria-hidden="true"
         @change="pickImages"
-      >
+      />
       <p v-if="error" class="moment-comment-composer__error" role="alert">
         {{ error }}
       </p>
@@ -329,7 +347,7 @@ onBeforeUnmount(() => {
 
   // 细框画在图片之上，白底图片也能看清缩略图边界；不拦截点击。
   &::after {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
@@ -437,11 +455,11 @@ onBeforeUnmount(() => {
   transition: transform var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
-.moment-comment-composer__sync[aria-checked="true"] .moment-comment-composer__sync-track {
+.moment-comment-composer__sync[aria-checked='true'] .moment-comment-composer__sync-track {
   background: var(--bew-theme-color);
 }
 
-.moment-comment-composer__sync[aria-checked="true"] .moment-comment-composer__sync-thumb {
+.moment-comment-composer__sync[aria-checked='true'] .moment-comment-composer__sync-thumb {
   transform: translateX(12px);
 }
 

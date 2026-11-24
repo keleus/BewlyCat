@@ -1,13 +1,6 @@
 <script lang="ts" setup>
 interface Props {
-  type?: | 'default'
-    | 'primary'
-    | 'secondary'
-    | 'tertiary'
-    | 'info'
-    | 'success'
-    | 'warning'
-    | 'error'
+  type?: 'default' | 'primary' | 'secondary' | 'tertiary' | 'info' | 'success' | 'warning' | 'error'
   size?: 'small' | 'medium' | 'large'
   color?: string
   textColor?: string
@@ -36,11 +29,11 @@ function handleClick(evt: MouseEvent) {
       `${color || textColor ? 'b-button--custom-color' : ''}`,
     ]"
     :style="{
-      'backgroundColor': color,
-      'color': textColor,
+      backgroundColor: color,
+      color: textColor,
       '--b-button-radius': round ? 'var(--bew-badge-radius)' : '',
-      'width': block ? '100%' : 'var(--b-button-width)',
-      'justifyContent': center ? 'center' : '',
+      width: block ? '100%' : 'var(--b-button-width)',
+      justifyContent: center ? 'center' : '',
     }"
     @click="handleClick"
   >
@@ -69,12 +62,12 @@ function handleClick(evt: MouseEvent) {
   --b-button-shadow-hover: var(--b-button-shadow);
   --b-button-shadow-active: var(--b-button-shadow);
 
-  --uno: "bg-$b-button-color hover:bg-$b-button-color-hover box-border";
-  --uno: "rounded-$b-button-radius p-x-$b-button-padding active:scale-95";
-  --uno: "flex items-center gap-$bew-space-2 text-size-$b-button-font-size";
-  --uno: "text-$b-button-text-color lh-$b-button-line-height h-$b-button-height";
-  --uno: "border-solid border-width-$b-button-border-width border-$b-button-border-color";
-  --uno: "shadow-$b-button-shadow hover:shadow-$b-button-shadow-hover active:shadow-$b-button-shadow-active";
+  --uno: 'bg-$b-button-color hover:bg-$b-button-color-hover box-border';
+  --uno: 'rounded-$b-button-radius p-x-$b-button-padding active:scale-95';
+  --uno: 'flex items-center gap-$bew-space-2 text-size-$b-button-font-size';
+  --uno: 'text-$b-button-text-color lh-$b-button-line-height h-$b-button-height';
+  --uno: 'border-solid border-width-$b-button-border-width border-$b-button-border-color';
+  --uno: 'shadow-$b-button-shadow hover:shadow-$b-button-shadow-hover active:shadow-$b-button-shadow-active';
 
   appearance: none;
   font-weight: var(--b-button-font-weight);
@@ -98,7 +91,7 @@ function handleClick(evt: MouseEvent) {
   }
 
   & svg {
-    --uno: "text-size-$b-button-icon-size";
+    --uno: 'text-size-$b-button-icon-size';
   }
 
   // &--type-default {
@@ -145,7 +138,7 @@ function handleClick(evt: MouseEvent) {
   }
 
   &--custom-color {
-    --uno: "hover:opacity-70";
+    --uno: 'hover:opacity-70';
   }
 
   &--strong {

@@ -57,11 +57,7 @@ const content = computed(() => {
   const video = props.video
   const currentSettings = settings.value
   const rawTag = video?.tag
-  const displayTags = !rawTag
-    ? []
-    : Array.isArray(rawTag)
-      ? rawTag.filter(Boolean)
-      : [rawTag]
+  const displayTags = !rawTag ? [] : Array.isArray(rawTag) ? rawTag.filter(Boolean) : [rawTag]
   // 分区与其他接口标签分开控制，分区始终排在最前
   const cardTags: VideoCardTag[] = [
     ...(currentSettings.showVideoCardCategory && video?.category
@@ -69,40 +65,45 @@ const content = computed(() => {
       : []),
     ...(currentSettings.showVideoCardVideoTag
       ? [
-          ...displayTags.map(text => ({ priority: 2 as const, searchable: false, text })),
+          ...displayTags.map((text) => ({ priority: 2 as const, searchable: false, text })),
           ...(video?.searchableTags ?? [])
             .filter(Boolean)
-            .map(text => ({ priority: 2 as const, searchable: true, text })),
+            .map((text) => ({ priority: 2 as const, searchable: true, text })),
         ]
       : []),
   ]
   const visibleVideoTags = cardTags.slice(0, MAX_INTERFACE_TAG_COUNT)
   const remainingPluginTagCount = Math.max(0, MIN_TAG_COUNT_BEFORE_PLUGIN - visibleVideoTags.length)
-  const visiblePluginComputedTags = currentSettings.showVideoCardRecommendTag && remainingPluginTagCount > 0
-    ? props.pluginComputedTags.slice(0, remainingPluginTagCount)
-    : []
+  const visiblePluginComputedTags =
+    currentSettings.showVideoCardRecommendTag && remainingPluginTagCount > 0
+      ? props.pluginComputedTags.slice(0, remainingPluginTagCount)
+      : []
   const authorAvatarEnabled = !props.hideAuthor && currentSettings.showVideoCardAuthorAvatar
   const authorNameEnabled = !props.hideAuthor && currentSettings.showVideoCardAuthorName
   const showAuthorAvatar = authorAvatarEnabled && hasAuthorAvatar(video?.author)
   const showAuthorName = authorNameEnabled && Boolean(video?.author)
-  const showPublishTime = currentSettings.showVideoCardPublishTime
-    && (Boolean(video?.publishedTimestamp) || Boolean(video?.capsuleText))
+  const showPublishTime =
+    currentSettings.showVideoCardPublishTime &&
+    (Boolean(video?.publishedTimestamp) || Boolean(video?.capsuleText))
   const showVideoType = video?.type === 'vertical' || video?.type === 'bangumi'
-  const showLegacyViewCount = currentSettings.showVideoCardViewCount
-    && (Boolean(video?.view) || Boolean(video?.viewStr))
-  const showLegacyDanmakuCount = currentSettings.showVideoCardDanmakuCount
-    && (Boolean(video?.danmaku) || Boolean(video?.danmakuStr))
-  const metaPlaceholderEnabled = currentSettings.showVideoCardCategory
-    || currentSettings.showVideoCardVideoTag
-    || currentSettings.showVideoCardRecommendTag
-    || currentSettings.showVideoCardPublishTime
-    || Boolean(video?.type)
-  const statsPlaceholderEnabled = currentSettings.showVideoCardViewCount
-    || currentSettings.showVideoCardDanmakuCount
-  const hasVisibleMeta = visibleVideoTags.length > 0
-    || visiblePluginComputedTags.length > 0
-    || showPublishTime
-    || showVideoType
+  const showLegacyViewCount =
+    currentSettings.showVideoCardViewCount && (Boolean(video?.view) || Boolean(video?.viewStr))
+  const showLegacyDanmakuCount =
+    currentSettings.showVideoCardDanmakuCount &&
+    (Boolean(video?.danmaku) || Boolean(video?.danmakuStr))
+  const metaPlaceholderEnabled =
+    currentSettings.showVideoCardCategory ||
+    currentSettings.showVideoCardVideoTag ||
+    currentSettings.showVideoCardRecommendTag ||
+    currentSettings.showVideoCardPublishTime ||
+    Boolean(video?.type)
+  const statsPlaceholderEnabled =
+    currentSettings.showVideoCardViewCount || currentSettings.showVideoCardDanmakuCount
+  const hasVisibleMeta =
+    visibleVideoTags.length > 0 ||
+    visiblePluginComputedTags.length > 0 ||
+    showPublishTime ||
+    showVideoType
 
   return {
     authorAvatarEnabled,
@@ -118,7 +119,8 @@ const content = computed(() => {
     showLegacyViewCount,
     showPublishTime,
     showVideoType,
-    showWatchedBadge: !props.hideWatchedBadge && currentSettings.showVideoWatchedBadge && !video?.roomid,
+    showWatchedBadge:
+      !props.hideWatchedBadge && currentSettings.showVideoWatchedBadge && !video?.roomid,
     statsPlaceholderEnabled,
     visiblePluginComputedTags,
     visibleVideoTags,
@@ -144,19 +146,28 @@ const content = computed(() => {
       <!-- Old layout skeleton: Avatar on left -->
       <div
         v-if="layout === 'old' && !horizontal && content.authorAvatarEnabled"
-        m="r-4" w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
+        m="r-4"
+        w="34px"
+        h="34px"
+        rounded="1/2"
+        bg="$bew-skeleton"
         shrink-0
       />
 
       <div
-        class="group/desc" flex="~ col" :class="content.isModernLayout ? 'gap-2' : ''" w="full" min-w-0
+        class="group/desc"
+        flex="~ col"
+        :class="content.isModernLayout ? 'gap-2' : ''"
+        w="full"
+        min-w-0
         align="items-start"
       >
         <!-- Title skeleton -->
         <div flex="~ gap-1 justify-between items-start" w="full">
           <!-- 使用与真实标题完全相同的样式和高度 -->
           <div
-            class="keep-two-lines" :class="[
+            class="keep-two-lines"
+            :class="[
               content.isModernLayout && moreBtn ? 'w-[calc(100%-40px)]' : 'w-full',
               content.isModernLayout ? 'video-card-title' : '',
               // Same font size as the real title: the two-line height is in em,
@@ -167,11 +178,23 @@ const content = computed(() => {
             text="overflow-ellipsis $bew-text-1"
           >
             <!-- 使用与真实文本相同的行高填充，考虑 line-height -->
-            <div w-full bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em; margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);" />
-            <div w="3/4" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
+            <div
+              w-full
+              bg="$bew-skeleton"
+              rounded="$bew-radius-sm"
+              style="
+                height: 1em;
+                margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);
+              "
+            />
+            <div w="3/4" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em" />
           </div>
           <div
-            v-if="content.isModernLayout && moreBtn" shrink-0 w-8 h-8 rounded="1/2"
+            v-if="content.isModernLayout && moreBtn"
+            shrink-0
+            w-8
+            h-8
+            rounded="1/2"
             bg="$bew-skeleton"
           />
         </div>
@@ -185,57 +208,82 @@ const content = computed(() => {
         >
           <div
             v-if="content.authorNameEnabled"
-            w="30%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+            w="30%"
+            bg="$bew-skeleton"
+            rounded="$bew-radius-sm"
             :class="authorFontSizeClass"
-            style="height: 1em;"
+            style="height: 1em"
           />
           <div
             v-if="content.metaPlaceholderEnabled"
-            w="30%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+            w="30%"
+            bg="$bew-skeleton"
+            rounded="$bew-radius-sm"
             :class="metaFontSizeClass"
-            style="height: calc(1em + 0.24em);"
+            style="height: calc(1em + 0.24em)"
           />
         </div>
 
         <!-- Modern layout: Author info skeleton -->
         <div
-          v-else-if="layout === 'modern' && (content.authorAvatarEnabled || content.authorNameEnabled)"
+          v-else-if="
+            layout === 'modern' && (content.authorAvatarEnabled || content.authorNameEnabled)
+          "
           class="video-card-meta"
           flex="~ gap-2 items-center"
           w="full"
         >
           <div
             v-if="content.authorAvatarEnabled"
-            w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0
+            w="34px"
+            h="34px"
+            rounded="1/2"
+            bg="$bew-skeleton"
+            shrink-0
           />
-          <div v-if="content.authorNameEnabled || content.metaPlaceholderEnabled" flex="~ col gap-1" w="[calc(100%-50px)]">
+          <div
+            v-if="content.authorNameEnabled || content.metaPlaceholderEnabled"
+            flex="~ col gap-1"
+            w="[calc(100%-50px)]"
+          >
             <!-- 作者名称骨架：使用与真实文本相同的字体大小和行高 -->
             <div
               v-if="content.authorNameEnabled"
-              w="60%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+              w="60%"
+              bg="$bew-skeleton"
+              rounded="$bew-radius-sm"
               :class="authorFontSizeClass"
-              style="height: 1em;"
+              style="height: 1em"
             />
             <!-- 标签骨架：使用与真实标签相同的高度，包括 padding -->
             <div
               v-if="content.metaPlaceholderEnabled"
-              w="80%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+              w="80%"
+              bg="$bew-skeleton"
+              rounded="$bew-radius-sm"
               :class="metaFontSizeClass"
-              style="height: calc(1em + 0.24em);"
+              style="height: calc(1em + 0.24em)"
             />
           </div>
         </div>
 
         <!-- Modern layout with hideAuthor: Tags skeleton -->
         <div
-          v-if="layout === 'modern' && !content.authorAvatarEnabled && !content.authorNameEnabled && content.metaPlaceholderEnabled"
+          v-if="
+            layout === 'modern' &&
+            !content.authorAvatarEnabled &&
+            !content.authorNameEnabled &&
+            content.metaPlaceholderEnabled
+          "
           class="video-card-meta-row"
           flex="~ items-center gap-2"
           :class="metaFontSizeClass"
         >
           <div
-            w="60px" bg="$bew-skeleton" rounded="$bew-radius"
-            style="height: calc(1em + 0.24em);"
+            w="60px"
+            bg="$bew-skeleton"
+            rounded="$bew-radius"
+            style="height: calc(1em + 0.24em)"
           />
         </div>
 
@@ -249,9 +297,12 @@ const content = computed(() => {
             :class="metaFontSizeClass"
           >
             <div
-              bg="$bew-skeleton" rounded="$bew-radius"
-              lh-6 p="x-2" w="60px"
-              style="height: calc(1em + 0.24em);"
+              bg="$bew-skeleton"
+              rounded="$bew-radius"
+              lh-6
+              p="x-2"
+              w="60px"
+              style="height: calc(1em + 0.24em)"
             />
           </div>
 
@@ -269,19 +320,31 @@ const content = computed(() => {
               <!-- Horizontal mode avatar -->
               <div
                 v-if="horizontal && content.authorAvatarEnabled"
-                w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
-                shrink-0 m-r-2
+                w="34px"
+                h="34px"
+                rounded="1/2"
+                bg="$bew-skeleton"
+                shrink-0
+                m-r-2
               />
-              <div v-if="content.authorNameEnabled" w="100px" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
+              <div
+                v-if="content.authorNameEnabled"
+                w="100px"
+                bg="$bew-skeleton"
+                rounded="$bew-radius-sm"
+                style="height: 1em"
+              />
             </div>
 
             <!-- View & Danmaku skeleton -->
             <div v-if="content.statsPlaceholderEnabled" flex="~ items-center gap-1">
-              <div
-                :class="metaFontSizeClass"
-                text="$bew-text-2"
-              >
-                <div w="150px" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em; display: inline-block;" />
+              <div :class="metaFontSizeClass" text="$bew-text-2">
+                <div
+                  w="150px"
+                  bg="$bew-skeleton"
+                  rounded="$bew-radius-sm"
+                  style="height: 1em; display: inline-block"
+                />
               </div>
             </div>
 
@@ -293,9 +356,12 @@ const content = computed(() => {
               :class="metaFontSizeClass"
             >
               <div
-                bg="$bew-skeleton" rounded="$bew-radius"
-                lh-6 p="x-2" w="60px"
-                style="height: calc(1em + 0.24em);"
+                bg="$bew-skeleton"
+                rounded="$bew-radius"
+                lh-6
+                p="x-2"
+                w="60px"
+                style="height: calc(1em + 0.24em)"
               />
             </div>
           </template>
@@ -313,7 +379,11 @@ const content = computed(() => {
       />
 
       <div
-        class="group/desc" flex="~ col" :class="content.isModernLayout ? 'gap-2' : ''" w="full" min-w-0
+        class="group/desc"
+        flex="~ col"
+        :class="content.isModernLayout ? 'gap-2' : ''"
+        w="full"
+        min-w-0
         align="items-start"
       >
         <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
@@ -353,8 +423,15 @@ const content = computed(() => {
               content.isModernLayout ? 'overflow-hidden rounded-full' : '',
             ]"
             bg="hover:$bew-fill-2 active:$bew-fill-3"
-            shrink-0 w-32px h-32px m="t--3px"
-            grid place-items-center cursor-pointer rounded="50%" border-none
+            shrink-0
+            w-32px
+            h-32px
+            m="t--3px"
+            grid
+            place-items-center
+            cursor-pointer
+            rounded="50%"
+            border-none
             @click.stop.prevent="emit('moreBtnClick', $event)"
           >
             <div i-mingcute:more-2-line text="lg" />
@@ -363,7 +440,12 @@ const content = computed(() => {
 
         <!-- Modern layout with hideAuthor: Tags directly under title -->
         <div
-          v-if="layout === 'modern' && !content.showAuthorAvatar && !content.showAuthorName && content.hasVisibleMeta"
+          v-if="
+            layout === 'modern' &&
+            !content.showAuthorAvatar &&
+            !content.showAuthorName &&
+            content.hasVisibleMeta
+          "
           v-meta-overflow
           class="video-card-meta-row"
           flex="~ items-center gap-2 wrap"
@@ -379,7 +461,11 @@ const content = computed(() => {
             rounded="$bew-radius"
             text="$bew-text-3"
           >
-            {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+            {{
+              video.publishedTimestamp
+                ? calcTimeSince(video.publishedTimestamp * 1000)
+                : video.capsuleText?.trim()
+            }}
           </span>
 
           <component
@@ -416,11 +502,7 @@ const content = computed(() => {
             {{ pluginTag }}
           </span>
 
-          <span
-            v-if="content.showVideoType"
-            text="$bew-text-2"
-            grid="~ place-items-center"
-          >
+          <span v-if="content.showVideoType" text="$bew-text-2" grid="~ place-items-center">
             <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
             <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
           </span>
@@ -444,7 +526,8 @@ const content = computed(() => {
           <div
             v-if="content.showAuthorName || content.hasVisibleMeta"
             :class="content.isCompactMeta ? 'flex items-center gap-2' : 'flex flex-col gap-1'"
-            w="full" min-w-0
+            w="full"
+            min-w-0
           >
             <div
               v-if="content.showAuthorName"
@@ -474,7 +557,11 @@ const content = computed(() => {
                 rounded="$bew-radius"
                 text="$bew-text-3"
               >
-                {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+                {{
+                  video.publishedTimestamp
+                    ? calcTimeSince(video.publishedTimestamp * 1000)
+                    : video.capsuleText?.trim()
+                }}
               </span>
 
               <component
@@ -511,11 +598,7 @@ const content = computed(() => {
                 {{ pluginTag }}
               </span>
 
-              <span
-                v-if="content.showVideoType"
-                text="$bew-text-2"
-                grid="~ place-items-center"
-              >
+              <span v-if="content.showVideoType" text="$bew-text-2" grid="~ place-items-center">
                 <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
                 <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
               </span>
@@ -542,7 +625,11 @@ const content = computed(() => {
               class="video-card-meta__chip"
               :data-meta-priority="videoTag.priority"
               :class="{ 'video-card-tag--searchable': videoTag.searchable }"
-              un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+              un-text="$bew-theme-color"
+              lh-6
+              p="x-2"
+              rounded="$bew-radius"
+              bg="$bew-theme-color-20"
               :title="videoTag.text"
               :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
               :target="videoTag.searchable ? '_blank' : undefined"
@@ -566,10 +653,18 @@ const content = computed(() => {
             <span
               v-if="content.showPublishTime"
               data-meta-priority="0"
-              bg="$bew-fill-1" p="x-2" rounded="$bew-radius" text="$bew-text-3" lh-6
+              bg="$bew-fill-1"
+              p="x-2"
+              rounded="$bew-radius"
+              text="$bew-text-3"
+              lh-6
               mr-1
             >
-              {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+              {{
+                video.publishedTimestamp
+                  ? calcTimeSince(video.publishedTimestamp * 1000)
+                  : video.capsuleText?.trim()
+              }}
             </span>
             <!-- Video type -->
             <span v-if="content.showVideoType" text="$bew-text-2" grid="~ place-items-center">
@@ -583,7 +678,9 @@ const content = computed(() => {
             <div
               v-if="content.showAuthorName || (horizontal && content.showAuthorAvatar)"
               text="$bew-text-2"
-              w-fit min-w-0 max-w-full
+              w-fit
+              min-w-0
+              max-w-full
               m="t-2"
               flex="~ items-center"
               :class="authorFontSizeClass"
@@ -594,36 +691,43 @@ const content = computed(() => {
                   marginBottom: horizontal ? '0.5rem' : '0',
                 }"
                 flex="inline items-center"
-                min-w-0 max-w-full
+                min-w-0
+                max-w-full
               >
                 <VideoCardAuthorAvatar
                   v-if="horizontal && content.showAuthorAvatar && video.author"
                   :author="video.author"
                   :is-live="video.liveStatus === 1"
                 />
-                <VideoCardAuthorName
-                  v-if="content.showAuthorName"
-                  :author="video.author"
-                />
+                <VideoCardAuthorName v-if="content.showAuthorName" :author="video.author" />
               </span>
             </div>
 
             <div v-if="content.hasLegacyStats" flex="~ items-center gap-1 wrap">
               <!-- View & Danmaku Count -->
-              <div
-                text="$bew-text-2"
-                rounded="$bew-radius"
-                inline-block
-                :class="metaFontSizeClass"
-              >
+              <div text="$bew-text-2" rounded="$bew-radius" inline-block :class="metaFontSizeClass">
                 <span v-if="content.showLegacyViewCount">
-                  {{ video.view ? $t('common.view', { count: numFormatter(video.view) }, video.view) : `${numFormatter(video.viewStr || '0')}${$t('common.viewWithoutNum')}` }}
+                  {{
+                    video.view
+                      ? $t('common.view', { count: numFormatter(video.view) }, video.view)
+                      : `${numFormatter(video.viewStr || '0')}${$t('common.viewWithoutNum')}`
+                  }}
                 </span>
                 <template v-if="content.showLegacyDanmakuCount">
-                  <span v-if="content.showLegacyViewCount" class="video-card-stat-separator" text-xs mx-1>•</span>
-                  <span>{{ video.danmaku ? $t('common.danmaku', { count: numFormatter(video.danmaku) }, video.danmaku) : `${numFormatter(video.danmakuStr || '0')}${$t('common.danmakuWithoutNum')}` }}</span>
+                  <span
+                    v-if="content.showLegacyViewCount"
+                    class="video-card-stat-separator"
+                    text-xs
+                    mx-1
+                    >•</span
+                  >
+                  <span>{{
+                    video.danmaku
+                      ? $t('common.danmaku', { count: numFormatter(video.danmaku) }, video.danmaku)
+                      : `${numFormatter(video.danmakuStr || '0')}${$t('common.danmakuWithoutNum')}`
+                  }}</span>
                 </template>
-                <br>
+                <br />
               </div>
             </div>
 
@@ -643,7 +747,11 @@ const content = computed(() => {
                 class="video-card-meta__chip"
                 :data-meta-priority="videoTag.priority"
                 :class="{ 'video-card-tag--searchable': videoTag.searchable }"
-                un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+                un-text="$bew-theme-color"
+                lh-6
+                p="x-2"
+                rounded="$bew-radius"
+                bg="$bew-theme-color-20"
                 :title="videoTag.text"
                 :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
                 :target="videoTag.searchable ? '_blank' : undefined"
@@ -667,10 +775,18 @@ const content = computed(() => {
               <span
                 v-if="content.showPublishTime"
                 data-meta-priority="0"
-                bg="$bew-fill-1" p="x-2" rounded="$bew-radius" text="$bew-text-3" lh-6
+                bg="$bew-fill-1"
+                p="x-2"
+                rounded="$bew-radius"
+                text="$bew-text-3"
+                lh-6
                 mr-1
               >
-                {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+                {{
+                  video.publishedTimestamp
+                    ? calcTimeSince(video.publishedTimestamp * 1000)
+                    : video.capsuleText?.trim()
+                }}
               </span>
               <!-- Video type -->
               <span v-if="content.showVideoType" text="$bew-text-2" grid="~ place-items-center">
@@ -716,7 +832,7 @@ const content = computed(() => {
 }
 
 .more-active {
-  --uno: "opacity-100";
+  --uno: 'opacity-100';
 }
 
 .video-card-meta {

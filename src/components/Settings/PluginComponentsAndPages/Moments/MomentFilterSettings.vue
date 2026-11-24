@@ -13,11 +13,13 @@ import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
 
-const filterOptions = computed(() => MOMENT_TYPE_FILTER_OPTIONS.map(option => ({
-  setting: option.setting,
-  label: t(option.labelKey),
-  icon: option.icon,
-})))
+const filterOptions = computed(() =>
+  MOMENT_TYPE_FILTER_OPTIONS.map((option) => ({
+    setting: option.setting,
+    label: t(option.labelKey),
+    icon: option.icon,
+  })),
+)
 </script>
 
 <template>
@@ -32,7 +34,11 @@ const filterOptions = computed(() => MOMENT_TYPE_FILTER_OPTIONS.map(option => ({
       :desc="$t('settings.moments_filtered_types_desc')"
     >
       <template #bottom>
-        <SettingsSearchContainer class="moment-filter-tags" role="group" :aria-label="$t('settings.moments_filtered_types')">
+        <SettingsSearchContainer
+          class="moment-filter-tags"
+          role="group"
+          :aria-label="$t('settings.moments_filtered_types')"
+        >
           <SettingsToggleTag
             v-for="option in filterOptions"
             :key="option.setting"

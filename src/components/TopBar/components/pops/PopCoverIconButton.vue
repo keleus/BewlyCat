@@ -3,15 +3,18 @@
  * 顶栏弹窗媒体卡封面上的圆形小图标钮（稍后再看操作 / 历史删除）。
  * 显隐由父级覆盖层容器的 group-hover 控制，本组件只管统一样式与可访问性。
  */
-withDefaults(defineProps<{
-  ariaLabel?: string
-  tooltip?: string
-  tooltipPlacement?: 'left' | 'right' | 'top' | 'bottom' | 'bottom-left' | 'bottom-right'
-  hoverColor?: 'theme' | 'error'
-}>(), {
-  tooltipPlacement: 'top',
-  hoverColor: 'theme',
-})
+withDefaults(
+  defineProps<{
+    ariaLabel?: string
+    tooltip?: string
+    tooltipPlacement?: 'left' | 'right' | 'top' | 'bottom' | 'bottom-left' | 'bottom-right'
+    hoverColor?: 'theme' | 'error'
+  }>(),
+  {
+    tooltipPlacement: 'top',
+    hoverColor: 'theme',
+  },
+)
 
 defineEmits<{ click: [] }>()
 </script>
@@ -22,7 +25,8 @@ defineEmits<{ click: [] }>()
       type="button"
       class="pop-cover-icon-btn"
       :class="`pop-cover-icon-btn--${hoverColor}`"
-      w-24px h-24px
+      w-24px
+      h-24px
       bg="black opacity-60"
       grid="~ place-items-center"
       text="white xs"
@@ -38,7 +42,8 @@ defineEmits<{ click: [] }>()
     type="button"
     class="pop-cover-icon-btn"
     :class="`pop-cover-icon-btn--${hoverColor}`"
-    w-24px h-24px
+    w-24px
+    h-24px
     bg="black opacity-60"
     grid="~ place-items-center"
     text="white xs"

@@ -11,10 +11,12 @@ export function getWatchLaterAuthor(item: WatchLaterItem): Author {
     mid: owner.mid || undefined,
     authorUrl: owner.mid
       ? undefined
-      : item.redirect_url
-        || (bangumi?.ep_id ? `https://www.bilibili.com/bangumi/play/ep${bangumi.ep_id}` : '')
-        || (bangumi?.season?.season_id ? `https://www.bilibili.com/bangumi/play/ss${bangumi.season.season_id}` : '')
-        || item.uri
-        || `https://www.bilibili.com/video/${item.bvid || `av${item.aid}`}/`,
+      : item.redirect_url ||
+        (bangumi?.ep_id ? `https://www.bilibili.com/bangumi/play/ep${bangumi.ep_id}` : '') ||
+        (bangumi?.season?.season_id
+          ? `https://www.bilibili.com/bangumi/play/ss${bangumi.season.season_id}`
+          : '') ||
+        item.uri ||
+        `https://www.bilibili.com/video/${item.bvid || `av${item.aid}`}/`,
   }
 }

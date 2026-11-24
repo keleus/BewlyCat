@@ -1,7 +1,12 @@
 import browser from 'webextension-polyfill'
 
 import { onMessage } from '~/utils/messaging'
-import type { SettingsCloudSyncEnableResponse, SettingsCloudSyncEntry, SettingsCloudSyncMode, SettingsCloudSyncStatus } from '~/utils/settingsCloudSyncProtocol'
+import type {
+  SettingsCloudSyncEnableResponse,
+  SettingsCloudSyncEntry,
+  SettingsCloudSyncMode,
+  SettingsCloudSyncStatus,
+} from '~/utils/settingsCloudSyncProtocol'
 import {
   compareSettingsCloudSyncVersions,
   createSettingsCloudSyncKey,
@@ -20,7 +25,10 @@ import {
   SETTINGS_CLOUD_SYNC_STATUS_MESSAGE,
   SETTINGS_CLOUD_SYNC_TOTAL_BYTES_LIMIT,
 } from '~/utils/settingsCloudSyncProtocol'
-import { normalizeSettingsStorageWriteMeta, SETTINGS_STORAGE_META_KEY } from '~/utils/settingsStorageProtocol'
+import {
+  normalizeSettingsStorageWriteMeta,
+  SETTINGS_STORAGE_META_KEY,
+} from '~/utils/settingsStorageProtocol'
 
 import {
   applySettingsCloudSyncChanges,
@@ -63,10 +71,8 @@ let remoteChangeQueue = Promise.resolve()
 type SettingsCloudSyncStartResult = 'ready' | 'incompatible' | 'failed'
 
 function logCloudSyncError(message: string, error?: unknown) {
-  if (error == null)
-    console.warn(`[BewlyCat] ${message}`)
-  else
-    console.error(`[BewlyCat] ${message}`, error)
+  if (error == null) console.warn(`[BewlyCat] ${message}`)
+  else console.error(`[BewlyCat] ${message}`, error)
 }
 
 function parseCloudEntries(items: Record<string, unknown>) {
@@ -74,8 +80,7 @@ function parseCloudEntries(items: Record<string, unknown>) {
   for (const [key, value] of Object.entries(items)) {
     const field = parseSettingsCloudSyncKey(key)
     const entry = normalizeSettingsCloudSyncEntry(value)
-    if (field && entry)
-      entries[field] = entry
+    if (field && entry) entries[field] = entry
   }
   return entries
 }
@@ -90,12 +95,10 @@ function classifyCloudItems(items: Record<string, unknown>): SettingsCloudSyncSt
   let hasCompatibleEntries = false
 
   for (const [key, value] of Object.entries(items)) {
-    if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX))
-      continue
+    if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX)) continue
 
     const field = decodeSettingsCloudSyncKeyField(key)
-    if (field == null)
-      continue
+    if (field == null) continue
     if (isBlockedSettingsCloudSyncField(field) || isKnownLocalOnlySettingsCloudSyncField(field))
       continue
 
@@ -104,8 +107,7 @@ function classifyCloudItems(items: Record<string, unknown>): SettingsCloudSyncSt
       continue
     }
 
-    if (isCorruptCurrentSchemaSettingsCloudSyncEntry(value))
-      continue
+    if (isCorruptCurrentSchemaSettingsCloudSyncEntry(value)) continue
 
     return { state: 'incompatible' }
   }
@@ -114,7 +116,9 @@ function classifyCloudItems(items: Record<string, unknown>): SettingsCloudSyncSt
 }
 
 function getKnownCloudEntry(field: string) {
-  return normalizeSettingsCloudSyncEntry(knownCloudItems[createSettingsCloudSyncKey(field)]) ?? undefined
+  return (
+    normalizeSettingsCloudSyncEntry(knownCloudItems[createSettingsCloudSyncKey(field)]) ?? undefined
+  )
 }
 
 /**
@@ -125,14 +129,12 @@ function getKnownCloudEntry(field: string) {
  */
 function isKnownCloudEntryUnreadable(field: string) {
   const key = createSettingsCloudSyncKey(field)
-  if (!Object.prototype.hasOwnProperty.call(knownCloudItems, key))
-    return false
+  if (!Object.prototype.hasOwnProperty.call(knownCloudItems, key)) return false
   return normalizeSettingsCloudSyncEntry(knownCloudItems[key]) == null
 }
 
 function clearFlushTimer() {
-  if (flushTimer != null)
-    clearTimeout(flushTimer)
+  if (flushTimer != null) clearTimeout(flushTimer)
   flushTimer = undefined
 }
 
@@ -143,11 +145,13 @@ function recordCloudWrite() {
 /** Milliseconds until another sync write fits within the write-rate quota. */
 function getCloudWriteDelay() {
   const now = Date.now()
-  cloudWriteTimestamps = cloudWriteTimestamps.filter(time => time > now - CLOUD_WRITE_HISTORY_DURATION)
+  cloudWriteTimestamps = cloudWriteTimestamps.filter(
+    (time) => time > now - CLOUD_WRITE_HISTORY_DURATION,
+  )
 
   let readyAt = Math.max(now, cloudQuotaBlockedUntil)
   for (const { duration, limit } of CLOUD_WRITE_RATE_LIMITS) {
-    const recentWrites = cloudWriteTimestamps.filter(time => time > now - duration)
+    const recentWrites = cloudWriteTimestamps.filter((time) => time > now - duration)
     if (recentWrites.length >= limit)
       readyAt = Math.max(readyAt, recentWrites[recentWrites.length - limit] + duration)
   }
@@ -161,12 +165,10 @@ function getCloudWriteDelay() {
 function handleCloudWriteQuotaError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   let delay = 0
-  if (message.includes('MAX_WRITE_OPERATIONS_PER_HOUR'))
-    delay = CLOUD_QUOTA_RETRY_DELAY_HOUR
+  if (message.includes('MAX_WRITE_OPERATIONS_PER_HOUR')) delay = CLOUD_QUOTA_RETRY_DELAY_HOUR
   else if (message.includes('MAX_WRITE_OPERATIONS_PER_MINUTE'))
     delay = CLOUD_QUOTA_RETRY_DELAY_MINUTE
-  if (delay === 0)
-    return false
+  if (delay === 0) return false
 
   cloudQuotaBlockedUntil = Math.max(cloudQuotaBlockedUntil, Date.now() + delay)
   return true
@@ -179,12 +181,13 @@ function consumePendingUpload(field: string, entry: SettingsCloudSyncEntry) {
 }
 
 function queueUploads(uploads: Record<string, SettingsCloudSyncEntry>) {
-  if (!enabled)
-    return
+  if (!enabled) return
 
   for (const [field, entry] of Object.entries(uploads)) {
     if (isKnownCloudEntryUnreadable(field)) {
-      logCloudSyncError(`Skipped cloud setting "${field}" because its cloud copy uses an incompatible format.`)
+      logCloudSyncError(
+        `Skipped cloud setting "${field}" because its cloud copy uses an incompatible format.`,
+      )
       continue
     }
 
@@ -197,20 +200,21 @@ function queueUploads(uploads: Record<string, SettingsCloudSyncEntry>) {
       pendingUploads.set(field, entry)
   }
 
-  if (pendingUploads.size === 0 || flushTimer != null || flushInProgress)
-    return
+  if (pendingUploads.size === 0 || flushTimer != null || flushInProgress) return
 
-  flushTimer = setTimeout(() => {
-    flushTimer = undefined
-    void flushUploads()
-  }, Math.max(CLOUD_UPLOAD_DELAY, getCloudWriteDelay()))
+  flushTimer = setTimeout(
+    () => {
+      flushTimer = undefined
+      void flushUploads()
+    },
+    Math.max(CLOUD_UPLOAD_DELAY, getCloudWriteDelay()),
+  )
 }
 
 function safeEstimateItemBytes(key: string, value: unknown) {
   try {
     return estimateSettingsCloudSyncItemBytes(key, value)
-  }
-  catch {
+  } catch {
     return Number.POSITIVE_INFINITY
   }
 }
@@ -248,14 +252,12 @@ function prepareUploadBatch(entries: Array<[string, SettingsCloudSyncEntry]>) {
     }
 
     const previousExists = Object.prototype.hasOwnProperty.call(knownCloudItems, key)
-    const previousBytes = previousExists
-      ? safeEstimateItemBytes(key, knownCloudItems[key])
-      : 0
+    const previousBytes = previousExists ? safeEstimateItemBytes(key, knownCloudItems[key]) : 0
     const nextTotalBytes = totalBytes - previousBytes + nextBytes
     const nextItemCount = itemCount + (previousExists ? 0 : 1)
     if (
-      nextTotalBytes > SETTINGS_CLOUD_SYNC_TOTAL_BYTES_LIMIT
-      || nextItemCount > CLOUD_SYNC_ITEM_COUNT_LIMIT
+      nextTotalBytes > SETTINGS_CLOUD_SYNC_TOTAL_BYTES_LIMIT ||
+      nextItemCount > CLOUD_SYNC_ITEM_COUNT_LIMIT
     ) {
       consumePendingUpload(field, entry)
       logCloudSyncError(`Skipped cloud setting "${field}" because the sync quota is full.`)
@@ -271,8 +273,7 @@ function prepareUploadBatch(entries: Array<[string, SettingsCloudSyncEntry]>) {
 }
 
 async function flushUploads() {
-  if (!enabled || !ready || flushInProgress || pendingUploads.size === 0)
-    return
+  if (!enabled || !ready || flushInProgress || pendingUploads.size === 0) return
 
   flushInProgress = true
   const flushGeneration = generation
@@ -282,54 +283,50 @@ async function flushUploads() {
   try {
     const stored = await browser.storage.local.get(SETTINGS_CLOUD_SYNC_ENABLED_KEY)
     if (
-      flushGeneration !== generation
-      || !isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])
+      flushGeneration !== generation ||
+      !isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])
     ) {
       return
     }
 
     const items = prepareUploadBatch(batchEntries)
-    if (Object.keys(items).length === 0)
-      return
+    if (Object.keys(items).length === 0) return
 
-    if (getCloudWriteDelay() > 0)
-      return
+    if (getCloudWriteDelay() > 0) return
 
     recordCloudWrite()
     await browser.storage.sync.set(items)
-    if (flushGeneration !== generation)
-      return
+    if (flushGeneration !== generation) return
 
     for (const [field, entry] of batchEntries) {
       const key = createSettingsCloudSyncKey(field)
-      if (!Object.prototype.hasOwnProperty.call(items, key))
-        continue
+      if (!Object.prototype.hasOwnProperty.call(items, key)) continue
       const cloudEntry = getKnownCloudEntry(field)
       if (!cloudEntry || compareSettingsCloudSyncVersions(cloudEntry.version, entry.version) <= 0)
         knownCloudItems[key] = entry
       consumePendingUpload(field, entry)
     }
-  }
-  catch (error) {
+  } catch (error) {
     // Quota rejections keep pending uploads and retry once the quota frees up;
     // other failures wait for the next local change.
     if (handleCloudWriteQuotaError(error)) {
-      logCloudSyncError(`Settings cloud sync write quota reached; retrying in ${Math.ceil(getCloudWriteDelay() / 60_000)} min.`)
-    }
-    else {
+      logCloudSyncError(
+        `Settings cloud sync write quota reached; retrying in ${Math.ceil(getCloudWriteDelay() / 60_000)} min.`,
+      )
+    } else {
       shouldScheduleNextBatch = false
       logCloudSyncError('Failed to upload settings to browser sync storage:', error)
     }
-  }
-  finally {
+  } finally {
     flushInProgress = false
-    if (shouldScheduleNextBatch && enabled && ready && pendingUploads.size > 0)
-      queueUploads({})
+    if (shouldScheduleNextBatch && enabled && ready && pendingUploads.size > 0) queueUploads({})
   }
 }
 
 /** Reports whether coordination became ready, failed, or found newer data. */
-async function startCloudSync(mode: SettingsCloudSyncMode = 'auto'): Promise<SettingsCloudSyncStartResult> {
+async function startCloudSync(
+  mode: SettingsCloudSyncMode = 'auto',
+): Promise<SettingsCloudSyncStartResult> {
   const startGeneration = ++generation
   enabled = true
   ready = false
@@ -344,25 +341,24 @@ async function startCloudSync(mode: SettingsCloudSyncMode = 'auto'): Promise<Set
     while (true) {
       restartAfterInitialization = false
       const cloudItems = await browser.storage.sync.get(null)
-      if (!enabled || startGeneration !== generation)
-        return 'failed'
+      if (!enabled || startGeneration !== generation) return 'failed'
 
       if (classifyCloudItems(cloudItems).state === 'incompatible') {
-        logCloudSyncError('Cloud settings use an incompatible format; update the extension before enabling sync.')
+        logCloudSyncError(
+          'Cloud settings use an incompatible format; update the extension before enabling sync.',
+        )
         return 'incompatible'
       }
 
       knownCloudItems = cloudItems
       const result = await reconcileSettingsCloudSyncSnapshot(parseCloudEntries(cloudItems), mode)
-      if (!enabled || startGeneration !== generation)
-        return 'failed'
+      if (!enabled || startGeneration !== generation) return 'failed'
 
       ready = true
       queueUploads(result.uploads)
       void removeInvalidCloudItems(startGeneration)
 
-      if (!restartAfterInitialization)
-        break
+      if (!restartAfterInitialization) break
 
       // Remote events arrived during coordination: rerun against the newer
       // snapshot. Pending uploads survive because they are only cleared above
@@ -371,10 +367,8 @@ async function startCloudSync(mode: SettingsCloudSyncMode = 'auto'): Promise<Set
     }
 
     return enabled && ready ? 'ready' : 'failed'
-  }
-  catch (error) {
-    if (!enabled || startGeneration !== generation)
-      return 'failed'
+  } catch (error) {
+    if (!enabled || startGeneration !== generation) return 'failed'
     logCloudSyncError('Failed to initialize settings cloud sync:', error)
     return 'failed'
   }
@@ -385,8 +379,7 @@ function decodeSettingsCloudSyncKeyField(key: string) {
   try {
     const field = decodeURIComponent(encodedField)
     return createSettingsCloudSyncKey(field) === key ? field : null
-  }
-  catch {
+  } catch {
     return null
   }
 }
@@ -400,31 +393,27 @@ function decodeSettingsCloudSyncKeyField(key: string) {
 async function removeInvalidCloudItems(startGeneration: number) {
   try {
     const invalidKeys = Object.keys(knownCloudItems).filter((key) => {
-      if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX))
-        return false
+      if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX)) return false
 
       const field = decodeSettingsCloudSyncKeyField(key)
-      if (field == null)
-        return true
+      if (field == null) return true
       if (isBlockedSettingsCloudSyncField(field) || isKnownLocalOnlySettingsCloudSyncField(field))
         return true
 
       const value = knownCloudItems[key]
-      return normalizeSettingsCloudSyncEntry(value) == null
-        && isCorruptCurrentSchemaSettingsCloudSyncEntry(value)
+      return (
+        normalizeSettingsCloudSyncEntry(value) == null &&
+        isCorruptCurrentSchemaSettingsCloudSyncEntry(value)
+      )
     })
-    if (invalidKeys.length === 0 || !enabled || startGeneration !== generation)
-      return
+    if (invalidKeys.length === 0 || !enabled || startGeneration !== generation) return
 
     recordCloudWrite()
     await browser.storage.sync.remove(invalidKeys)
-    if (!enabled || startGeneration !== generation)
-      return
+    if (!enabled || startGeneration !== generation) return
 
-    for (const key of invalidKeys)
-      Reflect.deleteProperty(knownCloudItems, key)
-  }
-  catch (error) {
+    for (const key of invalidKeys) Reflect.deleteProperty(knownCloudItems, key)
+  } catch (error) {
     handleCloudWriteQuotaError(error)
     logCloudSyncError('Failed to clean up invalid cloud sync items:', error)
   }
@@ -442,10 +431,8 @@ function stopCloudSync() {
 
 function updateCloudSyncPreference(value: unknown) {
   if (isSettingsCloudSyncEnabled(value)) {
-    if (!enabled && !messageEnableInProgress)
-      void startCloudSync()
-  }
-  else if (enabled) {
+    if (!enabled && !messageEnableInProgress) void startCloudSync()
+  } else if (enabled) {
     stopCloudSync()
   }
 }
@@ -454,20 +441,17 @@ function handleLocalChanges(
   changes: Record<string, browser.Storage.StorageChange>,
   areaName: string,
 ) {
-  if (areaName !== 'local')
-    return
+  if (areaName !== 'local') return
 
   const preferenceChange = changes[SETTINGS_CLOUD_SYNC_ENABLED_KEY]
   if (preferenceChange) {
     preferenceGeneration++
     updateCloudSyncPreference(preferenceChange.newValue)
   }
-  if (!enabled || !ready)
-    return
+  if (!enabled || !ready) return
 
   const metaChange = changes[SETTINGS_STORAGE_META_KEY]
-  if (!metaChange)
-    return
+  if (!metaChange) return
 
   const previousMeta = normalizeSettingsStorageWriteMeta(metaChange.oldValue)
   const nextMeta = normalizeSettingsStorageWriteMeta(metaChange.newValue)
@@ -482,43 +466,39 @@ function handleLocalChanges(
     ...Object.keys(previousMeta.fieldVersions),
     ...Object.keys(nextMeta.fieldVersions),
   ])
-  const fields = [...changedFields].filter(field =>
-    compareSettingsCloudSyncVersions(
-      previousMeta.fieldVersions[field],
-      nextMeta.fieldVersions[field],
-    ) !== 0,
+  const fields = [...changedFields].filter(
+    (field) =>
+      compareSettingsCloudSyncVersions(
+        previousMeta.fieldVersions[field],
+        nextMeta.fieldVersions[field],
+      ) !== 0,
   )
-  if (fields.length === 0)
-    return
+  if (fields.length === 0) return
 
   const localGeneration = generation
-  void collectSettingsCloudSyncEntries(fields).then((entries) => {
-    if (enabled && ready && localGeneration === generation)
-      queueUploads(entries)
-  }).catch(error => logCloudSyncError('Failed to collect local settings for cloud sync:', error))
+  void collectSettingsCloudSyncEntries(fields)
+    .then((entries) => {
+      if (enabled && ready && localGeneration === generation) queueUploads(entries)
+    })
+    .catch((error) => logCloudSyncError('Failed to collect local settings for cloud sync:', error))
 }
 
 function handleSyncChanges(
   changes: Record<string, browser.Storage.StorageChange>,
   areaName: string,
 ) {
-  if (areaName !== 'sync' || !enabled)
-    return
+  if (areaName !== 'sync' || !enabled) return
 
   const remoteChanges: Record<string, SettingsCloudSyncEntry | null> = {}
   for (const [key, change] of Object.entries(changes)) {
     const field = parseSettingsCloudSyncKey(key)
-    if (!field)
-      continue
+    if (!field) continue
 
-    if (change.newValue == null)
-      Reflect.deleteProperty(knownCloudItems, key)
-    else
-      knownCloudItems[key] = change.newValue
+    if (change.newValue == null) Reflect.deleteProperty(knownCloudItems, key)
+    else knownCloudItems[key] = change.newValue
     remoteChanges[field] = normalizeSettingsCloudSyncEntry(change.newValue)
   }
-  if (Object.keys(remoteChanges).length === 0)
-    return
+  if (Object.keys(remoteChanges).length === 0) return
 
   if (!ready) {
     restartAfterInitialization = true
@@ -526,13 +506,13 @@ function handleSyncChanges(
   }
 
   const remoteGeneration = generation
-  remoteChangeQueue = remoteChangeQueue.then(async () => {
-    if (!enabled || !ready || remoteGeneration !== generation)
-      return
-    const result = await applySettingsCloudSyncChanges(remoteChanges)
-    if (enabled && ready && remoteGeneration === generation)
-      queueUploads(result.uploads)
-  }).catch(error => logCloudSyncError('Failed to apply remote settings changes:', error))
+  remoteChangeQueue = remoteChangeQueue
+    .then(async () => {
+      if (!enabled || !ready || remoteGeneration !== generation) return
+      const result = await applySettingsCloudSyncChanges(remoteChanges)
+      if (enabled && ready && remoteGeneration === generation) queueUploads(result.uploads)
+    })
+    .catch((error) => logCloudSyncError('Failed to apply remote settings changes:', error))
 }
 
 async function readSettingsCloudSyncStatus(): Promise<SettingsCloudSyncStatus> {
@@ -542,16 +522,15 @@ async function readSettingsCloudSyncStatus(): Promise<SettingsCloudSyncStatus> {
   return classifyCloudItems(cloudItems)
 }
 
-async function handleEnableSettingsCloudSync(value: unknown): Promise<SettingsCloudSyncEnableResponse> {
-  const mode = normalizeSettingsCloudSyncMode(
-    (value as { mode?: unknown } | undefined)?.mode,
-  )
+async function handleEnableSettingsCloudSync(
+  value: unknown,
+): Promise<SettingsCloudSyncEnableResponse> {
+  const mode = normalizeSettingsCloudSyncMode((value as { mode?: unknown } | undefined)?.mode)
   messageEnableInProgress = true
   try {
     try {
       await browser.storage.local.set({ [SETTINGS_CLOUD_SYNC_ENABLED_KEY]: true })
-    }
-    catch (error) {
+    } catch (error) {
       logCloudSyncError('Failed to enable settings cloud sync:', error)
       return { ok: false, reason: 'initialization-failed' }
     }
@@ -560,34 +539,37 @@ async function handleEnableSettingsCloudSync(value: unknown): Promise<SettingsCl
     // preference rolled back instead of leaving an enabled-but-broken state.
     const result = await startCloudSync(mode)
     if (result !== 'ready') {
-      await browser.storage.local.set({ [SETTINGS_CLOUD_SYNC_ENABLED_KEY]: false }).catch((error) => {
-        logCloudSyncError('Failed to roll back settings cloud sync preference:', error)
-      })
+      await browser.storage.local
+        .set({ [SETTINGS_CLOUD_SYNC_ENABLED_KEY]: false })
+        .catch((error) => {
+          logCloudSyncError('Failed to roll back settings cloud sync preference:', error)
+        })
       return {
         ok: false,
         reason: result === 'incompatible' ? 'incompatible' : 'initialization-failed',
       }
     }
     return { ok: true }
-  }
-  finally {
+  } finally {
     messageEnableInProgress = false
   }
 }
 
 export function setupSettingsCloudSync() {
-  if (initialized)
-    return
+  if (initialized) return
 
   initialized = true
   browser.storage.onChanged.addListener(handleLocalChanges)
   browser.storage.onChanged.addListener(handleSyncChanges)
   onMessage(SETTINGS_CLOUD_SYNC_STATUS_MESSAGE, () => readSettingsCloudSyncStatus())
-  onMessage(SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE, value => handleEnableSettingsCloudSync(value))
+  onMessage(SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE, (value) => handleEnableSettingsCloudSync(value))
 
   const initialPreferenceGeneration = preferenceGeneration
-  void browser.storage.local.get(SETTINGS_CLOUD_SYNC_ENABLED_KEY).then((stored) => {
-    if (initialPreferenceGeneration === preferenceGeneration)
-      updateCloudSyncPreference(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])
-  }).catch(error => logCloudSyncError('Failed to read settings cloud sync preference:', error))
+  void browser.storage.local
+    .get(SETTINGS_CLOUD_SYNC_ENABLED_KEY)
+    .then((stored) => {
+      if (initialPreferenceGeneration === preferenceGeneration)
+        updateCloudSyncPreference(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])
+    })
+    .catch((error) => logCloudSyncError('Failed to read settings cloud sync preference:', error))
 }

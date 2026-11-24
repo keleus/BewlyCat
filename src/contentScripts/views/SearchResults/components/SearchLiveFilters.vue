@@ -38,8 +38,11 @@ function handleSubCategoryChange(value: LiveSubCategory) {
         :key="category.value"
         class="sub-category-tab"
         :class="{ active: props.subCategory === category.value }"
-        px-4 py-2 rounded="$bew-radius-half"
-        transition-colors duration-200
+        px-4
+        py-2
+        rounded="$bew-radius-half"
+        transition-colors
+        duration-200
         hover:bg="$bew-fill-1"
         type="button"
         @click="handleSubCategoryChange(category.value)"
@@ -53,7 +56,7 @@ function handleSubCategoryChange(value: LiveSubCategory) {
 <style scoped lang="scss">
 .sub-category-tab {
   &.active {
-    --uno: "bg-$bew-theme-color-20 text-$bew-theme-color";
+    --uno: 'bg-$bew-theme-color-20 text-$bew-theme-color';
   }
 }
 </style>

@@ -2,7 +2,12 @@ import { watch } from 'vue'
 
 import { settings } from '~/logic'
 import type { BaseShortcutSetting } from '~/logic/storage'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
+import {
+  applyBewlyWidescreen,
+  exitBewlyWidescreen,
+  isBewlyWidescreenActive,
+  isBewlyWidescreenEngaged,
+} from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 // 导入需要的函数
 import {
@@ -22,7 +27,11 @@ import {
   webFullscreenClick,
   widescreenClick,
 } from '~/utils/player'
-import { getShortcutKeyCandidates, normalizeShortcutKey, resolveEffectiveShortcutSetting } from '~/utils/shortcutKeys'
+import {
+  getShortcutKeyCandidates,
+  normalizeShortcutKey,
+  resolveEffectiveShortcutSetting,
+} from '~/utils/shortcutKeys'
 import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 
 // 定义快捷键处理器类型
@@ -45,8 +54,7 @@ export function registerShortcutHandler(id: string, handler: ShortcutHandler): b
 
     shortcutHandlers[id] = handler
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -68,8 +76,7 @@ export function unregisterShortcutHandler(id: string): boolean {
 
     delete shortcutHandlers[id]
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -98,31 +105,36 @@ let lastSettingsUpdate = 0
 function updateShortcutsCache(force = false) {
   const now = Date.now()
   // 每100ms最多更新一次缓存
-  if (!force && now - lastSettingsUpdate < 100)
-    return
+  if (!force && now - lastSettingsUpdate < 100) return
 
   lastSettingsUpdate = now
   const shortcutIds = new Map<string, string>()
   for (const id of Object.keys(settings.value.shortcuts || {})) {
     const shortcutConfig = getEffectiveShortcutSetting(id)
-    if (!shortcutConfig?.enabled || !shortcutConfig.key)
-      continue
+    if (!shortcutConfig?.enabled || !shortcutConfig.key) continue
     const key = normalizeShortcutKey(String(shortcutConfig.key)).toLowerCase()
-    if (key && !shortcutIds.has(key))
-      shortcutIds.set(key, id)
+    if (key && !shortcutIds.has(key)) shortcutIds.set(key, id)
   }
   cachedShortcutIds = shortcutIds
 }
 
-const fullscreenOnlyShortcutIds = new Set(['increaseVideoSize', 'decreaseVideoSize', 'resetVideoSize'])
+const fullscreenOnlyShortcutIds = new Set([
+  'increaseVideoSize',
+  'decreaseVideoSize',
+  'resetVideoSize',
+])
 
 function isBrowserFullscreen(): boolean {
-  return !!(document.fullscreenElement
-    || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+  return !!(
+    document.fullscreenElement ||
+    (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+  )
 }
 
 function isWebFullscreen(): boolean {
-  const webFullscreenButton = document.querySelector<HTMLElement>('.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen')
+  const webFullscreenButton = document.querySelector<HTMLElement>(
+    '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen',
+  )
   return !!webFullscreenButton?.classList.contains('bpx-state-entered')
 }
 
@@ -131,21 +143,20 @@ function isPlayerFullscreen(): boolean {
 }
 
 function findShortcutId(e: KeyboardEvent): string | null {
-  if (!cachedShortcutIds)
-    return null
+  if (!cachedShortcutIds) return null
 
   for (const candidate of getShortcutKeyCandidates(e)) {
     const id = cachedShortcutIds.get(candidate.toLowerCase())
-    if (!id || !shortcutHandlers[id])
-      continue
+    if (!id || !shortcutHandlers[id]) continue
     // 截图只在视频播放页响应，避免拦截其他页面或输入法的按键。
-    if (id === 'videoScreenshot'
-      && (e.isComposing || !(isVideoPlaybackPage() || isVideoOrBangumiPage()))) {
+    if (
+      id === 'videoScreenshot' &&
+      (e.isComposing || !(isVideoPlaybackPage() || isVideoOrBangumiPage()))
+    ) {
       continue
     }
     // 视频尺寸属于全屏模式快捷键，非全屏时不占用按键，避免抢走其他扩展（如倍速插件）的同名按键。
-    if (fullscreenOnlyShortcutIds.has(id) && !isPlayerFullscreen())
-      continue
+    if (fullscreenOnlyShortcutIds.has(id) && !isPlayerFullscreen()) continue
     return id
   }
   return null
@@ -153,23 +164,26 @@ function findShortcutId(e: KeyboardEvent): string | null {
 
 function shouldIgnoreShortcutEvent(e: KeyboardEvent): boolean {
   // 设置浮层打开时不响应快捷键，避免与浮层内的输入冲突。
-  if (document.getElementById('bewly')?.classList.contains('settings-open'))
-    return true
+  if (document.getElementById('bewly')?.classList.contains('settings-open')) return true
 
   // 插件界面在 #bewly 的 Shadow DOM 中，e.target 会被重定向到宿主元素；取实际焦点元素判断，
   // 否则焦点留在插件界面（如刚关闭设置）时快捷键会被跳过，按键落到 B 站原有快捷键上。
   const target = (e.composedPath()[0] ?? e.target) as HTMLElement | null
-  if (target instanceof HTMLInputElement
-    || target instanceof HTMLTextAreaElement
-    || target instanceof HTMLSelectElement
-    || target?.isContentEditable
-    || (e.target as HTMLElement | null)?.tagName === 'BILI-COMMENTS') {
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable ||
+    (e.target as HTMLElement | null)?.tagName === 'BILI-COMMENTS'
+  ) {
     return true
   }
 
   // 分隔线使用方向键和 Home/End 调宽，自定义下拉菜单使用方向键/Home/End/空格/回车导航，
   // 都不能被播放器快捷键提前拦截。
-  return !!target?.closest?.('.bewly-widescreen-sidebar-resize-handle, .bewly-native-select-trigger, .bewly-native-select-menu')
+  return !!target?.closest?.(
+    '.bewly-widescreen-sidebar-resize-handle, .bewly-native-select-trigger, .bewly-native-select-menu',
+  )
 }
 
 // 已被插件接管的物理按键，对应的 keypress/keyup 也要拦截，避免 B 站在这些阶段执行原有快捷键。
@@ -182,38 +196,37 @@ function interceptEvent(e: KeyboardEvent) {
 
 function handleShortcutKeydown(e: KeyboardEvent) {
   // macOS 按住 Cmd 时松开其他键不会触发 keyup，重新按下时清理残留的拦截标记。
-  if (e.code)
-    interceptedKeyCodes.delete(e.code)
+  if (e.code) interceptedKeyCodes.delete(e.code)
 
-  if (settings.value.keyboard === false || !settings.value.enablePlayerEnhancements || shouldIgnoreShortcutEvent(e))
+  if (
+    settings.value.keyboard === false ||
+    !settings.value.enablePlayerEnhancements ||
+    shouldIgnoreShortcutEvent(e)
+  )
     return
 
   updateShortcutsCache()
   const id = findShortcutId(e)
-  if (!id)
-    return
+  if (!id) return
 
   interceptEvent(e)
-  if (e.code)
-    interceptedKeyCodes.add(e.code)
+  if (e.code) interceptedKeyCodes.add(e.code)
 
   try {
-    const player = document.querySelector('.bpx-player') || document.querySelector('.bilibili-player')
+    const player =
+      document.querySelector('.bpx-player') || document.querySelector('.bilibili-player')
     shortcutHandlers[id](e, player || undefined)
-  }
-  catch {
+  } catch {
     // 处理器执行错误
   }
 }
 
 function handleShortcutKeypress(e: KeyboardEvent) {
-  if (e.code && interceptedKeyCodes.has(e.code))
-    interceptEvent(e)
+  if (e.code && interceptedKeyCodes.has(e.code)) interceptEvent(e)
 }
 
 function handleShortcutKeyup(e: KeyboardEvent) {
-  if (e.code && interceptedKeyCodes.delete(e.code))
-    interceptEvent(e)
+  if (e.code && interceptedKeyCodes.delete(e.code)) interceptEvent(e)
 }
 
 let shortcutListenerInstalled = false
@@ -224,8 +237,7 @@ let shortcutListenerInstalled = false
  * 之后也不再移除重装，避免排到 B 站的监听器之后。
  */
 export function installShortcutListener() {
-  if (shortcutListenerInstalled)
-    return
+  if (shortcutListenerInstalled) return
   shortcutListenerInstalled = true
   window.addEventListener('keydown', handleShortcutKeydown, true)
   window.addEventListener('keypress', handleShortcutKeypress, true)
@@ -274,30 +286,26 @@ export function registerDefaultHandlers(): void {
 
   // 网页全屏
   registerShortcutHandler('webFullscreen', () => {
-    if (isBewlyWidescreenActive())
-      exitBewlyWidescreen({ userInitiated: true })
+    if (isBewlyWidescreenActive()) exitBewlyWidescreen({ userInitiated: true })
     webFullscreenClick()
   })
 
   // 宽屏
   registerShortcutHandler('widescreen', () => {
-    if (isBewlyWidescreenActive())
-      exitBewlyWidescreen({ userInitiated: true })
+    if (isBewlyWidescreenActive()) exitBewlyWidescreen({ userInitiated: true })
     widescreenClick()
   })
 
   // Bewly 宽屏
   registerShortcutHandler('bewlyWidescreen', (event) => {
-    if (event.repeat)
-      return
+    if (event.repeat) return
 
     if (isBewlyWidescreenEngaged()) {
       exitBewlyWidescreen({ userInitiated: true })
       return
     }
 
-    if (!isVideoOrBangumiPage() || isPlayerFullscreen())
-      return
+    if (!isVideoOrBangumiPage() || isPlayerFullscreen()) return
 
     applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
   })
@@ -344,8 +352,7 @@ export function registerDefaultHandlers(): void {
 
   // 视频截图独立于控制栏按钮开关，长按时只截取一次。
   registerShortcutHandler('videoScreenshot', (event) => {
-    if (event.repeat)
-      return
+    if (event.repeat) return
 
     void captureVideoScreenshot()
   })
@@ -426,10 +433,10 @@ function toggleFollow(): void {
   try {
     // 查找关注按钮
     const followButton = document.querySelector<HTMLElement>(
-      '.upinfo-btn-panel .follow-btn, ' // 新版视频页
-      + '.up-info .follow-btn, ' // 旧版视频页
-      + '.video-info-detail .follow-btn, ' // 其他可能的位置
-      + 'button.follow-btn', // 通用关注按钮
+      '.upinfo-btn-panel .follow-btn, ' + // 新版视频页
+        '.up-info .follow-btn, ' + // 旧版视频页
+        '.video-info-detail .follow-btn, ' + // 其他可能的位置
+        'button.follow-btn', // 通用关注按钮
     )
 
     if (!followButton) {
@@ -473,19 +480,16 @@ function toggleFollow(): void {
       const innerButton = followButton.querySelector<HTMLElement>('.follow-btn-inner')
       if (innerButton) {
         triggerClick(innerButton)
-      }
-      else {
+      } else {
         triggerClick(followButton)
       }
-    }
-    else {
+    } else {
       // 已关注，需要打开下拉菜单后点击"取消关注"
       // 先尝试点击内部元素
       const innerButton = followButton.querySelector<HTMLElement>('.follow-btn-inner')
       if (innerButton) {
         triggerClick(innerButton)
-      }
-      else {
+      } else {
         triggerClick(followButton)
       }
 
@@ -500,23 +504,21 @@ function toggleFollow(): void {
           )
 
           const unfollowButton = unfollowItems.find(
-            item =>
-              item.textContent?.includes('取消关注')
-              || item.textContent?.includes('取消關注')
-              || item.textContent?.toLowerCase().includes('unfollow'),
+            (item) =>
+              item.textContent?.includes('取消关注') ||
+              item.textContent?.includes('取消關注') ||
+              item.textContent?.toLowerCase().includes('unfollow'),
           )
 
           if (unfollowButton) {
             triggerClick(unfollowButton)
           }
-        }
-        catch (error) {
+        } catch (error) {
           console.error('[BewlyCat] Error clicking unfollow:', error)
         }
       }, 150) // 增加等待时间到 150ms
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('[BewlyCat] Error toggling follow:', error)
   }
 }

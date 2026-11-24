@@ -18,11 +18,9 @@ let pendingRequest: Promise<VideoPageInfo | null> | null = null
 function getCurrentVideoId(url = location.href): string | null {
   try {
     const videoId = getBilibiliPathname(url).match(VIDEO_ID_PATTERN)?.[1]
-    if (!videoId)
-      return null
+    if (!videoId) return null
     return /^av/i.test(videoId) ? `av${videoId.slice(2)}` : `BV${videoId.slice(2)}`
-  }
-  catch {
+  } catch {
     return null
   }
 }
@@ -32,8 +30,7 @@ export function getCurrentVideoPageNumber(url = location.href): number {
   try {
     const page = Number.parseInt(new URL(url).searchParams.get('p') ?? '', 10)
     return Number.isSafeInteger(page) && page > 0 ? page : 1
-  }
-  catch {
+  } catch {
     return 1
   }
 }
@@ -48,42 +45,39 @@ async function fetchVideoPageInfo(videoId: string): Promise<VideoPageInfo | null
   try {
     const params = videoId.startsWith('av') ? { aid: videoId.slice(2) } : { bvid: videoId }
     const result: any = await api.video.getVideoInfo(params)
-    if (result?.code !== 0 || !result.data)
-      return null
+    if (result?.code !== 0 || !result.data) return null
 
-    const pageCount = (Array.isArray(result.data.pages) ? result.data.pages.length : 0)
-      || Number(result.data.videos)
-      || 1
+    const pageCount =
+      (Array.isArray(result.data.pages) ? result.data.pages.length : 0) ||
+      Number(result.data.videos) ||
+      1
     return {
       videoId,
       pageCount,
       inSeason: !!result.data.ugc_season,
     }
-  }
-  catch {
+  } catch {
     return null
   }
 }
 
 export function loadCurrentVideoPageInfo(): Promise<VideoPageInfo | null> {
   const videoId = getCurrentVideoId()
-  if (!videoId)
-    return Promise.resolve(null)
-  if (cachedInfo?.videoId === videoId)
-    return Promise.resolve(cachedInfo)
-  if (pendingRequest && pendingVideoId === videoId)
-    return pendingRequest
+  if (!videoId) return Promise.resolve(null)
+  if (cachedInfo?.videoId === videoId) return Promise.resolve(cachedInfo)
+  if (pendingRequest && pendingVideoId === videoId) return pendingRequest
 
-  const request = fetchVideoPageInfo(videoId).then((info) => {
-    if (info)
-      cachedInfo = info
-    return info
-  }).finally(() => {
-    if (pendingRequest === request) {
-      pendingRequest = null
-      pendingVideoId = null
-    }
-  })
+  const request = fetchVideoPageInfo(videoId)
+    .then((info) => {
+      if (info) cachedInfo = info
+      return info
+    })
+    .finally(() => {
+      if (pendingRequest === request) {
+        pendingRequest = null
+        pendingVideoId = null
+      }
+    })
   pendingVideoId = videoId
   pendingRequest = request
   return request

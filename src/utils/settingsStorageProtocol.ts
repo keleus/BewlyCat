@@ -1,5 +1,8 @@
 import type { SettingsCloudSyncVersion } from './settingsCloudSyncProtocol'
-import { isSettingsCloudSyncField, normalizeSettingsCloudSyncVersion } from './settingsCloudSyncProtocol'
+import {
+  isSettingsCloudSyncField,
+  normalizeSettingsCloudSyncVersion,
+} from './settingsCloudSyncProtocol'
 
 export const SETTINGS_STORAGE_KEY = 'settings'
 export const SETTINGS_STORAGE_META_KEY = 'settingsWriteMeta:v1'
@@ -48,22 +51,23 @@ function hasOwn(record: Record<string, unknown>, key: string) {
 }
 
 function sortObjectKeys(_key: string, value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return value
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
 
   const record = value as Record<string, unknown>
-  return Object.fromEntries(Object.keys(record).sort().map(key => [key, record[key]]))
+  return Object.fromEntries(
+    Object.keys(record)
+      .sort()
+      .map((key) => [key, record[key]]),
+  )
 }
 
 function valuesEqual(left: unknown, right: unknown) {
-  if (Object.is(left, right))
-    return true
+  if (Object.is(left, right)) return true
 
   // chrome.storage 读回的对象键按字母序排列，键顺序不同不算修改，否则规范化结果和云端回写会互相覆盖。
   try {
     return JSON.stringify(left, sortObjectKeys) === JSON.stringify(right, sortObjectKeys)
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -84,16 +88,14 @@ export function createTopLevelSettingsStoragePatch(
   const keys = new Set([...Object.keys(previous), ...Object.keys(next)])
 
   for (const key of keys) {
-    if (BLOCKED_KEYS.has(key))
-      continue
+    if (BLOCKED_KEYS.has(key)) continue
 
     if (!hasOwn(next, key)) {
       patch.remove.push(key)
       continue
     }
 
-    if (!hasOwn(previous, key) || !valuesEqual(previous[key], next[key]))
-      patch.set[key] = next[key]
+    if (!hasOwn(previous, key) || !valuesEqual(previous[key], next[key])) patch.set[key] = next[key]
   }
 
   return patch
@@ -108,16 +110,14 @@ export function mergeSettingsStoragePatches(
   const mergedRemove = new Set(previous.remove)
 
   for (const key of next.remove) {
-    if (BLOCKED_KEYS.has(key))
-      continue
+    if (BLOCKED_KEYS.has(key)) continue
 
     Reflect.deleteProperty(mergedSet, key)
     mergedRemove.add(key)
   }
 
   for (const [key, value] of Object.entries(next.set)) {
-    if (BLOCKED_KEYS.has(key))
-      continue
+    if (BLOCKED_KEYS.has(key)) continue
 
     mergedRemove.delete(key)
     mergedSet[key] = value
@@ -136,13 +136,11 @@ export function applySettingsStoragePatch(
   const nextValue = { ...value }
 
   for (const key of patch.remove) {
-    if (!BLOCKED_KEYS.has(key))
-      Reflect.deleteProperty(nextValue, key)
+    if (!BLOCKED_KEYS.has(key)) Reflect.deleteProperty(nextValue, key)
   }
 
   for (const [key, next] of Object.entries(patch.set)) {
-    if (!BLOCKED_KEYS.has(key))
-      nextValue[key] = next
+    if (!BLOCKED_KEYS.has(key)) nextValue[key] = next
   }
 
   return nextValue
@@ -152,72 +150,77 @@ export function parseStoredSettings(value: unknown): Record<string, unknown> {
   if (typeof value === 'string') {
     try {
       return parseStoredSettings(JSON.parse(value))
-    }
-    catch {
+    } catch {
       return {}
     }
   }
 
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return {}
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
 
   return value as Record<string, unknown>
 }
 
 export function normalizeSettingsStoragePatch(value: unknown): SettingsStoragePatch | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return null
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const candidate = value as Partial<SettingsStoragePatch>
-  if (!candidate.set || typeof candidate.set !== 'object' || Array.isArray(candidate.set) || !Array.isArray(candidate.remove))
+  if (
+    !candidate.set ||
+    typeof candidate.set !== 'object' ||
+    Array.isArray(candidate.set) ||
+    !Array.isArray(candidate.remove)
+  )
     return null
 
   const patch = createEmptySettingsStoragePatch()
   for (const [key, next] of Object.entries(candidate.set)) {
-    if (!BLOCKED_KEYS.has(key))
-      patch.set[key] = next
+    if (!BLOCKED_KEYS.has(key)) patch.set[key] = next
   }
   for (const key of candidate.remove) {
-    if (typeof key === 'string' && !BLOCKED_KEYS.has(key))
-      patch.remove.push(key)
+    if (typeof key === 'string' && !BLOCKED_KEYS.has(key)) patch.remove.push(key)
   }
 
   return patch
 }
 
-export function normalizeSettingsStorageImportRequest(value: unknown): SettingsStorageImportRequest | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return null
+export function normalizeSettingsStorageImportRequest(
+  value: unknown,
+): SettingsStorageImportRequest | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const candidate = value as Partial<SettingsStorageImportRequest>
-  if (!candidate.settings || typeof candidate.settings !== 'object' || Array.isArray(candidate.settings))
+  if (
+    !candidate.settings ||
+    typeof candidate.settings !== 'object' ||
+    Array.isArray(candidate.settings)
+  )
     return null
 
   const settings: Record<string, unknown> = {}
   for (const [key, next] of Object.entries(candidate.settings)) {
-    if (!BLOCKED_KEYS.has(key))
-      settings[key] = next
+    if (!BLOCKED_KEYS.has(key)) settings[key] = next
   }
 
   return Object.keys(settings).length > 0 ? { settings } : null
 }
 
-export function normalizeSettingsStoragePatchRequest(value: unknown): SettingsStoragePatchRequest | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return null
+export function normalizeSettingsStoragePatchRequest(
+  value: unknown,
+): SettingsStoragePatchRequest | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const candidate = value as Partial<SettingsStoragePatchRequest>
   const patch = normalizeSettingsStoragePatch(candidate.patch)
   if (
-    !patch
-    || typeof candidate.clientId !== 'string'
-    || candidate.clientId.length === 0
-    || candidate.clientId.length > 100
-    || typeof candidate.epoch !== 'string'
-    || candidate.epoch.length === 0
-    || candidate.epoch.length > 100
-    || !Number.isSafeInteger(candidate.operationId)
-    || candidate.operationId! < 1
+    !patch ||
+    typeof candidate.clientId !== 'string' ||
+    candidate.clientId.length === 0 ||
+    candidate.clientId.length > 100 ||
+    typeof candidate.epoch !== 'string' ||
+    candidate.epoch.length === 0 ||
+    candidate.epoch.length > 100 ||
+    !Number.isSafeInteger(candidate.operationId) ||
+    candidate.operationId! < 1
   ) {
     return null
   }
@@ -245,27 +248,38 @@ export function normalizeSettingsStorageWriteMeta(value: unknown): SettingsStora
 
   const candidate = value as Partial<SettingsStorageWriteMeta>
   const fieldVersions: Record<string, SettingsCloudSyncVersion> = {}
-  if (candidate.fieldVersions && typeof candidate.fieldVersions === 'object' && !Array.isArray(candidate.fieldVersions)) {
+  if (
+    candidate.fieldVersions &&
+    typeof candidate.fieldVersions === 'object' &&
+    !Array.isArray(candidate.fieldVersions)
+  ) {
     for (const [field, value] of Object.entries(candidate.fieldVersions)) {
       const version = normalizeSettingsCloudSyncVersion(value)
-      if (version && isSettingsCloudSyncField(field))
-        fieldVersions[field] = version
+      if (version && isSettingsCloudSyncField(field)) fieldVersions[field] = version
     }
   }
 
   return {
-    cloudClock: Number.isSafeInteger(candidate.cloudClock) && candidate.cloudClock! >= 0
-      ? candidate.cloudClock!
-      : 0,
+    cloudClock:
+      Number.isSafeInteger(candidate.cloudClock) && candidate.cloudClock! >= 0
+        ? candidate.cloudClock!
+        : 0,
     cloudSyncInitialized: candidate.cloudSyncInitialized === true,
-    deviceId: typeof candidate.deviceId === 'string' && candidate.deviceId.length <= 100
-      ? candidate.deviceId
-      : '',
-    epoch: typeof candidate.epoch === 'string' && candidate.epoch.length <= 100 ? candidate.epoch : '',
+    deviceId:
+      typeof candidate.deviceId === 'string' && candidate.deviceId.length <= 100
+        ? candidate.deviceId
+        : '',
+    epoch:
+      typeof candidate.epoch === 'string' && candidate.epoch.length <= 100 ? candidate.epoch : '',
     fieldVersions,
     recentOperationIds: Array.isArray(candidate.recentOperationIds)
-      ? candidate.recentOperationIds.filter(operationId => typeof operationId === 'string').slice(-SETTINGS_STORAGE_RECENT_OPERATION_LIMIT)
+      ? candidate.recentOperationIds
+          .filter((operationId) => typeof operationId === 'string')
+          .slice(-SETTINGS_STORAGE_RECENT_OPERATION_LIMIT)
       : [],
-    revision: Number.isSafeInteger(candidate.revision) && candidate.revision! >= 0 ? candidate.revision! : 0,
+    revision:
+      Number.isSafeInteger(candidate.revision) && candidate.revision! >= 0
+        ? candidate.revision!
+        : 0,
   }
 }

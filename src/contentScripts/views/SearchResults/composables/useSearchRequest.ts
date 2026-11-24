@@ -62,8 +62,7 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     searchFn: (params: any, request: ApiRequestOptions) => Promise<any>,
     options: SearchRequestOptions = {},
   ): Promise<boolean> {
-    if (disposed)
-      return false
+    if (disposed) return false
     cancelActiveRequest()
     if (!keyword.trim()) {
       isLoading.value = false
@@ -81,14 +80,16 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     activeController = controller
 
     try {
-      const response = await searchFn({
-        keyword,
-        ...options,
-      }, { signal: controller.signal })
+      const response = await searchFn(
+        {
+          keyword,
+          ...options,
+        },
+        { signal: controller.signal },
+      )
 
       // 检查请求是否已过期
-      if (activeRequestToken !== requestToken)
-        return false
+      if (activeRequestToken !== requestToken) return false
 
       if (!response || response.code !== 0) {
         error.value = i18n.global.t('search.search_failed')
@@ -99,15 +100,12 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
       lastResponse.value = response
 
       return true
-    }
-    catch (err) {
-      if (activeRequestToken !== requestToken)
-        return false
+    } catch (err) {
+      if (activeRequestToken !== requestToken) return false
       console.error(`Search error for ${category}:`, err)
       error.value = i18n.global.t('search.search_error')
       return false
-    }
-    finally {
+    } finally {
       if (activeRequestToken === requestToken) {
         isLoading.value = false
         activeController = null

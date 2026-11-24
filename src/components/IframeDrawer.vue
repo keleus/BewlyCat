@@ -3,7 +3,12 @@ import { useEventListener } from '@vueuse/core'
 
 import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { BEWLY_IFRAME_DRAWER_HOST_CLASS, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
+import {
+  BEWLY_IFRAME_DRAWER_HOST_CLASS,
+  DRAWER_VIDEO_ENTER_PAGE_FULL,
+  DRAWER_VIDEO_EXIT_PAGE_FULL,
+  IFRAME_DARK_MODE_CHANGE,
+} from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { releaseIframeMedia } from '~/utils/iframe'
 import { isHomePage, isInIframe } from '~/utils/main'
@@ -54,8 +59,7 @@ let isDisposed = false
 const iframeContainerClasses = computed(() => {
   if (isPageFullscreen.value) {
     return 'pos-fixed top-0 left-0 w-full h-full z-999999'
-  }
-  else {
+  } else {
     const topPosition = headerShow.value ? 'top-$bew-top-bar-height' : 'top-0'
     // 修正高度：使用 calc(100% - top位置) 确保容器不会超出可视区域
     const height = headerShow.value ? 'h-[calc(100%-var(--bew-top-bar-height))]' : 'h-full'
@@ -68,8 +72,7 @@ const iframeContainerClasses = computed(() => {
 const iframeStyles = computed(() => {
   if (isPageFullscreen.value) {
     return {}
-  }
-  else {
+  } else {
     // 不再需要负偏移，因为容器高度已经正确设置
     return {
       top: '0',
@@ -80,67 +83,84 @@ const iframeStyles = computed(() => {
 useEventListener(window, 'popstate', updateIframeUrl)
 
 // 监听黑暗模式变化
-watch(() => isDark.value, (newValue) => {
-  if (iframeRef.value?.contentWindow) {
-    try {
-      iframeRef.value.contentWindow.postMessage({
-        type: IFRAME_DARK_MODE_CHANGE,
-        isDark: newValue,
-      }, '*')
+watch(
+  () => isDark.value,
+  (newValue) => {
+    if (iframeRef.value?.contentWindow) {
+      try {
+        iframeRef.value.contentWindow.postMessage(
+          {
+            type: IFRAME_DARK_MODE_CHANGE,
+            isDark: newValue,
+          },
+          '*',
+        )
+      } catch (error) {
+        console.warn('Failed to send dark mode change message to iframe:', error)
+      }
     }
-    catch (error) {
-      console.warn('Failed to send dark mode change message to iframe:', error)
-    }
-  }
-})
+  },
+)
 
 // 监听深色模式基准颜色变化
-watch(() => settings.value.darkModeBaseColor, (newColor) => {
-  if (iframeRef.value?.contentWindow && isDark.value) {
-    try {
-      iframeRef.value.contentWindow.postMessage({
-        type: IFRAME_DARK_MODE_CHANGE,
-        isDark: isDark.value,
-        darkModeBaseColor: newColor,
-      }, '*')
+watch(
+  () => settings.value.darkModeBaseColor,
+  (newColor) => {
+    if (iframeRef.value?.contentWindow && isDark.value) {
+      try {
+        iframeRef.value.contentWindow.postMessage(
+          {
+            type: IFRAME_DARK_MODE_CHANGE,
+            isDark: isDark.value,
+            darkModeBaseColor: newColor,
+          },
+          '*',
+        )
+      } catch (error) {
+        console.warn('Failed to send dark mode base color change message to iframe:', error)
+      }
     }
-    catch (error) {
-      console.warn('Failed to send dark mode base color change message to iframe:', error)
-    }
-  }
-})
+  },
+)
 
 // 监听iframe加载状态，加载完成后发送初始的黑暗模式状态
-watch(() => showIframe.value, (newValue) => {
-  if (initialDarkModeTimer) {
-    clearTimeout(initialDarkModeTimer)
-    initialDarkModeTimer = null
-  }
-
-  if (newValue && iframeRef.value?.contentWindow) {
-    initialDarkModeTimer = setTimeout(() => {
+watch(
+  () => showIframe.value,
+  (newValue) => {
+    if (initialDarkModeTimer) {
+      clearTimeout(initialDarkModeTimer)
       initialDarkModeTimer = null
-      try {
-        iframeRef.value?.contentWindow?.postMessage({
-          type: IFRAME_DARK_MODE_CHANGE,
-          isDark: isDark.value,
-          darkModeBaseColor: settings.value.darkModeBaseColor,
-        }, '*')
-      }
-      catch (error) {
-        console.warn('Failed to send initial dark mode state to iframe:', error)
-      }
-    }, 500) // 稍长的延迟确保iframe完全加载
-  }
-})
+    }
 
-watch(() => props.url, async (newUrl, oldUrl) => {
-  if (isDisposed || isClosing.value || !show.value || newUrl === oldUrl)
-    return
+    if (newValue && iframeRef.value?.contentWindow) {
+      initialDarkModeTimer = setTimeout(() => {
+        initialDarkModeTimer = null
+        try {
+          iframeRef.value?.contentWindow?.postMessage(
+            {
+              type: IFRAME_DARK_MODE_CHANGE,
+              isDark: isDark.value,
+              darkModeBaseColor: settings.value.darkModeBaseColor,
+            },
+            '*',
+          )
+        } catch (error) {
+          console.warn('Failed to send initial dark mode state to iframe:', error)
+        }
+      }, 500) // 稍长的延迟确保iframe完全加载
+    }
+  },
+)
 
-  history.replaceState(null, '', newUrl.replace(/\/$/, ''))
-  await remountIframe(newUrl)
-})
+watch(
+  () => props.url,
+  async (newUrl, oldUrl) => {
+    if (isDisposed || isClosing.value || !show.value || newUrl === oldUrl) return
+
+    history.replaceState(null, '', newUrl.replace(/\/$/, ''))
+    await remountIframe(newUrl)
+  },
+)
 
 function cleanupIframeWindowListeners() {
   stopIframePushStateListener?.()
@@ -180,20 +200,17 @@ function focusIframe(retryCount = 3) {
   const version = focusVersion
 
   nextTick(() => {
-    if (version !== focusVersion || isDisposed || isClosing.value)
-      return
+    if (version !== focusVersion || isDisposed || isClosing.value) return
 
     focusFrame = requestAnimationFrame(() => {
       focusFrame = null
       const iframe = iframeRef.value
-      if (!iframe || !show.value || activeDrawer.value !== DrawerType.IframeDrawer)
-        return
+      if (!iframe || !show.value || activeDrawer.value !== DrawerType.IframeDrawer) return
 
       iframe.focus({ preventScroll: true })
       try {
         iframe.contentWindow?.focus()
-      }
-      catch {
+      } catch {
         // Cross-origin frames may block direct window focus.
       }
 
@@ -209,18 +226,18 @@ function focusIframe(retryCount = 3) {
 function injectStyleClass() {
   if (headerShow.value) {
     try {
-      iframeRef.value?.contentDocument?.documentElement.classList.add('remove-top-bar-without-placeholder')
+      iframeRef.value?.contentDocument?.documentElement.classList.add(
+        'remove-top-bar-without-placeholder',
+      )
       removeTopBarClassInjected.value = true
-    }
-    catch (error) {
+    } catch (error) {
       console.warn('Failed to inject style class:', error)
     }
   }
 }
 
 function handleIframeLoad() {
-  if (isDisposed || isClosing.value || !renderIframe.value)
-    return
+  if (isDisposed || isClosing.value || !renderIframe.value) return
 
   const iframeWindow = iframeRef.value?.contentWindow
   if (!iframeWindow) {
@@ -234,7 +251,11 @@ function handleIframeLoad() {
   injectStyleClass()
   stopIframePushStateListener = useEventListener(iframeWindow, 'pushstate', updateCurrentUrl)
   stopIframePopStateListener = useEventListener(iframeWindow, 'popstate', updateCurrentUrl)
-  stopIframeDOMContentLoadedListener = useEventListener(iframeWindow, 'DOMContentLoaded', injectStyleClass)
+  stopIframeDOMContentLoadedListener = useEventListener(
+    iframeWindow,
+    'DOMContentLoaded',
+    injectStyleClass,
+  )
   showIframe.value = true
   focusIframe()
 }
@@ -242,8 +263,7 @@ function handleIframeLoad() {
 async function remountIframe(url: string) {
   const version = ++navigationVersion
   await releaseIframeResources()
-  if (isDisposed || isClosing.value || version !== navigationVersion)
-    return
+  if (isDisposed || isClosing.value || version !== navigationVersion) return
 
   currentUrl.value = url
   iframeKey.value += 1
@@ -273,8 +293,7 @@ onBeforeUnmount(() => {
   navigationVersion++
   isClosing.value = true
   cleanupIframeWindowListeners()
-  if (activeDrawer.value === DrawerType.IframeDrawer)
-    setActiveDrawer(DrawerType.None)
+  if (activeDrawer.value === DrawerType.IframeDrawer) setActiveDrawer(DrawerType.None)
   if (isPageScrollLocked.value) {
     unlockPageScroll()
     isPageScrollLocked.value = false
@@ -320,8 +339,7 @@ async function updateIframeUrl() {
 }
 
 async function handleClose() {
-  if (isDisposed || isClosing.value)
-    return
+  if (isDisposed || isClosing.value) return
 
   isClosing.value = true
   navigationVersion++
@@ -336,8 +354,7 @@ async function handleClose() {
   headerShow.value = false
   setActiveDrawer(DrawerType.None) // 清除活跃抽屉状态
   await releaseIframeResources()
-  if (isDisposed)
-    return
+  if (isDisposed) return
 
   delayCloseTimer.value = setTimeout(() => {
     delayCloseTimer.value = null
@@ -366,8 +383,7 @@ async function releaseIframeResources() {
   // Now safe to remove from DOM
   renderIframe.value = false
   await nextTick()
-  if (iframeRef.value === iframe)
-    iframeRef.value = null
+  if (iframeRef.value === iframe) iframeRef.value = null
 }
 
 function handleOpenInNewTab() {
@@ -390,28 +406,30 @@ function resetEscPressedState() {
  * Only active when this drawer is the active drawer
  */
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key !== 'Escape' && e.code !== 'Escape')
-    return
-  if (e.repeat || e.isComposing)
-    return
+  if (e.key !== 'Escape' && e.code !== 'Escape') return
+  if (e.repeat || e.isComposing) return
 
   // Only handle when this drawer is the active drawer
-  if (activeDrawer.value !== DrawerType.IframeDrawer)
-    return
+  if (activeDrawer.value !== DrawerType.IframeDrawer) return
 
   // 捕获阶段不抢占 ESC；Dialog、Pop、全屏等内部功能处理完仍未消费时，才兜底关闭抽屉。
-  const hadEscapePriorityState = disableEscPress.value
-    || isPageFullscreen.value
-    || !!(document.fullscreenElement
-      || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+  const hadEscapePriorityState =
+    disableEscPress.value ||
+    isPageFullscreen.value ||
+    !!(
+      document.fullscreenElement ||
+      (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+    )
 
   window.setTimeout(() => {
-    if (hadEscapePriorityState
-      || disableEscPress.value
-      || isPageFullscreen.value
-      || e.defaultPrevented
-      || e.cancelBubble
-      || activeDrawer.value !== DrawerType.IframeDrawer) {
+    if (
+      hadEscapePriorityState ||
+      disableEscPress.value ||
+      isPageFullscreen.value ||
+      e.defaultPrevented ||
+      e.cancelBubble ||
+      activeDrawer.value !== DrawerType.IframeDrawer
+    ) {
       return
     }
 
@@ -425,11 +443,9 @@ function handleKeydown(e: KeyboardEvent) {
     }
     if (isEscPressed.value) {
       handleClose()
-    }
-    else {
+    } else {
       isEscPressed.value = true
-      if (escPressedTimer.value)
-        clearTimeout(escPressedTimer.value)
+      if (escPressedTimer.value) clearTimeout(escPressedTimer.value)
       escPressedTimer.value = setTimeout(() => {
         escPressedTimer.value = null
         isEscPressed.value = false
@@ -447,8 +463,7 @@ onBeforeUnmount(() => {
 })
 
 function handleWindowMessage({ data, source }: MessageEvent) {
-  if (source !== iframeRef.value?.contentWindow)
-    return
+  if (source !== iframeRef.value?.contentWindow) return
 
   const messageType = data && typeof data === 'object' ? data.type : data
   switch (messageType) {
@@ -473,14 +488,11 @@ function handleWindowMessage({ data, source }: MessageEvent) {
       if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
         if (settings.value.closeDrawerWithoutPressingEscAgain) {
           handleClose()
-        }
-        else if (isEscPressed.value) {
+        } else if (isEscPressed.value) {
           handleClose()
-        }
-        else {
+        } else {
           isEscPressed.value = true
-          if (escPressedTimer.value)
-            clearTimeout(escPressedTimer.value)
+          if (escPressedTimer.value) clearTimeout(escPressedTimer.value)
           escPressedTimer.value = setTimeout(() => {
             escPressedTimer.value = null
             isEscPressed.value = false
@@ -497,15 +509,15 @@ if (!isInIframe()) {
 </script>
 
 <template>
-  <div
-    pos="absolute top-0 left-0" of-hidden w-full h-full
-    z-999999
-  >
+  <div pos="absolute top-0 left-0" of-hidden w-full h-full z-999999>
     <!-- Mask (only show in drawer mode, not in fullscreen) -->
     <Transition name="fade">
       <div
         v-if="show && !isPageFullscreen"
-        pos="absolute bottom-0 left-0" w-full h-full bg="black opacity-60"
+        pos="absolute bottom-0 left-0"
+        w-full
+        h-full
+        bg="black opacity-60"
         @click="handleClose"
       />
     </Transition>
@@ -513,9 +525,13 @@ if (!isInIframe()) {
     <Transition name="fade">
       <div
         v-if="headerShow"
-        pos="relative top-0" flex="~ items-center justify-end gap-2"
-        max-w="$bew-page-max-width" w-full h="$bew-top-bar-height"
-        m-auto px-4
+        pos="relative top-0"
+        flex="~ items-center justify-end gap-2"
+        max-w="$bew-page-max-width"
+        w-full
+        h="$bew-top-bar-height"
+        m-auto
+        px-4
         pointer-events-none
       >
         <Button
@@ -549,11 +565,7 @@ if (!isInIframe()) {
           {{ $t('iframe_drawer.close') }}
           <kbd v-if="settings.showDrawerEscHint">Esc</kbd>
         </Button>
-        <Button
-          v-else
-          type="error"
-          @click="handleClose"
-        >
+        <Button v-else type="error" @click="handleClose">
           <template #left>
             <i i-mingcute:close-line />
           </template>
@@ -565,10 +577,7 @@ if (!isInIframe()) {
 
     <!-- Iframe Container -->
     <Transition :name="isPageFullscreen ? 'fade' : 'drawer'">
-      <div
-        v-if="show"
-        :class="iframeContainerClasses"
-      >
+      <div v-if="show" :class="iframeContainerClasses">
         <Transition name="fade">
           <iframe
             v-if="renderIframe"

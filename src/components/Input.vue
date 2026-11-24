@@ -18,18 +18,14 @@ const modelValue = defineModel<string | number>()
 const inputRef = ref<HTMLInputElement | null>(null)
 
 const height = computed(() => {
-  if (props.size === 'small')
-    return '28px'
-  if (props.size === 'medium')
-    return 'var(--bew-control-height)'
-  if (props.size === 'large')
-    return '40px'
+  if (props.size === 'small') return '28px'
+  if (props.size === 'medium') return 'var(--bew-control-height)'
+  if (props.size === 'large') return '40px'
   return 'var(--bew-control-height)'
 })
 
 const padding = computed(() => {
-  if (props.size === 'small')
-    return '0 var(--bew-space-2)'
+  if (props.size === 'small') return '0 var(--bew-space-2)'
   return '0 var(--bew-space-3)'
 })
 
@@ -48,7 +44,8 @@ defineExpose({ focus })
     focus-within:ring="2px $bew-theme-color"
     p="x-4"
     rounded="$bew-interactive-radius"
-    bg="$bew-fill-1" flex="~ gap-2"
+    bg="$bew-fill-1"
+    flex="~ gap-2"
   >
     <div v-if="$slots.prefix" class="prefix">
       <div>
@@ -66,11 +63,15 @@ defineExpose({ focus })
       :step="step"
       :placeholder="placeholder"
       :aria-label="ariaLabel"
-      w-inherit min-w-0 h-inherit
-      outline-none flex-1 bg-transparent
+      w-inherit
+      min-w-0
+      h-inherit
+      outline-none
+      flex-1
+      bg-transparent
       @keydown.enter="$emit('enter')"
       @blur="$emit('blur')"
-    >
+    />
 
     <div v-if="$slots.suffix" class="suffix">
       <div>
@@ -90,7 +91,7 @@ defineExpose({ focus })
 
 .prefix,
 .suffix {
-  --uno: "flex items-center";
+  --uno: 'flex items-center';
 }
 
 .b-input input {

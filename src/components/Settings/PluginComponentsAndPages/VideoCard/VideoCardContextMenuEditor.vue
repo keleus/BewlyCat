@@ -26,57 +26,125 @@ const groups = computed<MenuGroup[]>(() => [
     id: 'recommendation',
     label: t('settings.video_card_context_menu_region_recommendation'),
     elements: [
-      { key: 'notInterested', label: t('video_card.operation.not_interested'), icon: 'i-solar:confounded-circle-bold-duotone' },
-      { key: 'notInterestedUploader', label: t('video_card.operation.not_interested_uploader'), icon: 'i-solar:user-cross-bold-duotone' },
+      {
+        key: 'notInterested',
+        label: t('video_card.operation.not_interested'),
+        icon: 'i-solar:confounded-circle-bold-duotone',
+      },
+      {
+        key: 'notInterestedUploader',
+        label: t('video_card.operation.not_interested_uploader'),
+        icon: 'i-solar:user-cross-bold-duotone',
+      },
     ],
   },
   {
     id: 'opening',
     label: t('settings.video_card_context_menu_region_opening'),
     elements: [
-      { key: 'openInNewTab', label: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { key: 'openInBackground', label: t('video_card.operation.open_in_background'), icon: 'i-solar:square-bottom-up-bold-duotone' },
-      { key: 'openInNewWindow', label: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
-      { key: 'openInCurrentTab', label: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { key: 'openInDrawer', label: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
-      { key: 'openInDialog', label: t('video_card.operation.open_in_dialog'), icon: 'i-solar:window-frame-bold-duotone' },
-      { key: 'favorite', label: t('video_card.operation.favorite'), icon: 'i-solar:star-bold-duotone' },
+      {
+        key: 'openInNewTab',
+        label: t('video_card.operation.open_in_new_tab'),
+        icon: 'i-solar:square-top-down-bold-duotone',
+      },
+      {
+        key: 'openInBackground',
+        label: t('video_card.operation.open_in_background'),
+        icon: 'i-solar:square-bottom-up-bold-duotone',
+      },
+      {
+        key: 'openInNewWindow',
+        label: t('video_card.operation.open_in_new_window'),
+        icon: 'i-solar:maximize-square-3-bold-duotone',
+      },
+      {
+        key: 'openInCurrentTab',
+        label: t('video_card.operation.open_in_current_tab'),
+        icon: 'i-solar:square-top-down-bold-duotone',
+      },
+      {
+        key: 'openInDrawer',
+        label: t('video_card.operation.open_in_drawer'),
+        icon: 'i-solar:archive-up-minimlistic-bold-duotone',
+      },
+      {
+        key: 'openInDialog',
+        label: t('video_card.operation.open_in_dialog'),
+        icon: 'i-solar:window-frame-bold-duotone',
+      },
+      {
+        key: 'favorite',
+        label: t('video_card.operation.favorite'),
+        icon: 'i-solar:star-bold-duotone',
+      },
     ],
   },
   {
     id: 'copying',
     label: t('settings.video_card_context_menu_region_copying'),
     elements: [
-      { key: 'copyVideoLink', label: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' },
-      { key: 'copyCleanVideoLink', label: t('video_card.operation.copy_clean_video_link'), icon: 'i-solar:link-minimalistic-2-bold-duotone' },
-      { key: 'copyBVNumber', label: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' },
-      { key: 'copyAVNumber', label: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' },
-      { key: 'viewOriginalCover', label: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' },
+      {
+        key: 'copyVideoLink',
+        label: t('video_card.operation.copy_video_link'),
+        icon: 'i-solar:copy-bold-duotone',
+      },
+      {
+        key: 'copyCleanVideoLink',
+        label: t('video_card.operation.copy_clean_video_link'),
+        icon: 'i-solar:link-minimalistic-2-bold-duotone',
+      },
+      {
+        key: 'copyBVNumber',
+        label: t('video_card.operation.copy_bv_number'),
+        icon: 'i-solar:copy-bold-duotone',
+      },
+      {
+        key: 'copyAVNumber',
+        label: t('video_card.operation.copy_av_number'),
+        icon: 'i-solar:copy-bold-duotone',
+      },
+      {
+        key: 'viewOriginalCover',
+        label: t('video_card.operation.view_the_original_cover'),
+        icon: 'i-solar:gallery-minimalistic-bold-duotone',
+      },
     ],
   },
   {
     id: 'user',
     label: t('settings.video_card_context_menu_region_user'),
     elements: [
-      { key: 'followUser', label: t('settings.video_card_context_menu_follow_user'), icon: 'i-solar:user-plus-bold-duotone' },
-      { key: 'blockUser', label: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone' },
+      {
+        key: 'followUser',
+        label: t('settings.video_card_context_menu_follow_user'),
+        icon: 'i-solar:user-plus-bold-duotone',
+      },
+      {
+        key: 'blockUser',
+        label: t('video_card.operation.block_user'),
+        icon: 'i-solar:user-block-bold-duotone',
+      },
     ],
   },
   {
     id: 'other',
     label: t('settings.video_card_context_menu_region_other'),
     elements: [
-      { key: 'customizeMenu', label: t('video_card.operation.customize_menu'), icon: 'i-solar:settings-bold-duotone' },
+      {
+        key: 'customizeMenu',
+        label: t('video_card.operation.customize_menu'),
+        icon: 'i-solar:settings-bold-duotone',
+      },
     ],
   },
 ])
 
 function isVisible(key: VideoCardContextMenuKey) {
-  return settings.value.videoCardContextMenuConfig.find(item => item.key === key)?.visible ?? true
+  return settings.value.videoCardContextMenuConfig.find((item) => item.key === key)?.visible ?? true
 }
 
 function setVisible(key: VideoCardContextMenuKey, visible: boolean) {
-  const config = settings.value.videoCardContextMenuConfig.filter(item => item.key !== key)
+  const config = settings.value.videoCardContextMenuConfig.filter((item) => item.key !== key)
   settings.value.videoCardContextMenuConfig = [...config, { key, visible }]
 }
 </script>

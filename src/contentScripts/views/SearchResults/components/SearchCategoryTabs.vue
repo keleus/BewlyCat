@@ -22,12 +22,13 @@ function handleSelect(category: SearchCategory) {
 }
 
 function formatCount(count: number): string {
-  if (!count)
-    return ''
-  if (count > 99)
-    return '99+'
+  if (!count) return ''
+  if (count > 99) return '99+'
   if (count >= 10000)
-    return new Intl.NumberFormat(locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(count)
+    return new Intl.NumberFormat(locale.value, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(count)
   return `${count}`
 }
 </script>

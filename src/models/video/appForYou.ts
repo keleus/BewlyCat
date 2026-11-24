@@ -35,8 +35,7 @@ export interface Config {
   story_mode_v2_guide_exp: number
 }
 
-export interface ToastClass {
-}
+export interface ToastClass {}
 
 export interface Item {
   card_type: CardType

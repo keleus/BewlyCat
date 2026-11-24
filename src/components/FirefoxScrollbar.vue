@@ -26,24 +26,24 @@ function update() {
   frame = 0
   const target = props.target
   const track = trackRef.value
-  if (!target || !track)
-    return
+  if (!target || !track) return
 
   const { scrollHeight, clientHeight, scrollTop } = target
   const trackSize = track.clientHeight
   const maxScrollTop = scrollHeight - clientHeight
   scrollable.value = maxScrollTop > 1 && trackSize > 0
-  if (!scrollable.value)
-    return
+  if (!scrollable.value) return
 
-  const size = Math.min(trackSize, Math.max(MIN_THUMB_SIZE, trackSize * clientHeight / scrollHeight))
+  const size = Math.min(
+    trackSize,
+    Math.max(MIN_THUMB_SIZE, (trackSize * clientHeight) / scrollHeight),
+  )
   thumbSize.value = size
   thumbOffset.value = (trackSize - size) * Math.min(1, Math.max(0, scrollTop / maxScrollTop))
 }
 
 function scheduleUpdate() {
-  if (!frame)
-    frame = requestAnimationFrame(update)
+  if (!frame) frame = requestAnimationFrame(update)
 }
 
 // 拖动 1px 滑块对应的滚动距离
@@ -53,8 +53,7 @@ function getScrollRatio(target: HTMLElement) {
 }
 
 function handleThumbPointerDown(event: PointerEvent) {
-  if (event.button !== 0 || !props.target)
-    return
+  if (event.button !== 0 || !props.target) return
   event.preventDefault()
   event.stopPropagation()
   ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
@@ -65,14 +64,12 @@ function handleThumbPointerDown(event: PointerEvent) {
 
 function handleThumbPointerMove(event: PointerEvent) {
   const target = props.target
-  if (!dragging.value || !target)
-    return
+  if (!dragging.value || !target) return
   target.scrollTop = dragStartScrollTop + (event.clientY - dragStartY) * getScrollRatio(target)
 }
 
 function handleThumbPointerUp(event: PointerEvent) {
-  if (!dragging.value)
-    return
+  if (!dragging.value) return
   dragging.value = false
   ;(event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId)
 }
@@ -81,8 +78,7 @@ function handleThumbPointerUp(event: PointerEvent) {
 function handleTrackPointerDown(event: PointerEvent) {
   const target = props.target
   const track = trackRef.value
-  if (event.button !== 0 || !target || !track)
-    return
+  if (event.button !== 0 || !target || !track) return
   event.preventDefault()
   const clickOffset = event.clientY - track.getBoundingClientRect().top
   const direction = clickOffset < thumbOffset.value ? -1 : 1
@@ -94,29 +90,29 @@ useResizeObserver(() => props.target, scheduleUpdate)
 useResizeObserver(trackRef, scheduleUpdate)
 
 // 内容高度变化（加载更多、切换页面）不会触发容器自身的 ResizeObserver
-watch(() => props.target, (target, _previousTarget, onCleanup) => {
-  scheduleUpdate()
-  if (!target)
-    return
-  const contentObserver = new ResizeObserver(scheduleUpdate)
-  const mutationObserver = new MutationObserver(() => {
-    contentObserver.disconnect()
-    for (const child of Array.from(target.children))
-      contentObserver.observe(child)
+watch(
+  () => props.target,
+  (target, _previousTarget, onCleanup) => {
     scheduleUpdate()
-  })
-  for (const child of Array.from(target.children))
-    contentObserver.observe(child)
-  mutationObserver.observe(target, { childList: true })
-  onCleanup(() => {
-    contentObserver.disconnect()
-    mutationObserver.disconnect()
-  })
-}, { immediate: true, flush: 'post' })
+    if (!target) return
+    const contentObserver = new ResizeObserver(scheduleUpdate)
+    const mutationObserver = new MutationObserver(() => {
+      contentObserver.disconnect()
+      for (const child of Array.from(target.children)) contentObserver.observe(child)
+      scheduleUpdate()
+    })
+    for (const child of Array.from(target.children)) contentObserver.observe(child)
+    mutationObserver.observe(target, { childList: true })
+    onCleanup(() => {
+      contentObserver.disconnect()
+      mutationObserver.disconnect()
+    })
+  },
+  { immediate: true, flush: 'post' },
+)
 
 onBeforeUnmount(() => {
-  if (frame)
-    cancelAnimationFrame(frame)
+  if (frame) cancelAnimationFrame(frame)
 })
 </script>
 

@@ -5,7 +5,13 @@ import { settings } from '~/logic'
 import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 
 import type { SettingsSearchEntry } from '../searchCatalog'
-import { bewlyPagesOnlyTitleKeys, bewlyTopBarOnlyTitleKeys, playerShortcutTitleKeys, settingsSearchEntries, videoPageBackgroundTitleKeys } from '../searchCatalog'
+import {
+  bewlyPagesOnlyTitleKeys,
+  bewlyTopBarOnlyTitleKeys,
+  playerShortcutTitleKeys,
+  settingsSearchEntries,
+  videoPageBackgroundTitleKeys,
+} from '../searchCatalog'
 import type { SearchPartMatch } from '../searchMatch'
 import { getSearchPartScore } from '../searchMatch'
 import type { SettingsMenuDefinition } from '../settingsMenus'
@@ -36,26 +42,23 @@ export function useSettingsSearch(options: UseSettingsSearchOptions) {
   const searchQuery = ref('')
 
   function getSearchEntryTitle(entry: SettingsSearchEntry) {
-    return entry.titleKey ? t(entry.titleKey) : entry.title ?? ''
+    return entry.titleKey ? t(entry.titleKey) : (entry.title ?? '')
   }
 
   function getSearchEntryLocation(entry: SettingsSearchEntry) {
-    const menu = menus.find(item => item.value === entry.menu)
+    const menu = menus.find((item) => item.value === entry.menu)
     const primaryTitle = menu ? t(menu.titleKey) : t('settings.title')
     const pageLocation = entry.secondaryTitleKey
       ? `${primaryTitle} / ${t(entry.secondaryTitleKey)}`
       : primaryTitle
-    return entry.contextTitleKey
-      ? `${t(entry.contextTitleKey)} · ${pageLocation}`
-      : pageLocation
+    return entry.contextTitleKey ? `${t(entry.contextTitleKey)} · ${pageLocation}` : pageLocation
   }
 
   function getTranslatedSearchTerms(key: string): string[] {
     const collectTerms = (message: unknown): string[] => {
       if (typeof message === 'string' || typeof message === 'function')
         return [rt(message as Parameters<typeof rt>[0])]
-      if (Array.isArray(message))
-        return message.flatMap(collectTerms)
+      if (Array.isArray(message)) return message.flatMap(collectTerms)
       if (message && typeof message === 'object')
         return Object.values(message).flatMap(collectTerms)
       return []
@@ -70,8 +73,9 @@ export function useSettingsSearch(options: UseSettingsSearchOptions) {
     const inferredKeywordKeys = entry.titleKey
       ? [`${entry.titleKey}_opt`, `${entry.titleKey}_option`, `${entry.titleKey}_unit`]
       : []
-    const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
-      .flatMap(getTranslatedSearchTerms)
+    const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])].flatMap(
+      getTranslatedSearchTerms,
+    )
 
     // 菜单路径只用于结果定位，避免输入分类名时命中整组设置。
     return [...translatedKeywords, ...(entry.keywords ?? [])].join(' ').toLocaleLowerCase()
@@ -79,63 +83,80 @@ export function useSettingsSearch(options: UseSettingsSearchOptions) {
 
   // 搜索文本只随 locale/目录变化重算，输入时复用，避免每次击键重复翻译全部条目。
   function isSearchEntryVisible(entry: SettingsSearchEntry) {
-    const menu = options.visibleMenus.value.find(item => item.value === entry.menu)
-    if (!menu)
+    const menu = options.visibleMenus.value.find((item) => item.value === entry.menu)
+    if (!menu) return false
+    const usedByVideoPageGlassStyle =
+      settings.value.videoPageGlassStyle &&
+      entry.menu === MenuType.Appearance &&
+      entry.titleKey !== undefined &&
+      videoPageBackgroundTitleKeys.has(entry.titleKey)
+    if (
+      settings.value.useOriginalBilibiliHomepage &&
+      entry.titleKey &&
+      bewlyPagesOnlyTitleKeys.has(entry.titleKey) &&
+      !usedByVideoPageGlassStyle
+    )
       return false
-    const usedByVideoPageGlassStyle = settings.value.videoPageGlassStyle
-      && entry.menu === MenuType.Appearance
-      && entry.titleKey !== undefined
-      && videoPageBackgroundTitleKeys.has(entry.titleKey)
-    if (settings.value.useOriginalBilibiliHomepage && entry.titleKey && bewlyPagesOnlyTitleKeys.has(entry.titleKey) && !usedByVideoPageGlassStyle)
-      return false
-    if (entry.titleKey && bewlyTopBarOnlyTitleKeys.has(entry.titleKey)
-      && !shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
+    if (
+      entry.titleKey &&
+      bewlyTopBarOnlyTitleKeys.has(entry.titleKey) &&
+      !shouldShowBewlyTopBar(
+        settings.value.enableTopBarModule,
+        settings.value.enableTopBar,
+        settings.value.useOriginalBilibiliTopBar,
+      )
+    ) {
       return false
     }
-    if (entry.titleKey && playerShortcutTitleKeys.has(entry.titleKey) && !settings.value.enablePlayerEnhancements)
+    if (
+      entry.titleKey &&
+      playerShortcutTitleKeys.has(entry.titleKey) &&
+      !settings.value.enablePlayerEnhancements
+    )
       return false
 
     const secondaryPage = entry.storageValues?.find(({ key }) => key === menu.storageKey)?.value
-    return !secondaryPage || !menu.pages || menu.pages.some(page => page.value === secondaryPage)
+    return !secondaryPage || !menu.pages || menu.pages.some((page) => page.value === secondaryPage)
   }
 
-  const searchIndex = computed<SearchIndexEntry[]>(() => settingsSearchEntries.filter(isSearchEntryVisible).map((entry, order) => {
-    const titleText = getSearchEntryTitle(entry).toLocaleLowerCase()
-    const keywordText = getSearchEntryKeywordText(entry)
-    return {
-      entry,
-      titleText,
-      keywordText,
-      order,
-    }
-  }))
+  const searchIndex = computed<SearchIndexEntry[]>(() =>
+    settingsSearchEntries.filter(isSearchEntryVisible).map((entry, order) => {
+      const titleText = getSearchEntryTitle(entry).toLocaleLowerCase()
+      const keywordText = getSearchEntryKeywordText(entry)
+      return {
+        entry,
+        titleText,
+        keywordText,
+        order,
+      }
+    }),
+  )
 
-  function getSearchMatchScore(item: SearchIndexEntry, query: string, partMatches: SearchPartMatch[]) {
+  function getSearchMatchScore(
+    item: SearchIndexEntry,
+    query: string,
+    partMatches: SearchPartMatch[],
+  ) {
     let score = 0
-    if (item.titleText === query)
-      score += 200
-    else if (item.titleText.includes(query))
-      score += 40
+    if (item.titleText === query) score += 200
+    else if (item.titleText.includes(query)) score += 40
 
-    for (const partMatch of partMatches)
-      score += partMatch.score
+    for (const partMatch of partMatches) score += partMatch.score
 
     return score
   }
 
   const searchResults = computed(() => {
     const query = searchQuery.value.trim().toLocaleLowerCase()
-    if (!query)
-      return []
+    if (!query) return []
 
     const queryParts = query.split(/\s+/).filter(Boolean)
-    const matches: Array<{ item: SearchIndexEntry, score: number }> = []
+    const matches: Array<{ item: SearchIndexEntry; score: number }> = []
     for (const item of searchIndex.value) {
       const partMatches = queryParts
-        .map(part => getSearchPartScore(item, part))
+        .map((part) => getSearchPartScore(item, part))
         .filter((match): match is SearchPartMatch => match !== null)
-      if (partMatches.length !== queryParts.length)
-        continue
+      if (partMatches.length !== queryParts.length) continue
       matches.push({ item, score: getSearchMatchScore(item, query, partMatches) })
     }
 
@@ -150,19 +171,17 @@ export function useSettingsSearch(options: UseSettingsSearchOptions) {
     const titles = new Set<string>()
     for (const entry of searchResults.value) {
       const title = getSearchEntryTitle(entry).trim()
-      if (title)
-        titles.add(title)
+      if (title) titles.add(title)
       if (entry.fallbackTargetKey) {
         const fallbackTitle = t(entry.fallbackTargetKey).trim()
-        if (fallbackTitle)
-          titles.add(fallbackTitle)
+        if (fallbackTitle) titles.add(fallbackTitle)
       }
     }
     return titles
   })
 
   function getSearchEntrySecondaryPage(entry: SettingsSearchEntry) {
-    const menu = menus.find(item => item.value === entry.menu)
+    const menu = menus.find((item) => item.value === entry.menu)
     return entry.storageValues?.find(({ key }) => key === menu?.storageKey)?.value
   }
 
@@ -170,15 +189,13 @@ export function useSettingsSearch(options: UseSettingsSearchOptions) {
     const titles = new Set<string>()
     for (const entry of searchResults.value) {
       const title = getSearchEntryTitle(entry).trim()
-      if (title)
-        titles.add(title)
+      if (title) titles.add(title)
     }
     return titles.size
   })
 
   const searchResultsSummary = computed(() => {
-    if (!isSearching.value)
-      return ''
+    if (!isSearching.value) return ''
     return searchResultCount.value
       ? t('settings.search.results_count', { count: searchResultCount.value })
       : t('settings.search.no_results')

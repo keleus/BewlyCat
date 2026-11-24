@@ -6,16 +6,16 @@
   }
 
   // ai 小助手
-  [class^="_VideoAssistant"] {
+  [class^='_VideoAssistant'] {
     --app_bg: #f1f6fc;
     --app_graph_bg: #e6ecf4;
   }
 
-  [class^="_VideoAssistant"] * {
+  [class^='_VideoAssistant'] * {
     --brand_blue: var(--bew-bili-blue);
   }
 
-  &.dark [class^="_VideoAssistant"] {
+  &.dark [class^='_VideoAssistant'] {
     --app_bg: var(--bew-elevated-alt-solid);
     --app_graph_bg: var(--bew-fill-1);
   }
@@ -50,17 +50,17 @@
       }
     }
 
-    .content .group-list li input[type="checkbox"] + i {
+    .content .group-list li input[type='checkbox'] + i {
       border-radius: 5px;
       border: 1px solid var(--bew-border-color);
     }
 
-    .coin-operated-m-exp .like-checkbox input[type="checkbox"]:checked + i {
+    .coin-operated-m-exp .like-checkbox input[type='checkbox']:checked + i {
       border-radius: 3px;
     }
 
-    .content .group-list li input[type="checkbox"]:checked + i,
-    .content .group-list li input[type="checkbox"]:checked:hover + i {
+    .content .group-list li input[type='checkbox']:checked + i,
+    .content .group-list li input[type='checkbox']:checked:hover + i {
       background: var(--bew-theme-color)
         url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB2aWV3Qm94PSIwIDAgOSA5IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNy41IDIuNUwzLjc1IDYuMjVMMS41IDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+)
         no-repeat 50% / 14px;
@@ -74,8 +74,8 @@
 
     // 覆盖原生 label.disable 的浅色方块图标（仅未勾选，特异性需高于原生 0,5,4；
     // 已勾选项由上面的基础 :checked 规则处理）
-    .content .group-list li label.disable input[type="checkbox"]:not(:checked) + i,
-    .content .group-list li label.disable input[type="checkbox"]:not(:checked):hover + i {
+    .content .group-list li label.disable input[type='checkbox']:not(:checked) + i,
+    .content .group-list li label.disable input[type='checkbox']:not(:checked):hover + i {
       background: unset;
     }
 
@@ -85,13 +85,13 @@
       cursor: not-allowed;
     }
 
-    .content .group-list li label.disable.bewly-full-disabled input[type="checkbox"] + i,
-    .content .group-list li label.disable.bewly-full-disabled input[type="checkbox"]:hover + i {
+    .content .group-list li label.disable.bewly-full-disabled input[type='checkbox'] + i,
+    .content .group-list li label.disable.bewly-full-disabled input[type='checkbox']:hover + i {
       background: var(--bew-fill-1);
       border-color: var(--bew-border-color);
     }
 
-    .coin-operated-m-exp .like-checkbox input[type="checkbox"]:checked + i,
+    .coin-operated-m-exp .like-checkbox input[type='checkbox']:checked + i,
     .video-share-popover
       .video-share-dropdown
       .dropdown-top
@@ -105,8 +105,8 @@
         no-repeat 50% / 9px;
     }
 
-    .content .group-list li input[type="checkbox"] + i,
-    .content .group-list li input[type="checkbox"]:hover + i {
+    .content .group-list li input[type='checkbox'] + i,
+    .content .group-list li input[type='checkbox']:hover + i {
       background: unset;
     }
 
@@ -351,7 +351,7 @@
 
                 // Triangle
                 &::after {
-                  content: "";
+                  content: '';
                   position: absolute;
                   top: 100%;
                   left: 20px;
@@ -398,8 +398,19 @@
     }
 
     .collection-m-exp .content .group-list .add-group .input-group .submit,
-    .collection-m-exp.bewly-enlarged-favorite-dialog .content .group-list .add-group .input-group .submit,
-    .follow-dialog-wrap-exp .follow-dialog-window .content .group-list .add-group .input-group .submitGroup {
+    .collection-m-exp.bewly-enlarged-favorite-dialog
+      .content
+      .group-list
+      .add-group
+      .input-group
+      .submit,
+    .follow-dialog-wrap-exp
+      .follow-dialog-window
+      .content
+      .group-list
+      .add-group
+      .input-group
+      .submitGroup {
       background-color: var(--bew-theme-color-10) !important;
       color: var(--bew-theme-color) !important;
 
@@ -445,7 +456,12 @@
       background-color: var(--bew-content);
     }
 
-    ._SeekSections_1iu0q_1 ._Item_1iu0q_1 ._Parts_1iu0q_16 ._Part_1iu0q_16 ._Time_1iu0q_28 ._TimeText_1iu0q_35,
+    ._SeekSections_1iu0q_1
+      ._Item_1iu0q_1
+      ._Parts_1iu0q_16
+      ._Part_1iu0q_16
+      ._Time_1iu0q_28
+      ._TimeText_1iu0q_35,
     ._SeekSections_1iu0q_1 ._Item_1iu0q_1 ._Parts_1iu0q_16 ._Part_1iu0q_16:hover {
       background-color: var(--bew-fill-1);
     }
@@ -472,9 +488,9 @@
     .ql-snow .ql-toolbar button:hover,
     .up-name.is_vip,
     .up-name.small-vip,
-    .up-detail .up-detail-top .up-name[style*="color: rgb(251, 114, 153)"],
-    .up-detail .up-detail-top .up-name[style*="color:#FB7299;"],
-    .user-card-m-exp .user-info-wrapper .info .user .name[style*="color: rgb(251, 114, 153)"] {
+    .up-detail .up-detail-top .up-name[style*='color: rgb(251, 114, 153)'],
+    .up-detail .up-detail-top .up-name[style*='color:#FB7299;'],
+    .user-card-m-exp .user-info-wrapper .info .user .name[style*='color: rgb(251, 114, 153)'] {
       color: var(--bew-theme-color) !important;
     }
 
@@ -485,8 +501,8 @@
     .up-name.is_vip:hover,
     .up-name.small-vip:hover,
     .up-detail .up-detail-top .up-name:hover,
-    .up-detail .up-detail-top .up-name[style*="color: rgb(251, 114, 153)"]:hover,
-    .up-detail .up-detail-top .up-name[style*="color:#FB7299;"]:hover {
+    .up-detail .up-detail-top .up-name[style*='color: rgb(251, 114, 153)']:hover,
+    .up-detail .up-detail-top .up-name[style*='color:#FB7299;']:hover {
       color: var(--bew-theme-color-80) !important;
     }
 
@@ -506,10 +522,10 @@
     .coin-operated-m-exp .mc-box:hover,
     .coin-operated-m-exp .mc-box.on,
     .note-pc .note-container .note-header .note-operation,
-    .content .group-list li:hover input[type="checkbox"] + i,
-    .content .group-list li input[type="checkbox"]:checked + i,
-    .content .group-list li input[type="checkbox"]:checked:hover + i,
-    .coin-operated-m-exp .like-checkbox input[type="checkbox"]:checked + i {
+    .content .group-list li:hover input[type='checkbox'] + i,
+    .content .group-list li input[type='checkbox']:checked + i,
+    .content .group-list li input[type='checkbox']:checked:hover + i,
+    .coin-operated-m-exp .like-checkbox input[type='checkbox']:checked + i {
       border-color: var(--bew-theme-color);
     }
 
@@ -617,7 +633,9 @@
     }
 
     // 播放列表（稍后再看等）条目的删除按钮，B 站写死了 hover 色 #0087bd
-    :is(.singlep-list-item-inner, .multip-list-item-inner, .invalid-list-item-inner) .main .del-btn:hover {
+    :is(.singlep-list-item-inner, .multip-list-item-inner, .invalid-list-item-inner)
+      .main
+      .del-btn:hover {
       color: var(--bew-theme-color);
     }
   }
@@ -655,12 +673,12 @@
       background-color: var(--bew-fill-2);
     }
 
-    .bpx-player-container[data-revision="1"]
+    .bpx-player-container[data-revision='1']
       .bpx-player-sending-bar
       .bpx-player-video-inputbar
       .bpx-player-dm-btn-send.bui-disabled
       .bui-button-blue,
-    .bpx-player-container[data-revision="2"]
+    .bpx-player-container[data-revision='2']
       .bpx-player-sending-bar
       .bpx-player-video-inputbar
       .bpx-player-dm-btn-send.bui-disabled
@@ -757,16 +775,16 @@
   .up-detail .up-detail-top .up-name.is_vip,
   .up-detail .up-detail-top .up-name.small-vip,
   .up-detail .up-detail-top .up-name.vip,
-  .up-detail .up-detail-top .up-name[style*="color: rgb(251, 114, 153)"],
-  .up-detail .up-detail-top .up-name[style*="color:#FB7299;"] {
+  .up-detail .up-detail-top .up-name[style*='color: rgb(251, 114, 153)'],
+  .up-detail .up-detail-top .up-name[style*='color:#FB7299;'] {
     color: var(--brand_pink) !important;
   }
 
   .up-detail .up-detail-top .up-name.is_vip:hover,
   .up-detail .up-detail-top .up-name.small-vip:hover,
   .up-detail .up-detail-top .up-name.vip:hover,
-  .up-detail .up-detail-top .up-name[style*="color: rgb(251, 114, 153)"]:hover,
-  .up-detail .up-detail-top .up-name[style*="color:#FB7299;"]:hover {
+  .up-detail .up-detail-top .up-name[style*='color: rgb(251, 114, 153)']:hover,
+  .up-detail .up-detail-top .up-name[style*='color:#FB7299;']:hover {
     color: var(--brand_pink_hover) !important;
   }
 
@@ -787,12 +805,12 @@
   }
 
   &.dark {
-    .bpx-player-container[data-revision="1"]
+    .bpx-player-container[data-revision='1']
       .bpx-player-sending-bar
       .bpx-player-video-inputbar
       .bpx-player-dm-btn-send.bui-disabled
       .bui-button-blue,
-    .bpx-player-container[data-revision="2"]
+    .bpx-player-container[data-revision='2']
       .bpx-player-sending-bar
       .bpx-player-video-inputbar
       .bpx-player-dm-btn-send.bui-disabled

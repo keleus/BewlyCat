@@ -161,11 +161,11 @@ pnpm build-firefox
 - `chore`：對構建過程或工具鏈進行更改
 - `perf`：效能改進
 - `ci`：持續集成/交付更改
-也歡迎添加範圍和腳註
-例如：
-`fix(dock)：xxx`
-`變更描述`
-`相關 PR：url`
+  也歡迎添加範圍和腳註
+  例如：
+  `fix(dock)：xxx`
+  `變更描述`
+  `相關 PR：url`
 
 ### I18n
 

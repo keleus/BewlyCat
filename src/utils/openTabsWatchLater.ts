@@ -5,9 +5,9 @@ import { resolvePgcEpisodeVideoIds, resolvePgcSeasonVideoIds } from '~/utils/pgc
 
 const OPEN_TAB_ADD_INTERVAL_MS = 50
 
-type WatchLaterTabTarget
-  = { type: 'bvid', id: string }
-    | { type: 'aid' | 'epid' | 'seasonId', id: number }
+type WatchLaterTabTarget =
+  | { type: 'bvid'; id: string }
+  | { type: 'aid' | 'epid' | 'seasonId'; id: number }
 
 export interface AddOpenTabsResult {
   total: number
@@ -18,8 +18,7 @@ export interface AddOpenTabsResult {
 }
 
 function positiveId(value: string | null): number | undefined {
-  if (!value || !/^\d+$/.test(value))
-    return undefined
+  if (!value || !/^\d+$/.test(value)) return undefined
 
   const id = Number(value)
   return Number.isSafeInteger(id) && id > 0 ? id : undefined
@@ -30,20 +29,20 @@ export function parseWatchLaterTabUrl(value: string): WatchLaterTabTarget | unde
   let url: URL
   try {
     url = new URL(stripBilibiliLocaleUrl(value))
-  }
-  catch {
+  } catch {
     return undefined
   }
 
-  if (!['http:', 'https:'].includes(url.protocol)
-    || !['www.bilibili.com', 'm.bilibili.com', 'bilibili.com'].includes(url.hostname)) {
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    !['www.bilibili.com', 'm.bilibili.com', 'bilibili.com'].includes(url.hostname)
+  ) {
     return undefined
   }
 
   const video = url.pathname.match(/^\/video\/(BV[\da-z]{10}|av\d+)\/?$/i)
   if (video) {
-    if (/^bv/i.test(video[1]))
-      return { type: 'bvid', id: `BV${video[1].slice(2)}` }
+    if (/^bv/i.test(video[1])) return { type: 'bvid', id: `BV${video[1].slice(2)}` }
 
     const aid = positiveId(video[1].slice(2))
     return aid ? { type: 'aid', id: aid } : undefined
@@ -57,19 +56,16 @@ export function parseWatchLaterTabUrl(value: string): WatchLaterTabTarget | unde
 
   if (/^\/(?:list\/|medialist\/play\/)/.test(url.pathname)) {
     const bvid = url.searchParams.get('bvid')
-    if (bvid && /^BV[\da-zA-Z]{10}$/.test(bvid))
-      return { type: 'bvid', id: bvid }
+    if (bvid && /^BV[\da-zA-Z]{10}$/.test(bvid)) return { type: 'bvid', id: bvid }
 
     const aid = positiveId(url.searchParams.get('aid') || url.searchParams.get('avid'))
-    if (aid)
-      return { type: 'aid', id: aid }
+    if (aid) return { type: 'aid', id: aid }
   }
 
   // 旧版稍后再看播放器把当前视频放在 hash 中。
   if (/^\/watchlater\/?$/.test(url.pathname)) {
     const bvid = url.hash.match(/^#\/(BV[\da-zA-Z]{10})(?:[/?]|$)/)?.[1]
-    if (bvid)
-      return { type: 'bvid', id: bvid }
+    if (bvid) return { type: 'bvid', id: bvid }
   }
 
   return undefined
@@ -100,44 +96,45 @@ export async function addOpenTabsToWatchLater(
   const targets = new Map<string, WatchLaterTabTarget>()
   for (const url of urls) {
     const target = parseWatchLaterTabUrl(url)
-    if (target)
-      targets.set(`${target.type}:${target.id}`, target)
+    if (target) targets.set(`${target.type}:${target.id}`, target)
   }
 
   const result: AddOpenTabsResult = { total: targets.size, added: 0, skipped: 0, failed: 0 }
   onProgress?.({ ...result })
-  if (!targets.size || !isCurrentAccount())
-    return result
+  if (!targets.size || !isCurrentAccount()) return result
 
   // 使用完整列表去重，浮层本身只加载了前几项。
   const response = await api.watchlater.getAllWatchLaterList()
   if (response.code !== 0 || !Array.isArray(response.data?.list))
     throw new Error(response.message || 'Failed to load Watch later')
 
-  const existingAids = new Set<number>(response.data.list.map((item: { aid: number }) => Number(item.aid)))
-  const existingBvids = new Set<string>(response.data.list.map((item: { bvid: string }) => item.bvid))
+  const existingAids = new Set<number>(
+    response.data.list.map((item: { aid: number }) => Number(item.aid)),
+  )
+  const existingBvids = new Set<string>(
+    response.data.list.map((item: { bvid: string }) => item.bvid),
+  )
 
   // 串行处理，每项之间留出间隔，避免集中请求并让界面及时更新进度。
   for (const [index, target] of [...targets.values()].entries()) {
-    if (!isCurrentAccount())
-      break
+    if (!isCurrentAccount()) break
 
     if (index > 0) {
-      await new Promise<void>(resolve => setTimeout(resolve, OPEN_TAB_ADD_INTERVAL_MS))
-      if (!isCurrentAccount())
-        break
+      await new Promise<void>((resolve) => setTimeout(resolve, OPEN_TAB_ADD_INTERVAL_MS))
+      if (!isCurrentAccount()) break
     }
 
     try {
-      if ((target.type === 'aid' && existingAids.has(target.id))
-        || (target.type === 'bvid' && existingBvids.has(target.id))) {
+      if (
+        (target.type === 'aid' && existingAids.has(target.id)) ||
+        (target.type === 'bvid' && existingBvids.has(target.id))
+      ) {
         result.skipped++
         continue
       }
 
       const ids = await resolveTarget(target)
-      if (!isCurrentAccount())
-        break
+      if (!isCurrentAccount()) break
       if (!ids?.aid) {
         result.failed++
         continue
@@ -150,14 +147,16 @@ export async function addOpenTabsToWatchLater(
       const saved = await api.watchlater.saveToWatchLater({ aid: ids.aid, csrf })
       if (saved.code === 0) {
         existingAids.add(ids.aid)
-        markWatchLater({
-          aid: ids.aid,
-          bvid: target.type === 'bvid' ? target.id : undefined,
-          epid: target.type === 'epid' ? target.id : undefined,
-        }, true)
+        markWatchLater(
+          {
+            aid: ids.aid,
+            bvid: target.type === 'bvid' ? target.id : undefined,
+            epid: target.type === 'epid' ? target.id : undefined,
+          },
+          true,
+        )
         result.added++
-      }
-      else {
+      } else {
         result.failed++
         result.message ||= saved.message
         // 登录、风控或容量问题影响整批，停止剩余请求。
@@ -166,12 +165,10 @@ export async function addOpenTabsToWatchLater(
           break
         }
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to add an open tab to Watch later:', error)
       result.failed++
-    }
-    finally {
+    } finally {
       onProgress?.({ ...result })
     }
   }

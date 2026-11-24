@@ -40,12 +40,10 @@ function getVideoHistoryKeys(video: VideoIdentity): string[] {
   const keys: string[] = []
   const bvid = video.bvid?.trim()
 
-  if (bvid)
-    keys.push(`bv:${bvid.toLowerCase()}`)
+  if (bvid) keys.push(`bv:${bvid.toLowerCase()}`)
 
   const aid = String(video.aid ?? video.id ?? '').trim()
-  if (/^[1-9]\d*$/.test(aid))
-    keys.push(`av:${aid}`)
+  if (/^[1-9]\d*$/.test(aid)) keys.push(`av:${aid}`)
 
   return keys
 }
@@ -55,11 +53,9 @@ function isValidTimestamp(value: unknown): value is number {
 }
 
 function normalizeVideoVisitEntry(entry: unknown): VideoVisitEntry | undefined {
-  if (isValidTimestamp(entry))
-    return entry
+  if (isValidTimestamp(entry)) return entry
 
-  if (!Array.isArray(entry) || !isValidTimestamp(entry[0]))
-    return undefined
+  if (!Array.isArray(entry) || !isValidTimestamp(entry[0])) return undefined
 
   const [visitedAt, progress, duration] = entry
   if (!isValidTimestamp(duration) || typeof progress !== 'number' || !Number.isFinite(progress))
@@ -73,12 +69,14 @@ function getEntryVisitedAt(entry: VideoVisitEntry): number {
 }
 
 function limitVideoVisitHistory(history: VideoVisitHistory): VideoVisitHistory {
-  if (Object.keys(history).length <= VIDEO_VISIT_HISTORY_MAX_ENTRIES)
-    return history
+  if (Object.keys(history).length <= VIDEO_VISIT_HISTORY_MAX_ENTRIES) return history
 
   return Object.fromEntries(
     Object.entries(history)
-      .sort(([, leftEntry], [, rightEntry]) => getEntryVisitedAt(rightEntry) - getEntryVisitedAt(leftEntry))
+      .sort(
+        ([, leftEntry], [, rightEntry]) =>
+          getEntryVisitedAt(rightEntry) - getEntryVisitedAt(leftEntry),
+      )
       .slice(0, VIDEO_VISIT_HISTORY_TRIM_ENTRIES),
   )
 }
@@ -87,23 +85,27 @@ export function pruneVideoVisitHistory(history: Record<string, unknown>): VideoV
   const normalizedHistory: VideoVisitHistory = {}
   for (const [key, entry] of Object.entries(history)) {
     const normalizedEntry = normalizeVideoVisitEntry(entry)
-    if (normalizedEntry !== undefined)
-      normalizedHistory[key] = normalizedEntry
+    if (normalizedEntry !== undefined) normalizedHistory[key] = normalizedEntry
   }
   return limitVideoVisitHistory(normalizedHistory)
 }
 
 /** 合并同一视频的两条记录：访问时间取较新者，播放进度取较新的一条。 */
-function mergeVideoVisitEntry(current: VideoVisitEntry | undefined, next: VideoVisitEntry): VideoVisitEntry {
-  if (current === undefined)
-    return next
+function mergeVideoVisitEntry(
+  current: VideoVisitEntry | undefined,
+  next: VideoVisitEntry,
+): VideoVisitEntry {
+  if (current === undefined) return next
 
   const visitedAt = Math.max(getEntryVisitedAt(current), getEntryVisitedAt(next))
   const currentProgress = typeof current === 'number' ? undefined : current
   const nextProgress = typeof next === 'number' ? undefined : next
-  const progressEntry = currentProgress && nextProgress
-    ? (nextProgress[0] >= currentProgress[0] ? nextProgress : currentProgress)
-    : nextProgress ?? currentProgress
+  const progressEntry =
+    currentProgress && nextProgress
+      ? nextProgress[0] >= currentProgress[0]
+        ? nextProgress
+        : currentProgress
+      : (nextProgress ?? currentProgress)
 
   return progressEntry ? [visitedAt, progressEntry[1], progressEntry[2]] : visitedAt
 }
@@ -111,12 +113,10 @@ function mergeVideoVisitEntry(current: VideoVisitEntry | undefined, next: VideoV
 function parseVideoVisitHistory(rawValue: unknown): VideoVisitHistory {
   try {
     const value = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue
-    if (!value || typeof value !== 'object' || Array.isArray(value))
-      return {}
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
 
     return pruneVideoVisitHistory(value as Record<string, unknown>)
-  }
-  catch {
+  } catch {
     return {}
   }
 }
@@ -124,8 +124,7 @@ function parseVideoVisitHistory(rawValue: unknown): VideoVisitHistory {
 function readVideoVisitHistory(): VideoVisitHistory {
   try {
     return parseVideoVisitHistory(localStorage.getItem(VIDEO_VISIT_HISTORY_STORAGE_KEY))
-  }
-  catch {
+  } catch {
     return {}
   }
 }
@@ -135,7 +134,7 @@ let videoVisitHistory: ShallowRef<VideoVisitHistory> | undefined
 let settingsLoaded = false
 
 function getVideoVisitHistoryRef() {
-  return videoVisitHistory ??= shallowRef(readVideoVisitHistory())
+  return (videoVisitHistory ??= shallowRef(readVideoVisitHistory()))
 }
 
 void settingsReady.then(() => {
@@ -146,29 +145,25 @@ void settingsReady.then(() => {
 function persistVideoVisitHistory(history: VideoVisitHistory) {
   const historyRef = getVideoVisitHistoryRef()
   const limitedHistory = limitVideoVisitHistory(history)
-  if (historyRef.value === limitedHistory)
-    triggerRef(historyRef)
-  else
-    historyRef.value = limitedHistory
+  if (historyRef.value === limitedHistory) triggerRef(historyRef)
+  else historyRef.value = limitedHistory
 
   try {
     localStorage.setItem(VIDEO_VISIT_HISTORY_STORAGE_KEY, JSON.stringify(limitedHistory))
-  }
-  catch (error) {
+  } catch (error) {
     console.warn('[BewlyCat] Failed to persist video visit history.', error)
   }
 }
 
 function migrateLegacyVideoVisitHistory() {
   try {
-    if (localStorage.getItem(VIDEO_VISIT_HISTORY_MIGRATION_KEY) === '1')
-      return
-  }
-  catch {
+    if (localStorage.getItem(VIDEO_VISIT_HISTORY_MIGRATION_KEY) === '1') return
+  } catch {
     return
   }
 
-  void browser.storage.local.get(LEGACY_VIDEO_VISIT_HISTORY_STORAGE_KEY)
+  void browser.storage.local
+    .get(LEGACY_VIDEO_VISIT_HISTORY_STORAGE_KEY)
     .then((result) => {
       const legacyHistory = parseVideoVisitHistory(result[LEGACY_VIDEO_VISIT_HISTORY_STORAGE_KEY])
       const mergedHistory = { ...getVideoVisitHistoryRef().value }
@@ -180,7 +175,7 @@ function migrateLegacyVideoVisitHistory() {
       persistVideoVisitHistory(mergedHistory)
       localStorage.setItem(VIDEO_VISIT_HISTORY_MIGRATION_KEY, '1')
     })
-    .catch(error => console.warn('[BewlyCat] Failed to migrate video visit history.', error))
+    .catch((error) => console.warn('[BewlyCat] Failed to migrate video visit history.', error))
 }
 
 migrateLegacyVideoVisitHistory()
@@ -194,12 +189,10 @@ if (typeof window !== 'undefined') {
 }
 
 function recordVideoVisitEntry(video: VideoIdentity, entry: VideoVisitEntry): boolean {
-  if (!settingsLoaded || !settings.value.showVideoWatchedBadge)
-    return false
+  if (!settingsLoaded || !settings.value.showVideoWatchedBadge) return false
 
   const keys = getVideoHistoryKeys(video)
-  if (!keys.length)
-    return false
+  if (!keys.length) return false
 
   // Update in place: copying a 10,000 entry record per playback flush is
   // unnecessary because persistence triggers the ref explicitly.
@@ -223,8 +216,7 @@ export function recordVideoWatchProgress(
   duration: number,
   visitedAt = Date.now(),
 ): boolean {
-  if (!isValidTimestamp(duration) || !Number.isFinite(progress))
-    return false
+  if (!isValidTimestamp(duration) || !Number.isFinite(progress)) return false
 
   const roundedDuration = Math.max(1, Math.round(duration))
   const roundedProgress = Math.min(roundedDuration, Math.max(0, Math.floor(progress)))
@@ -240,12 +232,11 @@ export function getVideoIdentityFromUrl(url: string): VideoIdentity | undefined 
     const bvidPathMatch = urlObject.pathname.match(/\/(BV[a-z0-9]+)(?:\/|$)/i)
     const bvid = urlObject.searchParams.get('bvid') || bvidPathMatch?.[1]
     const aidPathMatch = urlObject.pathname.match(/\/av(\d+)(?:\/|$)/i)
-    const aid = urlObject.searchParams.get('avid') || urlObject.searchParams.get('aid') || aidPathMatch?.[1]
+    const aid =
+      urlObject.searchParams.get('avid') || urlObject.searchParams.get('aid') || aidPathMatch?.[1]
 
-    if (bvid || aid)
-      return { bvid: bvid || undefined, aid: aid || undefined }
-  }
-  catch {
+    if (bvid || aid) return { bvid: bvid || undefined, aid: aid || undefined }
+  } catch {
     return undefined
   }
 
@@ -264,8 +255,7 @@ export function getVideoWatchState(video: VideoIdentity): VideoWatchState | unde
   const history = getVideoVisitHistoryRef().value
   for (const key of getVideoHistoryKeys(video)) {
     const entry = history[key]
-    if (entry === undefined)
-      continue
+    if (entry === undefined) continue
 
     visited = true
     if (typeof entry !== 'number' && (!latestProgress || entry[0] > latestProgress[0]))

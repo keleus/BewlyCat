@@ -6,7 +6,7 @@ import { isVideoPlaybackPage, setCookie } from '~/utils/main'
 
 const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
 const currentMinuteOfDay = ref(getCurrentMinuteOfDay())
-const iframeTheme = ref<{ isDark: boolean, baseColor?: string }>()
+const iframeTheme = ref<{ isDark: boolean; baseColor?: string }>()
 let isIframeThemeListenerStarted = false
 let isRouteWatcherStarted = false
 let isScheduleClockStarted = false
@@ -25,15 +25,16 @@ function removeSuppressedBiliDark() {
  */
 function setBiliDarkSuppressed(suppressed: boolean) {
   isBiliDarkSuppressed = suppressed
-  if (!suppressed)
-    return
+  if (!suppressed) return
 
   removeSuppressedBiliDark()
-  if (biliDarkObserver)
-    return
+  if (biliDarkObserver) return
 
   biliDarkObserver = new MutationObserver(removeSuppressedBiliDark)
-  biliDarkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  biliDarkObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
+  })
 }
 
 // content script 需在 document_start 同步调用，避免等设置加载期间漏掉父窗口在 load 后发送的主题。
@@ -43,8 +44,12 @@ export function startIframeThemeListener() {
 
   isIframeThemeListenerStarted = true
   window.addEventListener('message', ({ source, origin, data }) => {
-    if (source !== window.parent || !/^https?:\/\/(?:[\w-]+\.)?bilibili\.com$/.test(origin)
-      || data?.type !== IFRAME_DARK_MODE_CHANGE || typeof data.isDark !== 'boolean') {
+    if (
+      source !== window.parent ||
+      !/^https?:\/\/(?:[\w-]+\.)?bilibili\.com$/.test(origin) ||
+      data?.type !== IFRAME_DARK_MODE_CHANGE ||
+      typeof data.isDark !== 'boolean'
+    ) {
       return
     }
 
@@ -52,9 +57,10 @@ export function startIframeThemeListener() {
     // 仅在当前 iframe 文档内继承，不写入用户设置。
     iframeTheme.value = {
       isDark: data.isDark,
-      baseColor: typeof data.darkModeBaseColor === 'string' && CSS.supports('color', data.darkModeBaseColor)
-        ? data.darkModeBaseColor
-        : iframeTheme.value?.baseColor,
+      baseColor:
+        typeof data.darkModeBaseColor === 'string' && CSS.supports('color', data.darkModeBaseColor)
+          ? data.darkModeBaseColor
+          : iframeTheme.value?.baseColor,
     }
   })
 }
@@ -66,13 +72,11 @@ function getCurrentMinuteOfDay(): number {
 
 function parseTime(value: string, fallback: number): number {
   const match = /^(\d{2}):(\d{2})$/.exec(value)
-  if (!match)
-    return fallback
+  if (!match) return fallback
 
   const hours = Number(match[1])
   const minutes = Number(match[2])
-  if (hours > 23 || minutes > 59)
-    return fallback
+  if (hours > 23 || minutes > 59) return fallback
 
   return hours * 60 + minutes
 }
@@ -81,16 +85,13 @@ function isWithinLightSchedule(current: number, startTime: string, endTime: stri
   const start = parseTime(startTime, 6 * 60)
   const end = parseTime(endTime, 18 * 60)
 
-  if (start === end)
-    return true
-  if (start < end)
-    return current >= start && current < end
+  if (start === end) return true
+  if (start < end) return current >= start && current < end
   return current >= start || current < end
 }
 
 function startScheduleClock() {
-  if (isScheduleClockStarted || typeof window === 'undefined')
-    return
+  if (isScheduleClockStarted || typeof window === 'undefined') return
 
   isScheduleClockStarted = true
   window.setInterval(() => {
@@ -106,14 +107,12 @@ function isFestivalPage(): boolean {
 }
 
 function startRouteWatcher() {
-  if (isRouteWatcherStarted || typeof window === 'undefined')
-    return
+  if (isRouteWatcherStarted || typeof window === 'undefined') return
 
   isRouteWatcherStarted = true
 
   const updateCurrentUrl = () => {
-    if (currentUrl.value !== location.href)
-      currentUrl.value = location.href
+    if (currentUrl.value !== location.href) currentUrl.value = location.href
   }
 
   window.addEventListener('popstate', updateCurrentUrl)
@@ -142,8 +141,7 @@ function syncBilibiliTheme(isDark: boolean) {
 
   // useDark() is shared by several components. Only notify Bilibili when the
   // effective theme actually changes; repeated events rebuild native feeds.
-  if (lastThemeChangeState === isDark)
-    return
+  if (lastThemeChangeState === isDark) return
 
   lastThemeChangeState = isDark
   window.dispatchEvent(new CustomEvent('global.themeChange', { detail: theme }))
@@ -155,10 +153,9 @@ export function useDark() {
   startScheduleClock()
 
   const isPreferredDark = usePreferredDark()
-  const currentSystemColorScheme = computed(() => isPreferredDark.value ? 'dark' : 'light')
+  const currentSystemColorScheme = computed(() => (isPreferredDark.value ? 'dark' : 'light'))
   const currentAppColorScheme = computed((): 'dark' | 'light' => {
-    if (iframeTheme.value)
-      return iframeTheme.value.isDark ? 'dark' : 'light'
+    if (iframeTheme.value) return iframeTheme.value.isDark ? 'dark' : 'light'
     if (settings.value.theme === 'light' || settings.value.theme === 'dark')
       return settings.value.theme
     if (settings.value.theme === 'scheduled') {
@@ -174,17 +171,18 @@ export function useDark() {
   const isVideoPageDark = computed(() => {
     return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
   })
-  const isDark = computed(() => iframeTheme.value?.isDark ?? (currentAppColorScheme.value === 'dark' || isVideoPageDark.value))
-  const darkModeBaseColor = computed(() => iframeTheme.value?.baseColor ?? settings.value.darkModeBaseColor)
+  const isDark = computed(
+    () =>
+      iframeTheme.value?.isDark ??
+      (currentAppColorScheme.value === 'dark' || isVideoPageDark.value),
+  )
+  const darkModeBaseColor = computed(
+    () => iframeTheme.value?.baseColor ?? settings.value.darkModeBaseColor,
+  )
 
   // Apply appearance only when an effective theme input changes.
   watch(
-    [
-      isDark,
-      currentAppColorScheme,
-      () => settings.value.adaptToOtherPageStyles,
-      currentUrl,
-    ],
+    [isDark, currentAppColorScheme, () => settings.value.adaptToOtherPageStyles, currentUrl],
     () => {
       setAppAppearance()
     },
@@ -196,8 +194,7 @@ export function useDark() {
     darkModeBaseColor,
     (newColor) => {
       setDarkModeBaseColor(newColor)
-      if (lastDarkModeBaseColor === newColor)
-        return
+      if (lastDarkModeBaseColor === newColor) return
 
       lastDarkModeBaseColor = newColor
       // 触发全局基准颜色变化事件
@@ -228,8 +225,7 @@ export function useDark() {
 
       // 确保深色模式基准颜色被正确应用
       setDarkModeBaseColor(darkModeBaseColor.value)
-    }
-    else {
+    } else {
       document.querySelector('#bewly')?.classList?.remove('dark')
 
       // Only remove global classes if we're not in selective mode or if we applied them
@@ -252,24 +248,20 @@ export function useDark() {
     const updateThemeSettings = () => {
       if (currentAppColorScheme.value !== currentSystemColorScheme.value)
         settings.value.theme = 'auto'
-      else
-        settings.value.theme = isPreferredDark.value ? 'light' : 'dark'
+      else settings.value.theme = isPreferredDark.value ? 'light' : 'dark'
     }
 
-    const isAppearanceTransition = typeof document !== 'undefined'
-    // @ts-expect-error: Transition API
-      && document.startViewTransition
-      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isAppearanceTransition =
+      typeof document !== 'undefined' &&
+      // @ts-expect-error: Transition API
+      document.startViewTransition &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!isAppearanceTransition) {
       updateThemeSettings()
-    }
-    else {
+    } else {
       const x = e.clientX
       const y = e.clientY
-      const endRadius = Math.hypot(
-        Math.max(x, innerWidth - x),
-        Math.max(y, innerHeight - y),
-      )
+      const endRadius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
       // https://github.com/vueuse/vueuse/pull/3129
       const style = document.createElement('style')
       const styleString = `
@@ -298,8 +290,7 @@ export function useDark() {
 
       const bewlyShadowRoot = document.getElementById('bewly')?.shadowRoot
       const bewlyWrapper = bewlyShadowRoot?.getElementById('bewly-wrapper')
-      if (!bewlyWrapper)
-        throw new Error('mainAppRef is not found')
+      if (!bewlyWrapper) throw new Error('mainAppRef is not found')
 
       bewlyWrapper.appendChild(shadowDomStyle)
 
@@ -318,10 +309,7 @@ export function useDark() {
             `
         document.head.appendChild(zIndexStyle)
 
-        const clipPath = [
-          `circle(0px at ${x}px ${y}px)`,
-          `circle(${endRadius}px at ${x}px ${y}px)`,
-        ]
+        const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
         const animation = document.documentElement.animate(
           {
             clipPath: isDarkNow ? clipPath : [...clipPath].reverse(),

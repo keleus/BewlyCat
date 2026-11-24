@@ -23,8 +23,7 @@ const pageNumbers = computed(() => {
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i)
     }
-  }
-  else {
+  } else {
     // 始终显示第一页
     pages.push(1)
 
@@ -66,7 +65,13 @@ const pageNumbers = computed(() => {
 })
 
 function handlePageChange(page: number) {
-  if (props.disabled || props.loading || page === props.currentPage || page < 1 || page > props.totalPages)
+  if (
+    props.disabled ||
+    props.loading ||
+    page === props.currentPage ||
+    page < 1 ||
+    page > props.totalPages
+  )
     return
 
   emit('change', page)
@@ -97,9 +102,7 @@ function goToNextPage() {
     </button>
 
     <template v-for="(page, index) in pageNumbers" :key="index">
-      <span v-if="page === 'ellipsis'" class="pagination-ellipsis">
-        ...
-      </span>
+      <span v-if="page === 'ellipsis'" class="pagination-ellipsis"> ... </span>
       <button
         v-else
         class="pagination-btn"

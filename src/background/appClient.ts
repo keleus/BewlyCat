@@ -25,22 +25,49 @@ interface AppClientEndpointConfig {
 }
 
 const APP_CLIENT_ENDPOINTS: Record<AppClientEndpoint, AppClientEndpointConfig> = {
-  qrcodeAuthCode: { url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code', method: 'POST', profile: 'login' },
-  qrcodePoll: { url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/poll', method: 'POST', profile: 'login' },
-  refreshTokenV3: { url: 'https://passport.bilibili.com/api/v3/oauth2/refresh_token', method: 'POST', form: true, profile: 'login' },
-  refreshTokenV2: { url: 'https://passport.bilibili.com/api/v2/oauth2/refresh_token', method: 'POST', form: true, profile: 'login' },
+  qrcodeAuthCode: {
+    url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code',
+    method: 'POST',
+    profile: 'login',
+  },
+  qrcodePoll: {
+    url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/poll',
+    method: 'POST',
+    profile: 'login',
+  },
+  refreshTokenV3: {
+    url: 'https://passport.bilibili.com/api/v3/oauth2/refresh_token',
+    method: 'POST',
+    form: true,
+    profile: 'login',
+  },
+  refreshTokenV2: {
+    url: 'https://passport.bilibili.com/api/v2/oauth2/refresh_token',
+    method: 'POST',
+    form: true,
+    profile: 'login',
+  },
   feedIndex: { url: 'https://app.bilibili.com/x/v2/feed/index', method: 'GET', profile: 'feed' },
-  feedDislike: { url: 'https://app.bilibili.com/x/feed/dislike', method: 'GET', profile: 'account' },
-  feedDislikeCancel: { url: 'https://app.bilibili.com/x/feed/dislike/cancel', method: 'GET', profile: 'account' },
+  feedDislike: {
+    url: 'https://app.bilibili.com/x/feed/dislike',
+    method: 'GET',
+    profile: 'account',
+  },
+  feedDislikeCancel: {
+    url: 'https://app.bilibili.com/x/feed/dislike/cancel',
+    method: 'GET',
+    profile: 'account',
+  },
 }
 
 const APP_CLIENT_REFERER = 'https://www.bilibili.com'
 // PiliPlus 的 Dio 默认 User-Agent
 const DART_USER_AGENT = 'Dart/3.6 (dart:io)'
 // PiliPlus 推荐流使用的 HD 客户端 User-Agent
-const HD_USER_AGENT = 'Mozilla/5.0 BiliDroid/2.0.1 (bbcallen@gmail.com) os/android model/android_hd mobi_app/android_hd build/2001100 channel/master innerVer/2001100 osVer/15 network/2'
+const HD_USER_AGENT =
+  'Mozilla/5.0 BiliDroid/2.0.1 (bbcallen@gmail.com) os/android model/android_hd mobi_app/android_hd build/2001100 channel/master innerVer/2001100 osVer/15 network/2'
 const APP_BASE_HEADERS = {
-  'env': 'prod',
+  env: 'prod',
   'app-key': 'android64',
   'x-bili-aurora-zone': 'sh001',
 }
@@ -54,11 +81,13 @@ const PROFILE_USER_AGENTS: Record<AppClientProfile, string> = {
 
 // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/grpc_api/readme.md#x-bili-aurora-eid-生成算法
 function genAuroraEid(mid: number): string {
-  if (!mid)
-    return ''
+  if (!mid) return ''
 
   const key = 'ad1va46a7lza'
-  const bytes = Array.from(`${mid}`, (char, index) => char.charCodeAt(0) ^ key.charCodeAt(index % key.length))
+  const bytes = Array.from(
+    `${mid}`,
+    (char, index) => char.charCodeAt(0) ^ key.charCodeAt(index % key.length),
+  )
   return btoa(String.fromCharCode(...bytes)).replace(/=/g, '')
 }
 
@@ -67,45 +96,52 @@ const APP_BUVID_STORAGE_KEY = 'appClientBuvid'
 let appBuvidPromise: Promise<string> | undefined
 
 function generateBuvid(): string {
-  const hex = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0'))
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  )
     .join('')
     .toUpperCase()
   return `XY${hex[2]}${hex[12]}${hex[22]}${hex}`
 }
 
 function getAppBuvid(): Promise<string> {
-  appBuvidPromise ??= browser.storage.local.get(APP_BUVID_STORAGE_KEY).then(async (result) => {
-    const stored = result[APP_BUVID_STORAGE_KEY]
-    if (typeof stored === 'string' && stored)
-      return stored
+  appBuvidPromise ??= browser.storage.local
+    .get(APP_BUVID_STORAGE_KEY)
+    .then(async (result) => {
+      const stored = result[APP_BUVID_STORAGE_KEY]
+      if (typeof stored === 'string' && stored) return stored
 
-    const buvid = generateBuvid()
-    await browser.storage.local.set({ [APP_BUVID_STORAGE_KEY]: buvid })
-    return buvid
-  }).catch((error) => {
-    appBuvidPromise = undefined
-    throw error
-  })
+      const buvid = generateBuvid()
+      await browser.storage.local.set({ [APP_BUVID_STORAGE_KEY]: buvid })
+      return buvid
+    })
+    .catch((error) => {
+      appBuvidPromise = undefined
+      throw error
+    })
   return appBuvidPromise
 }
 
-async function getRequestHeaders(profile: AppClientProfile, mid?: number | null): Promise<Record<string, string>> {
-  const accountHeaders: Record<string, string> = profile === 'login' || !mid
-    ? APP_BASE_HEADERS
-    : {
-        ...APP_BASE_HEADERS,
-        'x-bili-mid': `${mid}`,
-        'x-bili-aurora-eid': genAuroraEid(mid),
-      }
+async function getRequestHeaders(
+  profile: AppClientProfile,
+  mid?: number | null,
+): Promise<Record<string, string>> {
+  const accountHeaders: Record<string, string> =
+    profile === 'login' || !mid
+      ? APP_BASE_HEADERS
+      : {
+          ...APP_BASE_HEADERS,
+          'x-bili-mid': `${mid}`,
+          'x-bili-aurora-eid': genAuroraEid(mid),
+        }
 
-  if (profile !== 'feed')
-    return { 'User-Agent': PROFILE_USER_AGENTS[profile], ...accountHeaders }
+  if (profile !== 'feed') return { 'User-Agent': PROFILE_USER_AGENTS[profile], ...accountHeaders }
 
   return {
-    'buvid': await getAppBuvid(),
-    'fp_local': '1'.repeat(64),
-    'fp_remote': '1'.repeat(64),
-    'session_id': '11111111',
+    buvid: await getAppBuvid(),
+    fp_local: '1'.repeat(64),
+    fp_remote: '1'.repeat(64),
+    session_id: '11111111',
     'User-Agent': HD_USER_AGENT,
     'x-bili-trace-id': '11111111111111111111111111111111:1111111111111111:0:0',
     'bili-http-engine': 'cronet',
@@ -115,10 +151,11 @@ async function getRequestHeaders(profile: AppClientProfile, mid?: number | null)
 
 // Chromium 的 fetch 无法改写 User-Agent / Referer，也会附带 sec-ch-ua 客户端提示；
 // 用仅匹配非标签页请求（即扩展后台自身）的会话规则改写，网页自己的请求不受影响。
-const APP_CLIENT_HEADER_RULES: { id: number, regexFilter: string, userAgent: string }[] = [
+const APP_CLIENT_HEADER_RULES: { id: number; regexFilter: string; userAgent: string }[] = [
   {
     id: 1002,
-    regexFilter: '^https://passport\\.bilibili\\.com/(x/passport-tv-login/qrcode/|api/v[23]/oauth2/refresh_token)',
+    regexFilter:
+      '^https://passport\\.bilibili\\.com/(x/passport-tv-login/qrcode/|api/v[23]/oauth2/refresh_token)',
     userAgent: DART_USER_AGENT,
   },
   {
@@ -133,21 +170,21 @@ const APP_CLIENT_HEADER_RULES: { id: number, regexFilter: string, userAgent: str
   },
 ]
 
-const APP_CLIENT_URL_PATTERN = new RegExp(APP_CLIENT_HEADER_RULES.map(rule => `(?:${rule.regexFilter})`).join('|'))
+const APP_CLIENT_URL_PATTERN = new RegExp(
+  APP_CLIENT_HEADER_RULES.map((rule) => `(?:${rule.regexFilter})`).join('|'),
+)
 
 export function isAppClientRequestUrl(url: string): boolean {
   return APP_CLIENT_URL_PATTERN.test(url)
 }
 
 async function syncAppClientHeaderRules() {
-  // eslint-disable-next-line node/prefer-global/process
-  if (process.env.FIREFOX)
-    return
+  if (process.env.FIREFOX) return
 
   try {
     await browser.declarativeNetRequest.updateSessionRules({
-      removeRuleIds: APP_CLIENT_HEADER_RULES.map(rule => rule.id),
-      addRules: APP_CLIENT_HEADER_RULES.map(rule => ({
+      removeRuleIds: APP_CLIENT_HEADER_RULES.map((rule) => rule.id),
+      addRules: APP_CLIENT_HEADER_RULES.map((rule) => ({
         id: rule.id,
         // 高于 assets/rules.json 中为 passport POST 设置 Origin 的静态规则
         priority: 3,
@@ -169,18 +206,21 @@ async function syncAppClientHeaderRules() {
         },
       })),
     })
-  }
-  catch (error) {
+  } catch (error) {
     console.error('[BewlyCat] Failed to update the APP client header rules:', error)
   }
 }
 
 const appClientHeaderRulesReady = syncAppClientHeaderRules()
 
-async function requestAppClient({ endpoint, params, mid }: AppClientRequest, sender?: Browser.Runtime.MessageSender) {
-  const target = Object.hasOwn(APP_CLIENT_ENDPOINTS, endpoint) ? APP_CLIENT_ENDPOINTS[endpoint] : undefined
-  if (!target)
-    return { code: -400, message: `Unknown APP client endpoint: ${endpoint}` }
+async function requestAppClient(
+  { endpoint, params, mid }: AppClientRequest,
+  sender?: Browser.Runtime.MessageSender,
+) {
+  const target = Object.hasOwn(APP_CLIENT_ENDPOINTS, endpoint)
+    ? APP_CLIENT_ENDPOINTS[endpoint]
+    : undefined
+  if (!target) return { code: -400, message: `Unknown APP client endpoint: ${endpoint}` }
 
   const controller = new AbortController()
   const timeout = setTimeout(() => {
@@ -188,7 +228,7 @@ async function requestAppClient({ endpoint, params, mid }: AppClientRequest, sen
   }, APP_CLIENT_REQUEST_TIMEOUT)
   const startedAt = Date.now()
   const attempt: ApiRequestAttempt = { url: target.url, method: target.method, credentials: 'omit' }
-  const reportFailure = (failure: { response?: unknown, error?: unknown }) => {
+  const reportFailure = (failure: { response?: unknown; error?: unknown }) => {
     // 扫码轮询在用户确认前会持续返回非零状态，不属于接口故障。
     if (!endpoint.startsWith('qrcode'))
       void reportApiFailure(sender, 'app', endpoint, attempt, startedAt, failure)
@@ -248,8 +288,7 @@ async function requestAppClient({ endpoint, params, mid }: AppClientRequest, sen
       reportFailure({ response: data })
     }
     return data
-  }
-  catch (error) {
+  } catch (error) {
     const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
     if (missingOrigin) {
       attempt.missingHostPermission = true
@@ -265,8 +304,7 @@ async function requestAppClient({ endpoint, params, mid }: AppClientRequest, sen
     }
     reportFailure({ error })
     return { code: -1, message: error instanceof Error ? error.message : String(error) }
-  }
-  finally {
+  } finally {
     clearTimeout(timeout)
   }
 }

@@ -48,8 +48,7 @@ let zoomPositionY = DEFAULT_ZOOM_POSITION_Y
 let lastMinimapRenderAt = 0
 
 function injectStyle() {
-  if (styleEl?.isConnected)
-    return
+  if (styleEl?.isConnected) return
 
   styleEl = injectCSS(`
     .${HOST_CLASS} {
@@ -225,19 +224,19 @@ function injectStyle() {
 
 function findPlayerHost() {
   const video = getVideoElement()
-  return video?.closest<HTMLElement>(PLAYER_HOST_SELECTOR)
-    || document.querySelector<HTMLElement>(PLAYER_HOST_SELECTOR)
+  return (
+    video?.closest<HTMLElement>(PLAYER_HOST_SELECTOR) ||
+    document.querySelector<HTMLElement>(PLAYER_HOST_SELECTOR)
+  )
 }
 
 function showControlsTemporarily(host: HTMLElement) {
   host.classList.add(ACTIVE_CLASS)
-  if (controlsHideTimer)
-    clearTimeout(controlsHideTimer)
+  if (controlsHideTimer) clearTimeout(controlsHideTimer)
 
   controlsHideTimer = setTimeout(() => {
     controlsHideTimer = null
-    if (!host.classList.contains(ADJUSTING_CLASS))
-      host.classList.remove(ACTIVE_CLASS)
+    if (!host.classList.contains(ADJUSTING_CLASS)) host.classList.remove(ACTIVE_CLASS)
   }, CONTROLS_AUTO_HIDE_DELAY)
 }
 
@@ -246,8 +245,7 @@ function hideControls(host: HTMLElement) {
     clearTimeout(controlsHideTimer)
     controlsHideTimer = null
   }
-  if (!host.classList.contains(ADJUSTING_CLASS))
-    host.classList.remove(ACTIVE_CLASS)
+  if (!host.classList.contains(ADJUSTING_CLASS)) host.classList.remove(ACTIVE_CLASS)
 }
 
 function bindHostActivity(host: HTMLElement) {
@@ -255,29 +253,28 @@ function bindHostActivity(host: HTMLElement) {
 
   let positionFrame: number | null = null
   const schedulePositionUpdate = () => {
-    if (positionFrame !== null)
-      return
+    if (positionFrame !== null) return
 
     positionFrame = requestAnimationFrame(() => {
       positionFrame = null
-      const controlsOnLeft = button?.parentElement === host
-        && getComputedStyle(button).getPropertyValue('--bewly-vertical-video-controls-side').trim() === 'left'
+      const controlsOnLeft =
+        button?.parentElement === host &&
+        getComputedStyle(button).getPropertyValue('--bewly-vertical-video-controls-side').trim() ===
+          'left'
       const toolbarSelector = controlsOnLeft
         ? '.bpx-player-top-left, .bpx-player-top-left > *'
         : '.bpx-player-top-issue'
       const toolbarRects = Array.from(host.querySelectorAll<HTMLElement>(toolbarSelector))
-        .map(element => element.getBoundingClientRect())
-        .filter(rect => rect.width > 0 && rect.height > 0)
+        .map((element) => element.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0)
       // Keep the reserved space when the player's toolbar temporarily hides.
-      if (!toolbarRects.length)
-        return
+      if (!toolbarRects.length) return
 
       const hostRect = host.getBoundingClientRect()
       const scaleY = host.offsetHeight ? hostRect.height / host.offsetHeight : 1
-      if (!scaleY)
-        return
+      if (!scaleY) return
 
-      const toolbarBottom = Math.max(...toolbarRects.map(rect => rect.bottom))
+      const toolbarBottom = Math.max(...toolbarRects.map((rect) => rect.bottom))
       const bottom = Math.max(0, (toolbarBottom - hostRect.top) / scaleY - host.clientTop)
       const value = `${Math.ceil(bottom)}px`
       if (host.style.getPropertyValue('--bewly-vertical-video-toolbar-bottom') !== value)
@@ -304,8 +301,7 @@ function bindHostActivity(host: HTMLElement) {
     resizeObserver.disconnect()
     window.removeEventListener('resize', schedulePositionUpdate)
     document.removeEventListener('fullscreenchange', schedulePositionUpdate)
-    if (positionFrame !== null)
-      cancelAnimationFrame(positionFrame)
+    if (positionFrame !== null) cancelAnimationFrame(positionFrame)
     host.style.removeProperty('--bewly-vertical-video-toolbar-bottom')
     host.removeEventListener('pointerenter', onPointerActivity)
     host.removeEventListener('pointermove', onPointerActivity)
@@ -314,27 +310,25 @@ function bindHostActivity(host: HTMLElement) {
     hideControls(host)
   }
 
-  if (host.matches(':hover'))
-    showControlsTemporarily(host)
+  if (host.matches(':hover')) showControlsTemporarily(host)
 }
 
 function syncButtonLabel() {
-  if (!button || !currentHost)
-    return
+  if (!button || !currentHost) return
 
-  button.textContent = currentHost.classList.contains(ZOOMED_CLASS) ? t('vertical_video.zoom_out') : t('vertical_video.zoom_in')
+  button.textContent = currentHost.classList.contains(ZOOMED_CLASS)
+    ? t('vertical_video.zoom_out')
+    : t('vertical_video.zoom_in')
 }
 
 function isVerticalZoomActive() {
   return Boolean(
-    currentHost?.classList.contains(VERTICAL_CLASS)
-    && currentHost.classList.contains(ZOOMED_CLASS),
+    currentHost?.classList.contains(VERTICAL_CLASS) && currentHost.classList.contains(ZOOMED_CLASS),
   )
 }
 
 function syncZoomPosition() {
-  if (!currentHost)
-    return
+  if (!currentHost) return
 
   currentHost.style.setProperty('--bewly-vertical-video-zoom-y', `${zoomPositionY}%`)
   if (mapElement && viewportElement && currentHost.classList.contains(ZOOMED_CLASS)) {
@@ -358,14 +352,12 @@ function ensureButton(host: HTMLElement) {
     button.type = 'button'
     button.className = BUTTON_CLASS
     button.addEventListener('click', () => {
-      if (!currentHost?.classList.contains(VERTICAL_CLASS))
-        return
+      if (!currentHost?.classList.contains(VERTICAL_CLASS)) return
 
       const zoomed = currentHost.classList.toggle(ZOOMED_CLASS)
       if (!zoomed) {
         resetZoomPosition()
-      }
-      else {
+      } else {
         scheduleMinimapFrameRender(0, true)
         syncZoomPosition()
       }
@@ -374,8 +366,7 @@ function ensureButton(host: HTMLElement) {
     })
   }
 
-  if (button.parentElement !== host)
-    host.appendChild(button)
+  if (button.parentElement !== host) host.appendChild(button)
 }
 
 function ensureControl(host: HTMLElement) {
@@ -407,8 +398,7 @@ function ensureControl(host: HTMLElement) {
       const onPointerMove = (moveEvent: PointerEvent) => setZoomPositionFromPointer(moveEvent)
       const onPointerUp = () => {
         currentHost?.classList.remove(ADJUSTING_CLASS)
-        if (currentHost)
-          showControlsTemporarily(currentHost)
+        if (currentHost) showControlsTemporarily(currentHost)
         window.removeEventListener('pointermove', onPointerMove)
         window.removeEventListener('pointerup', onPointerUp)
       }
@@ -418,27 +408,27 @@ function ensureControl(host: HTMLElement) {
     })
 
     mapElement.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')
-        return
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
 
       event.preventDefault()
-      zoomPositionY = Math.max(0, Math.min(100, zoomPositionY + (event.key === 'ArrowDown' ? 4 : -4)))
+      zoomPositionY = Math.max(
+        0,
+        Math.min(100, zoomPositionY + (event.key === 'ArrowDown' ? 4 : -4)),
+      )
       syncZoomPosition()
     })
 
     control.appendChild(mapElement)
   }
 
-  if (control.parentElement !== host)
-    host.appendChild(control)
+  if (control.parentElement !== host) host.appendChild(control)
 
   scheduleMinimapFrameRender(0, true)
   syncZoomPosition()
 }
 
 function setZoomPositionFromPointer(event: PointerEvent) {
-  if (!mapElement || !viewportElement)
-    return
+  if (!mapElement || !viewportElement) return
 
   const rect = mapElement.getBoundingClientRect()
   const viewportHeight = viewportElement.offsetHeight || getViewportHeight()
@@ -449,28 +439,24 @@ function setZoomPositionFromPointer(event: PointerEvent) {
 }
 
 function getViewportHeight() {
-  if (!currentHost)
-    return 50
+  if (!currentHost) return 50
 
   const video = getVideoElement()
   // The zoomed view shows the largest 1:1 (square) crop of the video, so the
   // visible vertical slice equals the video width — its fraction of the full
   // frame height is simply videoWidth / videoHeight.
-  const visibleRatio = video?.videoWidth && video.videoHeight
-    ? video.videoWidth / video.videoHeight
-    : 9 / 16
+  const visibleRatio =
+    video?.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 9 / 16
   const clampedRatio = Math.max(0.1, Math.min(1, visibleRatio))
   return Math.max(24, Math.min(MAP_HEIGHT, Math.round(MAP_HEIGHT * clampedRatio)))
 }
 
 function syncMinimapGeometry() {
-  if (!currentHost || !mapElement || !control || !viewportElement)
-    return
+  if (!currentHost || !mapElement || !control || !viewportElement) return
 
   const video = getVideoElement()
-  const videoAspect = video?.videoWidth && video.videoHeight
-    ? video.videoWidth / video.videoHeight
-    : 9 / 16
+  const videoAspect =
+    video?.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 9 / 16
   const mapWidth = Math.max(48, Math.min(96, Math.round(MAP_HEIGHT * videoAspect)))
   const viewportHeight = getViewportHeight()
 
@@ -479,14 +465,11 @@ function syncMinimapGeometry() {
 }
 
 function renderMinimapFrame() {
-  if (!isVerticalZoomActive())
-    return
+  if (!isVerticalZoomActive()) return
 
   const video = getVideoElement()
-  if (!canvasElement || !video?.videoWidth || !video.videoHeight)
-    return
-  if (!isVideoFrameDrawable(video))
-    return
+  if (!canvasElement || !video?.videoWidth || !video.videoHeight) return
+  if (!isVideoFrameDrawable(video)) return
 
   syncMinimapGeometry()
 
@@ -494,14 +477,11 @@ function renderMinimapFrame() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
   const width = Math.max(1, Math.round(rect.width * dpr))
   const height = Math.max(1, Math.round(rect.height * dpr))
-  if (canvasElement.width !== width)
-    canvasElement.width = width
-  if (canvasElement.height !== height)
-    canvasElement.height = height
+  if (canvasElement.width !== width) canvasElement.width = width
+  if (canvasElement.height !== height) canvasElement.height = height
 
   const ctx = canvasElement.getContext('2d')
-  if (!ctx)
-    return
+  if (!ctx) return
 
   const scale = Math.min(width / video.videoWidth, height / video.videoHeight)
   const drawWidth = video.videoWidth * scale
@@ -514,32 +494,32 @@ function renderMinimapFrame() {
     frameCanvas.width = width
     frameCanvas.height = height
     const frameCtx = frameCanvas.getContext('2d', { alpha: false })
-    if (!frameCtx)
-      return
+    if (!frameCtx) return
 
     frameCtx.fillStyle = '#000'
     frameCtx.fillRect(0, 0, width, height)
     frameCtx.drawImage(video, x, y, drawWidth, drawHeight)
-    if (isCanvasFrameEffectivelyBlack(frameCtx, width, height))
-      return
+    if (isCanvasFrameEffectivelyBlack(frameCtx, width, height)) return
 
     ctx.clearRect(0, 0, width, height)
     ctx.drawImage(frameCanvas, 0, 0)
     lastMinimapRenderAt = Date.now()
-  }
-  catch {
+  } catch {
     // The live frame can be temporarily unavailable while Bilibili swaps streams.
   }
 }
 
 function isVideoFrameDrawable(video: HTMLVideoElement) {
-  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA)
-    return false
+  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return false
 
   return true
 }
 
-function isCanvasFrameEffectivelyBlack(ctx: CanvasRenderingContext2D, width: number, height: number) {
+function isCanvasFrameEffectivelyBlack(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
   const sampleSize = Math.max(1, Math.min(18, width, height))
   const sampleX = Math.max(0, Math.floor((width - sampleSize) / 2))
   const sampleY = Math.max(0, Math.floor((height - sampleSize) / 2))
@@ -548,24 +528,19 @@ function isCanvasFrameEffectivelyBlack(ctx: CanvasRenderingContext2D, width: num
     const data = ctx.getImageData(sampleX, sampleY, sampleSize, sampleSize).data
     let brightPixels = 0
     for (let i = 0; i < data.length; i += 4) {
-      if (data[i] + data[i + 1] + data[i + 2] > 30)
-        brightPixels++
+      if (data[i] + data[i + 1] + data[i + 2] > 30) brightPixels++
     }
     return brightPixels / (data.length / 4) < 0.02
-  }
-  catch {
+  } catch {
     return false
   }
 }
 
 function scheduleMinimapFrameRender(delay = 80, force = false) {
-  if (!isVerticalZoomActive())
-    return
-  if (!force && Date.now() - lastMinimapRenderAt < MINIMAP_FRAME_REFRESH_INTERVAL)
-    return
+  if (!isVerticalZoomActive()) return
+  if (!force && Date.now() - lastMinimapRenderAt < MINIMAP_FRAME_REFRESH_INTERVAL) return
 
-  if (minimapRenderTimer)
-    clearTimeout(minimapRenderTimer)
+  if (minimapRenderTimer) clearTimeout(minimapRenderTimer)
 
   minimapRenderTimer = setTimeout(() => {
     minimapRenderTimer = null
@@ -574,11 +549,14 @@ function scheduleMinimapFrameRender(delay = 80, force = false) {
 }
 
 function syncVideoState() {
-  if (!currentHost)
-    return
+  if (!currentHost) return
 
   const video = getVideoElement()
-  const vertical = !!(video?.videoWidth && video.videoHeight && video.videoWidth < video.videoHeight)
+  const vertical = !!(
+    video?.videoWidth &&
+    video.videoHeight &&
+    video.videoWidth < video.videoHeight
+  )
   currentHost.classList.toggle(VERTICAL_CLASS, vertical)
   if (!vertical) {
     if (minimapRenderTimer) {
@@ -594,16 +572,14 @@ function syncVideoState() {
   }
 
   // 仅竖屏视频挂载 ResizeObserver、全屏与指针监听及控件，避免横屏视频在加载和模式切换时产生无效重排。
-  if (!hostActivityCleanup)
-    bindHostActivity(currentHost)
+  if (!hostActivityCleanup) bindHostActivity(currentHost)
   ensureButton(currentHost)
   ensureControl(currentHost)
   syncButtonLabel()
 }
 
 function bindVideoMetadata(video: HTMLVideoElement | null) {
-  if (observedVideo === video)
-    return
+  if (observedVideo === video) return
 
   metadataListener?.()
   observedVideo = video
@@ -611,8 +587,7 @@ function bindVideoMetadata(video: HTMLVideoElement | null) {
   lastMinimapRenderAt = 0
   resetZoomPosition()
 
-  if (!video)
-    return
+  if (!video) return
 
   const onLoadedMetadata = () => syncVideoState()
   const onFrameReady = () => scheduleMinimapFrameRender()
@@ -634,8 +609,7 @@ function bindVideoMetadata(video: HTMLVideoElement | null) {
 }
 
 function scheduleRefresh(delay = 300) {
-  if (refreshTimer)
-    clearTimeout(refreshTimer)
+  if (refreshTimer) clearTimeout(refreshTimer)
 
   refreshTimer = setTimeout(() => {
     refreshTimer = null
@@ -648,13 +622,18 @@ function refreshVerticalVideoZoom() {
   const video = getVideoElement()
 
   if (!host || !video) {
-    if (refreshAttempts++ < MAX_REFRESH_ATTEMPTS)
-      scheduleRefresh()
+    if (refreshAttempts++ < MAX_REFRESH_ATTEMPTS) scheduleRefresh()
     return
   }
 
   if (currentHost && currentHost !== host) {
-    currentHost.classList.remove(HOST_CLASS, VERTICAL_CLASS, ZOOMED_CLASS, ADJUSTING_CLASS, ACTIVE_CLASS)
+    currentHost.classList.remove(
+      HOST_CLASS,
+      VERTICAL_CLASS,
+      ZOOMED_CLASS,
+      ADJUSTING_CLASS,
+      ACTIVE_CLASS,
+    )
     currentHost.style.removeProperty('--bewly-vertical-video-zoom-y')
   }
 
@@ -697,7 +676,13 @@ export function resetVerticalVideoZoom() {
   button = null
   control?.remove()
   control = null
-  currentHost?.classList.remove(HOST_CLASS, VERTICAL_CLASS, ZOOMED_CLASS, ADJUSTING_CLASS, ACTIVE_CLASS)
+  currentHost?.classList.remove(
+    HOST_CLASS,
+    VERTICAL_CLASS,
+    ZOOMED_CLASS,
+    ADJUSTING_CLASS,
+    ACTIVE_CLASS,
+  )
   currentHost?.style.removeProperty('--bewly-vertical-video-zoom-y')
   currentHost = null
   zoomPositionY = DEFAULT_ZOOM_POSITION_Y

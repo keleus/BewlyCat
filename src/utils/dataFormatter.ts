@@ -6,15 +6,12 @@ import { LanguageType } from './../enums/appEnums'
 export const { t } = i18n.global
 
 export function parseStatNumber(value?: number | string | null): number | undefined {
-  if (typeof value === 'number')
-    return Number.isFinite(value) ? value : undefined
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined
 
-  if (typeof value !== 'string')
-    return undefined
+  if (typeof value !== 'string') return undefined
 
   const trimmed = value.trim()
-  if (!trimmed || trimmed === '-' || trimmed === '--')
-    return undefined
+  if (!trimmed || trimmed === '-' || trimmed === '--') return undefined
 
   let normalized = trimmed.replace(/,/g, '').toLowerCase()
   let multiplier = 1
@@ -30,12 +27,10 @@ export function parseStatNumber(value?: number | string | null): number | undefi
   }
 
   normalized = normalized.replace(/[^0-9.]/g, '')
-  if (!normalized)
-    return undefined
+  if (!normalized) return undefined
 
   const numeric = Number(normalized)
-  if (Number.isNaN(numeric))
-    return undefined
+  if (Number.isNaN(numeric)) return undefined
 
   return numeric * multiplier
 }
@@ -51,16 +46,17 @@ export function numFormatter(num: number | string): string {
       { value: 1e7, symbol: ' 千万' },
       { value: 1e8, symbol: ' 亿' },
     ]
-  }
-  else if (settings.value.language === LanguageType.Cantonese || settings.value.language === LanguageType.Mandarin_TW) {
+  } else if (
+    settings.value.language === LanguageType.Cantonese ||
+    settings.value.language === LanguageType.Mandarin_TW
+  ) {
     lookup = [
       { value: 1, symbol: ' ' },
       { value: 1e4, symbol: ' 萬' },
       { value: 1e7, symbol: ' 千萬' },
       { value: 1e8, symbol: ' 億' },
     ]
-  }
-  else {
+  } else {
     lookup = [
       { value: 1, symbol: '' },
       { value: 1e3, symbol: 'K' },
@@ -73,9 +69,12 @@ export function numFormatter(num: number | string): string {
     const parsed = parseStatNumber(num)
     num = typeof parsed === 'number' ? parsed : Number(num)
   }
-  const item = lookup.slice().reverse().find((item) => {
-    return num >= item.value
-  })
+  const item = lookup
+    .slice()
+    .reverse()
+    .find((item) => {
+      return num >= item.value
+    })
   return item ? (num / item.value).toFixed(digits).replace(rx, '$1') + item.symbol : '0'
 }
 
@@ -101,12 +100,10 @@ export function calcTimeSince(date: number | string | Date) {
     }
     const hours = Math.floor(diffSeconds / 3600)
     return `${hours} ${t('common.hour', hours)}`
-  }
-  else if (daysDiff === 1) {
+  } else if (daysDiff === 1) {
     // 昨天
     return t('common.yesterday')
-  }
-  else {
+  } else {
     // 显示具体日期
     const year = targetDate.getFullYear()
     const month = targetDate.getMonth() + 1
@@ -115,8 +112,7 @@ export function calcTimeSince(date: number | string | Date) {
     // 如果是同一年，只显示月日
     if (year === now.getFullYear()) {
       return `${month}-${day}`
-    }
-    else {
+    } else {
       return `${year}-${month}-${day}`
     }
   }

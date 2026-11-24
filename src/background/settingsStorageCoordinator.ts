@@ -1,7 +1,11 @@
 import browser from 'webextension-polyfill'
 
 import { onMessage } from '~/utils/messaging'
-import type { SettingsCloudSyncEntry, SettingsCloudSyncMode, SettingsCloudSyncVersion } from '~/utils/settingsCloudSyncProtocol'
+import type {
+  SettingsCloudSyncEntry,
+  SettingsCloudSyncMode,
+  SettingsCloudSyncVersion,
+} from '~/utils/settingsCloudSyncProtocol'
 import {
   compareSettingsCloudSyncVersions,
   createSettingsCloudSyncEntry,
@@ -11,7 +15,10 @@ import {
   parseSettingsCloudSyncKey,
   SETTINGS_CLOUD_SYNC_ENABLED_KEY,
 } from '~/utils/settingsCloudSyncProtocol'
-import type { SettingsStoragePatchResponse, SettingsStorageWriteMeta } from '~/utils/settingsStorageProtocol'
+import type {
+  SettingsStoragePatchResponse,
+  SettingsStorageWriteMeta,
+} from '~/utils/settingsStorageProtocol'
 import {
   applySettingsStoragePatch,
   createTopLevelSettingsStoragePatch,
@@ -36,8 +43,7 @@ let initialized = false
 let writeQueue: Promise<void> = Promise.resolve()
 
 function createStorageId() {
-  if (typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID()
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
 
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }
@@ -63,18 +69,19 @@ function completeStorageMeta(value: unknown) {
 
 function enqueueSettingsWrite<T>(operation: () => Promise<T>): Promise<T> {
   const result = writeQueue.then(operation, operation)
-  writeQueue = result.then(() => undefined, () => undefined)
+  writeQueue = result.then(
+    () => undefined,
+    () => undefined,
+  )
   return result
 }
 
 function incrementRevision(meta: SettingsStorageWriteMeta) {
-  if (meta.revision < Number.MAX_SAFE_INTEGER)
-    meta.revision++
+  if (meta.revision < Number.MAX_SAFE_INTEGER) meta.revision++
 }
 
 function createNextCloudVersion(meta: SettingsStorageWriteMeta): SettingsCloudSyncVersion {
-  if (meta.cloudClock < Number.MAX_SAFE_INTEGER)
-    meta.cloudClock++
+  if (meta.cloudClock < Number.MAX_SAFE_INTEGER) meta.cloudClock++
 
   return {
     counter: meta.cloudClock,
@@ -87,10 +94,8 @@ function applyCloudEntry(
   field: string,
   entry: SettingsCloudSyncEntry,
 ) {
-  if (entry.deleted)
-    Reflect.deleteProperty(settings, field)
-  else
-    settings[field] = entry.value
+  if (entry.deleted) Reflect.deleteProperty(settings, field)
+  else settings[field] = entry.value
 }
 
 function createUpload(
@@ -100,26 +105,22 @@ function createUpload(
   field: string,
 ) {
   const version = meta.fieldVersions[field]
-  if (version)
-    uploads[field] = createSettingsCloudSyncEntry(settings, field, version)
+  if (version) uploads[field] = createSettingsCloudSyncEntry(settings, field, version)
 }
 
 async function alignCloudClockWithCurrentSnapshot(meta: SettingsStorageWriteMeta) {
   const cloudItems = await browser.storage.sync.get(null)
   for (const [key, value] of Object.entries(cloudItems)) {
-    if (!parseSettingsCloudSyncKey(key))
-      continue
+    if (!parseSettingsCloudSyncKey(key)) continue
 
     const entry = normalizeSettingsCloudSyncEntry(value)
-    if (entry)
-      meta.cloudClock = Math.max(meta.cloudClock, entry.version.counter)
+    if (entry) meta.cloudClock = Math.max(meta.cloudClock, entry.version.counter)
   }
 }
 
 async function importSettings(value: unknown): Promise<SettingsStoragePatchResponse> {
   const request = normalizeSettingsStorageImportRequest(value)
-  if (!request)
-    throw new TypeError('Invalid settings storage import')
+  if (!request) throw new TypeError('Invalid settings storage import')
 
   const stored = await browser.storage.local.get([
     SETTINGS_CLOUD_SYNC_ENABLED_KEY,
@@ -144,24 +145,24 @@ async function importSettings(value: unknown): Promise<SettingsStoragePatchRespo
   if (syncEnabled && meta.cloudSyncInitialized && syncFields.length > 0)
     await alignCloudClockWithCurrentSnapshot(meta)
 
-  if (settingsChanged)
-    incrementRevision(meta)
+  if (settingsChanged) incrementRevision(meta)
 
   // Same as applyPatch: imported values keep versions even while sync is
   // disabled, so a later bootstrap uploads them instead of losing them to
   // older cloud values.
   if (syncFields.length > 0) {
     const version = createNextCloudVersion(meta)
-    for (const field of syncFields)
-      meta.fieldVersions[field] = version
+    for (const field of syncFields) meta.fieldVersions[field] = version
   }
 
-  await browser.storage.local.set(settingsChanged
-    ? {
-        [SETTINGS_STORAGE_KEY]: serializedValue,
-        [SETTINGS_STORAGE_META_KEY]: meta,
-      }
-    : { [SETTINGS_STORAGE_META_KEY]: meta })
+  await browser.storage.local.set(
+    settingsChanged
+      ? {
+          [SETTINGS_STORAGE_KEY]: serializedValue,
+          [SETTINGS_STORAGE_META_KEY]: meta,
+        }
+      : { [SETTINGS_STORAGE_META_KEY]: meta },
+  )
 
   return {
     accepted: true,
@@ -173,8 +174,7 @@ async function importSettings(value: unknown): Promise<SettingsStoragePatchRespo
 
 async function applyPatch(value: unknown): Promise<SettingsStoragePatchResponse> {
   const request = normalizeSettingsStoragePatchRequest(value)
-  if (!request)
-    throw new TypeError('Invalid settings storage patch')
+  if (!request) throw new TypeError('Invalid settings storage patch')
 
   const stored = await browser.storage.local.get([
     SETTINGS_CLOUD_SYNC_ENABLED_KEY,
@@ -182,7 +182,9 @@ async function applyPatch(value: unknown): Promise<SettingsStoragePatchResponse>
     SETTINGS_STORAGE_META_KEY,
   ])
   const currentValue = parseStoredSettings(stored[SETTINGS_STORAGE_KEY])
-  const { changed: metaWasCompleted, meta: currentMeta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
+  const { changed: metaWasCompleted, meta: currentMeta } = completeStorageMeta(
+    stored[SETTINGS_STORAGE_META_KEY],
+  )
   if (metaWasCompleted)
     await browser.storage.local.set({ [SETTINGS_STORAGE_META_KEY]: currentMeta })
 
@@ -217,22 +219,22 @@ async function applyPatch(value: unknown): Promise<SettingsStoragePatchResponse>
     // tombstones instead of being resurrected by older cloud values.
     const version = createNextCloudVersion(currentMeta)
     for (const field of [...Object.keys(actualPatch.set), ...actualPatch.remove]) {
-      if (isSettingsCloudSyncField(field))
-        currentMeta.fieldVersions[field] = version
+      if (isSettingsCloudSyncField(field)) currentMeta.fieldVersions[field] = version
     }
   }
 
-  currentMeta.recentOperationIds = [
-    ...currentMeta.recentOperationIds,
-    operationKey,
-  ].slice(-SETTINGS_STORAGE_RECENT_OPERATION_LIMIT)
+  currentMeta.recentOperationIds = [...currentMeta.recentOperationIds, operationKey].slice(
+    -SETTINGS_STORAGE_RECENT_OPERATION_LIMIT,
+  )
 
-  await browser.storage.local.set(settingsChanged
-    ? {
-        [SETTINGS_STORAGE_KEY]: serializedValue,
-        [SETTINGS_STORAGE_META_KEY]: currentMeta,
-      }
-    : { [SETTINGS_STORAGE_META_KEY]: currentMeta })
+  await browser.storage.local.set(
+    settingsChanged
+      ? {
+          [SETTINGS_STORAGE_KEY]: serializedValue,
+          [SETTINGS_STORAGE_META_KEY]: currentMeta,
+        }
+      : { [SETTINGS_STORAGE_META_KEY]: currentMeta },
+  )
 
   return {
     accepted: true,
@@ -243,13 +245,9 @@ async function applyPatch(value: unknown): Promise<SettingsStoragePatchResponse>
 }
 
 async function readSettings(): Promise<SettingsStoragePatchResponse> {
-  const stored = await browser.storage.local.get([
-    SETTINGS_STORAGE_KEY,
-    SETTINGS_STORAGE_META_KEY,
-  ])
+  const stored = await browser.storage.local.get([SETTINGS_STORAGE_KEY, SETTINGS_STORAGE_META_KEY])
   const { changed, meta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
-  if (changed)
-    await browser.storage.local.set({ [SETTINGS_STORAGE_META_KEY]: meta })
+  if (changed) await browser.storage.local.set({ [SETTINGS_STORAGE_META_KEY]: meta })
 
   return {
     accepted: true,
@@ -260,8 +258,7 @@ async function readSettings(): Promise<SettingsStoragePatchResponse> {
 }
 
 function serializeStoredSettings(value: unknown) {
-  if (typeof value === 'string')
-    return value
+  if (typeof value === 'string') return value
 
   return value == null ? undefined : JSON.stringify(parseStoredSettings(value))
 }
@@ -272,13 +269,9 @@ function serializeStoredSettings(value: unknown) {
  * 才进入队列，避免并发生成不同的 epoch。
  */
 async function readSettingsWithoutQueue(): Promise<SettingsStoragePatchResponse> {
-  const stored = await browser.storage.local.get([
-    SETTINGS_STORAGE_KEY,
-    SETTINGS_STORAGE_META_KEY,
-  ])
+  const stored = await browser.storage.local.get([SETTINGS_STORAGE_KEY, SETTINGS_STORAGE_META_KEY])
   const { changed, meta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
-  if (changed)
-    return enqueueSettingsWrite(readSettings)
+  if (changed) return enqueueSettingsWrite(readSettings)
 
   return {
     accepted: true,
@@ -292,8 +285,7 @@ function normalizeCloudEntries(entries: Record<string, SettingsCloudSyncEntry>) 
   const normalized: Record<string, SettingsCloudSyncEntry> = {}
   for (const [field, value] of Object.entries(entries)) {
     const entry = normalizeSettingsCloudSyncEntry(value)
-    if (entry && isSettingsCloudSyncField(field))
-      normalized[field] = entry
+    if (entry && isSettingsCloudSyncField(field)) normalized[field] = entry
   }
   return normalized
 }
@@ -319,17 +311,17 @@ async function writeCloudMergeResult(
   const settingsChanged = serializedSettings !== JSON.stringify(previousSettings)
   const metaChanged = JSON.stringify(meta) !== previousMeta
 
-  if (settingsChanged)
-    incrementRevision(meta)
-  if (!settingsChanged && !metaChanged)
-    return
+  if (settingsChanged) incrementRevision(meta)
+  if (!settingsChanged && !metaChanged) return
 
-  await browser.storage.local.set(settingsChanged
-    ? {
-        [SETTINGS_STORAGE_KEY]: serializedSettings,
-        [SETTINGS_STORAGE_META_KEY]: meta,
-      }
-    : { [SETTINGS_STORAGE_META_KEY]: meta })
+  await browser.storage.local.set(
+    settingsChanged
+      ? {
+          [SETTINGS_STORAGE_KEY]: serializedSettings,
+          [SETTINGS_STORAGE_META_KEY]: meta,
+        }
+      : { [SETTINGS_STORAGE_META_KEY]: meta },
+  )
 }
 
 /**
@@ -350,8 +342,7 @@ export function reconcileSettingsCloudSyncSnapshot(
       SETTINGS_STORAGE_KEY,
       SETTINGS_STORAGE_META_KEY,
     ])
-    if (!isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY]))
-      return { uploads: {} }
+    if (!isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])) return { uploads: {} }
 
     const previousSettings = parseStoredSettings(stored[SETTINGS_STORAGE_KEY])
     const settings = { ...previousSettings }
@@ -370,8 +361,7 @@ export function reconcileSettingsCloudSyncSnapshot(
         meta.cloudClock = Math.max(meta.cloudClock, remote.version.counter)
 
       for (const [field, remote] of Object.entries(cloudEntries)) {
-        if (mode === 'push')
-          continue
+        if (mode === 'push') continue
         if (mode === 'pull' || !bootstrapDirtyFields.has(field))
           applyRemoteWinner(settings, meta, field, remote)
       }
@@ -385,17 +375,13 @@ export function reconcileSettingsCloudSyncSnapshot(
       // identical now) while still uploading local-only fields so offline edits
       // and removal tombstones reach the cloud; `push` uploads every known
       // local field with one shared version.
-      const localFieldCandidates = mode === 'push' || cloudFields.size === 0
-        ? [...new Set([
-            ...Object.keys(settings),
-            ...bootstrapDirtyFields,
-          ])]
-        : mode === 'pull'
-          ? [...bootstrapDirtyFields].filter(field => !cloudFields.has(field))
-          : [...bootstrapDirtyFields]
-      const fieldsToUpload = localFieldCandidates
-        .filter(isSettingsCloudSyncField)
-        .sort()
+      const localFieldCandidates =
+        mode === 'push' || cloudFields.size === 0
+          ? [...new Set([...Object.keys(settings), ...bootstrapDirtyFields])]
+          : mode === 'pull'
+            ? [...bootstrapDirtyFields].filter((field) => !cloudFields.has(field))
+            : [...bootstrapDirtyFields]
+      const fieldsToUpload = localFieldCandidates.filter(isSettingsCloudSyncField).sort()
 
       if ((cloudFields.size === 0 || mode === 'push') && fieldsToUpload.length > 0) {
         // Use one version for the entire initial snapshot (seeding an empty
@@ -408,16 +394,14 @@ export function reconcileSettingsCloudSyncSnapshot(
           meta.fieldVersions[field] = bootstrapVersion
           createUpload(uploads, settings, meta, field)
         }
-      }
-      else {
+      } else {
         for (const field of fieldsToUpload) {
           meta.fieldVersions[field] = createNextCloudVersion(meta)
           createUpload(uploads, settings, meta, field)
         }
       }
       meta.cloudSyncInitialized = true
-    }
-    else {
+    } else {
       // Align the local clock with the snapshot before creating any version.
       // `push` skips applying remote entries entirely, so without this scan a
       // stale local clock would produce versions below current cloud entries
@@ -426,32 +410,26 @@ export function reconcileSettingsCloudSyncSnapshot(
         meta.cloudClock = Math.max(meta.cloudClock, remote.version.counter)
 
       for (const [field, remote] of Object.entries(cloudEntries)) {
-        if (mode === 'push')
-          continue
-        const comparison = compareSettingsCloudSyncVersions(meta.fieldVersions[field], remote.version)
-        if (mode === 'pull' || comparison <= 0)
-          applyRemoteWinner(settings, meta, field, remote)
-        else
-          createUpload(uploads, settings, meta, field)
+        if (mode === 'push') continue
+        const comparison = compareSettingsCloudSyncVersions(
+          meta.fieldVersions[field],
+          remote.version,
+        )
+        if (mode === 'pull' || comparison <= 0) applyRemoteWinner(settings, meta, field, remote)
+        else createUpload(uploads, settings, meta, field)
       }
 
-      const localFields = new Set([
-        ...Object.keys(settings),
-        ...Object.keys(meta.fieldVersions),
-      ])
+      const localFields = new Set([...Object.keys(settings), ...Object.keys(meta.fieldVersions)])
       // A push stamps the whole local snapshot with one shared version so a
       // concurrent push resolves to a single consistent device.
       const pushVersion = mode === 'push' ? createNextCloudVersion(meta) : undefined
       for (const field of [...localFields].sort()) {
-        if (!isSettingsCloudSyncField(field))
-          continue
-        if (mode !== 'push' && cloudFields.has(field))
-          continue
+        if (!isSettingsCloudSyncField(field)) continue
+        if (mode !== 'push' && cloudFields.has(field)) continue
 
         if (pushVersion) {
           meta.fieldVersions[field] = pushVersion
-        }
-        else if (!meta.fieldVersions[field]) {
+        } else if (!meta.fieldVersions[field]) {
           meta.fieldVersions[field] = createNextCloudVersion(meta)
         }
         createUpload(uploads, settings, meta, field)
@@ -473,21 +451,18 @@ export function applySettingsCloudSyncChanges(
       SETTINGS_STORAGE_KEY,
       SETTINGS_STORAGE_META_KEY,
     ])
-    if (!isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY]))
-      return { uploads: {} }
+    if (!isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])) return { uploads: {} }
 
     const previousSettings = parseStoredSettings(stored[SETTINGS_STORAGE_KEY])
     const settings = { ...previousSettings }
     const { meta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
-    if (!meta.cloudSyncInitialized)
-      return { uploads: {} }
+    if (!meta.cloudSyncInitialized) return { uploads: {} }
 
     const previousMeta = JSON.stringify(meta)
     const uploads: Record<string, SettingsCloudSyncEntry> = {}
 
     for (const [field, value] of Object.entries(changes)) {
-      if (!isSettingsCloudSyncField(field))
-        continue
+      if (!isSettingsCloudSyncField(field)) continue
 
       const remote = value == null ? null : normalizeSettingsCloudSyncEntry(value)
       if (!remote) {
@@ -498,10 +473,8 @@ export function applySettingsCloudSyncChanges(
       }
 
       const comparison = compareSettingsCloudSyncVersions(meta.fieldVersions[field], remote.version)
-      if (comparison <= 0)
-        applyRemoteWinner(settings, meta, field, remote)
-      else
-        createUpload(uploads, settings, meta, field)
+      if (comparison <= 0) applyRemoteWinner(settings, meta, field, remote)
+      else createUpload(uploads, settings, meta, field)
     }
 
     await writeCloudMergeResult(previousSettings, settings, previousMeta, meta)
@@ -520,12 +493,10 @@ export function collectSettingsCloudSyncEntries(fields: string[]) {
     const { meta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
     const entries: Record<string, SettingsCloudSyncEntry> = {}
 
-    if (!meta.cloudSyncInitialized)
-      return entries
+    if (!meta.cloudSyncInitialized) return entries
 
     for (const field of new Set(fields)) {
-      if (isSettingsCloudSyncField(field))
-        createUpload(entries, settings, meta, field)
+      if (isSettingsCloudSyncField(field)) createUpload(entries, settings, meta, field)
     }
     return entries
   })
@@ -535,34 +506,34 @@ function handleStorageReset(
   changes: Record<string, browser.Storage.StorageChange>,
   areaName: string,
 ) {
-  if (areaName !== 'local')
-    return
+  if (areaName !== 'local') return
 
   const metaChange = changes[SETTINGS_STORAGE_META_KEY]
-  if (metaChange?.oldValue == null || metaChange.newValue != null)
-    return
+  if (metaChange?.oldValue == null || metaChange.newValue != null) return
 
-  const settingsWereRemoved = changes[SETTINGS_STORAGE_KEY]?.newValue == null
-    && SETTINGS_STORAGE_KEY in changes
+  const settingsWereRemoved =
+    changes[SETTINGS_STORAGE_KEY]?.newValue == null && SETTINGS_STORAGE_KEY in changes
 
   void enqueueSettingsWrite(async () => {
     // Run after any write that raced with clear, so an old in-flight patch cannot
     // recreate the cleared settings or its epoch.
-    if (settingsWereRemoved)
-      await browser.storage.local.remove(SETTINGS_STORAGE_KEY)
+    if (settingsWereRemoved) await browser.storage.local.remove(SETTINGS_STORAGE_KEY)
 
     const { meta } = completeStorageMeta(undefined)
     await browser.storage.local.set({ [SETTINGS_STORAGE_META_KEY]: meta })
-  }).catch(error => console.error('[BewlyCat] Failed to rotate settings storage epoch:', error))
+  }).catch((error) => console.error('[BewlyCat] Failed to rotate settings storage epoch:', error))
 }
 
 export function setupSettingsStorageCoordinator() {
-  if (initialized)
-    return
+  if (initialized) return
 
   initialized = true
   browser.storage.onChanged.addListener(handleStorageReset)
   onMessage(SETTINGS_STORAGE_READ_MESSAGE, readSettingsWithoutQueue)
-  onMessage(SETTINGS_STORAGE_PATCH_MESSAGE, value => enqueueSettingsWrite(() => applyPatch(value)))
-  onMessage(SETTINGS_STORAGE_IMPORT_MESSAGE, value => enqueueSettingsWrite(() => importSettings(value)))
+  onMessage(SETTINGS_STORAGE_PATCH_MESSAGE, (value) =>
+    enqueueSettingsWrite(() => applyPatch(value)),
+  )
+  onMessage(SETTINGS_STORAGE_IMPORT_MESSAGE, (value) =>
+    enqueueSettingsWrite(() => importSettings(value)),
+  )
 }

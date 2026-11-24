@@ -9,8 +9,7 @@ export function getTimeRangeParams(filters: VideoSearchFilters): Record<string, 
   // 自定义日期范围
   if (timeRange === 'custom') {
     // 如果没有输入任何日期，返回空
-    if (!customStartDate && !customEndDate)
-      return {}
+    if (!customStartDate && !customEndDate) return {}
 
     let begin = 0
     let end = Math.floor(Date.now() / 1000)
@@ -18,20 +17,17 @@ export function getTimeRangeParams(filters: VideoSearchFilters): Record<string, 
     // 解析开始日期
     if (customStartDate) {
       const startTime = new Date(customStartDate).getTime()
-      if (!Number.isNaN(startTime))
-        begin = Math.floor(startTime / 1000)
+      if (!Number.isNaN(startTime)) begin = Math.floor(startTime / 1000)
     }
 
     // 解析结束日期（设置为当天的23:59:59）
     if (customEndDate) {
       const endTime = new Date(customEndDate).getTime()
-      if (!Number.isNaN(endTime))
-        end = Math.floor(endTime / 1000) + 86399 // 加上23小时59分59秒
+      if (!Number.isNaN(endTime)) end = Math.floor(endTime / 1000) + 86399 // 加上23小时59分59秒
     }
 
     // 如果开始日期大于结束日期，交换它们
-    if (begin > 0 && end > 0 && begin > end)
-      [begin, end] = [end, begin]
+    if (begin > 0 && end > 0 && begin > end) [begin, end] = [end, begin]
 
     return {
       pubtime_begin_s: begin,
@@ -40,8 +36,7 @@ export function getTimeRangeParams(filters: VideoSearchFilters): Record<string, 
   }
 
   // 预设日期范围
-  if (timeRange === 'all')
-    return {}
+  if (timeRange === 'all') return {}
 
   const now = Math.floor(Date.now() / 1000)
   let begin = 0
@@ -58,8 +53,7 @@ export function getTimeRangeParams(filters: VideoSearchFilters): Record<string, 
     default:
       begin = 0
   }
-  if (begin <= 0)
-    return {}
+  if (begin <= 0) return {}
   return {
     pubtime_begin_s: begin,
     pubtime_end_s: now,
@@ -95,28 +89,21 @@ export function buildVideoSearchParams(options: {
  * 过滤视频广告
  */
 export function applyVideoTimeFilter(list: any[]): any[] {
-  if (!Array.isArray(list))
-    return []
-  return list.filter(item => !isVideoAd(item))
+  if (!Array.isArray(list)) return []
+  return list.filter((item) => !isVideoAd(item))
 }
 
 /**
  * 判断是否为视频广告
  */
 function isVideoAd(item: any): boolean {
-  if (!item || typeof item !== 'object')
-    return false
-  if (item.is_ad === true || item.is_ad_loc === true)
-    return true
-  if (item.cm || item.cm_info || item.cm_mark)
-    return true
-  if (item.ad_info || item.ad_extra || item.ad_index)
-    return true
-  if (typeof item.card_type === 'string' && item.card_type.toLowerCase().includes('ad'))
-    return true
+  if (!item || typeof item !== 'object') return false
+  if (item.is_ad === true || item.is_ad_loc === true) return true
+  if (item.cm || item.cm_info || item.cm_mark) return true
+  if (item.ad_info || item.ad_extra || item.ad_index) return true
+  if (typeof item.card_type === 'string' && item.card_type.toLowerCase().includes('ad')) return true
   // 检查 type 字段是否包含 "ad"
-  if (typeof item.type === 'string' && item.type.toLowerCase().includes('ad'))
-    return true
+  if (typeof item.type === 'string' && item.type.toLowerCase().includes('ad')) return true
   return false
 }
 

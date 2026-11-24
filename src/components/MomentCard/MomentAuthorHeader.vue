@@ -6,7 +6,12 @@ import type { DisplayMoment } from './types'
 import { getAvatarThumbnailUrl, getMomentAuthorUrl } from './utils'
 
 // 动态卡片头部：发布者头像、昵称与发布时间。右侧操作经 actions 插槽注入。
-const { author, href = '', time = '', meta = '' } = defineProps<{
+const {
+  author,
+  href = '',
+  time = '',
+  meta = '',
+} = defineProps<{
   author: DisplayMoment['author']
   /** 头部留白与时间的落点（通常为动态详情） */
   href?: string
@@ -43,7 +48,13 @@ const authorUrl = computed(() => getMomentAuthorUrl(author))
       rel="noopener noreferrer"
       @click="emit('authorClick', $event)"
     >
-      <img :src="getAvatarThumbnailUrl(author.face)" :alt="author.name" class="moment-card__avatar" loading="lazy" decoding="async">
+      <img
+        :src="getAvatarThumbnailUrl(author.face)"
+        :alt="author.name"
+        class="moment-card__avatar"
+        loading="lazy"
+        decoding="async"
+      />
     </a>
     <img
       v-else
@@ -52,7 +63,7 @@ const authorUrl = computed(() => getMomentAuthorUrl(author))
       class="moment-card__avatar"
       loading="lazy"
       decoding="async"
-    >
+    />
     <span class="moment-card__identity">
       <a
         v-if="authorUrl"
@@ -62,12 +73,26 @@ const authorUrl = computed(() => getMomentAuthorUrl(author))
         :aria-label="t('moment_card.open_space', { name: author.name })"
         rel="noopener noreferrer"
         @click="emit('authorClick', $event)"
-      >{{ author.name }}</a>
+        >{{ author.name }}</a
+      >
       <strong v-else>
-        <a :href="href" class="moment-card__text-link" draggable="false" tabindex="-1" @click="emit('detailClick', $event)">{{ author.name }}</a>
+        <a
+          :href="href"
+          class="moment-card__text-link"
+          draggable="false"
+          tabindex="-1"
+          @click="emit('detailClick', $event)"
+          >{{ author.name }}</a
+        >
       </strong>
       <small>
-        <a :href="href" class="moment-card__text-link" draggable="false" tabindex="-1" @click="emit('detailClick', $event)">
+        <a
+          :href="href"
+          class="moment-card__text-link"
+          draggable="false"
+          tabindex="-1"
+          @click="emit('detailClick', $event)"
+        >
           {{ time || t('moment_card.just_now') }}<template v-if="meta"> · {{ meta }}</template>
         </a>
       </small>
@@ -79,7 +104,7 @@ const authorUrl = computed(() => getMomentAuthorUrl(author))
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__header {
   position: relative;

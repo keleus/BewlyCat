@@ -242,8 +242,7 @@ const GLOBAL_STYLE_ID = 'bewly-native-select-dropdown-style'
 // 无法覆盖到 body 下的浮层，因此全局再注入一份，保证菜单在任何挂载点都被样式覆盖。
 // 先按 id 复用文档中已有的节点，避免 MAIN / ISOLATED 两个 world 重复插入。
 function ensureGlobalStyle(): void {
-  if (globalStyleEl?.isConnected)
-    return
+  if (globalStyleEl?.isConnected) return
 
   const existing = document.getElementById(GLOBAL_STYLE_ID)
   if (existing instanceof HTMLStyleElement) {
@@ -286,7 +285,10 @@ function isBiliDarkOnlyActive(): boolean {
 }
 
 /** 从触发器（含 Shadow DOM 继承）与文档根解析当前生效的主题变量值。 */
-function getEffectiveThemeVars(anchor: HTMLElement, skipRootSurfaceVars: boolean): {
+function getEffectiveThemeVars(
+  anchor: HTMLElement,
+  skipRootSurfaceVars: boolean,
+): {
   elevated: string
   text1: string
   borderColor: string
@@ -299,14 +301,14 @@ function getEffectiveThemeVars(anchor: HTMLElement, skipRootSurfaceVars: boolean
   // 因此以锚点计算结果为准，再回落到文档根。
   const anchorStyle = getComputedStyle(anchor)
   const rootStyle = getComputedStyle(document.documentElement)
-  const readVar = (name: string) => anchorStyle.getPropertyValue(name).trim() || rootStyle.getPropertyValue(name).trim()
+  const readVar = (name: string) =>
+    anchorStyle.getPropertyValue(name).trim() || rootStyle.getPropertyValue(name).trim()
   // 当页面仅有 B 站原生 bili_dark（无插件 .dark）时，:root 上仍挂着浅色 --bew-* 变量，
   // 需忽略与 :root 相同的浅色底/文字变量，避免覆盖深色兜底；仅保留锚点局部覆写。
   const readSurfaceVar = (name: string) => {
     const anchorVal = anchorStyle.getPropertyValue(name).trim()
     const rootVal = rootStyle.getPropertyValue(name).trim()
-    if (skipRootSurfaceVars)
-      return anchorVal && anchorVal !== rootVal ? anchorVal : ''
+    if (skipRootSurfaceVars) return anchorVal && anchorVal !== rootVal ? anchorVal : ''
     return anchorVal || rootVal
   }
   return {
@@ -357,8 +359,7 @@ function applyDarkThemeFallbackVars(element: HTMLElement, anchor: HTMLElement): 
     '--bew-theme-color-10': vars.themeColor10 || fallback.themeColor10,
     '--bew-theme-color-20': vars.themeColor20 || fallback.themeColor20,
   }
-  for (const [name, value] of Object.entries(resolved))
-    element.style.setProperty(name, value)
+  for (const [name, value] of Object.entries(resolved)) element.style.setProperty(name, value)
 }
 
 export function createNativeSelectDropdown(
@@ -372,8 +373,7 @@ export function createNativeSelectDropdown(
 
   const trigger = document.createElement('button')
   trigger.type = 'button'
-  if (config.triggerId)
-    trigger.id = config.triggerId
+  if (config.triggerId) trigger.id = config.triggerId
   trigger.className = config.triggerClassName
     ? `bewly-native-select-trigger ${config.triggerClassName}`
     : 'bewly-native-select-trigger'
@@ -411,42 +411,36 @@ export function createNativeSelectDropdown(
     let matchedLabel = ''
     optionButtons.forEach((button, index) => {
       const option = options[index]
-      if (!option)
-        return
+      if (!option) return
       const selected = option.value === currentValue
       button.setAttribute('aria-selected', selected ? 'true' : 'false')
-      if (selected)
-        matchedLabel = option.label
+      if (selected) matchedLabel = option.label
     })
     if (!matchedLabel && options.length > 0) {
-      const firstVisible = options.find(opt => !opt.hidden)
+      const firstVisible = options.find((opt) => !opt.hidden)
       matchedLabel = firstVisible?.label ?? ''
     }
-    if (labelEl.textContent !== matchedLabel)
-      labelEl.textContent = matchedLabel
+    if (labelEl.textContent !== matchedLabel) labelEl.textContent = matchedLabel
   }
 
   function resolveMountHost(): HTMLElement | ShadowRoot {
     // 默认挂到 document.body，脱离祖先层叠上下文与 Shadow DOM 边界，
     // 避免 transform/isolation/低 z-index 祖先把浮层裁切或盖住。
-    if (config.mountTarget)
-      return config.mountTarget
+    if (config.mountTarget) return config.mountTarget
     return document.body || document.documentElement
   }
 
   function getEnabledIndices(): number[] {
     const indices: number[] = []
     options.forEach((option, index) => {
-      if (!option.hidden && !option.disabled)
-        indices.push(index)
+      if (!option.hidden && !option.disabled) indices.push(index)
     })
     return indices
   }
 
   function focusOptionByIndex(index: number) {
     const button = optionButtons[index]
-    if (!button)
-      return
+    if (!button) return
     button.focus({ preventScroll: true })
     button.scrollIntoView({ block: 'nearest' })
   }
@@ -459,8 +453,7 @@ export function createNativeSelectDropdown(
   function measureContentHeight(): number {
     if (menu.isConnected) {
       const measured = menu.scrollHeight
-      if (measured > 0)
-        contentHeightCache = measured
+      if (measured > 0) contentHeightCache = measured
     }
     return contentHeightCache ?? maxHeight
   }
@@ -472,27 +465,27 @@ export function createNativeSelectDropdown(
     while (current?.shadowRoot && !visited.has(current)) {
       visited.add(current)
       const next = current.shadowRoot.elementFromPoint(x, y)
-      if (!next || next === current)
-        break
+      if (!next || next === current) break
       current = next
     }
     return current
   }
 
-  function isTriggerOccluded(rect: DOMRect, viewportWidth: number, viewportHeight: number): boolean {
+  function isTriggerOccluded(
+    rect: DOMRect,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): boolean {
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
-    if (cx < 0 || cx > viewportWidth || cy < 0 || cy > viewportHeight)
-      return true
+    if (cx < 0 || cx > viewportWidth || cy < 0 || cy > viewportHeight) return true
     const hit = deepElementFromPoint(cx, cy)
-    if (!hit)
-      return false
+    if (!hit) return false
     return !trigger.contains(hit) && !menu.contains(hit)
   }
 
   function positionMenu(force = false, precomputedRect?: DOMRect): void {
-    if (!trigger.isConnected)
-      return
+    if (!trigger.isConnected) return
 
     const rect = precomputedRect ?? trigger.getBoundingClientRect()
     const viewportWidth = document.documentElement.clientWidth || window.innerWidth
@@ -509,8 +502,7 @@ export function createNativeSelectDropdown(
       viewportHeight,
       contentHeightCache ?? 0,
     ].join(',')
-    if (!force && positionKey === lastPositionKey)
-      return
+    if (!force && positionKey === lastPositionKey) return
 
     // 仅在触发器几何变化时做遮挡检测（如滚到固定顶栏/宽屏吸顶栏/溢出裁切区背后），
     // 静态帧零开销，且在移动浮层前直接关闭，避免浮层先跳到顶栏上方再淡出。
@@ -528,34 +520,29 @@ export function createNativeSelectDropdown(
     menu.dataset.openUp = openUp ? 'true' : 'false'
 
     const nextMaxHeight = `${availableHeight}px`
-    if (menu.style.maxHeight !== nextMaxHeight)
-      menu.style.maxHeight = nextMaxHeight
+    if (menu.style.maxHeight !== nextMaxHeight) menu.style.maxHeight = nextMaxHeight
 
     // 宽度基于已有的 offsetWidth，不额外触发重排。
     const menuWidth = Math.max(menu.offsetWidth, Math.ceil(rect.width), minMenuWidth)
     const nextMinWidth = `${Math.max(Math.ceil(rect.width), minMenuWidth)}px`
-    if (menu.style.minWidth !== nextMinWidth)
-      menu.style.minWidth = nextMinWidth
+    if (menu.style.minWidth !== nextMinWidth) menu.style.minWidth = nextMinWidth
 
-    const maxLeft = Math.max(DROPDOWN_VIEWPORT_MARGIN, viewportWidth - menuWidth - DROPDOWN_VIEWPORT_MARGIN)
+    const maxLeft = Math.max(
+      DROPDOWN_VIEWPORT_MARGIN,
+      viewportWidth - menuWidth - DROPDOWN_VIEWPORT_MARGIN,
+    )
     const left = Math.max(DROPDOWN_VIEWPORT_MARGIN, Math.min(rect.left, maxLeft))
     const nextLeft = `${left}px`
-    if (menu.style.left !== nextLeft)
-      menu.style.left = nextLeft
+    if (menu.style.left !== nextLeft) menu.style.left = nextLeft
 
     if (openUp) {
       const nextBottom = `${Math.max(DROPDOWN_VIEWPORT_MARGIN, viewportHeight - rect.top + gap)}px`
-      if (menu.style.top)
-        menu.style.top = ''
-      if (menu.style.bottom !== nextBottom)
-        menu.style.bottom = nextBottom
-    }
-    else {
+      if (menu.style.top) menu.style.top = ''
+      if (menu.style.bottom !== nextBottom) menu.style.bottom = nextBottom
+    } else {
       const nextTop = `${Math.max(DROPDOWN_VIEWPORT_MARGIN, rect.bottom + gap)}px`
-      if (menu.style.bottom)
-        menu.style.bottom = ''
-      if (menu.style.top !== nextTop)
-        menu.style.top = nextTop
+      if (menu.style.bottom) menu.style.bottom = ''
+      if (menu.style.top !== nextTop) menu.style.top = nextTop
     }
   }
 
@@ -570,8 +557,7 @@ export function createNativeSelectDropdown(
   function startPositionTracking() {
     stopPositionTracking()
     const tick = () => {
-      if (!isOpen)
-        return
+      if (!isOpen) return
       if (!trigger.isConnected) {
         close()
         return
@@ -580,14 +566,18 @@ export function createNativeSelectDropdown(
       const viewportWidth = document.documentElement.clientWidth || window.innerWidth
       const viewportHeight = document.documentElement.clientHeight || window.innerHeight
       // 触发器隐藏或完全离开视口时关闭，避免浮层悬空指向不可见入口。
-      if ((rect.width === 0 && rect.height === 0)
-        || rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
+      if (
+        (rect.width === 0 && rect.height === 0) ||
+        rect.bottom < 0 ||
+        rect.top > viewportHeight ||
+        rect.right < 0 ||
+        rect.left > viewportWidth
+      ) {
         close()
         return
       }
       positionMenu(false, rect)
-      if (!isOpen)
-        return
+      if (!isOpen) return
       positionRaf = requestAnimationFrame(tick)
     }
     positionRaf = requestAnimationFrame(tick)
@@ -601,8 +591,7 @@ export function createNativeSelectDropdown(
   }
 
   function close(closeOpts: { restoreFocus?: boolean } = {}) {
-    if (!isOpen)
-      return
+    if (!isOpen) return
     isOpen = false
     trigger.setAttribute('aria-expanded', 'false')
     cleanupOpenListeners()
@@ -610,18 +599,15 @@ export function createNativeSelectDropdown(
 
     window.clearTimeout(closeTimer)
     const finishDetach = () => {
-      if (!isOpen && menu.isConnected)
-        menu.remove()
+      if (!isOpen && menu.isConnected) menu.remove()
     }
     const onTransitionEnd = (event: TransitionEvent) => {
-      if (event.target === menu)
-        finishDetach()
+      if (event.target === menu) finishDetach()
     }
     menu.addEventListener('transitionend', onTransitionEnd, { once: true })
     closeTimer = window.setTimeout(finishDetach, CLOSE_ANIMATION_FALLBACK_MS)
 
-    if (closeOpts.restoreFocus && trigger.isConnected)
-      trigger.focus({ preventScroll: true })
+    if (closeOpts.restoreFocus && trigger.isConnected) trigger.focus({ preventScroll: true })
   }
 
   function attachOpenListeners() {
@@ -630,27 +616,33 @@ export function createNativeSelectDropdown(
     openListenersAbort = abort
     const { signal } = abort
 
-    window.addEventListener('pointerdown', (event) => {
-      const path = event.composedPath()
-      if (path.includes(trigger) || path.includes(menu))
-        return
-      close()
-    }, { capture: true, signal })
+    window.addEventListener(
+      'pointerdown',
+      (event) => {
+        const path = event.composedPath()
+        if (path.includes(trigger) || path.includes(menu)) return
+        close()
+      },
+      { capture: true, signal },
+    )
 
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        event.stopPropagation()
-        close({ restoreFocus: true })
-      }
-    }, { capture: true, signal })
+    window.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          event.stopPropagation()
+          close({ restoreFocus: true })
+        }
+      },
+      { capture: true, signal },
+    )
 
     startPositionTracking()
   }
 
   function open() {
-    if (isOpen || trigger.disabled)
-      return
+    if (isOpen || trigger.disabled) return
 
     window.clearTimeout(closeTimer)
     isOpen = true
@@ -658,8 +650,7 @@ export function createNativeSelectDropdown(
     applyDarkThemeFallbackVars(menu, trigger)
 
     const host = resolveMountHost()
-    if (menu.parentElement !== host && menu.parentNode !== host)
-      host.appendChild(menu)
+    if (menu.parentElement !== host && menu.parentNode !== host) host.appendChild(menu)
 
     menu.classList.remove('is-open')
     // 挂载后先测一次内容高度，再按它决定方向与 max-height（此后不再每帧测量）。
@@ -671,12 +662,13 @@ export function createNativeSelectDropdown(
     menu.classList.add('is-open')
     attachOpenListeners()
 
-    const selectedIndex = options.findIndex(opt => opt.value === currentValue && !opt.hidden && !opt.disabled)
+    const selectedIndex = options.findIndex(
+      (opt) => opt.value === currentValue && !opt.hidden && !opt.disabled,
+    )
     const targetIndex = selectedIndex >= 0 ? selectedIndex : (getEnabledIndices()[0] ?? -1)
     if (targetIndex >= 0) {
       requestAnimationFrame(() => {
-        if (isOpen)
-          focusOptionByIndex(targetIndex)
+        if (isOpen) focusOptionByIndex(targetIndex)
       })
     }
   }
@@ -686,24 +678,20 @@ export function createNativeSelectDropdown(
     currentValue = nextValue
     syncSelectionState()
     close({ restoreFocus: true })
-    if (nextValue !== previousValue)
-      config.onChange?.(nextValue)
+    if (nextValue !== previousValue) config.onChange?.(nextValue)
   }
 
   function handleOptionClick(option: NativeSelectOption, disabled: boolean, event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
-    if (!disabled)
-      selectValue(option.value)
+    if (!disabled) selectValue(option.value)
   }
 
   function handleTriggerClick(event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
-    if (isOpen)
-      close()
-    else
-      open()
+    if (isOpen) close()
+    else open()
   }
 
   function handleTriggerPointerDown(event: PointerEvent) {
@@ -723,19 +711,21 @@ export function createNativeSelectDropdown(
     const abort = new AbortController()
     spaceKeyupAbort = abort
     const { signal } = abort
-    window.addEventListener('keyup', (event) => {
-      if (event.key !== ' ' && event.code !== 'Space')
-        return
-      event.preventDefault()
-      event.stopPropagation()
-      clearSpaceKeyupGuard()
-    }, { capture: true, signal })
+    window.addEventListener(
+      'keyup',
+      (event) => {
+        if (event.key !== ' ' && event.code !== 'Space') return
+        event.preventDefault()
+        event.stopPropagation()
+        clearSpaceKeyupGuard()
+      },
+      { capture: true, signal },
+    )
     window.addEventListener('blur', clearSpaceKeyupGuard, { signal })
   }
 
   function handleTriggerKeydown(event: KeyboardEvent) {
-    if (trigger.disabled)
-      return
+    if (trigger.disabled) return
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       event.stopPropagation()
@@ -747,15 +737,12 @@ export function createNativeSelectDropdown(
       event.preventDefault()
       event.stopPropagation()
       swallowNextSpaceKeyup()
-      if (isOpen)
-        close()
-      else
-        open()
+      if (isOpen) close()
+      else open()
       return
     }
     // 回车交给按钮原生激活，但要拦住冒泡。
-    if (event.key === 'Enter')
-      event.stopPropagation()
+    if (event.key === 'Enter') event.stopPropagation()
   }
 
   function handleMenuClick(event: MouseEvent) {
@@ -768,13 +755,11 @@ export function createNativeSelectDropdown(
 
   function handleMenuKeydown(event: KeyboardEvent) {
     const enabled = getEnabledIndices()
-    if (enabled.length === 0)
-      return
+    if (enabled.length === 0) return
 
     const activeEl = (menu.getRootNode() as Document | ShadowRoot).activeElement
-    const currentFocusedIndex = activeEl instanceof HTMLButtonElement
-      ? optionButtons.indexOf(activeEl)
-      : -1
+    const currentFocusedIndex =
+      activeEl instanceof HTMLButtonElement ? optionButtons.indexOf(activeEl) : -1
     const pos = enabled.indexOf(currentFocusedIndex)
 
     switch (event.key) {
@@ -813,10 +798,8 @@ export function createNativeSelectDropdown(
         // 选项本身是 button；这里主动激活并阻断冒泡，避免空格被 B 站播放器快捷键占用。
         event.preventDefault()
         event.stopPropagation()
-        if (event.key === ' ')
-          swallowNextSpaceKeyup()
-        if (pos >= 0)
-          optionButtons[enabled[pos]]?.click()
+        if (event.key === ' ') swallowNextSpaceKeyup()
+        if (pos >= 0) optionButtons[enabled[pos]]?.click()
         break
       }
     }
@@ -838,7 +821,7 @@ export function createNativeSelectDropdown(
       syncSelectionState()
     },
     setOptions: (nextOptions: readonly NativeSelectOption[]) => {
-      options = nextOptions.map(item => ({ ...item }))
+      options = nextOptions.map((item) => ({ ...item }))
       const fragment = document.createDocumentFragment()
       optionButtons = options.map((option) => {
         const button = document.createElement('button')
@@ -868,16 +851,14 @@ export function createNativeSelectDropdown(
         measureContentHeight()
         lastPositionKey = ''
         positionMenu(true)
-      }
-      else {
+      } else {
         // 关闭状态下菜单可能不在文档中，下次打开时重测。
         contentHeightCache = undefined
       }
     },
     setDisabled: (disabled: boolean) => {
       trigger.disabled = disabled
-      if (disabled && isOpen)
-        close()
+      if (disabled && isOpen) close()
     },
     setAriaLabel: (label: string) => {
       trigger.title = label

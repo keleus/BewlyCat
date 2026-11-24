@@ -1,5 +1,10 @@
 import { settings } from '~/logic'
-import { BEWLY_WIDESCREEN_APPLIED, BEWLY_WIDESCREEN_USER_EXIT, isBewlyWidescreenActive, setBewlyWidescreenPlaylistOverride } from '~/utils/bewlyWidescreen'
+import {
+  BEWLY_WIDESCREEN_APPLIED,
+  BEWLY_WIDESCREEN_USER_EXIT,
+  isBewlyWidescreenActive,
+  setBewlyWidescreenPlaylistOverride,
+} from '~/utils/bewlyWidescreen'
 import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { i18n } from '~/utils/i18n'
 import type { ImmersiveFeedFrameState } from '~/utils/immersiveFeed'
@@ -28,7 +33,8 @@ const PLAY_BUTTON_SELECTOR = '.bpx-player-ctrl-play'
 const WIDESCREEN_CLOSE_SELECTOR = '.bewly-widescreen-close'
 // 滚轮只在画面区域切换视频；控制栏、音量等弹层保留原生滚轮行为
 const WHEEL_AREA_SELECTOR = '.bpx-player-video-area'
-const WHEEL_EXCLUDE_SELECTOR = '.bpx-player-control-wrap, .bpx-player-sending-area, [class*="popover"], [class*="panel"]'
+const WHEEL_EXCLUDE_SELECTOR =
+  '.bpx-player-control-wrap, .bpx-player-sending-area, [class*="popover"], [class*="panel"]'
 const WHEEL_SWITCH_THRESHOLD = 40
 const WHEEL_SWITCH_COOLDOWN_MS = 600
 // 原生「自动开播」开启时等待其生效后再检查，避免与 B 站自身的开播逻辑互相切换暂停
@@ -89,10 +95,13 @@ function createFeedPanel() {
   panel.append(hint, list, footer)
 
   // 列表末尾进入视口时请求首页继续加载推荐
-  new IntersectionObserver((entries) => {
-    if (entries.some(entry => entry.isIntersecting) && !state.loading && !state.noMoreContent)
-      postToHost(ImmersiveFeedMessageType.LoadMore)
-  }, { rootMargin: '400px 0px' }).observe(footer)
+  new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting) && !state.loading && !state.noMoreContent)
+        postToHost(ImmersiveFeedMessageType.LoadMore)
+    },
+    { rootMargin: '400px 0px' },
+  ).observe(footer)
 
   return panel
 }
@@ -149,37 +158,33 @@ function createCard(item: ImmersiveFeedFrameState['items'][number]) {
 }
 
 function syncCurrentCard() {
-  if (!list)
-    return
+  if (!list) return
   for (const card of Array.from(list.children) as HTMLElement[]) {
     const current = card.dataset.key === state.currentKey
     card.classList.toggle(`${PANEL_CLASS}__card--current`, current)
-    if (current)
-      card.setAttribute('aria-current', 'true')
-    else
-      card.removeAttribute('aria-current')
+    if (current) card.setAttribute('aria-current', 'true')
+    else card.removeAttribute('aria-current')
     const badge = card.querySelector<HTMLElement>(`.${PANEL_CLASS}__badge`)
     if (badge)
-      badge.textContent = current ? t('home.immersive_now_playing') : badge.dataset.duration ?? ''
+      badge.textContent = current ? t('home.immersive_now_playing') : (badge.dataset.duration ?? '')
   }
 
-  if (renderedCurrentKey === state.currentKey)
-    return
+  if (renderedCurrentKey === state.currentKey) return
   renderedCurrentKey = state.currentKey
   const currentCard = list.querySelector<HTMLElement>(`.${PANEL_CLASS}__card--current`)
   currentCard?.scrollIntoView({ block: 'nearest' })
 }
 
 function renderPanel() {
-  if (!list || !footer)
-    return
+  if (!list || !footer) return
 
-  const keys = state.items.map(item => item.key).join('\n')
+  const keys = state.items.map((item) => item.key).join('\n')
   if (keys !== renderedKeys) {
-    const existing = new Map((Array.from(list.children) as HTMLElement[]).map(card => [card.dataset.key, card]))
+    const existing = new Map(
+      (Array.from(list.children) as HTMLElement[]).map((card) => [card.dataset.key, card]),
+    )
     const fragment = document.createDocumentFragment()
-    for (const item of state.items)
-      fragment.appendChild(existing.get(item.key) ?? createCard(item))
+    for (const item of state.items) fragment.appendChild(existing.get(item.key) ?? createCard(item))
     list.replaceChildren(fragment)
     renderedKeys = keys
   }
@@ -187,7 +192,9 @@ function renderPanel() {
 
   footer.textContent = state.loading
     ? t('home.immersive_loading')
-    : state.noMoreContent ? t('home.immersive_no_more') : ''
+    : state.noMoreContent
+      ? t('home.immersive_no_more')
+      : ''
 }
 
 function createControlButton(type: 'previous' | 'next') {
@@ -203,14 +210,14 @@ function createControlButton(type: 'previous' | 'next') {
   const trigger = (event: Event) => {
     event.preventDefault()
     event.stopPropagation()
-    if (button.getAttribute('aria-disabled') === 'true')
-      return
-    postToHost(type === 'previous' ? ImmersiveFeedMessageType.Previous : ImmersiveFeedMessageType.Next)
+    if (button.getAttribute('aria-disabled') === 'true') return
+    postToHost(
+      type === 'previous' ? ImmersiveFeedMessageType.Previous : ImmersiveFeedMessageType.Next,
+    )
   }
   button.addEventListener('click', trigger)
   button.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ')
-      trigger(event)
+    if (event.key === 'Enter' || event.key === ' ') trigger(event)
   })
   return button
 }
@@ -227,8 +234,7 @@ function syncControlButtonState() {
 function syncCloseButtonLabel() {
   const closeButton = document.querySelector<HTMLElement>(WIDESCREEN_CLOSE_SELECTOR)
   const label = t('home.immersive_exit_title')
-  if (!closeButton || closeButton.title === label)
-    return
+  if (!closeButton || closeButton.title === label) return
   closeButton.title = label
   closeButton.setAttribute('aria-label', label)
 }
@@ -238,23 +244,23 @@ function ensureControlButtons() {
   syncCloseButtonLabel()
   const controlBar = document.querySelector<HTMLElement>(CONTROL_BAR_SELECTOR)
   const playButton = controlBar?.querySelector<HTMLElement>(PLAY_BUTTON_SELECTOR)
-  if (!controlBar || !playButton)
-    return
+  if (!controlBar || !playButton) return
 
-  if (playButton.previousElementSibling?.classList.contains(`${CONTROL_CLASS}-previous`)
-    && playButton.nextElementSibling?.classList.contains(`${CONTROL_CLASS}-next`)) {
+  if (
+    playButton.previousElementSibling?.classList.contains(`${CONTROL_CLASS}-previous`) &&
+    playButton.nextElementSibling?.classList.contains(`${CONTROL_CLASS}-next`)
+  ) {
     return
   }
 
-  controlBar.querySelectorAll(`.${CONTROL_CLASS}`).forEach(button => button.remove())
+  controlBar.querySelectorAll(`.${CONTROL_CLASS}`).forEach((button) => button.remove())
   playButton.before(createControlButton('previous'))
   playButton.after(createControlButton('next'))
   syncControlButtonState()
 }
 
 function queueControlSync() {
-  if (controlSyncQueued)
-    return
+  if (controlSyncQueued) return
   controlSyncQueued = true
   requestAnimationFrame(ensureControlButtons)
 }
@@ -262,10 +268,8 @@ function queueControlSync() {
 // 沉浸式模式下 ↑↓ 用于切换视频（替代原生音量快捷键），W / S 与 PageUp / PageDown 同理；
 // 在评论框、弹幕框等处输入时不处理
 function handleKeydown(event: KeyboardEvent) {
-  if (!active || !settings.value.immersiveKeyboardSwitch)
-    return
-  if (event.ctrlKey || event.metaKey || event.altKey || isTypingContext(event))
-    return
+  if (!active || !settings.value.immersiveKeyboardSwitch) return
+  if (event.ctrlKey || event.metaKey || event.altKey || isTypingContext(event)) return
 
   let type: ImmersiveFeedMessageType | undefined
   switch (event.key) {
@@ -282,33 +286,31 @@ function handleKeydown(event: KeyboardEvent) {
       type = ImmersiveFeedMessageType.Next
       break
   }
-  if (!type)
-    return
+  if (!type) return
 
   event.preventDefault()
   event.stopImmediatePropagation()
-  if (!event.repeat)
-    postToHost(type)
+  if (!event.repeat) postToHost(type)
 }
 
 function handleWheel(event: WheelEvent) {
-  if (!active || !settings.value.immersiveWheelSwitch)
-    return
+  if (!active || !settings.value.immersiveWheelSwitch) return
   const target = event.composedPath()[0]
-  if (!(target instanceof Element) || !target.closest(WHEEL_AREA_SELECTOR) || target.closest(WHEEL_EXCLUDE_SELECTOR))
+  if (
+    !(target instanceof Element) ||
+    !target.closest(WHEEL_AREA_SELECTOR) ||
+    target.closest(WHEEL_EXCLUDE_SELECTOR)
+  )
     return
-  if (event.ctrlKey || Math.abs(event.deltaY) < Math.abs(event.deltaX))
-    return
+  if (event.ctrlKey || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return
 
   event.preventDefault()
   event.stopImmediatePropagation()
   const now = performance.now()
-  if (now < wheelLockedUntil)
-    return
+  if (now < wheelLockedUntil) return
 
   wheelDelta += event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 16 : event.deltaY
-  if (Math.abs(wheelDelta) < WHEEL_SWITCH_THRESHOLD)
-    return
+  if (Math.abs(wheelDelta) < WHEEL_SWITCH_THRESHOLD) return
 
   postToHost(wheelDelta > 0 ? ImmersiveFeedMessageType.Next : ImmersiveFeedMessageType.Previous)
   wheelDelta = 0
@@ -325,8 +327,7 @@ function isNativeAutoPlayEnabled() {
   try {
     const profile = JSON.parse(localStorage.getItem(PLAYER_PROFILE_STORAGE_KEY) || '{}')
     return profile?.media?.autoplay !== false
-  }
-  catch {
+  } catch {
     return true
   }
 }
@@ -334,26 +335,21 @@ function isNativeAutoPlayEnabled() {
 function startPlayback(video: HTMLVideoElement, force = false) {
   // 原生续播会先跳到上次进度，因此以是否播放过判断，而不是 currentTime；
   // 预加载页切换为当前视频时可能被原生自动开播短暂播放过，需强制开播
-  if (!active || !video.isConnected || !video.paused || (!force && video.played.length > 0))
-    return
+  if (!active || !video.isConnected || !video.paused || (!force && video.played.length > 0)) return
   const playButton = document.querySelector<HTMLElement>(PLAY_BUTTON_SELECTOR)
-  if (playButton)
-    playButton.click()
-  else
-    void video.play().catch(() => {})
+  if (playButton) playButton.click()
+  else void video.play().catch(() => {})
 }
 
 // 沉浸式模式切换到视频后应直接开播；用户关闭了 B 站「自动开播」时，用原生播放按钮补一次开播
 function handleMediaCanPlay(event: Event) {
   const video = event.target
-  if (!(video instanceof HTMLVideoElement))
-    return
+  if (!(video instanceof HTMLVideoElement)) return
   if (!canPlay) {
     canPlay = true
     notifyReady()
   }
-  if (!active || autoStartChecked || !settings.value.immersiveAutoPlay)
-    return
+  if (!active || autoStartChecked || !settings.value.immersiveAutoPlay) return
   autoStartChecked = true
   // 原生自动开播关闭时不会有其他开播逻辑，可立即开播以缩短切换等待
   const delay = isNativeAutoPlayEnabled() ? AUTO_START_DELAY_MS : 0
@@ -363,8 +359,7 @@ function handleMediaCanPlay(event: Event) {
 // 宽屏会在开播时提前撤下自身 loading，此时布局可能仍未完成；
 // 两者都就绪后再通知首页撤下遮罩，避免露出未整理的原始视频页
 function notifyReady() {
-  if (!isBewlyWidescreenActive())
-    return
+  if (!isBewlyWidescreenActive()) return
 
   if (!active) {
     if (!preparedPosted && canPlay) {
@@ -376,21 +371,18 @@ function notifyReady() {
 
   // 关闭自动开播时视频停在首帧等待用户操作，可播放即可撤下遮罩
   const mediaReady = hasPlayed || (!settings.value.immersiveAutoPlay && canPlay)
-  if (shownPosted || !mediaReady)
-    return
+  if (shownPosted || !mediaReady) return
   shownPosted = true
   postToHost(ImmersiveFeedMessageType.Shown)
 }
 
 function handleMediaPlay(event: Event) {
   // 预加载的页面不能出声或抢先播放；原生自动开播会在切换为当前视频后重新开始
-  if (!active && event.target instanceof HTMLVideoElement)
-    event.target.pause()
+  if (!active && event.target instanceof HTMLVideoElement) event.target.pause()
 }
 
 function handleMediaPlaying(event: Event) {
-  if (!active || !(event.target instanceof HTMLVideoElement))
-    return
+  if (!active || !(event.target instanceof HTMLVideoElement)) return
   hasPlayed = true
   notifyReady()
 }
@@ -402,34 +394,33 @@ function activate() {
   // 尚不可播放时交给 canplay 处理开播
   if (video && canPlay) {
     autoStartChecked = true
-    if (settings.value.immersiveAutoPlay)
-      startPlayback(video, true)
+    if (settings.value.immersiveAutoPlay) startPlayback(video, true)
   }
   notifyReady()
 }
 
 function handleCloseClick(event: MouseEvent) {
   const target = event.composedPath()[0]
-  if (!(target instanceof Element) || !target.closest(WIDESCREEN_CLOSE_SELECTOR))
-    return
+  if (!(target instanceof Element) || !target.closest(WIDESCREEN_CLOSE_SELECTOR)) return
   event.preventDefault()
   event.stopImmediatePropagation()
   postToHost(ImmersiveFeedMessageType.Close)
 }
 
 function handleHostMessage(event: MessageEvent) {
-  if (event.source !== window.parent || event.origin !== location.origin || !isImmersiveFeedMessage(event.data))
+  if (
+    event.source !== window.parent ||
+    event.origin !== location.origin ||
+    !isImmersiveFeedMessage(event.data)
+  )
     return
-  if (event.data.type !== ImmersiveFeedMessageType.State || !event.data.state)
-    return
+  if (event.data.type !== ImmersiveFeedMessageType.State || !event.data.state) return
 
   state = event.data.state
   renderPanel()
   syncControlButtonState()
-  if (state.active && !active)
-    activate()
-  else
-    active = state.active
+  if (state.active && !active) activate()
+  else active = state.active
 }
 
 function injectStyle() {
@@ -564,8 +555,7 @@ function injectStyle() {
 }
 
 export function initImmersiveFeedFrame() {
-  if (!isImmersiveFeedFrame() || !isVideoOrBangumiPage())
-    return
+  if (!isImmersiveFeedFrame() || !isVideoOrBangumiPage()) return
 
   injectStyle()
   setBewlyWidescreenPlaylistOverride({
@@ -584,18 +574,18 @@ export function initImmersiveFeedFrame() {
   window.addEventListener(BEWLY_WIDESCREEN_APPLIED, notifyReady)
   // 宽屏的「退出」按钮与 Esc 都会派发用户退出事件，沉浸式模式中直接返回首页
   window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => {
-    if (active)
-      postToHost(ImmersiveFeedMessageType.Close)
+    if (active) postToHost(ImmersiveFeedMessageType.Close)
   })
 
   const startControlObserver = () => {
     queueControlSync()
-    new MutationObserver(queueControlSync).observe(document.body, { childList: true, subtree: true })
+    new MutationObserver(queueControlSync).observe(document.body, {
+      childList: true,
+      subtree: true,
+    })
   }
-  if (document.body)
-    startControlObserver()
-  else
-    document.addEventListener('DOMContentLoaded', startControlObserver, { once: true })
+  if (document.body) startControlObserver()
+  else document.addEventListener('DOMContentLoaded', startControlObserver, { once: true })
 
   postToHost(ImmersiveFeedMessageType.Ready)
 }

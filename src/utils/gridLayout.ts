@@ -12,12 +12,10 @@ export function normalizeListLayoutBreakpoint(value: unknown): number {
   if (value == null || (typeof value === 'string' && value.trim() === ''))
     return MOBILE_LIST_LAYOUT_BREAKPOINT
 
-  if (typeof value !== 'number' && typeof value !== 'string')
-    return MOBILE_LIST_LAYOUT_BREAKPOINT
+  if (typeof value !== 'number' && typeof value !== 'string') return MOBILE_LIST_LAYOUT_BREAKPOINT
 
   const normalized = Number(value)
-  if (!Number.isFinite(normalized))
-    return MOBILE_LIST_LAYOUT_BREAKPOINT
+  if (!Number.isFinite(normalized)) return MOBILE_LIST_LAYOUT_BREAKPOINT
 
   return Math.min(
     MAX_LIST_LAYOUT_BREAKPOINT,
@@ -47,24 +45,18 @@ const DEFAULT_ADAPTIVE_GRID_COLUMNS: AdaptiveGridColumns = {
 
 function normalizeColumnCount(value: unknown, fallback: number): number {
   const normalized = Number(value)
-  if (!Number.isFinite(normalized) || normalized <= 0)
-    return fallback
+  if (!Number.isFinite(normalized) || normalized <= 0) return fallback
   return Math.max(1, Math.round(normalized))
 }
 
 export function getAdaptiveGridColumnCount(width: number, columns: AdaptiveGridColumns): number {
   let breakpoint: keyof AdaptiveGridColumns = 'base'
 
-  if (width >= 1536)
-    breakpoint = 'xxl'
-  else if (width >= 1280)
-    breakpoint = 'xl'
-  else if (width >= 1024)
-    breakpoint = 'lg'
-  else if (width >= 768)
-    breakpoint = 'md'
-  else if (width >= 640)
-    breakpoint = 'sm'
+  if (width >= 1536) breakpoint = 'xxl'
+  else if (width >= 1280) breakpoint = 'xl'
+  else if (width >= 1024) breakpoint = 'lg'
+  else if (width >= 768) breakpoint = 'md'
+  else if (width >= 640) breakpoint = 'sm'
 
   return normalizeColumnCount(columns[breakpoint], DEFAULT_ADAPTIVE_GRID_COLUMNS[breakpoint])
 }
@@ -75,11 +67,9 @@ export function getListGridColumnCount(
   autoSwitch: boolean,
   breakpoint: number = MOBILE_LIST_LAYOUT_BREAKPOINT,
 ): number {
-  if (layout === 'oneColumn')
-    return 1
+  if (layout === 'oneColumn') return 1
 
-  if (!autoSwitch)
-    return 2
+  if (!autoSwitch) return 2
 
   const switchBreakpoint = normalizeListLayoutBreakpoint(breakpoint)
   return Number.isFinite(viewportWidth) && viewportWidth >= switchBreakpoint ? 2 : 1

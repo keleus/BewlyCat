@@ -82,7 +82,11 @@
 
 .bewly-comment-reply-tree-guides
   .bewly-comment-reply-branch:hover
-  :is(.bewly-comment-reply-branch__line, .bewly-comment-reply-branch__node, .bewly-comment-reply-branch__symbol),
+  :is(
+    .bewly-comment-reply-branch__line,
+    .bewly-comment-reply-branch__node,
+    .bewly-comment-reply-branch__symbol
+  ),
 .bewly-comment-reply-tree-guides
   .bewly-comment-reply-tail:hover
   :is(.bewly-comment-reply-tail__node, .bewly-comment-reply-tail__symbol) {
@@ -97,7 +101,11 @@
   box-shadow: none !important;
 }
 
-.bewly-comment-reply-tree-guides .bewly-comment-reply-branch:focus-visible .bewly-comment-reply-branch__focus,
-.bewly-comment-reply-tree-guides .bewly-comment-reply-tail:focus-visible .bewly-comment-reply-tail__focus {
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-branch:focus-visible
+  .bewly-comment-reply-branch__focus,
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-tail:focus-visible
+  .bewly-comment-reply-tail__focus {
   stroke: var(--bew-theme-color, #00aeec);
 }

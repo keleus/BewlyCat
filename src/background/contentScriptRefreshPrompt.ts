@@ -2,9 +2,25 @@ import type { Scripting, Tabs } from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
 import type { ContentScriptIdentity } from '~/constants/contentScript'
-import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_MATCHES, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG, isContentScriptPong, isContentScriptTargetUrl, REFRESH_ALL_CONTENT_SCRIPT_TABS } from '~/constants/contentScript'
-import type { PageInjectionDiagnostic, RefreshPromptDiagnostic, RefreshPromptUpdate } from '~/utils/refreshPrompt'
-import { getRefreshPromptCopy, getRefreshPromptLocale, showRefreshPrompt } from '~/utils/refreshPrompt'
+import {
+  CONTENT_SCRIPT_COMMIT,
+  CONTENT_SCRIPT_MATCHES,
+  CONTENT_SCRIPT_PING,
+  CONTENT_SCRIPT_PONG,
+  isContentScriptPong,
+  isContentScriptTargetUrl,
+  REFRESH_ALL_CONTENT_SCRIPT_TABS,
+} from '~/constants/contentScript'
+import type {
+  PageInjectionDiagnostic,
+  RefreshPromptDiagnostic,
+  RefreshPromptUpdate,
+} from '~/utils/refreshPrompt'
+import {
+  getRefreshPromptCopy,
+  getRefreshPromptLocale,
+  showRefreshPrompt,
+} from '~/utils/refreshPrompt'
 
 const CONTENT_SCRIPT_STARTUP_RETRY_DELAYS = [500, 1500]
 const CONTENT_SCRIPT_PING_TIMEOUT_MS = 2000
@@ -29,19 +45,22 @@ function restoreStartupState(): Promise<void> {
         STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY,
       ])
       const storedAt = stored[STARTUP_AT_STORAGE_KEY]
-      if (startupDetectedAt === undefined && typeof storedAt === 'number' && Number.isFinite(storedAt)
-        && storedAt > 0 && storedAt <= Date.now()) {
+      if (
+        startupDetectedAt === undefined &&
+        typeof storedAt === 'number' &&
+        Number.isFinite(storedAt) &&
+        storedAt > 0 &&
+        storedAt <= Date.now()
+      ) {
         startupDetectedAt = storedAt
       }
       const storedTabs = stored[STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY]
       if (Array.isArray(storedTabs)) {
         storedTabs.forEach((id) => {
-          if (typeof id === 'number' && Number.isInteger(id))
-            startupAutoReloadedTabs.add(id)
+          if (typeof id === 'number' && Number.isInteger(id)) startupAutoReloadedTabs.add(id)
         })
       }
-    }
-    catch {
+    } catch {
       // 不支持 session storage 时退回当前后台内存状态。
     }
   })()
@@ -54,8 +73,7 @@ function persistStartupAutoReloadedTabs() {
       await browser.storage.session.set({
         [STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY]: Array.from(startupAutoReloadedTabs),
       })
-    }
-    catch {
+    } catch {
       // Session storage may be unavailable on older browsers.
     }
   })()
@@ -70,16 +88,14 @@ function recordBrowserStartup() {
         [STARTUP_AT_STORAGE_KEY]: startupDetectedAt,
         [STARTUP_AUTO_RELOADED_TABS_STORAGE_KEY]: [],
       })
-    }
-    catch {
+    } catch {
       // Session storage may be unavailable on older browsers.
     }
   })()
 }
 
 function isWithinStartupAutoReloadWindow(): boolean {
-  if (startupDetectedAt === undefined)
-    return false
+  if (startupDetectedAt === undefined) return false
   const elapsed = Date.now() - startupDetectedAt
   return elapsed >= 0 && elapsed <= CONTENT_SCRIPT_STARTUP_AUTO_RELOAD_WINDOW_MS
 }
@@ -90,8 +106,7 @@ function markTabStartupAutoReloaded(tabId: number) {
 }
 
 function clearTabStartupAutoReloaded(tabId: number) {
-  if (startupAutoReloadedTabs.delete(tabId))
-    persistStartupAutoReloadedTabs()
+  if (startupAutoReloadedTabs.delete(tabId)) persistStartupAutoReloadedTabs()
 }
 
 interface StartupPageInspectionResult extends PageInjectionDiagnostic {
@@ -118,44 +133,48 @@ function inspectPageForStartupAutoReload(
   const pageLoadingInjected = Boolean(isolatedGlobal.__BEWLYCAT_PAGE_LOADING__)
   const contentScriptInitialized = Boolean(isolatedGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__)
   const hasBewlyHost = Boolean(document.getElementById('bewly'))
-  const hasActiveMediaPlayback = Array.from(document.querySelectorAll<HTMLMediaElement>('video, audio'))
-    .some(media => !media.paused && !media.ended && media.currentTime > 0)
+  const hasActiveMediaPlayback = Array.from(
+    document.querySelectorAll<HTMLMediaElement>('video, audio'),
+  ).some((media) => !media.paused && !media.ended && media.currentTime > 0)
 
   const activeEl = document.activeElement
-  const activeIsEditable = activeEl instanceof HTMLInputElement
-    || activeEl instanceof HTMLTextAreaElement
-    || (activeEl instanceof HTMLElement && activeEl.isContentEditable)
-  const hasModifiedInput = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('textarea, input'))
-    .some((field) => {
-      if (field instanceof HTMLInputElement) {
-        const type = field.type.toLowerCase()
-        if (['hidden', 'checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'file'].includes(type))
-          return false
-      }
-      return field.value.length > 0 && field.value !== field.defaultValue
-    })
+  const activeIsEditable =
+    activeEl instanceof HTMLInputElement ||
+    activeEl instanceof HTMLTextAreaElement ||
+    (activeEl instanceof HTMLElement && activeEl.isContentEditable)
+  const hasModifiedInput = Array.from(
+    document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('textarea, input'),
+  ).some((field) => {
+    if (field instanceof HTMLInputElement) {
+      const type = field.type.toLowerCase()
+      if (
+        ['hidden', 'checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'file'].includes(type)
+      )
+        return false
+    }
+    return field.value.length > 0 && field.value !== field.defaultValue
+  })
   const hasDirtyFormInput = activeIsEditable || hasModifiedInput
 
   let alreadyAutoReloaded = false
   try {
     alreadyAutoReloaded = Boolean(sessionStorage.getItem(sessionKey))
-  }
-  catch {
+  } catch {
     // Ignore storage restrictions.
   }
 
-  const canAutoReload = urlMatches
-    && !contentScriptInitialized
-    && !hasBewlyHost
-    && !hasActiveMediaPlayback
-    && !hasDirtyFormInput
-    && !alreadyAutoReloaded
+  const canAutoReload =
+    urlMatches &&
+    !contentScriptInitialized &&
+    !hasBewlyHost &&
+    !hasActiveMediaPlayback &&
+    !hasDirtyFormInput &&
+    !alreadyAutoReloaded
 
   if (canAutoReload) {
     try {
       sessionStorage.setItem(sessionKey, String(Date.now()))
-    }
-    catch {
+    } catch {
       // Fallback to background tab tracking if sessionStorage is blocked.
     }
   }
@@ -176,15 +195,23 @@ function inspectPageForStartupAutoReload(
 function restoreUpdateState(): Promise<void> {
   updateStateReady ??= (async () => {
     try {
-      const stored = (await browser.storage.session.get(REFRESH_UPDATE_STORAGE_KEY))[REFRESH_UPDATE_STORAGE_KEY] as Partial<RefreshPromptUpdate> | undefined
-      if (!latestUpdate && stored && typeof stored.at === 'number' && Number.isFinite(stored.at)
-        && stored.at > 0 && stored.at <= Date.now() && typeof stored.version === 'string'
-        && (stored.commit === undefined || typeof stored.commit === 'string')
-        && (stored.previousVersion === undefined || typeof stored.previousVersion === 'string')) {
+      const stored = (await browser.storage.session.get(REFRESH_UPDATE_STORAGE_KEY))[
+        REFRESH_UPDATE_STORAGE_KEY
+      ] as Partial<RefreshPromptUpdate> | undefined
+      if (
+        !latestUpdate &&
+        stored &&
+        typeof stored.at === 'number' &&
+        Number.isFinite(stored.at) &&
+        stored.at > 0 &&
+        stored.at <= Date.now() &&
+        typeof stored.version === 'string' &&
+        (stored.commit === undefined || typeof stored.commit === 'string') &&
+        (stored.previousVersion === undefined || typeof stored.previousVersion === 'string')
+      ) {
         latestUpdate = stored as RefreshPromptUpdate
       }
-    }
-    catch {
+    } catch {
       // 不支持 session storage 时仍保留本次后台运行期间收到的事件。
     }
   })()
@@ -202,8 +229,7 @@ function recordExtensionUpdate(previousVersion?: string) {
   void (async () => {
     try {
       await browser.storage.session.set({ [REFRESH_UPDATE_STORAGE_KEY]: latestUpdate })
-    }
-    catch {
+    } catch {
       // Session storage may be unavailable on older browsers.
     }
   })()
@@ -219,23 +245,27 @@ export async function refreshAllContentScriptTabs(
     let tab: Tabs.Tab
     try {
       tab = await tabsApi.get(tabId)
-    }
-    catch {
+    } catch {
       return
     }
-    if (isContentScriptTargetUrl(tab.pendingUrl ?? tab.url))
-      await tabsApi.reload(tabId)
+    if (isContentScriptTargetUrl(tab.pendingUrl ?? tab.url)) await tabsApi.reload(tabId)
   }
-  const results = await Promise.allSettled(tabs
-    .filter(tab => tab.id !== undefined && tab.id !== sourceTabId && isContentScriptTargetUrl(tab.pendingUrl ?? tab.url))
-    .map(tab => reloadTab(tab.id!)))
-  const failed = results.filter(result => result.status === 'rejected').length
+  const results = await Promise.allSettled(
+    tabs
+      .filter(
+        (tab) =>
+          tab.id !== undefined &&
+          tab.id !== sourceTabId &&
+          isContentScriptTargetUrl(tab.pendingUrl ?? tab.url),
+      )
+      .map((tab) => reloadTab(tab.id!)),
+  )
+  const failed = results.filter((result) => result.status === 'rejected').length
   // 保留当前页面展示失败信息；全部成功时最后刷新当前页，避免提前断开消息连接。
   if (failed === 0) {
     try {
       await reloadTab(sourceTabId)
-    }
-    catch {
+    } catch {
       return { failed: 1 }
     }
   }
@@ -245,21 +275,31 @@ export async function refreshAllContentScriptTabs(
 let pendingRefreshAll: Promise<{ failed: number }> | undefined
 
 function setupRefreshAllTabsListener() {
-  browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime.MessageSender) => {
-    if (typeof message !== 'object' || message === null || !('type' in message)
-      || message.type !== REFRESH_ALL_CONTENT_SCRIPT_TABS) {
-      return false
-    }
-    if (sender.id !== browser.runtime.id || sender.frameId !== 0
-      || sender.tab?.id === undefined || !isContentScriptTargetUrl(sender.url)) {
-      return false
-    }
+  browser.runtime.onMessage.addListener(
+    (message: unknown, sender: browser.Runtime.MessageSender) => {
+      if (
+        typeof message !== 'object' ||
+        message === null ||
+        !('type' in message) ||
+        message.type !== REFRESH_ALL_CONTENT_SCRIPT_TABS
+      ) {
+        return false
+      }
+      if (
+        sender.id !== browser.runtime.id ||
+        sender.frameId !== 0 ||
+        sender.tab?.id === undefined ||
+        !isContentScriptTargetUrl(sender.url)
+      ) {
+        return false
+      }
 
-    pendingRefreshAll ??= refreshAllContentScriptTabs(sender.tab.id).finally(() => {
-      pendingRefreshAll = undefined
-    })
-    return pendingRefreshAll
-  })
+      pendingRefreshAll ??= refreshAllContentScriptTabs(sender.tab.id).finally(() => {
+        pendingRefreshAll = undefined
+      })
+      return pendingRefreshAll
+    },
+  )
 }
 
 export interface ContentScriptRefreshBrowser {
@@ -267,24 +307,34 @@ export interface ContentScriptRefreshBrowser {
   scripting: Pick<Scripting.Static, 'executeScript'>
 }
 
-export type ContentScriptRefreshResult = 'ineligible' | 'already-injected' | 'auto-reloaded' | 'refresh-prompted'
+export type ContentScriptRefreshResult =
+  | 'ineligible'
+  | 'already-injected'
+  | 'auto-reloaded'
+  | 'refresh-prompted'
 
-type ContentScriptPingResult = { status: 'current' } | {
-  status: 'unavailable' | 'outdated'
-  diagnostic: RefreshPromptDiagnostic
-}
+type ContentScriptPingResult =
+  | { status: 'current' }
+  | {
+      status: 'unavailable' | 'outdated'
+      diagnostic: RefreshPromptDiagnostic
+    }
 
-async function getEligibleActiveTab(tabId: number, extensionApi: ContentScriptRefreshBrowser): Promise<Tabs.Tab | undefined> {
+async function getEligibleActiveTab(
+  tabId: number,
+  extensionApi: ContentScriptRefreshBrowser,
+): Promise<Tabs.Tab | undefined> {
   try {
     const tab = await extensionApi.tabs.get(tabId)
-    if (tab.active === true
-      && tab.status === 'complete'
-      && tab.discarded !== true
-      && isContentScriptTargetUrl(tab.url)) {
+    if (
+      tab.active === true &&
+      tab.status === 'complete' &&
+      tab.discarded !== true &&
+      isContentScriptTargetUrl(tab.url)
+    ) {
       return tab
     }
-  }
-  catch {
+  } catch {
     // Closed or inaccessible tab.
   }
 }
@@ -325,19 +375,36 @@ async function pingContentScript(
         version: response.version,
         commit: response.commit,
       }
-      if (received.runtimeUrl !== currentIdentity.runtimeUrl || received.name !== currentIdentity.name) {
-        return { status: 'outdated', diagnostic: { ...diagnostic, reason: 'identity-mismatch', received } }
+      if (
+        received.runtimeUrl !== currentIdentity.runtimeUrl ||
+        received.name !== currentIdentity.name
+      ) {
+        return {
+          status: 'outdated',
+          diagnostic: { ...diagnostic, reason: 'identity-mismatch', received },
+        }
       }
       if (received.version !== currentIdentity.version) {
-        return { status: 'outdated', diagnostic: { ...diagnostic, reason: 'version-mismatch', received } }
+        return {
+          status: 'outdated',
+          diagnostic: { ...diagnostic, reason: 'version-mismatch', received },
+        }
       }
       return { status: 'current' }
     }
-    return { status: 'unavailable', diagnostic: { ...diagnostic, reason: 'content-script-check-failed', failure: 'invalid-response' } }
-  }
-  catch (error) {
+    return {
+      status: 'unavailable',
+      diagnostic: {
+        ...diagnostic,
+        reason: 'content-script-check-failed',
+        failure: 'invalid-response',
+      },
+    }
+  } catch (error) {
     const message = (error instanceof Error ? error.message : String(error)).toLowerCase()
-    const missingReceiver = message.includes('receiving end does not exist') || message.includes('could not establish connection')
+    const missingReceiver =
+      message.includes('receiving end does not exist') ||
+      message.includes('could not establish connection')
     return {
       status: 'unavailable',
       diagnostic: {
@@ -346,8 +413,7 @@ async function pingContentScript(
         failure: timedOut ? 'timeout' : missingReceiver ? 'receiver-missing' : 'message-error',
       },
     }
-  }
-  finally {
+  } finally {
     clearTimeout(timeout)
   }
 }
@@ -358,8 +424,7 @@ export async function promptContentScriptRefresh(
   isCurrentCheck: () => boolean = () => true,
 ): Promise<ContentScriptRefreshResult> {
   const initialTab = await getEligibleActiveTab(tabId, extensionApi)
-  if (!initialTab || !isCurrentCheck())
-    return 'ineligible'
+  if (!initialTab || !isCurrentCheck()) return 'ineligible'
 
   const manifest = browser.runtime.getManifest()
   const currentIdentity: ContentScriptIdentity = {
@@ -369,8 +434,7 @@ export async function promptContentScriptRefresh(
     commit: CONTENT_SCRIPT_COMMIT,
   }
   const stillEligible = async () => {
-    if (!isCurrentCheck())
-      return false
+    if (!isCurrentCheck()) return false
     const tab = await getEligibleActiveTab(tabId, extensionApi)
     return isCurrentCheck() && !!tab && tab.url === initialTab.url
   }
@@ -378,33 +442,37 @@ export async function promptContentScriptRefresh(
   let result = await pingContentScript(tabId, currentIdentity, extensionApi)
   let attempts = 1
   for (const delay of CONTENT_SCRIPT_STARTUP_RETRY_DELAYS) {
-    if (result.status !== 'unavailable' || !isCurrentCheck())
-      break
-    await new Promise(resolve => setTimeout(resolve, delay))
-    if (!await stillEligible())
-      return 'ineligible'
+    if (result.status !== 'unavailable' || !isCurrentCheck()) break
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    if (!(await stillEligible())) return 'ineligible'
     result = await pingContentScript(tabId, currentIdentity, extensionApi)
     attempts++
   }
-  if (!await stillEligible())
-    return 'ineligible'
-  if (result.status === 'current')
-    return 'already-injected'
+  if (!(await stillEligible())) return 'ineligible'
+  if (result.status === 'current') return 'already-injected'
 
   await Promise.all([restoreUpdateState(), restoreStartupState()])
-  const update = latestUpdate?.version === currentIdentity.version && latestUpdate.commit === currentIdentity.commit
-    ? latestUpdate
-    : undefined
+  const update =
+    latestUpdate?.version === currentIdentity.version &&
+    latestUpdate.commit === currentIdentity.commit
+      ? latestUpdate
+      : undefined
 
   let pageInjection: PageInjectionDiagnostic | undefined
-  const isMissingReceiver = result.status === 'unavailable'
-    && result.diagnostic.reason === 'content-script-unreachable'
-    && result.diagnostic.failure === 'receiver-missing'
+  const isMissingReceiver =
+    result.status === 'unavailable' &&
+    result.diagnostic.reason === 'content-script-unreachable' &&
+    result.diagnostic.failure === 'receiver-missing'
 
   // 浏览器冷启动恢复会话时，标签页可能在扩展 content_scripts 注册完成前就开始导航，
   // 导致 manifest 漏注入而停留在原版页面。启动窗口内对未交互且未挂载的干净页面仅自动重载一次恢复。
-  if (isMissingReceiver && !update && isWithinStartupAutoReloadWindow()
-    && !startupAutoReloadedTabs.has(tabId) && typeof extensionApi.tabs.reload === 'function') {
+  if (
+    isMissingReceiver &&
+    !update &&
+    isWithinStartupAutoReloadWindow() &&
+    !startupAutoReloadedTabs.has(tabId) &&
+    typeof extensionApi.tabs.reload === 'function'
+  ) {
     try {
       const injectedResults = await extensionApi.scripting.executeScript({
         target: { tabId, frameIds: [0] },
@@ -421,20 +489,17 @@ export async function promptContentScriptRefresh(
           hasBewlyHost: inspection.hasBewlyHost,
           startupAutoReloadAttempted: inspection.startupAutoReloadAttempted,
         }
-        if (inspection.canAutoReload && await stillEligible()) {
+        if (inspection.canAutoReload && (await stillEligible())) {
           markTabStartupAutoReloaded(tabId)
           try {
             await extensionApi.tabs.reload(tabId)
             return 'auto-reloaded'
-          }
-          catch {
-            if (!await stillEligible())
-              return 'ineligible'
+          } catch {
+            if (!(await stillEligible())) return 'ineligible'
           }
         }
       }
-    }
-    catch {
+    } catch {
       // 探测失败时回退到常规刷新提示。
     }
   }
@@ -443,13 +508,16 @@ export async function promptContentScriptRefresh(
     ...result.diagnostic,
     attempts,
     update,
-    pageInjection: pageInjection ?? (startupAutoReloadedTabs.has(tabId)
-      ? { startupAutoReloadAttempted: true }
-      : undefined),
+    pageInjection:
+      pageInjection ??
+      (startupAutoReloadedTabs.has(tabId) ? { startupAutoReloadAttempted: true } : undefined),
   }
-  const copy = getRefreshPromptCopy(await getRefreshPromptLocale(), currentIdentity.version, diagnostic)
-  if (!await stillEligible())
-    return 'ineligible'
+  const copy = getRefreshPromptCopy(
+    await getRefreshPromptLocale(),
+    currentIdentity.version,
+    diagnostic,
+  )
+  if (!(await stillEligible())) return 'ineligible'
 
   await extensionApi.scripting.executeScript({
     target: { tabId, frameIds: [0] },
@@ -464,8 +532,7 @@ export async function promptContentScriptRefresh(
 const pendingPrompts = new Map<number, { cancelled: boolean }>()
 
 function queueContentScriptRefreshPrompt(tabId: number): void {
-  if (pendingPrompts.has(tabId))
-    return
+  if (pendingPrompts.has(tabId)) return
 
   const check = { cancelled: false }
   pendingPrompts.set(tabId, check)
@@ -480,23 +547,20 @@ function queueContentScriptRefreshPrompt(tabId: number): void {
       console.warn(`[BewlyCat] Failed to show the refresh prompt in tab ${tabId}.`, error)
     })
     .finally(() => {
-      if (pendingPrompts.get(tabId) === check)
-        pendingPrompts.delete(tabId)
+      if (pendingPrompts.get(tabId) === check) pendingPrompts.delete(tabId)
     })
 }
 
 function cancelContentScriptRefreshPrompt(tabId: number) {
   const check = pendingPrompts.get(tabId)
-  if (check)
-    check.cancelled = true
+  if (check) check.cancelled = true
   pendingPrompts.delete(tabId)
 }
 
 async function queueActiveTabs(): Promise<void> {
   const tabs = await browser.tabs.query({ active: true })
   tabs.forEach((tab) => {
-    if (tab.id !== undefined)
-      queueContentScriptRefreshPrompt(tab.id)
+    if (tab.id !== undefined) queueContentScriptRefreshPrompt(tab.id)
   })
 }
 
@@ -515,15 +579,12 @@ function queueActiveTabsWithRestoreRetry(): void {
 let refreshPromptListenersInitialized = false
 
 export function setupContentScriptRefreshPrompt(): void {
-  if (refreshPromptListenersInitialized)
-    return
+  if (refreshPromptListenersInitialized) return
 
   refreshPromptListenersInitialized = true
   setupRefreshAllTabsListener()
 
-  // eslint-disable-next-line node/prefer-global/process
-  if (process.env.SAFARI)
-    return
+  if (process.env.SAFARI) return
 
   browser.tabs.onActivated.addListener(({ tabId }) => {
     queueContentScriptRefreshPrompt(tabId)
@@ -535,10 +596,8 @@ export function setupContentScriptRefreshPrompt(): void {
   })
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // 即使刷新到相同 URL，也不能把上一份文档的检测结果注入新文档。
-    if (changeInfo.status === 'loading' || changeInfo.url)
-      cancelContentScriptRefreshPrompt(tabId)
-    if (changeInfo.status === 'complete' && tab.active)
-      queueContentScriptRefreshPrompt(tabId)
+    if (changeInfo.status === 'loading' || changeInfo.url) cancelContentScriptRefreshPrompt(tabId)
+    if (changeInfo.status === 'complete' && tab.active) queueContentScriptRefreshPrompt(tabId)
   })
 
   browser.runtime.onStartup.addListener(() => {
@@ -547,11 +606,9 @@ export function setupContentScriptRefreshPrompt(): void {
   })
 
   browser.runtime.onInstalled.addListener((details) => {
-    if (details.reason === 'install')
-      return
+    if (details.reason === 'install') return
 
-    if (details.reason === 'update')
-      recordExtensionUpdate(details.previousVersion)
+    if (details.reason === 'update') recordExtensionUpdate(details.previousVersion)
 
     queueActiveTabsWithRestoreRetry()
   })

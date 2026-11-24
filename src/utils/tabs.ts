@@ -11,8 +11,7 @@ export async function openLinkInBackground(url: string) {
       contentScriptQuery: TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND,
       url,
     })
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to open link in background:', error)
   }
 }

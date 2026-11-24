@@ -8,22 +8,32 @@ import api from '~/utils/api'
 
 import type { UserSearchCandidate } from '../types'
 
-const props = withDefaults(defineProps<{
-  /** 选中后的处理；返回错误文案表示未添加，此时保留输入。 */
-  select: (user: UserSearchCandidate) => Promise<string | void> | string | void
-  /** 已添加的 UID，对应候选置灰。 */
-  exclude?: string[]
-  /** 整体不可再添加（如已达上限）时置灰全部候选。 */
-  disabled?: boolean
-  placeholder?: string
-  size?: 'default' | 'small'
-}>(), {
-  exclude: () => [],
-  disabled: false,
-  size: 'default',
-})
+const props = withDefaults(
+  defineProps<{
+    /** 选中后的处理；返回错误文案表示未添加，此时保留输入。 */
+    select: (user: UserSearchCandidate) => Promise<string | void> | string | void
+    /** 已添加的 UID，对应候选置灰。 */
+    exclude?: string[]
+    /** 整体不可再添加（如已达上限）时置灰全部候选。 */
+    disabled?: boolean
+    placeholder?: string
+    size?: 'default' | 'small'
+  }>(),
+  {
+    exclude: () => [],
+    disabled: false,
+    size: 'default',
+  },
+)
 
-type SearchStatus = 'idle' | 'loading' | 'not_found' | 'no_results' | 'invalid_uid' | 'search_failed' | 'info_failed'
+type SearchStatus =
+  | 'idle'
+  | 'loading'
+  | 'not_found'
+  | 'no_results'
+  | 'invalid_uid'
+  | 'search_failed'
+  | 'info_failed'
 
 const SEARCH_DEBOUNCE = 300
 
@@ -43,10 +53,8 @@ let requestId = 0
 
 const excludedMids = computed(() => new Set(props.exclude))
 const statusText = computed(() => {
-  if (status.value === 'loading')
-    return t('common.loading')
-  if (status.value === 'idle')
-    return ''
+  if (status.value === 'loading') return t('common.loading')
+  if (status.value === 'idle') return ''
   return t(`settings.up_picker.${status.value}`)
 })
 
@@ -89,8 +97,7 @@ function stripSearchHighlight(value: unknown) {
 
 function parseMid(input: string): string {
   const spaceMatch = input.match(/space\.bilibili\.com\/(\d+)/)
-  if (spaceMatch)
-    return spaceMatch[1]
+  if (spaceMatch) return spaceMatch[1]
   const uidMatch = input.match(/^(?:uid:?)?(\d+)$/i)
   return uidMatch ? uidMatch[1].replace(/^0+/, '') : ''
 }
@@ -99,7 +106,14 @@ async function findByMid(mid: string): Promise<UserSearchCandidate[]> {
   const response = await api.user.getUserCard({ mid })
   const card = response.code === 0 ? response.data?.card : null
   return card?.mid && card?.name
-    ? [{ mid: String(card.mid), name: card.name, face: httpsUrl(card.face || ''), sign: stripSearchHighlight(card.sign) }]
+    ? [
+        {
+          mid: String(card.mid),
+          name: card.name,
+          face: httpsUrl(card.face || ''),
+          sign: stripSearchHighlight(card.sign),
+        },
+      ]
     : []
 }
 
@@ -112,13 +126,17 @@ async function searchByKeyword(keyword: string): Promise<UserSearchCandidate[]> 
     order_sort: 0,
     user_type: 0,
   })
-  const results = response.code === 0 && Array.isArray(response.data?.result) ? response.data.result : []
-  return results.slice(0, 10).map((user: any) => ({
-    mid: String(user.mid || ''),
-    name: stripSearchHighlight(user.uname),
-    face: httpsUrl(user.upic || user.face || ''),
-    sign: stripSearchHighlight(user.usign || user.sign),
-  })).filter((user: UserSearchCandidate) => user.mid && user.name)
+  const results =
+    response.code === 0 && Array.isArray(response.data?.result) ? response.data.result : []
+  return results
+    .slice(0, 10)
+    .map((user: any) => ({
+      mid: String(user.mid || ''),
+      name: stripSearchHighlight(user.uname),
+      face: httpsUrl(user.upic || user.face || ''),
+      sign: stripSearchHighlight(user.usign || user.sign),
+    }))
+    .filter((user: UserSearchCandidate) => user.mid && user.name)
 }
 
 async function search(input: string, id: number) {
@@ -132,23 +150,19 @@ async function search(input: string, id: number) {
   try {
     const results = mid ? await findByMid(mid) : await searchByKeyword(input)
     // 忽略已被后续输入取代的结果
-    if (id !== requestId)
-      return
+    if (id !== requestId) return
     candidates.value = results
     status.value = results.length ? 'idle' : mid ? 'not_found' : 'no_results'
     activeIndex.value = results.length ? 0 : -1
-  }
-  catch {
-    if (id !== requestId)
-      return
+  } catch {
+    if (id !== requestId) return
     candidates.value = []
     status.value = mid ? 'info_failed' : 'search_failed'
   }
 }
 
 async function pick(user: UserSearchCandidate) {
-  if (picking.value)
-    return
+  if (picking.value) return
   error.value = ''
   picking.value = true
   try {
@@ -159,36 +173,34 @@ async function pick(user: UserSearchCandidate) {
       return
     }
     query.value = ''
-  }
-  catch (cause) {
+  } catch (cause) {
     error.value = cause instanceof Error ? cause.message : t('settings.up_picker.info_failed')
     dropdown.hide()
-  }
-  finally {
+  } finally {
     picking.value = false
   }
 }
 
 function showResults() {
-  if (query.value.trim())
-    dropdown.show()
+  if (query.value.trim()) dropdown.show()
 }
 
 function confirmActive(event: KeyboardEvent) {
   // 输入法组字时的回车用于上屏
-  if (event.isComposing)
-    return
+  if (event.isComposing) return
   event.preventDefault()
   const user = candidates.value[activeIndex.value]
-  if (open.value && user)
-    pick(user)
+  if (open.value && user) pick(user)
 }
 </script>
 
 <template>
   <div class="user-search-picker" :class="`user-search-picker--${size}`">
     <div class="user-search-picker__field">
-      <span class="user-search-picker__icon" :class="status === 'loading' || picking ? 'i-svg-spinners:ring-resize' : 'i-tabler-search'" />
+      <span
+        class="user-search-picker__icon"
+        :class="status === 'loading' || picking ? 'i-svg-spinners:ring-resize' : 'i-tabler-search'"
+      />
       <input
         ref="inputRef"
         v-model="query"
@@ -198,7 +210,9 @@ function confirmActive(event: KeyboardEvent) {
         aria-autocomplete="list"
         :aria-controls="listboxId"
         :aria-expanded="open"
-        :aria-activedescendant="open && activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined"
+        :aria-activedescendant="
+          open && activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined
+        "
         :aria-label="placeholder ?? t('settings.up_picker.placeholder')"
         :placeholder="placeholder ?? t('settings.up_picker.placeholder')"
         @focus="showResults"
@@ -208,7 +222,7 @@ function confirmActive(event: KeyboardEvent) {
         @keydown.up.prevent="dropdown.move(-1, candidates.length)"
         @keydown.enter="confirmActive"
         @keydown.esc="dropdown.hideOnEscape"
-      >
+      />
     </div>
     <p v-if="error" class="user-search-picker__error" role="alert">
       <span i-tabler-alert-circle />{{ error }}
@@ -235,11 +249,14 @@ function confirmActive(event: KeyboardEvent) {
               tabindex="-1"
               :aria-selected="index === activeIndex"
               :aria-disabled="disabled || excludedMids.has(user.mid)"
-              :class="{ 'active': index === activeIndex, 'is-disabled': disabled || excludedMids.has(user.mid) }"
+              :class="{
+                active: index === activeIndex,
+                'is-disabled': disabled || excludedMids.has(user.mid),
+              }"
               @mouseenter="activeIndex = index"
               @click="pick(user)"
             >
-              <img :src="avatarUrl(user.face)" :alt="user.name">
+              <img :src="avatarUrl(user.face)" :alt="user.name" />
               <span>
                 <strong>{{ user.name }}<small>UID {{ user.mid }}</small></strong>
                 <em v-if="user.sign">{{ user.sign }}</em>

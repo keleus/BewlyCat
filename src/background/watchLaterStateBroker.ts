@@ -54,12 +54,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isStateEntry(value: unknown): value is WatchLaterStateEntry {
-  return isRecord(value)
-    && typeof value.updatedAt === 'number'
-    && typeof value.refreshStartedAt === 'number'
-    && typeof value.refreshId === 'number'
-    && Array.isArray(value.mutations)
-    && (value.snapshot === undefined || (isRecord(value.snapshot) && Array.isArray(value.snapshot.entries)))
+  return (
+    isRecord(value) &&
+    typeof value.updatedAt === 'number' &&
+    typeof value.refreshStartedAt === 'number' &&
+    typeof value.refreshId === 'number' &&
+    Array.isArray(value.mutations) &&
+    (value.snapshot === undefined ||
+      (isRecord(value.snapshot) && Array.isArray(value.snapshot.entries)))
+  )
 }
 
 export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerBrowser = browser) {
@@ -71,7 +74,10 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
 
   function runExclusive<T>(operation: () => T | Promise<T>): Promise<T> {
     const result = operationQueue.then(operation, operation)
-    operationQueue = result.then(() => undefined, () => undefined)
+    operationQueue = result.then(
+      () => undefined,
+      () => undefined,
+    )
     return result
   }
 
@@ -79,14 +85,11 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
     loadPromise ??= (async () => {
       try {
         const stored = (await sessionStorage?.get(STORAGE_KEY))?.[STORAGE_KEY]
-        if (!isRecord(stored))
-          return
+        if (!isRecord(stored)) return
         for (const [key, entry] of Object.entries(stored)) {
-          if (isStateEntry(entry))
-            entries.set(key, entry)
+          if (isStateEntry(entry)) entries.set(key, entry)
         }
-      }
-      catch {
+      } catch {
         // 不支持会话存储时只在当前后台进程内共享
       }
     })()
@@ -94,8 +97,7 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
   }
 
   function schedulePersist() {
-    if (!sessionStorage || persistTimer)
-      return
+    if (!sessionStorage || persistTimer) return
     persistTimer = setTimeout(() => {
       persistTimer = undefined
       sessionStorage.set({ [STORAGE_KEY]: Object.fromEntries(entries) }).catch(() => {
@@ -112,7 +114,7 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
       entries.set(key, entry)
     }
     const now = Date.now()
-    entry.mutations = entry.mutations.filter(mutation => now - mutation.at < MUTATION_RETENTION)
+    entry.mutations = entry.mutations.filter((mutation) => now - mutation.at < MUTATION_RETENTION)
     return entry
   }
 
@@ -122,23 +124,26 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
       const tabs = await extensionApi.tabs.query({ url: [...CONTENT_SCRIPT_MATCHES] })
       await Promise.allSettled(
         tabs
-          .filter(tab => tab.id !== undefined && getContextKey(tab) === contextKey)
-          .map(tab => extensionApi.tabs.sendMessage(tab.id!, { type, data })),
+          .filter((tab) => tab.id !== undefined && getContextKey(tab) === contextKey)
+          .map((tab) => extensionApi.tabs.sendMessage(tab.id!, { type, data })),
       )
-    }
-    catch {
+    } catch {
       // 页面可能已关闭；其余页面下次读取时仍会拿到最新快照
     }
   }
 
   return {
-    claimRefresh({ accountId, maxAge, force = false }: WatchLaterStateClaim, sender?: Browser.Runtime.MessageSender) {
+    claimRefresh(
+      { accountId, maxAge, force = false }: WatchLaterStateClaim,
+      sender?: Browser.Runtime.MessageSender,
+    ) {
       return runExclusive(async (): Promise<WatchLaterStateClaimResult> => {
         await ensureLoaded()
         const entry = getEntry(accountId, sender)
         const now = Date.now()
         const fresh = entry.snapshot !== undefined && now - entry.updatedAt < maxAge
-        const refreshing = entry.refreshStartedAt > 0 && now - entry.refreshStartedAt < REFRESH_LEASE_TIMEOUT
+        const refreshing =
+          entry.refreshStartedAt > 0 && now - entry.refreshStartedAt < REFRESH_LEASE_TIMEOUT
         // 完整列表较大，多个标签页共享同一把刷新锁；force 仅用于需要最新服务器结果的操作
         const shouldRefresh = force || (!fresh && !refreshing)
         if (shouldRefresh) {
@@ -155,17 +160,19 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
       })
     },
 
-    async publish({ accountId, refreshId, snapshot }: WatchLaterStatePublish, sender?: Browser.Runtime.MessageSender) {
+    async publish(
+      { accountId, refreshId, snapshot }: WatchLaterStatePublish,
+      sender?: Browser.Runtime.MessageSender,
+    ) {
       const published = await runExclusive(async () => {
         await ensureLoaded()
         const entry = getEntry(accountId, sender)
-        if (entry.refreshId !== refreshId)
-          return undefined
+        if (entry.refreshId !== refreshId) return undefined
 
         // 请求期间或刚结束前的变更，服务器可能尚未反映，重新叠加到结果上
         const settleFrom = entry.refreshStartedAt - MUTATION_SETTLE_WINDOW
         const merged = entry.mutations
-          .filter(mutation => mutation.at >= settleFrom)
+          .filter((mutation) => mutation.at >= settleFrom)
           .reduce((current, mutation) => applyWatchLaterChange(current, mutation.change), snapshot)
         entry.snapshot = merged
         entry.updatedAt = Date.now()
@@ -174,17 +181,18 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
         return { accountId, snapshot: merged, updatedAt: entry.updatedAt }
       })
 
-      if (published)
-        await broadcast(WATCH_LATER_STATE_MESSAGE.UPDATED, published, sender)
+      if (published) await broadcast(WATCH_LATER_STATE_MESSAGE.UPDATED, published, sender)
       return published
     },
 
-    releaseRefresh({ accountId, refreshId }: WatchLaterStateRelease, sender?: Browser.Runtime.MessageSender) {
+    releaseRefresh(
+      { accountId, refreshId }: WatchLaterStateRelease,
+      sender?: Browser.Runtime.MessageSender,
+    ) {
       return runExclusive(async () => {
         await ensureLoaded()
         const entry = getEntry(accountId, sender)
-        if (entry.refreshId !== refreshId)
-          return
+        if (entry.refreshId !== refreshId) return
         entry.refreshStartedAt = 0
         schedulePersist()
       })
@@ -195,8 +203,7 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
         await ensureLoaded()
         const entry = getEntry(data.accountId, sender)
         entry.mutations.push({ change: data.change, at: Date.now() })
-        if (entry.snapshot)
-          entry.snapshot = applyWatchLaterChange(entry.snapshot, data.change)
+        if (entry.snapshot) entry.snapshot = applyWatchLaterChange(entry.snapshot, data.change)
         schedulePersist()
       })
       await broadcast(WATCH_LATER_STATE_MESSAGE.MUTATED, data, sender)
@@ -207,20 +214,16 @@ export function createWatchLaterStateBroker(extensionApi: WatchLaterStateBrokerB
 export function setupWatchLaterStateBroker() {
   const broker = createWatchLaterStateBroker()
 
-  onMessage<WatchLaterStateClaim>(
-    WATCH_LATER_STATE_MESSAGE.CLAIM_REFRESH,
-    (data, sender) => broker.claimRefresh(data, sender),
+  onMessage<WatchLaterStateClaim>(WATCH_LATER_STATE_MESSAGE.CLAIM_REFRESH, (data, sender) =>
+    broker.claimRefresh(data, sender),
   )
-  onMessage<WatchLaterStatePublish>(
-    WATCH_LATER_STATE_MESSAGE.PUBLISH,
-    (data, sender) => broker.publish(data, sender),
+  onMessage<WatchLaterStatePublish>(WATCH_LATER_STATE_MESSAGE.PUBLISH, (data, sender) =>
+    broker.publish(data, sender),
   )
-  onMessage<WatchLaterStateRelease>(
-    WATCH_LATER_STATE_MESSAGE.RELEASE_REFRESH,
-    (data, sender) => broker.releaseRefresh(data, sender),
+  onMessage<WatchLaterStateRelease>(WATCH_LATER_STATE_MESSAGE.RELEASE_REFRESH, (data, sender) =>
+    broker.releaseRefresh(data, sender),
   )
-  onMessage<WatchLaterStateMutate>(
-    WATCH_LATER_STATE_MESSAGE.MUTATE,
-    (data, sender) => broker.mutate(data, sender),
+  onMessage<WatchLaterStateMutate>(WATCH_LATER_STATE_MESSAGE.MUTATE, (data, sender) =>
+    broker.mutate(data, sender),
   )
 }

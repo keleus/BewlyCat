@@ -960,21 +960,20 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-pic-vie
 `
 
 function isOpusDetailPage(url: string = location.href): boolean {
-  return /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(url)
-    || /https?:\/\/t\.bilibili\.com\/\d+/.test(url)
+  return (
+    /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(url) ||
+    /https?:\/\/t\.bilibili\.com\/\d+/.test(url)
+  )
 }
 
 function getOpusPageWidth() {
   // Dialog 场景以父页面同步的视口宽为准，保证信息列恒为视口宽的 29%
-  if (parentViewportWidth > 0)
-    return parentViewportWidth
+  if (parentViewportWidth > 0) return parentViewportWidth
   for (const win of [window.top, window.parent, window]) {
     try {
       const width = win?.innerWidth
-      if (typeof width === 'number' && Number.isFinite(width) && width > 0)
-        return width
-    }
-    catch {
+      if (typeof width === 'number' && Number.isFinite(width) && width > 0) return width
+    } catch {
       // 跨域时忽略
     }
   }
@@ -997,8 +996,7 @@ function bindOpusViewportResize() {
   try {
     window.parent?.removeEventListener('resize', syncOpusCommentColumnWidth)
     window.parent?.addEventListener('resize', syncOpusCommentColumnWidth)
-  }
-  catch {
+  } catch {
     // 跨域时只监听 iframe 自身
   }
 }
@@ -1007,8 +1005,7 @@ function unbindOpusViewportResize() {
   window.removeEventListener('resize', syncOpusCommentColumnWidth)
   try {
     window.parent?.removeEventListener('resize', syncOpusCommentColumnWidth)
-  }
-  catch {
+  } catch {
     // ignore
   }
 }
@@ -1054,8 +1051,7 @@ function clearDeferredSetup() {
 }
 
 function deferSetupUntilDocumentElementReady() {
-  if (setupDomReadyListener || setupRootReadyRetryTimer !== null)
-    return
+  if (setupDomReadyListener || setupRootReadyRetryTimer !== null) return
 
   if (document.readyState === 'loading') {
     setupDomReadyListener = () => {
@@ -1082,8 +1078,7 @@ function ensureBaseClasses() {
 }
 
 function ensureStyles() {
-  if (styleEl?.isConnected)
-    return
+  if (styleEl?.isConnected) return
   styleEl = document.createElement('style')
   styleEl.id = 'bewly-opus-drawer-layout'
   styleEl.textContent = `${BASE_CSS}\n${SPLIT_CSS}`
@@ -1098,22 +1093,19 @@ function showIframeLoading(text = '正在整理动态详情…') {
     try {
       const gifUrl = browser.runtime.getURL('/assets/loading.gif')
       iconHtml = `<img class="bewly-opus-iframe-loading__icon" src="${gifUrl}" alt="" aria-hidden="true">`
-    }
-    catch {
+    } catch {
       // ignore extension url resolution failures
     }
     loadingEl.innerHTML = `${iconHtml}<span></span>`
     document.documentElement.appendChild(loadingEl)
   }
   const label = loadingEl.querySelector('span')
-  if (label)
-    label.textContent = text
+  if (label) label.textContent = text
   loadingEl.classList.remove('is-hide')
 }
 
 function hideIframeLoading() {
-  if (!loadingEl)
-    return
+  if (!loadingEl) return
   loadingEl.classList.add('is-hide')
   window.setTimeout(() => {
     loadingEl?.remove()
@@ -1126,13 +1118,11 @@ function notifyLayoutReady() {
   // 若只靠首次调用揭罩，重现的遮罩将永远无法消失（含 10s 兜底路径）。
   // 通知父页则保持一次性。
   hideIframeLoading()
-  if (layoutReadyNotified)
-    return
+  if (layoutReadyNotified) return
   layoutReadyNotified = true
   try {
     window.parent.postMessage({ type: LAYOUT_READY_MSG, source: 'bewly-opus' }, '*')
-  }
-  catch {
+  } catch {
     // ignore
   }
 }
@@ -1146,21 +1136,18 @@ function findOpusRoot(): HTMLElement | null {
     document.querySelector('#opus-detail-app .opus-detail'),
   ]
   for (const node of candidates) {
-    if (node instanceof HTMLElement)
-      return node
+    if (node instanceof HTMLElement) return node
   }
   return null
 }
 
 function isRootReady(root: HTMLElement): boolean {
-  if (root.dataset[READY_FLAG] === '1')
-    return true
+  if (root.dataset[READY_FLAG] === '1') return true
 
   const hasMarker = !!root.querySelector(CONTENT_READY_SELECTORS)
   const textLen = (root.textContent || '').replace(/\s+/g, '').length
   const ready = hasMarker && textLen > 30
-  if (ready)
-    root.dataset[READY_FLAG] = '1'
+  if (ready) root.dataset[READY_FLAG] = '1'
   return ready
 }
 
@@ -1183,12 +1170,9 @@ const CATALOG_SELECTORS = [
 function isPlainOpusRequested(): boolean {
   try {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('bewly_opus_plain') === '1')
-      return true
-    if (params.get('bewly_opus_layout') === 'plain')
-      return true
-  }
-  catch {
+    if (params.get('bewly_opus_plain') === '1') return true
+    if (params.get('bewly_opus_layout') === 'plain') return true
+  } catch {
     // ignore
   }
   return false
@@ -1205,14 +1189,12 @@ function shouldSkipSplitForForward(_root?: HTMLElement | null): boolean {
  */
 function applyPlainLayout(root?: HTMLElement | null): boolean {
   // 转发：不重排、不展示整理遮罩，尽快结束
-  if (root?.querySelector(':scope > .bewly-opus-split'))
-    teardownSplit(root, false)
+  if (root?.querySelector(':scope > .bewly-opus-split')) teardownSplit(root, false)
 
   markTextOnly(false)
   markArticleMode(false)
   markSplitReady(false)
-  if (root)
-    root.dataset[LAYOUT_MODE_FLAG] = 'text'
+  if (root) root.dataset[LAYOUT_MODE_FLAG] = 'text'
   layoutMode = 'text'
   // 本页永久跳过分栏，避免 mutation 再触发 split
   disabledSplit = true
@@ -1228,58 +1210,53 @@ function applyPlainLayout(root?: HTMLElement | null): boolean {
 function isColumnArticleOpus(root?: HTMLElement | null): boolean {
   try {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('bewly_opus_article') === '1')
-      return true
-  }
-  catch {
+    if (params.get('bewly_opus_article') === '1') return true
+  } catch {
     // ignore
   }
 
   // 专栏阅读页
-  if (/\/read\/cv\d+/i.test(location.pathname + location.search))
-    return true
+  if (/\/read\/cv\d+/i.test(location.pathname + location.search)) return true
 
   try {
     const state = (window as any).__INITIAL_STATE__
     const detail = state?.detail || state?.item
     const type = detail?.type ?? detail?.item?.type
-    if (type === 'DYNAMIC_TYPE_ARTICLE' || type === 'MAJOR_TYPE_ARTICLE')
-      return true
+    if (type === 'DYNAMIC_TYPE_ARTICLE' || type === 'MAJOR_TYPE_ARTICLE') return true
     // 专栏 comment_type=12；article_type>0 也视为专栏
     const basic = detail?.basic || detail?.item?.basic || {}
-    if (Number(basic.comment_type) === 12)
-      return true
-    if (Number(basic.article_type) > 0)
-      return true
-  }
-  catch {
+    if (Number(basic.comment_type) === 12) return true
+    if (Number(basic.article_type) > 0) return true
+  } catch {
     // ignore
   }
 
   const scope = root || document
   // 专栏专属壳层（目录只作为专栏的辅助特征，不单独判定）
-  const articleChrome = scope.querySelector([
-    '.article-container',
-    '.article-content',
-    '#article-content',
-    '.bili-article',
-    '.read-article',
-    '.opus-article',
-    '.article-up-info',
-    '[class*="article-container"]',
-  ].join(','))
-  if (!(articleChrome instanceof HTMLElement))
-    return false
+  const articleChrome = scope.querySelector(
+    [
+      '.article-container',
+      '.article-content',
+      '#article-content',
+      '.bili-article',
+      '.read-article',
+      '.opus-article',
+      '.article-up-info',
+      '[class*="article-container"]',
+    ].join(','),
+  )
+  if (!(articleChrome instanceof HTMLElement)) return false
 
   // 有专栏壳 + 目录，才按专栏收窄
   try {
     const catalog = document.querySelector(CATALOG_SELECTORS)
-    if (catalog instanceof HTMLElement
-      && !catalog.closest('.bili-comment-container, .reply-list, .sub-reply-list')) {
+    if (
+      catalog instanceof HTMLElement &&
+      !catalog.closest('.bili-comment-container, .reply-list, .sub-reply-list')
+    ) {
       return true
     }
-  }
-  catch {
+  } catch {
     // ignore
   }
 
@@ -1293,17 +1270,17 @@ function isExcludedMediaNode(node: Element): boolean {
 
 function collectAlbumNodes(root: HTMLElement, includeCoverFallback = false): HTMLElement[] {
   const nodes = Array.from(root.querySelectorAll<HTMLElement>(ALBUM_SELECTORS))
-  const primaryNodes = nodes.filter(node => node.matches(PRIMARY_ALBUM_SELECTORS))
-  const coverNodes = nodes.filter(node => node.matches('.opus-module-top__album__cover'))
-  const sourceNodes = includeCoverFallback && coverNodes.length
-    ? coverNodes
-    : primaryNodes.length
-      ? primaryNodes
-      : nodes
+  const primaryNodes = nodes.filter((node) => node.matches(PRIMARY_ALBUM_SELECTORS))
+  const coverNodes = nodes.filter((node) => node.matches('.opus-module-top__album__cover'))
+  const sourceNodes =
+    includeCoverFallback && coverNodes.length
+      ? coverNodes
+      : primaryNodes.length
+        ? primaryNodes
+        : nodes
   return sourceNodes.filter((node, _index, list) => {
-    if (isExcludedMediaNode(node))
-      return false
-    return !list.some(other => other !== node && other.contains(node))
+    if (isExcludedMediaNode(node)) return false
+    return !list.some((other) => other !== node && other.contains(node))
   })
 }
 
@@ -1334,16 +1311,15 @@ function markTextOnly(enabled: boolean) {
 }
 
 const ARTICLE_CATALOG_SIDEBAR_SELECTOR = '.right-sidebar-wrap, .right-side-bar, .side-toolbar'
-const ARTICLE_CATALOG_MARKER_SELECTOR = '.catalog, .catalog-panel, [class*="catalog"], [class*="Catalog"]'
+const ARTICLE_CATALOG_MARKER_SELECTOR =
+  '.catalog, .catalog-panel, [class*="catalog"], [class*="Catalog"]'
 
 function syncArticleCatalogSidebars(enabled: boolean) {
   const sidebars = document.querySelectorAll<HTMLElement>(ARTICLE_CATALOG_SIDEBAR_SELECTOR)
   sidebars.forEach((sidebar) => {
     const hasCatalog = enabled && Boolean(sidebar.querySelector(ARTICLE_CATALOG_MARKER_SELECTOR))
-    if (hasCatalog)
-      sidebar.dataset.bewlyOpusHasCatalog = 'true'
-    else
-      delete sidebar.dataset.bewlyOpusHasCatalog
+    if (hasCatalog) sidebar.dataset.bewlyOpusHasCatalog = 'true'
+    else delete sidebar.dataset.bewlyOpusHasCatalog
   })
 }
 
@@ -1364,35 +1340,28 @@ const GALLERY_STAGE_MAX_WIDTH = 1600
 function isBilibiliImageUrl(url: string): boolean {
   try {
     return BILIBILI_IMAGE_HOST_RE.test(new URL(url).hostname)
-  }
-  catch {
+  } catch {
     return false
   }
 }
 
 function normalizeImageUrl(url = ''): string {
   const raw = url.trim()
-  if (!raw)
-    return ''
+  if (!raw) return ''
 
   let candidate = raw
-  if (candidate.startsWith('//'))
-    candidate = `https:${candidate}`
+  if (candidate.startsWith('//')) candidate = `https:${candidate}`
 
   let parsed: URL
   try {
     parsed = new URL(candidate, location.href)
-  }
-  catch {
+  } catch {
     return ''
   }
 
-  if (parsed.username || parsed.password)
-    return ''
-  if (parsed.protocol === 'http:')
-    parsed.protocol = 'https:'
-  if (parsed.protocol !== 'https:')
-    return ''
+  if (parsed.username || parsed.password) return ''
+  if (parsed.protocol === 'http:') parsed.protocol = 'https:'
+  if (parsed.protocol !== 'https:') return ''
 
   parsed.pathname = parsed.pathname.replace(/(?:@|%40)[^/?#]*$/, '')
   if (BILIBILI_IMAGE_HOST_RE.test(parsed.hostname))
@@ -1402,55 +1371,56 @@ function normalizeImageUrl(url = ''): string {
   // the replacement preserves existing percent-encoded octets.
   const next = encodeURI(parsed.href).replace(/%25([0-9a-f]{2})/gi, '%$1')
   // 过滤头像、表情、游戏/推荐小图标等
-  if (/\/face\/|\/bfs\/face\/|emoji|emote|static\.hdslb\.com\/images\/|\/garb\/|\/activity-plat\/|\/game\/|icon\.png|icon\.webp|favicon|avatar/i.test(next))
+  if (
+    /\/face\/|\/bfs\/face\/|emoji|emote|static\.hdslb\.com\/images\/|\/garb\/|\/activity-plat\/|\/game\/|icon\.png|icon\.webp|favicon|avatar/i.test(
+      next,
+    )
+  )
     return ''
   return next
 }
 
 function getGalleryThumbnailUrl(url: string): string {
-  if (!isBilibiliImageUrl(url))
-    return url
+  if (!isBilibiliImageUrl(url)) return url
   try {
     const parsed = new URL(url)
     parsed.pathname = `${parsed.pathname.replace(/(?:@|%40)[^/?#]*$/, '')}@${GALLERY_THUMB_SIZE}w_${GALLERY_THUMB_SIZE}h_1c.webp`
     return parsed.href
-  }
-  catch {
+  } catch {
     return url
   }
 }
 
 function getGalleryStageUrl(url: string): string {
   // 动图保留原图以维持播放；静态大图按舞台所需尺寸加载 WebP，减少高分辨率原图解码与合成卡顿
-  if (/\.gif(?:[?#]|$)/i.test(url) || !isBilibiliImageUrl(url))
-    return url
+  if (/\.gif(?:[?#]|$)/i.test(url) || !isBilibiliImageUrl(url)) return url
   try {
     const parsed = new URL(url)
     parsed.pathname = `${parsed.pathname.replace(/(?:@|%40)[^/?#]*$/, '')}@${GALLERY_STAGE_MAX_WIDTH}w.webp`
     return parsed.href
-  }
-  catch {
+  } catch {
     return url
   }
 }
 
 function isLikelyContentImage(img: HTMLImageElement): boolean {
-  if (isExcludedMediaNode(img))
-    return false
+  if (isExcludedMediaNode(img)) return false
 
   const raw = img.getAttribute('data-src') || img.getAttribute('src') || img.currentSrc || ''
-  if (!normalizeImageUrl(raw))
-    return false
+  if (!normalizeImageUrl(raw)) return false
 
   // 明确的相册/大图容器内保留
-  if (img.closest('.horizontal-scroll-album, .bili-album, .opus-module-top, .opus-pic-view, .bili-dyn-gallery__window'))
+  if (
+    img.closest(
+      '.horizontal-scroll-album, .bili-album, .opus-module-top, .opus-pic-view, .bili-dyn-gallery__window',
+    )
+  )
     return true
 
   // 正文零散小图（游戏推荐图标等）排除
   const w = Number(img.getAttribute('width') || img.naturalWidth || 0)
   const h = Number(img.getAttribute('height') || img.naturalHeight || 0)
-  if ((w && w < 160) || (h && h < 160))
-    return false
+  if ((w && w < 160) || (h && h < 160)) return false
 
   // 额外卡片封面通常有链接父级或 goods 类
   if (img.closest('a[href*="game"], a[href*="app"], .bili-dyn-card-common, .bili-dyn-card-goods'))
@@ -1472,14 +1442,12 @@ function getImageUrlKey(url: string): string {
     if (BILIBILI_IMAGE_HOST_RE.test(host)) {
       // 同一 BFS 图片在不同 CDN 节点（i0/i1/i2）或不同子路径下共享同一内容哈希
       const hashMatch = BFS_HASH_FILENAME_RE.exec(cleanPath)
-      if (hashMatch)
-        return `bili-bfs:${hashMatch[1]}`
+      if (hashMatch) return `bili-bfs:${hashMatch[1]}`
       return `bili-cdn:${cleanPath}`
     }
 
     return `${host}${cleanPath}`
-  }
-  catch {
+  } catch {
     return url
       .split(/[?#]/, 1)[0]
       .replace(/(?:@|%40)[^/]*$/, '')
@@ -1491,12 +1459,9 @@ function getImageUrlKey(url: string): string {
 
 function getImageFormatPriority(url: string): number {
   const path = url.split(/[?#]/, 1)[0]
-  if (/\.gif$/i.test(path))
-    return 3
-  if (/\.(?:png|jpe?g)$/i.test(path))
-    return 2
-  if (/\.(?:webp|avif)$/i.test(path))
-    return 1
+  if (/\.gif$/i.test(path)) return 3
+  if (/\.(?:png|jpe?g)$/i.test(path)) return 2
+  if (/\.(?:webp|avif)$/i.test(path)) return 1
   return 0
 }
 
@@ -1506,8 +1471,7 @@ function dedupeImageUrls(rawUrls: string[]): string[] {
 
   for (const raw of rawUrls) {
     const url = normalizeImageUrl(raw || '')
-    if (!url)
-      continue
+    if (!url) continue
     const key = getImageUrlKey(url)
     const existingIndex = urlIndexes.get(key)
     if (existingIndex !== undefined) {
@@ -1535,8 +1499,7 @@ function extractImageUrls(albumNodes: HTMLElement[]): string[] {
 
   const push = (raw?: string | null): boolean => {
     const url = normalizeImageUrl(raw || '')
-    if (!url)
-      return false
+    if (!url) return false
     const key = getImageUrlKey(url)
     const existingIndex = urlIndexes.get(key)
     if (existingIndex !== undefined) {
@@ -1555,51 +1518,47 @@ function extractImageUrls(albumNodes: HTMLElement[]): string[] {
 
     if (container instanceof HTMLImageElement) {
       if (isLikelyContentImage(container))
-        push(container.getAttribute('data-src') || container.getAttribute('src') || container.currentSrc)
+        push(
+          container.getAttribute('data-src') ||
+            container.getAttribute('src') ||
+            container.currentSrc,
+        )
       return
     }
 
     container.querySelectorAll('img').forEach((img) => {
-      if (!isLikelyContentImage(img))
-        return
-      const accepted = push(img.getAttribute('data-src') || img.getAttribute('src') || img.currentSrc)
-      if (!accepted)
-        return
+      if (!isLikelyContentImage(img)) return
+      const accepted = push(
+        img.getAttribute('data-src') || img.getAttribute('src') || img.currentSrc,
+      )
+      if (!accepted) return
       handledImages.add(img)
       const picture = img.closest('picture')
-      if (picture)
-        handledPictures.add(picture)
+      if (picture) handledPictures.add(picture)
     })
 
     // <source> 属于同一 <picture> 的候选格式源，仅在对应 <img> 未取到有效地址时兜底，避免整组图片被二次收集
     container.querySelectorAll('source[srcset], img[srcset]').forEach((el) => {
       if (el instanceof HTMLImageElement) {
-        if (handledImages.has(el) || !isLikelyContentImage(el))
-          return
+        if (handledImages.has(el) || !isLikelyContentImage(el)) return
         const accepted = push(parseFirstSrcsetUrl(el.getAttribute('srcset') || ''))
-        if (!accepted)
-          return
+        if (!accepted) return
         handledImages.add(el)
         const picture = el.closest('picture')
-        if (picture)
-          handledPictures.add(picture)
+        if (picture) handledPictures.add(picture)
         return
       }
-      if (isExcludedMediaNode(el))
-        return
+      if (isExcludedMediaNode(el)) return
       const picture = el.closest('picture')
-      if (picture && handledPictures.has(picture))
-        return
+      if (picture && handledPictures.has(picture)) return
       const accepted = push(parseFirstSrcsetUrl(el.getAttribute('srcset') || ''))
-      if (accepted && picture)
-        handledPictures.add(picture)
+      if (accepted && picture) handledPictures.add(picture)
     })
 
     // 仅在容器未提取到 <img>/<picture> 时回退读取背景图，避免收集模糊底图或装饰层
     if (urls.length === countBeforeContainer) {
       container.querySelectorAll<HTMLElement>('[style*="background-image"]').forEach((el) => {
-        if (isExcludedMediaNode(el))
-          return
+        if (isExcludedMediaNode(el)) return
         const match = /url\(["']?(.*?)["']?\)/.exec(el.style.backgroundImage || '')
         push(match?.[1])
       })
@@ -1615,8 +1574,7 @@ function extractImageUrls(albumNodes: HTMLElement[]): string[] {
     if (previewNode) {
       const countBeforePreview = urls.length
       extractFromContainer(previewNode)
-      if (urls.length > countBeforePreview)
-        return
+      if (urls.length > countBeforePreview) return
     }
 
     extractFromContainer(node)
@@ -1638,17 +1596,20 @@ function unbindGalleryViewerBridge() {
 
 /** iframe 内复用项目本地图标组件，不依赖字体基线或页面图标样式 */
 function mountGalleryIcon(host: HTMLElement, icon: string) {
-  render(createVNode(Icon, {
-    icon,
-    'aria-hidden': 'true',
-  }), host)
+  render(
+    createVNode(Icon, {
+      icon,
+      'aria-hidden': 'true',
+    }),
+    host,
+  )
   galleryIconHosts.push(host)
 }
 
 function unmountGalleryIcons() {
-  galleryIconHosts.forEach(host => render(null, host))
+  galleryIconHosts.forEach((host) => render(null, host))
   galleryIconHosts = []
-  galleryFitObservers.forEach(observer => observer.disconnect())
+  galleryFitObservers.forEach((observer) => observer.disconnect())
   galleryFitObservers = []
 }
 
@@ -1667,8 +1628,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     stageShell.focus({ preventScroll: true })
   })
   stageShell.addEventListener('mouseleave', () => {
-    if (document.activeElement === stageShell)
-      stageShell.blur()
+    if (document.activeElement === stageShell) stageShell.blur()
   })
 
   const slider = document.createElement('div')
@@ -1787,8 +1747,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   viewerToolbar.appendChild(viewerRotate)
   viewer.appendChild(viewerStage)
   viewer.appendChild(viewerClose)
-  if (urls.length > 1)
-    viewer.appendChild(viewerCounter)
+  if (urls.length > 1) viewer.appendChild(viewerCounter)
   viewer.appendChild(viewerPrev)
   viewer.appendChild(viewerNext)
   viewer.appendChild(viewerToolbar)
@@ -1862,8 +1821,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     stage.classList.add('is-scrolling')
     scrollRail.classList.add('is-scrolling')
     syncOverlayScrollbar()
-    if (scrollHideTimer)
-      clearTimeout(scrollHideTimer)
+    if (scrollHideTimer) clearTimeout(scrollHideTimer)
     scrollHideTimer = setTimeout(() => {
       slides.forEach(({ stage: s }) => s.classList.remove('is-scrolling'))
       scrollRail.classList.remove('is-scrolling')
@@ -1872,14 +1830,16 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   slides.forEach(({ stage, image }) => {
-    stage.addEventListener('scroll', () => {
-      if (stage === getCenterStage())
-        markStageScrolling(stage)
-    }, { passive: true })
+    stage.addEventListener(
+      'scroll',
+      () => {
+        if (stage === getCenterStage()) markStageScrolling(stage)
+      },
+      { passive: true },
+    )
     image.addEventListener('load', () => {
       syncOpusImageFit(stage, image)
-      if (stage === getCenterStage())
-        syncOverlayScrollbar()
+      if (stage === getCenterStage()) syncOverlayScrollbar()
     })
     image.addEventListener('error', () => {
       const fallback = image.dataset.bewlyFallbackSrc
@@ -1904,14 +1864,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     scrollRail.classList.add('is-scrolling')
   })
   scrollThumb.addEventListener('pointermove', (e) => {
-    if (!dragging)
-      return
+    if (!dragging) return
     const stage = getCenterStage()
     const viewH = stage.clientHeight
     const contentH = stage.scrollHeight
     const maxScroll = contentH - viewH
-    if (maxScroll <= 0)
-      return
+    if (maxScroll <= 0) return
     const railH = scrollRail.clientHeight || 1
     const thumbH = scrollThumb.clientHeight || 28
     const maxThumbTop = Math.max(1, railH - thumbH)
@@ -1920,13 +1878,11 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     syncOverlayScrollbar()
   })
   const endDrag = (e: PointerEvent) => {
-    if (!dragging)
-      return
+    if (!dragging) return
     dragging = false
     try {
       scrollThumb.releasePointerCapture(e.pointerId)
-    }
-    catch {
+    } catch {
       // ignore
     }
     markStageScrolling(getCenterStage())
@@ -1935,8 +1891,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   scrollThumb.addEventListener('pointercancel', endDrag)
   // 点击轨道跳转
   scrollRail.addEventListener('pointerdown', (e) => {
-    if (e.target === scrollThumb)
-      return
+    if (e.target === scrollThumb) return
     e.preventDefault()
     const stage = getCenterStage()
     const rect = scrollRail.getBoundingClientRect()
@@ -1952,8 +1907,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   })
 
   const preloadUrl = (url: string) => {
-    if (!url || preloaded.has(url))
-      return
+    if (!url || preloaded.has(url)) return
     preloaded.add(url)
     const img = new Image()
     img.decoding = 'async'
@@ -1961,8 +1915,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   const preloadAround = (center: number) => {
-    if (urls.length <= 1)
-      return
+    if (urls.length <= 1) return
 
     // 预加载相邻与再外侧一张舞台尺寸图，减少切页白闪与高分原图解码压力
     const neighborIndexes = [center - 2, center - 1, center + 1, center + 2]
@@ -1972,8 +1925,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   const preloadViewerAround = (center: number) => {
-    if (urls.length <= 1)
-      return
+    if (urls.length <= 1) return
 
     const neighborIndexes = [center - 1, center + 1]
     neighborIndexes.forEach((i) => {
@@ -1985,8 +1937,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     const item = slides[slot]
     const normalizedIndex = wrapIndex(urlIndex)
     if (item.urlIndex === normalizedIndex && item.image.getAttribute('src')) {
-      if (slot !== 1)
-        item.stage.scrollTop = 0
+      if (slot !== 1) item.stage.scrollTop = 0
       return
     }
     const originalUrl = urls[normalizedIndex]
@@ -1995,20 +1946,17 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     item.stage.classList.remove('is-long', 'is-fit-width', 'is-cover-fill')
     item.image.dataset.bewlyFallbackSrc = stageUrl !== originalUrl ? originalUrl : ''
     item.image.src = stageUrl
-    if (item.image.complete && item.image.naturalWidth)
-      syncOpusImageFit(item.stage, item.image)
+    if (item.image.complete && item.image.naturalWidth) syncOpusImageFit(item.stage, item.image)
     item.stage.scrollTop = 0
   }
 
   const fillWindow = () => {
-    if (!urls.length)
-      return
+    if (!urls.length) return
     if (urls.length === 1) {
       setSlideImage(0, 0)
       setSlideImage(1, 0)
       setSlideImage(2, 0)
-    }
-    else {
+    } else {
       setSlideImage(0, index - 1)
       setSlideImage(1, index)
       setSlideImage(2, index + 1)
@@ -2040,13 +1988,11 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       clearTimeout(animTimer)
       animTimer = null
     }
-    if (!isAnimating)
-      return
+    if (!isAnimating) return
     isAnimating = false
     const dir = pendingMoveDir
     pendingMoveDir = 0
-    if (!track.isConnected)
-      return
+    if (!track.isConnected) return
 
     // 轮转滑轨 DOM 节点，保留当前与上一张已解码的纹理，避免切页后三张图同时重设 src
     if (dir > 0) {
@@ -2055,8 +2001,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
         slides.push(recycled)
         track.appendChild(recycled.slide)
       }
-    }
-    else if (dir < 0) {
+    } else if (dir < 0) {
       const recycled = slides.pop()
       if (recycled) {
         slides.unshift(recycled)
@@ -2075,8 +2020,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   track.addEventListener('transitionend', (e) => {
-    if (e.target === track && e.propertyName === 'transform')
-      finishAnimation()
+    if (e.target === track && e.propertyName === 'transform') finishAnimation()
   })
 
   /**
@@ -2085,15 +2029,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
    * @param dir 1=下一张(向左平移) -1=上一张(向右平移) 0=自动判断方向
    */
   const go = (nextIndex: number, dir: -1 | 0 | 1 = 0) => {
-    if (!urls.length)
-      return
+    if (!urls.length) return
     const wasAnimating = isAnimating
-    if (wasAnimating)
-      finishAnimation()
+    if (wasAnimating) finishAnimation()
 
     const target = wrapIndex(nextIndex)
-    if (target === index)
-      return
+    if (target === index) return
 
     let moveDir: -1 | 0 | 1 = dir
     if (moveDir === 0) {
@@ -2111,10 +2052,8 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     }
 
     // 非相邻跳转（缩略图点到远处）：先铺好邻页再滑
-    if (moveDir > 0)
-      setSlideImage(2, target)
-    else
-      setSlideImage(0, target)
+    if (moveDir > 0) setSlideImage(2, target)
+    else setSlideImage(0, target)
 
     index = target
     syncChrome()
@@ -2122,7 +2061,11 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     isAnimating = true
     pendingMoveDir = moveDir
     wheelAccum = 0
-    if (wasAnimating || !track.classList.contains('is-pos-center') || track.classList.contains('is-animating')) {
+    if (
+      wasAnimating ||
+      !track.classList.contains('is-pos-center') ||
+      track.classList.contains('is-animating')
+    ) {
       setTrackPos('center', false)
       void track.offsetWidth
     }
@@ -2159,10 +2102,8 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   // 百分比输入在回车或失焦时应用；无效输入还原，过小的值由 setViewerScale 收到 25%
   const applyViewerZoomInput = () => {
     const percent = Number.parseFloat(viewerZoom.value.replace(/[%\s]/g, ''))
-    if (Number.isFinite(percent) && percent > 0)
-      setViewerScale(percent / 100)
-    else
-      syncViewerTransform()
+    if (Number.isFinite(percent) && percent > 0) setViewerScale(percent / 100)
+    else syncViewerTransform()
   }
 
   const showViewerImage = (nextIndex: number) => {
@@ -2187,18 +2128,19 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     if (window.parent !== window) {
       viewerIndex = target
       viewerHostedByParent = false
-      window.parent.postMessage({
-        type: 'BEWLY_OPUS_IMAGE_VIEWER_OPEN',
-        urls,
-        index: target,
-      }, '*')
-      if (galleryViewerAckTimer)
-        clearTimeout(galleryViewerAckTimer)
+      window.parent.postMessage(
+        {
+          type: 'BEWLY_OPUS_IMAGE_VIEWER_OPEN',
+          urls,
+          index: target,
+        },
+        '*',
+      )
+      if (galleryViewerAckTimer) clearTimeout(galleryViewerAckTimer)
       // 非动态 Dialog 场景没有父级查看器时，回退到 iframe 内查看
       galleryViewerAckTimer = setTimeout(() => {
         galleryViewerAckTimer = null
-        if (!viewerHostedByParent)
-          openLocalViewer(target)
+        if (!viewerHostedByParent) openLocalViewer(target)
       }, 180)
       return
     }
@@ -2206,14 +2148,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   const closeViewer = () => {
-    if (!viewerOpen)
-      return
+    if (!viewerOpen) return
     viewerOpen = false
     viewer.classList.remove('is-open')
     viewerImage.removeAttribute('src')
     resetViewerTransform()
-    if (viewerIndex !== index)
-      go(viewerIndex, 0)
+    if (viewerIndex !== index) go(viewerIndex, 0)
   }
 
   slides.forEach((item) => {
@@ -2256,8 +2196,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       e.preventDefault()
       applyViewerZoomInput()
       viewerZoom.select()
-    }
-    else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape') {
       e.preventDefault()
       e.stopPropagation()
       syncViewerTransform()
@@ -2276,25 +2215,25 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     syncViewerTransform()
   })
   viewerStage.addEventListener('click', (e) => {
-    if (e.target === viewerStage)
-      closeViewer()
+    if (e.target === viewerStage) closeViewer()
   })
   viewerImage.addEventListener('dblclick', (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (viewerScale > 1)
-      resetViewerTransform()
-    else
-      setViewerScale(2)
+    if (viewerScale > 1) resetViewerTransform()
+    else setViewerScale(2)
   })
-  viewer.addEventListener('wheel', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setViewerScale(viewerScale * (e.deltaY < 0 ? 1.15 : 0.87))
-  }, { passive: false })
+  viewer.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setViewerScale(viewerScale * (e.deltaY < 0 ? 1.15 : 0.87))
+    },
+    { passive: false },
+  )
   viewerImage.addEventListener('pointerdown', (e) => {
-    if (viewerScale <= 1)
-      return
+    if (viewerScale <= 1) return
     e.preventDefault()
     e.stopPropagation()
     viewerDragging = true
@@ -2306,21 +2245,18 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     viewerImage.setPointerCapture(e.pointerId)
   })
   viewerImage.addEventListener('pointermove', (e) => {
-    if (!viewerDragging)
-      return
+    if (!viewerDragging) return
     viewerPanX = viewerDragOriginX + e.clientX - viewerDragStartX
     viewerPanY = viewerDragOriginY + e.clientY - viewerDragStartY
     syncViewerTransform()
   })
   const stopViewerDrag = (e: PointerEvent) => {
-    if (!viewerDragging)
-      return
+    if (!viewerDragging) return
     viewerDragging = false
     viewerImage.classList.remove('is-dragging')
     try {
       viewerImage.releasePointerCapture(e.pointerId)
-    }
-    catch {
+    } catch {
       // 忽略已释放的指针
     }
   }
@@ -2358,10 +2294,13 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       const thumbSrc = getGalleryThumbnailUrl(url)
       thumbImg.src = thumbSrc
       if (thumbSrc !== url) {
-        thumbImg.addEventListener('error', () => {
-          if (thumbImg.src !== url)
-            thumbImg.src = url
-        }, { once: true })
+        thumbImg.addEventListener(
+          'error',
+          () => {
+            if (thumbImg.src !== url) thumbImg.src = url
+          },
+          { once: true },
+        )
       }
       thumbImg.alt = ''
       thumbImg.decoding = 'async'
@@ -2382,63 +2321,66 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     // 页码独立于缩略图，常驻右下角
     stageShell.appendChild(counter)
     gallery.appendChild(stageShell)
-  }
-  else {
+  } else {
     gallery.appendChild(stageShell)
   }
   gallery.appendChild(viewer)
 
   // 横向滚轮切图：阈值限制 + 阈值阈值阈值阈值阈值阈值阈值
-  gallery.addEventListener('wheel', (e) => {
-    // 纵向优先交给当前舞台滚动长图
-    const centerStage = slides[1].stage
-    const deltaX = e.deltaX
-    const deltaY = e.deltaY
-    const absX = Math.abs(deltaX)
-    const absY = Math.abs(deltaY)
+  gallery.addEventListener(
+    'wheel',
+    (e) => {
+      // 纵向优先交给当前舞台滚动长图
+      const centerStage = slides[1].stage
+      const deltaX = e.deltaX
+      const deltaY = e.deltaY
+      const absX = Math.abs(deltaX)
+      const absY = Math.abs(deltaY)
 
-    if (absY >= absX) {
-      // 纵向：若还能滚则不切图
-      const atTop = centerStage.scrollTop <= 0
-      const atBottom = centerStage.scrollTop + centerStage.clientHeight >= centerStage.scrollHeight - 1
-      if (!(atTop && deltaY < 0) && !(atBottom && deltaY > 0) && centerStage.scrollHeight > centerStage.clientHeight + 2)
+      if (absY >= absX) {
+        // 纵向：若还能滚则不切图
+        const atTop = centerStage.scrollTop <= 0
+        const atBottom =
+          centerStage.scrollTop + centerStage.clientHeight >= centerStage.scrollHeight - 1
+        if (
+          !(atTop && deltaY < 0) &&
+          !(atBottom && deltaY > 0) &&
+          centerStage.scrollHeight > centerStage.clientHeight + 2
+        )
+          return
+        // 长图滚到底/顶后的纵向不用于切图，降低误触
         return
-      // 长图滚到底/顶后的纵向不用于切图，降低误触
-      return
-    }
+      }
 
-    if (urls.length <= 1)
-      return
+      if (urls.length <= 1) return
 
-    e.preventDefault()
-    e.stopPropagation()
+      e.preventDefault()
+      e.stopPropagation()
 
-    const now = Date.now()
-    if (now < wheelLockUntil || isAnimating)
-      return
+      const now = Date.now()
+      if (now < wheelLockUntil || isAnimating) return
 
-    wheelAccum += deltaX
-    if (wheelResetTimer)
-      clearTimeout(wheelResetTimer)
-    wheelResetTimer = setTimeout(() => {
+      wheelAccum += deltaX
+      if (wheelResetTimer) clearTimeout(wheelResetTimer)
+      wheelResetTimer = setTimeout(() => {
+        wheelAccum = 0
+        wheelResetTimer = null
+      }, 220)
+
+      if (Math.abs(wheelAccum) < WHEEL_THRESHOLD) return
+
+      const dir: -1 | 1 = wheelAccum > 0 ? 1 : -1
       wheelAccum = 0
-      wheelResetTimer = null
-    }, 220)
-
-    if (Math.abs(wheelAccum) < WHEEL_THRESHOLD)
-      return
-
-    const dir: -1 | 1 = wheelAccum > 0 ? 1 : -1
-    wheelAccum = 0
-    wheelLockUntil = now + WHEEL_LOCK_MS
-    go(index + dir, dir)
-  }, { passive: false })
+      wheelLockUntil = now + WHEEL_LOCK_MS
+      go(index + dir, dir)
+    },
+    { passive: false },
+  )
 
   // 点击舞台空白不切图（仅按钮/缩略图）
   unbindGalleryViewerBridge()
   galleryViewerMessageHandler = (e: MessageEvent) => {
-    if (e.source !== window.parent)
-      return
+    if (e.source !== window.parent) return
     if (e.data?.type === 'BEWLY_OPUS_IMAGE_VIEWER_ACK') {
       viewerHostedByParent = true
       gallery.classList.add('is-viewer-hosted')
@@ -2454,20 +2396,17 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
       const nextIndex = Number(e.data.index)
       if (Number.isFinite(nextIndex)) {
         viewerIndex = wrapIndex(nextIndex)
-        if (viewerIndex !== index)
-          go(viewerIndex, 0)
+        if (viewerIndex !== index) go(viewerIndex, 0)
       }
     }
   }
   window.addEventListener('message', galleryViewerMessageHandler)
   stageShell.addEventListener('keydown', (e) => {
-    if (urls.length <= 1)
-      return
+    if (urls.length <= 1) return
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
       go(index - 1, -1)
-    }
-    else if (e.key === 'ArrowRight') {
+    } else if (e.key === 'ArrowRight') {
       e.preventDefault()
       go(index + 1, 1)
     }
@@ -2475,34 +2414,28 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
 
   viewer.addEventListener('keydown', (e) => {
     // 输入缩放比例时不触发查看器快捷键
-    if (!viewerOpen || e.target === viewerZoom)
-      return
+    if (!viewerOpen || e.target === viewerZoom) return
     if (e.key === 'Escape') {
       e.preventDefault()
       e.stopPropagation()
       closeViewer()
-    }
-    else if (e.key === 'ArrowLeft') {
+    } else if (e.key === 'ArrowLeft') {
       e.preventDefault()
       e.stopPropagation()
       showViewerImage(viewerIndex - 1)
-    }
-    else if (e.key === 'ArrowRight') {
+    } else if (e.key === 'ArrowRight') {
       e.preventDefault()
       e.stopPropagation()
       showViewerImage(viewerIndex + 1)
-    }
-    else if (e.key === '+' || e.key === '=') {
+    } else if (e.key === '+' || e.key === '=') {
       e.preventDefault()
       e.stopPropagation()
       setViewerScale(viewerScale + 0.25)
-    }
-    else if (e.key === '-' || e.key === '_') {
+    } else if (e.key === '-' || e.key === '_') {
       e.preventDefault()
       e.stopPropagation()
       setViewerScale(viewerScale - 0.25)
-    }
-    else if (e.key === '0') {
+    } else if (e.key === '0') {
       e.preventDefault()
       e.stopPropagation()
       resetViewerTransform()
@@ -2514,8 +2447,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
 
   const fitObserver = new ResizeObserver(() => {
     slides.forEach(({ stage, image }) => {
-      if (image.complete && image.naturalWidth)
-        syncOpusImageFit(stage, image)
+      if (image.complete && image.naturalWidth) syncOpusImageFit(stage, image)
     })
     syncOverlayScrollbar()
   })
@@ -2533,8 +2465,7 @@ function teardownSplit(root: HTMLElement, permanent = false) {
     markSplitReady(false)
     appliedSuccessfully = false
     layoutMode = permanent ? 'disabled' : 'pending'
-    if (permanent)
-      disabledSplit = true
+    if (permanent) disabledSplit = true
     return
   }
 
@@ -2543,19 +2474,15 @@ function teardownSplit(root: HTMLElement, permanent = false) {
   const source = mediaPane?.querySelector(':scope > .bewly-opus-gallery__source')
   const fragment = document.createDocumentFragment()
   if (source) {
-    while (source.firstChild)
-      fragment.appendChild(source.firstChild)
-  }
-  else if (mediaPane) {
+    while (source.firstChild) fragment.appendChild(source.firstChild)
+  } else if (mediaPane) {
     Array.from(mediaPane.childNodes).forEach((node) => {
-      if (node instanceof HTMLElement && node.classList.contains('bewly-opus-gallery'))
-        return
+      if (node instanceof HTMLElement && node.classList.contains('bewly-opus-gallery')) return
       fragment.appendChild(node)
     })
   }
   if (panelPane) {
-    while (panelPane.firstChild)
-      fragment.appendChild(panelPane.firstChild)
+    while (panelPane.firstChild) fragment.appendChild(panelPane.firstChild)
   }
   split.remove()
   root.appendChild(fragment)
@@ -2567,16 +2494,22 @@ function teardownSplit(root: HTMLElement, permanent = false) {
   appliedSuccessfully = false
   layoutMode = permanent ? 'disabled' : 'pending'
   teardownCount += 1
-  if (permanent || teardownCount >= 3)
-    disabledSplit = true
+  if (permanent || teardownCount >= 3) disabledSplit = true
 }
 
-function verifySplitOrRollback(root: HTMLElement, split: HTMLElement, panelPane: HTMLElement, mediaPane: HTMLElement) {
+function verifySplitOrRollback(
+  root: HTMLElement,
+  split: HTMLElement,
+  panelPane: HTMLElement,
+  mediaPane: HTMLElement,
+) {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      const ok = isLayoutVisible(split)
-        && (hasMeaningfulContent(panelPane) || hasMeaningfulContent(mediaPane))
-        && (panelPane.getBoundingClientRect().height > 40 || mediaPane.getBoundingClientRect().height > 40)
+      const ok =
+        isLayoutVisible(split) &&
+        (hasMeaningfulContent(panelPane) || hasMeaningfulContent(mediaPane)) &&
+        (panelPane.getBoundingClientRect().height > 40 ||
+          mediaPane.getBoundingClientRect().height > 40)
 
       if (!ok) {
         teardownSplit(root, teardownCount >= 2)
@@ -2592,8 +2525,7 @@ function verifySplitOrRollback(root: HTMLElement, split: HTMLElement, panelPane:
 }
 
 function applyTextOnlyLayout(root: HTMLElement): boolean {
-  if (!isRootReady(root) || !hasMeaningfulContent(root))
-    return false
+  if (!isRootReady(root) || !hasMeaningfulContent(root)) return false
 
   markTextOnly(true)
   markArticleMode(false)
@@ -2606,12 +2538,10 @@ function applyTextOnlyLayout(root: HTMLElement): boolean {
 }
 
 function applyArticleLayout(root: HTMLElement): boolean {
-  if (!isRootReady(root) || !hasMeaningfulContent(root))
-    return false
+  if (!isRootReady(root) || !hasMeaningfulContent(root)) return false
 
   // 若之前误做了分栏，先拆掉
-  if (root.querySelector(':scope > .bewly-opus-split'))
-    teardownSplit(root, false)
+  if (root.querySelector(':scope > .bewly-opus-split')) teardownSplit(root, false)
 
   markArticleMode(true)
   markTextOnly(false)
@@ -2624,18 +2554,21 @@ function applyArticleLayout(root: HTMLElement): boolean {
 }
 
 function applySplitLayout(root: HTMLElement): boolean {
-  if (disabledSplit || layoutMode === 'disabled')
-    return false
+  if (disabledSplit || layoutMode === 'disabled') return false
 
   // 转发动态：不做图片左置
-  if (shouldSkipSplitForForward(root))
-    return applyPlainLayout(root)
+  if (shouldSkipSplitForForward(root)) return applyPlainLayout(root)
 
   const existing = root.querySelector<HTMLElement>(':scope > .bewly-opus-split')
   if (existing) {
     const panel = existing.querySelector<HTMLElement>(':scope > .bewly-opus-split__panel')
     const media = existing.querySelector<HTMLElement>(':scope > .bewly-opus-split__media')
-    if (panel && media && (hasMeaningfulContent(panel) || hasMeaningfulContent(media)) && isLayoutVisible(existing)) {
+    if (
+      panel &&
+      media &&
+      (hasMeaningfulContent(panel) || hasMeaningfulContent(media)) &&
+      isLayoutVisible(existing)
+    ) {
       syncOpusCommentColumnWidth()
       markSplitReady(true)
       markTextOnly(false)
@@ -2645,19 +2578,15 @@ function applySplitLayout(root: HTMLElement): boolean {
       return true
     }
     teardownSplit(root, teardownCount >= 2)
-    if (disabledSplit)
-      return false
+    if (disabledSplit) return false
   }
 
-  if (!isRootReady(root))
-    return false
+  if (!isRootReady(root)) return false
 
-  if (Date.now() - lastMutationAt < 280)
-    return false
+  if (Date.now() - lastMutationAt < 280) return false
 
   // 仅专栏：整页收窄并隐藏原站目录；普通图文不走此分支
-  if (isColumnArticleOpus(root))
-    return applyArticleLayout(root)
+  if (isColumnArticleOpus(root)) return applyArticleLayout(root)
 
   let albumNodes = collectAlbumNodes(root)
   let imageUrls = extractImageUrls(albumNodes)
@@ -2667,12 +2596,10 @@ function applySplitLayout(root: HTMLElement): boolean {
   }
 
   // 纯文字：不左右分栏
-  if (!imageUrls.length)
-    return applyTextOnlyLayout(root)
+  if (!imageUrls.length) return applyTextOnlyLayout(root)
 
   const originalChildren = Array.from(root.childNodes)
-  if (!originalChildren.length)
-    return false
+  if (!originalChildren.length) return false
 
   const split = document.createElement('div')
   split.className = 'bewly-opus-split'
@@ -2688,16 +2615,14 @@ function applySplitLayout(root: HTMLElement): boolean {
   const source = document.createElement('div')
   source.className = 'bewly-opus-gallery__source'
   albumNodes.forEach((node) => {
-    if (panelPane.contains(node))
-      source.appendChild(node)
+    if (panelPane.contains(node)) source.appendChild(node)
   })
   const gallery = createImageGallery(imageUrls)
   mediaPane.appendChild(gallery)
   mediaPane.appendChild(source)
 
   if (!hasMeaningfulContent(panelPane) && !imageUrls.length) {
-    while (panelPane.firstChild)
-      root.appendChild(panelPane.firstChild)
+    while (panelPane.firstChild) root.appendChild(panelPane.firstChild)
     return false
   }
 
@@ -2734,18 +2659,18 @@ function applySplitLayout(root: HTMLElement): boolean {
 }
 
 function tryApply() {
-  if (!isInIframe() || !isOpusDetailPage() || disabledSplit || layoutMode === 'disabled')
-    return
+  if (!isInIframe() || !isOpusDetailPage() || disabledSplit || layoutMode === 'disabled') return
 
   ensureBaseClasses()
   ensureStyles()
 
   const root = findOpusRoot()
-  if (!root)
-    return
+  if (!root) return
 
-  if ((layoutMode === 'text' || layoutMode === 'article')
-    && (root.dataset[LAYOUT_MODE_FLAG] === 'text' || root.dataset[LAYOUT_MODE_FLAG] === 'article')) {
+  if (
+    (layoutMode === 'text' || layoutMode === 'article') &&
+    (root.dataset[LAYOUT_MODE_FLAG] === 'text' || root.dataset[LAYOUT_MODE_FLAG] === 'article')
+  ) {
     notifyLayoutReady()
     return
   }
@@ -2756,16 +2681,13 @@ function tryApply() {
   }
 
   // 首次就绪后的拆建静默重排，不再重新盖全屏遮罩，避免"露几帧又被盖住"的闪烁
-  if (!layoutReadyNotified)
-    showIframeLoading()
+  if (!layoutReadyNotified) showIframeLoading()
   applySplitLayout(root)
 }
 
 function scheduleApply(delay = 160) {
-  if (disabledSplit || layoutMode === 'disabled')
-    return
-  if (applyTimer)
-    clearTimeout(applyTimer)
+  if (disabledSplit || layoutMode === 'disabled') return
+  if (applyTimer) clearTimeout(applyTimer)
   applyTimer = setTimeout(() => {
     applyTimer = null
     tryApply()
@@ -2774,12 +2696,14 @@ function scheduleApply(delay = 160) {
 
 function scheduleStableApply() {
   lastMutationAt = Date.now()
-  if (disabledSplit || layoutMode === 'disabled')
+  if (disabledSplit || layoutMode === 'disabled') return
+  if (
+    layoutMode === 'text' ||
+    layoutMode === 'article' ||
+    (layoutMode === 'split' && appliedSuccessfully)
+  )
     return
-  if (layoutMode === 'text' || layoutMode === 'article' || (layoutMode === 'split' && appliedSuccessfully))
-    return
-  if (stableTimer)
-    clearTimeout(stableTimer)
+  if (stableTimer) clearTimeout(stableTimer)
   stableTimer = setTimeout(() => {
     stableTimer = null
     scheduleApply(0)
@@ -2796,8 +2720,7 @@ export function disposeOpusDetailDrawerLayout() {
 
   try {
     observer?.disconnect()
-  }
-  catch {
+  } catch {
     // ignore
   }
   observer = null
@@ -2821,10 +2744,8 @@ export function disposeOpusDetailDrawerLayout() {
 
   try {
     const root = findOpusRoot()
-    if (root?.querySelector(':scope > .bewly-opus-split'))
-      teardownSplit(root, true)
-  }
-  catch {
+    if (root?.querySelector(':scope > .bewly-opus-split')) teardownSplit(root, true)
+  } catch {
     // ignore
   }
 
@@ -2836,13 +2757,11 @@ export function disposeOpusDetailDrawerLayout() {
         media.pause()
         media.removeAttribute('src')
         media.load()
-      }
-      catch {
+      } catch {
         // ignore
       }
     })
-  }
-  catch {
+  } catch {
     // ignore
   }
 
@@ -2858,8 +2777,7 @@ export function disposeOpusDetailDrawerLayout() {
 }
 
 function handleParentMessage(event: MessageEvent) {
-  if (event.source !== window.parent)
-    return
+  if (event.source !== window.parent) return
 
   if (event.data?.type === 'BEWLY_OPUS_DISPOSE') {
     disposeOpusDetailDrawerLayout()
@@ -2877,8 +2795,7 @@ function handleParentMessage(event: MessageEvent) {
 }
 
 export function setupOpusDetailDrawerLayout() {
-  if (!isInIframe() || !isOpusDetailPage())
-    return
+  if (!isInIframe() || !isOpusDetailPage()) return
 
   const documentElement = document.documentElement
   if (!documentElement) {
@@ -2914,24 +2831,30 @@ export function setupOpusDetailDrawerLayout() {
         syncArticleCatalogSidebars(true)
         return
       }
-      if (disabledSplit || layoutMode === 'disabled' || layoutMode === 'text')
-        return
+      if (disabledSplit || layoutMode === 'disabled' || layoutMode === 'text') return
 
       if (appliedSuccessfully && layoutMode === 'split') {
         const root = findOpusRoot()
         const split = root?.querySelector(':scope > .bewly-opus-split')
-        const panel = split?.querySelector(':scope > .bewly-opus-split__panel') as HTMLElement | null
-        const media = split?.querySelector(':scope > .bewly-opus-split__media') as HTMLElement | null
-        if (root && split && panel && media
-          && (hasMeaningfulContent(panel) || !!media.querySelector('.bewly-opus-gallery'))
-          && isLayoutVisible(split as HTMLElement)) {
+        const panel = split?.querySelector(
+          ':scope > .bewly-opus-split__panel',
+        ) as HTMLElement | null
+        const media = split?.querySelector(
+          ':scope > .bewly-opus-split__media',
+        ) as HTMLElement | null
+        if (
+          root &&
+          split &&
+          panel &&
+          media &&
+          (hasMeaningfulContent(panel) || !!media.querySelector('.bewly-opus-gallery')) &&
+          isLayoutVisible(split as HTMLElement)
+        ) {
           notifyLayoutReady()
           return
         }
-        if (root)
-          teardownSplit(root, teardownCount >= 2)
-        if (disabledSplit)
-          return
+        if (root) teardownSplit(root, teardownCount >= 2)
+        if (disabledSplit) return
       }
 
       scheduleStableApply()
@@ -2946,13 +2869,11 @@ export function setupOpusDetailDrawerLayout() {
   window.setTimeout(() => scheduleStableApply(), 1400)
   window.setTimeout(() => scheduleStableApply(), 2800)
 
-  if (stopTimer)
-    clearTimeout(stopTimer)
+  if (stopTimer) clearTimeout(stopTimer)
   stopTimer = setTimeout(() => {
     observer?.disconnect()
     observer = null
-    if (!appliedSuccessfully)
-      disabledSplit = true
+    if (!appliedSuccessfully) disabledSplit = true
     // 无论成功与否都解除遮罩，避免永久 loading
     notifyLayoutReady()
   }, 10000)

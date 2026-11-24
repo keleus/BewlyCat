@@ -12,14 +12,12 @@ const BILIBILI_DYNAMIC_URL = 'https://space.bilibili.com/32487218/dynamic'
 
 const dialogVisible = ref(false)
 
-const shouldShowReminder = computed(() =>
-  settings.value.enableVersionReminder
-  && settings.value.lastAcknowledgedVersion !== version,
+const shouldShowReminder = computed(
+  () => settings.value.enableVersionReminder && settings.value.lastAcknowledgedVersion !== version,
 )
 
 watch(shouldShowReminder, (visible) => {
-  if (!visible)
-    dialogVisible.value = false
+  if (!visible) dialogVisible.value = false
 })
 
 function acknowledgeCurrentVersion() {
@@ -64,7 +62,11 @@ function acknowledgeCurrentVersion() {
           class="version-reminder-dialog__guide"
         >
           <span class="version-reminder-dialog__guide-cover">
-            <Picture :src="USAGE_GUIDE_COVER" :alt="$t('version_reminder.usage_guide_desc')" loading="eager" />
+            <Picture
+              :src="USAGE_GUIDE_COVER"
+              :alt="$t('version_reminder.usage_guide_desc')"
+              loading="eager"
+            />
             <span class="version-reminder-dialog__guide-play" i-mingcute:play-fill />
           </span>
           <span class="version-reminder-dialog__guide-body">
@@ -88,7 +90,10 @@ function acknowledgeCurrentVersion() {
               rel="noopener noreferrer"
               class="version-reminder-dialog__link"
             >
-              <span class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--github" i-mingcute:github-line />
+              <span
+                class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--github"
+                i-mingcute:github-line
+              />
               <span>
                 <strong>{{ $t('version_reminder.github_releases') }}</strong>
                 <small>{{ $t('version_reminder.github_releases_desc') }}</small>
@@ -102,7 +107,10 @@ function acknowledgeCurrentVersion() {
               rel="noopener noreferrer"
               class="version-reminder-dialog__link"
             >
-              <span class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--bilibili" i-mingcute:bilibili-line />
+              <span
+                class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--bilibili"
+                i-mingcute:bilibili-line
+              />
               <span>
                 <strong>{{ $t('version_reminder.bilibili_dynamic') }}</strong>
                 <small>{{ $t('version_reminder.bilibili_dynamic_desc') }}</small>

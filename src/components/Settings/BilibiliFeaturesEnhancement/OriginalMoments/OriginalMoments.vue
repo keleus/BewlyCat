@@ -13,11 +13,36 @@ import MomentFilterSettings from '../../PluginComponentsAndPages/Moments/MomentF
 const { t } = useI18n()
 
 const componentOptions = computed(() => [
-  { setting: 'originalMomentsShowUserCard' as const, label: t('settings.original_moments_show_user_card'), labelKey: 'settings.original_moments_show_user_card', icon: 'i-tabler-user-square-rounded' },
-  { setting: 'originalMomentsShowLiveList' as const, label: t('settings.original_moments_show_live_list'), labelKey: undefined, icon: 'i-tabler-live-photo' },
-  { setting: 'originalMomentsShowCommunityCenter' as const, label: t('settings.original_moments_show_community_center'), labelKey: undefined, icon: 'i-tabler-layout-dashboard' },
-  { setting: 'originalMomentsShowHotSearch' as const, label: t('settings.original_moments_show_hot_search'), labelKey: 'settings.original_moments_show_hot_search', icon: 'i-tabler-flame' },
-  { setting: 'originalMomentsShowUpList' as const, label: t('settings.original_moments_show_up_list'), labelKey: undefined, icon: 'i-tabler-users' },
+  {
+    setting: 'originalMomentsShowUserCard' as const,
+    label: t('settings.original_moments_show_user_card'),
+    labelKey: 'settings.original_moments_show_user_card',
+    icon: 'i-tabler-user-square-rounded',
+  },
+  {
+    setting: 'originalMomentsShowLiveList' as const,
+    label: t('settings.original_moments_show_live_list'),
+    labelKey: undefined,
+    icon: 'i-tabler-live-photo',
+  },
+  {
+    setting: 'originalMomentsShowCommunityCenter' as const,
+    label: t('settings.original_moments_show_community_center'),
+    labelKey: undefined,
+    icon: 'i-tabler-layout-dashboard',
+  },
+  {
+    setting: 'originalMomentsShowHotSearch' as const,
+    label: t('settings.original_moments_show_hot_search'),
+    labelKey: 'settings.original_moments_show_hot_search',
+    icon: 'i-tabler-flame',
+  },
+  {
+    setting: 'originalMomentsShowUpList' as const,
+    label: t('settings.original_moments_show_up_list'),
+    labelKey: undefined,
+    icon: 'i-tabler-users',
+  },
 ])
 </script>
 
@@ -29,7 +54,11 @@ const componentOptions = computed(() => [
         :desc="$t('settings.moments_visible_components_original_desc')"
       >
         <template #bottom>
-          <SettingsSearchContainer class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
+          <SettingsSearchContainer
+            class="moment-setting-tags"
+            role="group"
+            :aria-label="$t('settings.moments_visible_components')"
+          >
             <SettingsToggleTag
               v-for="option in componentOptions"
               :key="option.setting"

@@ -29,16 +29,13 @@ function paethPredictor(a: number, b: number, c: number): number {
   const pa = Math.abs(p - a)
   const pb = Math.abs(p - b)
   const pc = Math.abs(p - c)
-  if (pa <= pb && pa <= pc)
-    return a
-  if (pb <= pc)
-    return b
+  if (pa <= pb && pa <= pc) return a
+  if (pb <= pc) return b
   return c
 }
 
 function parsePngChunks(raw: Buffer): DecodedPng | undefined {
-  if (raw.length < 33 || !raw.subarray(0, 8).equals(PNG_SIGNATURE))
-    return undefined
+  if (raw.length < 33 || !raw.subarray(0, 8).equals(PNG_SIGNATURE)) return undefined
 
   let width = 0
   let height = 0
@@ -57,15 +54,13 @@ function parsePngChunks(raw: Buffer): DecodedPng | undefined {
     const length = raw.readUInt32BE(offset)
     const dataStart = offset + 8
     const dataEnd = dataStart + length
-    if (dataEnd + 4 > raw.length)
-      return undefined
+    if (dataEnd + 4 > raw.length) return undefined
 
     const type = raw.subarray(offset + 4, dataStart).toString('latin1')
     const payload = raw.subarray(dataStart, dataEnd)
 
     if (type === 'IHDR') {
-      if (length !== 13)
-        return undefined
+      if (length !== 13) return undefined
       width = payload.readUInt32BE(0)
       height = payload.readUInt32BE(4)
       bitDepth = payload[8]
@@ -74,42 +69,47 @@ function parsePngChunks(raw: Buffer): DecodedPng | undefined {
       filter = payload[11]
       interlace = payload[12]
       hasIhdr = true
-    }
-    else if (type === 'PLTE') {
+    } else if (type === 'PLTE') {
       palette = payload
-    }
-    else if (type === 'tRNS') {
+    } else if (type === 'tRNS') {
       transparency = payload
-    }
-    else if (type === 'IDAT') {
+    } else if (type === 'IDAT') {
       idatChunks.push(payload)
-    }
-    else if (type === 'IEND') {
+    } else if (type === 'IEND') {
       break
     }
 
     offset = dataEnd + 4
   }
 
-  if (!hasIhdr || width === 0 || height === 0 || compression !== 0 || filter !== 0 || interlace !== 0 || idatChunks.length === 0)
+  if (
+    !hasIhdr ||
+    width === 0 ||
+    height === 0 ||
+    compression !== 0 ||
+    filter !== 0 ||
+    interlace !== 0 ||
+    idatChunks.length === 0
+  )
     return undefined
 
-  if (bitDepth !== 8 && bitDepth !== 16)
-    return undefined
+  if (bitDepth !== 8 && bitDepth !== 16) return undefined
 
-  if (![0, 2, 3, 4, 6].includes(colorType))
-    return undefined
+  if (![0, 2, 3, 4, 6].includes(colorType)) return undefined
 
-  if (colorType === 3 && (!palette || bitDepth !== 8))
-    return undefined
+  if (colorType === 3 && (!palette || bitDepth !== 8)) return undefined
 
   return { width, height, bitDepth, colorType, interlace, palette, transparency, idatChunks }
 }
 
-function unfilterScanlines(data: Buffer, width: number, height: number, bytesPerPixel: number): Buffer | undefined {
+function unfilterScanlines(
+  data: Buffer,
+  width: number,
+  height: number,
+  bytesPerPixel: number,
+): Buffer | undefined {
   const stride = width * bytesPerPixel
-  if (data.length < height * (stride + 1))
-    return undefined
+  if (data.length < height * (stride + 1)) return undefined
 
   const output = Buffer.allocUnsafe(height * stride)
   let sourceOffset = 0
@@ -126,16 +126,11 @@ function unfilterScanlines(data: Buffer, width: number, height: number, bytesPer
       const upLeft = y > 0 && x >= bytesPerPixel ? output[prevRowStart + x - bytesPerPixel] : 0
 
       let value = rawByte
-      if (filterType === 1)
-        value = (rawByte + left) & 0xFF
-      else if (filterType === 2)
-        value = (rawByte + up) & 0xFF
-      else if (filterType === 3)
-        value = (rawByte + ((left + up) >> 1)) & 0xFF
-      else if (filterType === 4)
-        value = (rawByte + paethPredictor(left, up, upLeft)) & 0xFF
-      else if (filterType !== 0)
-        return undefined
+      if (filterType === 1) value = (rawByte + left) & 0xff
+      else if (filterType === 2) value = (rawByte + up) & 0xff
+      else if (filterType === 3) value = (rawByte + ((left + up) >> 1)) & 0xff
+      else if (filterType === 4) value = (rawByte + paethPredictor(left, up, upLeft)) & 0xff
+      else if (filterType !== 0) return undefined
 
       output[rowStart + x] = value
     }
@@ -144,10 +139,11 @@ function unfilterScanlines(data: Buffer, width: number, height: number, bytesPer
   return output
 }
 
-function decodePngToRgb(raw: Buffer): { width: number, height: number, pixels: Uint8Array } | undefined {
+function decodePngToRgb(
+  raw: Buffer,
+): { width: number; height: number; pixels: Uint8Array } | undefined {
   const png = parsePngChunks(raw)
-  if (!png)
-    return undefined
+  if (!png) return undefined
 
   const channelsByColorType: Record<number, number> = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }
   const channels = channelsByColorType[png.colorType]
@@ -157,14 +153,12 @@ function decodePngToRgb(raw: Buffer): { width: number, height: number, pixels: U
   let inflated: Buffer
   try {
     inflated = inflateSync(Buffer.concat(png.idatChunks))
-  }
-  catch {
+  } catch {
     return undefined
   }
 
   const scanlines = unfilterScanlines(inflated, png.width, png.height, bytesPerPixel)
-  if (!scanlines)
-    return undefined
+  if (!scanlines) return undefined
 
   const pixelCount = png.width * png.height
   const pixels = new Uint8Array(pixelCount * 3)
@@ -185,11 +179,9 @@ function decodePngToRgb(raw: Buffer): { width: number, height: number, pixels: U
       b = gray
       if (trns && trns.length >= 2) {
         const key = png.bitDepth === 16 ? scanlines.readUInt16BE(inOffset) : gray
-        if (key === trns.readUInt16BE(0))
-          alpha = 0
+        if (key === trns.readUInt16BE(0)) alpha = 0
       }
-    }
-    else if (png.colorType === 2) {
+    } else if (png.colorType === 2) {
       r = scanlines[inOffset]
       g = scanlines[inOffset + sampleBytes]
       b = scanlines[inOffset + sampleBytes * 2]
@@ -197,29 +189,28 @@ function decodePngToRgb(raw: Buffer): { width: number, height: number, pixels: U
         const sr = png.bitDepth === 16 ? scanlines.readUInt16BE(inOffset) : r
         const sg = png.bitDepth === 16 ? scanlines.readUInt16BE(inOffset + sampleBytes) : g
         const sb = png.bitDepth === 16 ? scanlines.readUInt16BE(inOffset + sampleBytes * 2) : b
-        if (sr === trns.readUInt16BE(0) && sg === trns.readUInt16BE(2) && sb === trns.readUInt16BE(4))
+        if (
+          sr === trns.readUInt16BE(0) &&
+          sg === trns.readUInt16BE(2) &&
+          sb === trns.readUInt16BE(4)
+        )
           alpha = 0
       }
-    }
-    else if (png.colorType === 3) {
+    } else if (png.colorType === 3) {
       const paletteIndex = scanlines[inOffset]
       const paletteOffset = paletteIndex * 3
-      if (!png.palette || paletteOffset + 2 >= png.palette.length)
-        return undefined
+      if (!png.palette || paletteOffset + 2 >= png.palette.length) return undefined
       r = png.palette[paletteOffset]
       g = png.palette[paletteOffset + 1]
       b = png.palette[paletteOffset + 2]
-      if (trns && paletteIndex < trns.length)
-        alpha = trns[paletteIndex]
-    }
-    else if (png.colorType === 4) {
+      if (trns && paletteIndex < trns.length) alpha = trns[paletteIndex]
+    } else if (png.colorType === 4) {
       const gray = scanlines[inOffset]
       r = gray
       g = gray
       b = gray
       alpha = scanlines[inOffset + sampleBytes]
-    }
-    else {
+    } else {
       r = scanlines[inOffset]
       g = scanlines[inOffset + sampleBytes]
       b = scanlines[inOffset + sampleBytes * 2]
@@ -241,9 +232,13 @@ function decodePngToRgb(raw: Buffer): { width: number, height: number, pixels: U
   return { width: png.width, height: png.height, pixels }
 }
 
-function resizeRgbArea(pixels: Uint8Array, srcW: number, srcH: number, dstSize: number): Uint8Array {
-  if (srcW === dstSize && srcH === dstSize)
-    return pixels
+function resizeRgbArea(
+  pixels: Uint8Array,
+  srcW: number,
+  srcH: number,
+  dstSize: number,
+): Uint8Array {
+  if (srcW === dstSize && srcH === dstSize) return pixels
 
   const out = new Uint8Array(dstSize * dstSize * 3)
   for (let dy = 0; dy < dstSize; dy++) {
@@ -285,8 +280,7 @@ function maskOutsideCircle(pixels: Uint8Array, size: number): void {
     const dy = y - center
     for (let x = 0; x < size; x++) {
       const dx = x - center
-      if (dx * dx + dy * dy <= radiusSq)
-        continue
+      if (dx * dx + dy * dy <= radiusSq) continue
       const offset = (y * size + x) * 3
       pixels[offset] = 255
       pixels[offset + 1] = 255
@@ -303,15 +297,13 @@ function buildQuantizedPalette(pixels: Uint8Array): Array<[number, number, numbe
     const b = pixels[i + 2]
     const key = (r << 16) | (g << 8) | b
     const existing = unique.get(key)
-    if (existing)
-      existing.count++
-    else
-      unique.set(key, { r, g, b, count: 1 })
+    if (existing) existing.count++
+    else unique.set(key, { r, g, b, count: 1 })
   }
 
   const entries = [...unique.values()]
   if (entries.length <= MAX_PALETTE_COLORS)
-    return entries.map(entry => [entry.r, entry.g, entry.b])
+    return entries.map((entry) => [entry.r, entry.g, entry.b])
 
   const boxes: ColorBucketEntry[][] = [entries]
   while (boxes.length < MAX_PALETTE_COLORS) {
@@ -321,8 +313,7 @@ function buildQuantizedPalette(pixels: Uint8Array): Array<[number, number, numbe
 
     for (let i = 0; i < boxes.length; i++) {
       const box = boxes[i]
-      if (box.length <= 1)
-        continue
+      if (box.length <= 1) continue
 
       let minR = 255
       let maxR = 0
@@ -333,18 +324,12 @@ function buildQuantizedPalette(pixels: Uint8Array): Array<[number, number, numbe
       let totalCount = 0
 
       for (const entry of box) {
-        if (entry.r < minR)
-          minR = entry.r
-        if (entry.r > maxR)
-          maxR = entry.r
-        if (entry.g < minG)
-          minG = entry.g
-        if (entry.g > maxG)
-          maxG = entry.g
-        if (entry.b < minB)
-          minB = entry.b
-        if (entry.b > maxB)
-          maxB = entry.b
+        if (entry.r < minR) minR = entry.r
+        if (entry.r > maxR) maxR = entry.r
+        if (entry.g < minG) minG = entry.g
+        if (entry.g > maxG) maxG = entry.g
+        if (entry.b < minB) minB = entry.b
+        if (entry.b > maxB) maxB = entry.b
         totalCount += entry.count
       }
 
@@ -352,8 +337,7 @@ function buildQuantizedPalette(pixels: Uint8Array): Array<[number, number, numbe
       const rangeG = maxG - minG
       const rangeB = maxB - minB
       const maxRange = Math.max(rangeR, rangeG, rangeB)
-      if (maxRange === 0)
-        continue
+      if (maxRange === 0) continue
 
       const score = maxRange * Math.sqrt(totalCount)
       if (score > bestScore) {
@@ -363,8 +347,7 @@ function buildQuantizedPalette(pixels: Uint8Array): Array<[number, number, numbe
       }
     }
 
-    if (bestBoxIndex === -1)
-      break
+    if (bestBoxIndex === -1) break
 
     const targetBox = boxes.splice(bestBoxIndex, 1)[0]
     targetBox.sort((a, b) => a[bestChannel] - b[bestChannel])
@@ -383,11 +366,7 @@ function buildQuantizedPalette(pixels: Uint8Array): Array<[number, number, numbe
       sumB += entry.b * entry.count
       weight += entry.count
     }
-    return [
-      Math.round(sumR / weight),
-      Math.round(sumG / weight),
-      Math.round(sumB / weight),
-    ]
+    return [Math.round(sumR / weight), Math.round(sumG / weight), Math.round(sumB / weight)]
   })
 }
 
@@ -466,8 +445,7 @@ function encodeIndexedPng(pixels: Uint8Array, size: number): Buffer {
 
 function optimizeEmbeddedPng(raw: Buffer): Buffer {
   const decoded = decodePngToRgb(raw)
-  if (!decoded)
-    return raw
+  if (!decoded) return raw
 
   const resized = resizeRgbArea(decoded.pixels, decoded.width, decoded.height, TARGET_AVATAR_SIZE)
   maskOutsideCircle(resized, TARGET_AVATAR_SIZE)
@@ -484,30 +462,30 @@ export function isCompressedContributorsSvg(svg: string): boolean {
  * 并去重 pattern/defs 结构。若上游 SVG 结构变化无法完整匹配，仍保留图像级压缩结果。
  */
 export function compressContributorsSvg(svg: string): string {
-  if (isCompressedContributorsSvg(svg))
-    return svg
+  if (isCompressedContributorsSvg(svg)) return svg
 
   const normalizedMediaSvg = svg.replace(
     /data:(image\/[^;]+);base64,([A-Za-z0-9+/=\s]+)/g,
     (_full, mime: string, base64Body: string) => {
       const cleanedBase64 = base64Body.replaceAll(/\s+/g, '')
-      if (mime !== 'image/png')
-        return `data:${mime};base64,${cleanedBase64}`
+      if (mime !== 'image/png') return `data:${mime};base64,${cleanedBase64}`
 
       try {
         const rawPng = Buffer.from(cleanedBase64, 'base64')
         const optimizedPng = optimizeEmbeddedPng(rawPng)
         return `data:image/png;base64,${optimizedPng.toString('base64')}`
-      }
-      catch {
+      } catch {
         return `data:${mime};base64,${cleanedBase64}`
       }
     },
   )
 
-  const outerMatch = normalizedMediaSvg.match(/<svg\b[^>]*\swidth="(\d+)"[^>]*\sheight="(\d+)"[^>]*\sviewBox="([^"]+)"/)
+  const outerMatch = normalizedMediaSvg.match(
+    /<svg\b[^>]*\swidth="(\d+)"[^>]*\sheight="(\d+)"[^>]*\sviewBox="([^"]+)"/,
+  )
   const totalImages = (normalizedMediaSvg.match(/<image\b/g) ?? []).length
-  const itemPattern = /<svg\s+x="(\d+)"\s+y="(\d+)"\s+width="64"\s+height="64">(?:\\n|\s)*<title>([^<]*)<\/title>\s*<circle[^>]*\/>\s*<defs>\s*<pattern[^>]*>\s*<image[^>]*?(?:xlink:)?href="(data:image\/[^"]+)"[^>]*\/>\s*<\/pattern>\s*<\/defs>\s*<\/svg>/g
+  const itemPattern =
+    /<svg\s+x="(\d+)"\s+y="(\d+)"\s+width="64"\s+height="64">(?:\\n|\s)*<title>([^<]*)<\/title>\s*<circle[^>]*\/>\s*<defs>\s*<pattern[^>]*>\s*<image[^>]*?(?:xlink:)?href="(data:image\/[^"]+)"[^>]*\/>\s*<\/pattern>\s*<\/defs>\s*<\/svg>/g
   const items = [...normalizedMediaSvg.matchAll(itemPattern)]
 
   if (!outerMatch || items.length === 0 || items.length !== totalImages)

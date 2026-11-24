@@ -6,24 +6,20 @@ import { sendMessage } from '~/utils/messaging'
 const INVALIDATION_DELAY = 800
 
 export function setupNotificationStateInvalidation() {
-  if (!isNotificationPage())
-    return
+  if (!isNotificationPage()) return
 
   let timer: ReturnType<typeof setTimeout> | undefined
 
   function scheduleInvalidation() {
-    if (timer)
-      clearTimeout(timer)
+    if (timer) clearTimeout(timer)
 
     timer = setTimeout(() => {
       const accountId = Number(getUserID())
-      if (!accountId)
-        return
+      if (!accountId) return
 
-      sendMessage<TopBarStateInvalidate>(
-        TOP_BAR_STATE_MESSAGE.INVALIDATE,
-        { accountId },
-      ).catch(() => {})
+      sendMessage<TopBarStateInvalidate>(TOP_BAR_STATE_MESSAGE.INVALIDATE, { accountId }).catch(
+        () => {},
+      )
     }, INVALIDATION_DELAY)
   }
 

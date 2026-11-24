@@ -1,10 +1,22 @@
 import type { MaybeRef } from 'vue'
-import { computed, getCurrentScope, isProxy, onScopeDispose, reactive, toRaw, toValue, watch } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  isProxy,
+  onScopeDispose,
+  reactive,
+  toRaw,
+  toValue,
+  watch,
+} from 'vue'
 import browser from 'webextension-polyfill'
 
 import type { StorageRef } from '~/composables/useStorageLocal'
 import { isBackgroundUnavailableError, sendMessage } from '~/utils/messaging'
-import type { SettingsStoragePatch, SettingsStoragePatchResponse } from '~/utils/settingsStorageProtocol'
+import type {
+  SettingsStoragePatch,
+  SettingsStoragePatchResponse,
+} from '~/utils/settingsStorageProtocol'
 import {
   applySettingsStoragePatch,
   createEmptySettingsStoragePatch,
@@ -33,14 +45,12 @@ const INITIAL_READ_FALLBACK_DELAY = 1500
 class StaleStorageGenerationError extends Error {}
 
 function cloneValue<T>(value: T): T {
-  if (typeof value !== 'object' || value == null)
-    return value
+  if (typeof value !== 'object' || value == null) return value
 
   const normalizedValue = isProxy(value) ? toRaw(value) : value
   try {
     return structuredClone(normalizedValue)
-  }
-  catch {
+  } catch {
     return JSON.parse(JSON.stringify(normalizedValue)) as T
   }
 }
@@ -50,23 +60,23 @@ function asRecord(value: object): Record<string, unknown> {
 }
 
 function storedValueFingerprint(value: unknown) {
-  if (value == null)
-    return null
+  if (value == null) return null
 
   return typeof value === 'string' ? value : JSON.stringify(value)
 }
 
 function isPatchResponse(value: unknown): value is SettingsStoragePatchResponse {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return false
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
 
   const response = value as Partial<SettingsStoragePatchResponse>
-  return typeof response.accepted === 'boolean'
-    && typeof response.epoch === 'string'
-    && response.epoch.length > 0
-    && Number.isSafeInteger(response.revision)
-    && response.revision! >= 0
-    && (response.storedValue === undefined || typeof response.storedValue === 'string')
+  return (
+    typeof response.accepted === 'boolean' &&
+    typeof response.epoch === 'string' &&
+    response.epoch.length > 0 &&
+    Number.isSafeInteger(response.revision) &&
+    response.revision! >= 0 &&
+    (response.storedValue === undefined || typeof response.storedValue === 'string')
+  )
 }
 
 export async function importSettingsStorage(settings: Record<string, unknown>) {
@@ -78,12 +88,11 @@ export async function importSettingsStorage(settings: Record<string, unknown>) {
 }
 
 function waitForRetry(delay: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, delay))
+  return new Promise<void>((resolve) => setTimeout(resolve, delay))
 }
 
 function createClientId() {
-  if (typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID()
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
 
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }
@@ -129,12 +138,9 @@ export function useSettingsStorage<T extends object>(
 
     applyingCanonicalValue = true
     try {
-      for (const key of patch.remove)
-        Reflect.deleteProperty(state, key)
-      for (const [key, next] of Object.entries(patch.set))
-        asRecord(state)[key] = next
-    }
-    finally {
+      for (const key of patch.remove) Reflect.deleteProperty(state, key)
+      for (const [key, next] of Object.entries(patch.set)) asRecord(state)[key] = next
+    } finally {
       applyingCanonicalValue = false
     }
   }
@@ -149,11 +155,9 @@ export function useSettingsStorage<T extends object>(
 
   const renderCanonicalValue = () => {
     // 后台结果可能早于本轮 watch 执行，先保留尚未进入补丁队列的本地修改。
-    if (!disposed)
-      captureLocalChanges()
+    if (!disposed) captureLocalChanges()
     let nextValue = canonicalValue
-    if (inFlightPatch)
-      nextValue = applySettingsStoragePatch(nextValue, inFlightPatch)
+    if (inFlightPatch) nextValue = applySettingsStoragePatch(nextValue, inFlightPatch)
     nextValue = applySettingsStoragePatch(nextValue, queuedPatch)
     const renderedValue = asRecord(cloneValue(nextValue))
 
@@ -169,8 +173,7 @@ export function useSettingsStorage<T extends object>(
   const applyCanonicalValue = (storedValue: unknown, revision: number, force = false) => {
     const normalizedRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : 0
     const fingerprint = storedValueFingerprint(storedValue)
-    if (!force && normalizedRevision < canonicalRevision)
-      return
+    if (!force && normalizedRevision < canonicalRevision) return
     if (!force && normalizedRevision === canonicalRevision && fingerprint === canonicalFingerprint)
       return
 
@@ -194,30 +197,28 @@ export function useSettingsStorage<T extends object>(
     // 存储被清空或替换时，旧 epoch 中尚未批处理的修改也必须一起丢弃。
     observedValue = asRecord(cloneValue(state))
     persistenceReady = epoch.length > 0
-    if (renderDefaults)
-      renderCanonicalValue()
+    if (renderDefaults) renderCanonicalValue()
   }
 
-  const sendWithRetry = async <R>(type: string, payload: unknown, generation: number): Promise<R> => {
+  const sendWithRetry = async <R>(
+    type: string,
+    payload: unknown,
+    generation: number,
+  ): Promise<R> => {
     let lastError: unknown
 
     for (let attempt = 0; attempt < MAX_MESSAGE_ATTEMPTS; attempt++) {
-      if (generation !== storageGeneration)
-        throw new StaleStorageGenerationError()
+      if (generation !== storageGeneration) throw new StaleStorageGenerationError()
 
       try {
-        const response = await sendMessage(type, payload) as R
-        if (generation !== storageGeneration)
-          throw new StaleStorageGenerationError()
+        const response = (await sendMessage(type, payload)) as R
+        if (generation !== storageGeneration) throw new StaleStorageGenerationError()
         return response
-      }
-      catch (error) {
-        if (error instanceof StaleStorageGenerationError)
-          throw error
+      } catch (error) {
+        if (error instanceof StaleStorageGenerationError) throw error
 
         lastError = error
-        if (isBackgroundUnavailableError(error) || attempt === MAX_MESSAGE_ATTEMPTS - 1)
-          break
+        if (isBackgroundUnavailableError(error) || attempt === MAX_MESSAGE_ATTEMPTS - 1) break
         await waitForRetry(100 * 2 ** attempt)
       }
     }
@@ -242,11 +243,13 @@ export function useSettingsStorage<T extends object>(
     }
 
     try {
-      const response = await sendWithRetry<SettingsStoragePatchResponse>(SETTINGS_STORAGE_PATCH_MESSAGE, request, generation)
-      if (!isPatchResponse(response))
-        throw new TypeError('Invalid settings storage response')
-      if (generation !== storageGeneration)
-        return
+      const response = await sendWithRetry<SettingsStoragePatchResponse>(
+        SETTINGS_STORAGE_PATCH_MESSAGE,
+        request,
+        generation,
+      )
+      if (!isPatchResponse(response)) throw new TypeError('Invalid settings storage response')
+      if (generation !== storageGeneration) return
       if (!response.accepted || response.epoch !== currentEpoch) {
         resetStorageGeneration(response.epoch, false)
         persistenceReady = true
@@ -259,10 +262,8 @@ export function useSettingsStorage<T extends object>(
       inFlightPatch = null
       renderCanonicalValue()
       void flushQueuedPatch()
-    }
-    catch (error) {
-      if (error instanceof StaleStorageGenerationError || generation !== storageGeneration)
-        return
+    } catch (error) {
+      if (error instanceof StaleStorageGenerationError || generation !== storageGeneration) return
 
       queuedPatch = mergeSettingsStoragePatches(patch, queuedPatch)
       inFlightPatch = null
@@ -272,8 +273,7 @@ export function useSettingsStorage<T extends object>(
   }
 
   function writeLocalValue(value: T) {
-    if (disposed || applyingCanonicalValue)
-      return
+    if (disposed || applyingCanonicalValue) return
 
     updateReactiveValue(value)
     captureLocalChanges()
@@ -288,8 +288,7 @@ export function useSettingsStorage<T extends object>(
   )
 
   const markReady = () => {
-    if (ready)
-      return
+    if (ready) return
 
     ready = true
     options.onReady?.(data.value)
@@ -299,73 +298,62 @@ export function useSettingsStorage<T extends object>(
   // 直接读取 storage.local 不经过后台 service worker，多标签页同时恢复导致
   // 后台排队时仍能按时挂载；协调器结果稍后到达时按 revision 正常覆盖。
   const applyLocalSnapshot = async (generation: number) => {
-    if (ready)
-      return
+    if (ready) return
 
     try {
       const stored = await browser.storage.local.get([
         SETTINGS_STORAGE_KEY,
         SETTINGS_STORAGE_META_KEY,
       ])
-      if (ready || disposed || generation !== storageGeneration)
-        return
+      if (ready || disposed || generation !== storageGeneration) return
 
       const meta = normalizeSettingsStorageWriteMeta(stored[SETTINGS_STORAGE_META_KEY])
-      if (meta.epoch && !currentEpoch)
-        currentEpoch = meta.epoch
+      if (meta.epoch && !currentEpoch) currentEpoch = meta.epoch
       const sameEpoch = !meta.epoch || meta.epoch === currentEpoch
       // 缺少 epoch 时只渲染，写入仍等协调器补全元数据后再提交。
-      if (meta.epoch && sameEpoch)
-        persistenceReady = true
+      if (meta.epoch && sameEpoch) persistenceReady = true
       if (sameEpoch && stored[SETTINGS_STORAGE_KEY] != null)
         applyCanonicalValue(stored[SETTINGS_STORAGE_KEY], meta.revision)
       markReady()
-    }
-    catch (error) {
+    } catch (error) {
       onError(error)
     }
   }
 
   const refreshCanonicalValue = async (markReadyWhenFinished = false) => {
     const generation = storageGeneration
-    if (readInFlightGeneration === generation)
-      return
+    if (readInFlightGeneration === generation) return
 
     readInFlightGeneration = generation
     const fallbackTimer = markReadyWhenFinished
       ? setTimeout(() => void applyLocalSnapshot(generation), INITIAL_READ_FALLBACK_DELAY)
       : undefined
     try {
-      const response = await sendWithRetry<SettingsStoragePatchResponse>(SETTINGS_STORAGE_READ_MESSAGE, undefined, generation)
-      if (!isPatchResponse(response))
-        throw new TypeError('Invalid settings storage response')
-      if (generation !== storageGeneration)
-        return
+      const response = await sendWithRetry<SettingsStoragePatchResponse>(
+        SETTINGS_STORAGE_READ_MESSAGE,
+        undefined,
+        generation,
+      )
+      if (!isPatchResponse(response)) throw new TypeError('Invalid settings storage response')
+      if (generation !== storageGeneration) return
 
       const epochChanged = currentEpoch.length > 0 && response.epoch !== currentEpoch
-      if (epochChanged)
-        resetStorageGeneration(response.epoch, false)
-      else
-        currentEpoch = response.epoch
+      if (epochChanged) resetStorageGeneration(response.epoch, false)
+      else currentEpoch = response.epoch
 
       persistenceReady = true
       applyCanonicalValue(response.storedValue, response.revision, epochChanged)
       void flushQueuedPatch()
-    }
-    catch (error) {
+    } catch (error) {
       if (!(error instanceof StaleStorageGenerationError)) {
         onError(error)
         // 后台不可达时也用本地快照挂载，避免以默认设置渲染。
-        if (markReadyWhenFinished)
-          await applyLocalSnapshot(generation)
+        if (markReadyWhenFinished) await applyLocalSnapshot(generation)
       }
-    }
-    finally {
+    } finally {
       clearTimeout(fallbackTimer)
-      if (readInFlightGeneration === generation)
-        readInFlightGeneration = null
-      if (markReadyWhenFinished)
-        markReady()
+      if (readInFlightGeneration === generation) readInFlightGeneration = null
+      if (markReadyWhenFinished) markReady()
     }
   }
 
@@ -373,8 +361,7 @@ export function useSettingsStorage<T extends object>(
     changes: Record<string, browser.Storage.StorageChange>,
     areaName: string,
   ) => {
-    if (areaName !== 'local')
-      return
+    if (areaName !== 'local') return
 
     const settingsChange = changes[SETTINGS_STORAGE_KEY]
     const metaChange = changes[SETTINGS_STORAGE_META_KEY]
@@ -387,14 +374,11 @@ export function useSettingsStorage<T extends object>(
 
     const meta = metaChange ? normalizeSettingsStorageWriteMeta(metaChange.newValue) : null
     const epochChanged = Boolean(meta?.epoch && currentEpoch && meta.epoch !== currentEpoch)
-    if (epochChanged)
-      resetStorageGeneration(meta!.epoch, !settingsChange)
-    else if (meta?.epoch && !currentEpoch)
-      currentEpoch = meta.epoch
+    if (epochChanged) resetStorageGeneration(meta!.epoch, !settingsChange)
+    else if (meta?.epoch && !currentEpoch) currentEpoch = meta.epoch
 
     if (!settingsChange) {
-      if (meta?.epoch && (epochChanged || !canonicalFingerprint))
-        void refreshCanonicalValue()
+      if (meta?.epoch && (epochChanged || !canonicalFingerprint)) void refreshCanonicalValue()
       return
     }
 

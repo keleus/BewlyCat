@@ -16,7 +16,15 @@ import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import { settings } from '~/logic'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
-import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
+import {
+  LV0_ICON,
+  LV1_ICON,
+  LV2_ICON,
+  LV3_ICON,
+  LV4_ICON,
+  LV5_ICON,
+  LV6_ICON,
+} from '~/utils/lvIcons'
 import { getCSRF } from '~/utils/main'
 
 import Pagination from '../components/Pagination.vue'
@@ -107,22 +115,22 @@ const {
   setHasMore,
   setExhausted,
   reset: resetLoadMore,
-} = useLoadMore(async () => {
-  const success = await performSearch(true)
-  const itemsCount = getCurrentResultLength()
-  return { success, itemsCount }
-}, {
-  isLoading: () => isLoading.value,
-})
+} = useLoadMore(
+  async () => {
+    const success = await performSearch(true)
+    const itemsCount = getCurrentResultLength()
+    return { success, itemsCount }
+  },
+  {
+    isLoading: () => isLoading.value,
+  },
+)
 
 // 是否激活视频筛选
 const isVideoFilterActive = computed(() => {
-  if (props.filters.order !== '' || props.filters.duration !== 0)
-    return true
-  if (props.filters.timeRange !== 'all')
-    return true
-  if (props.filters.customStartDate !== '' || props.filters.customEndDate !== '')
-    return true
+  if (props.filters.order !== '' || props.filters.duration !== 0) return true
+  if (props.filters.timeRange !== 'all') return true
+  if (props.filters.customStartDate !== '' || props.filters.customEndDate !== '') return true
   return false
 })
 
@@ -142,11 +150,9 @@ useResizeObserver(searchContentRef, (entries) => {
 })
 
 function updateVideoGridGap() {
-  if (typeof window === 'undefined')
-    return
+  if (typeof window === 'undefined') return
   const gap = Number.parseFloat(getComputedStyle(document.documentElement).fontSize || '16')
-  if (Number.isFinite(gap))
-    videoGridGap.value = gap
+  if (Number.isFinite(gap)) videoGridGap.value = gap
 }
 
 // 赛事卡片样式计算
@@ -175,8 +181,7 @@ const userSamplesColumns = computed(() => {
   const cardMinWidth = 180
   const gap = videoGridGap.value
 
-  if (!containerWidth || !Number.isFinite(containerWidth) || containerWidth <= 0)
-    return 6
+  if (!containerWidth || !Number.isFinite(containerWidth) || containerWidth <= 0) return 6
 
   const columns = Math.floor((containerWidth + gap) / (cardMinWidth + gap))
   return Math.max(1, Math.min(columns, 7))
@@ -192,8 +197,7 @@ function getUserSamplesWithPlaceholders(samples: any[]) {
 
 // 合并活动和游戏数据
 const activityAndGameItems = computed(() => {
-  if (!results.value?.result)
-    return []
+  if (!results.value?.result) return []
 
   const items: any[] = []
   const sections = results.value.result
@@ -201,16 +205,19 @@ const activityAndGameItems = computed(() => {
   sections.forEach((section: any) => {
     if (section?.result_type === 'activity' && Array.isArray(section.data)) {
       const filtered = section.data.filter(removeUnusedActivityCard)
-      items.push(...filtered.map((item: any) => ({
-        ...convertActivityData(item),
-        _type: 'activity',
-      })))
-    }
-    else if (section?.result_type === 'web_game' && Array.isArray(section.data)) {
-      items.push(...section.data.map((item: any) => ({
-        ...convertWebGameData(item),
-        _type: 'web_game',
-      })))
+      items.push(
+        ...filtered.map((item: any) => ({
+          ...convertActivityData(item),
+          _type: 'activity',
+        })),
+      )
+    } else if (section?.result_type === 'web_game' && Array.isArray(section.data)) {
+      items.push(
+        ...section.data.map((item: any) => ({
+          ...convertWebGameData(item),
+          _type: 'web_game',
+        })),
+      )
     }
   })
 
@@ -234,8 +241,7 @@ async function handleUserFollow(mid: number) {
   }
 
   const state = userRelations.value[mid]
-  if (state.isLoading)
-    return
+  if (state.isLoading) return
 
   const nextFollowing = !state.isFollowing
   const accountMid = userRelationStore.accountMid
@@ -251,130 +257,116 @@ async function handleUserFollow(mid: number) {
       csrf,
     })
 
-    if (response.code === 0)
-      updateUserRelation(mid, nextFollowing, accountMid)
-  }
-  catch (error) {
+    if (response.code === 0) updateUserRelation(mid, nextFollowing, accountMid)
+  } catch (error) {
     console.error('关注操作出错:', error)
-  }
-  finally {
+  } finally {
     state.isLoading = false
   }
 }
 
 // 获取当前结果长度
 function getCurrentResultLength(): number {
-  if (!results.value)
-    return 0
+  if (!results.value) return 0
   const sections = Array.isArray(results.value?.result) ? results.value.result : []
   return sections.reduce((sum: number, section: any) => {
-    if (Array.isArray(section?.data))
-      return sum + section.data.length
+    if (Array.isArray(section?.data)) return sum + section.data.length
     return sum
   }, 0)
 }
 
 // 提取视频列表（过滤广告）
 const videoList = computed(() => {
-  if (!results.value?.result)
-    return []
+  if (!results.value?.result) return []
   const videoSection = results.value.result.find((s: any) => s?.result_type === 'video')
-  if (!videoSection || !Array.isArray(videoSection.data))
-    return []
+  if (!videoSection || !Array.isArray(videoSection.data)) return []
   return videoSection.data.filter((v: any) => !isAdVideo(v))
 })
 
 onMounted(() => {
   updateVideoGridGap()
-  if (searchContentRef.value)
-    searchContentWidth.value = searchContentRef.value.clientWidth
-  if (typeof window !== 'undefined')
-    window.addEventListener('resize', updateVideoGridGap)
+  if (searchContentRef.value) searchContentWidth.value = searchContentRef.value.clientWidth
+  if (typeof window !== 'undefined') window.addEventListener('resize', updateVideoGridGap)
 
   const keyword = props.keyword.trim()
   if (keyword) {
-    if (props.initialPage && props.initialPage > 1)
-      updatePage(props.initialPage)
+    if (props.initialPage && props.initialPage > 1) updatePage(props.initialPage)
     performSearch(false)
   }
 })
 
 onUnmounted(() => {
-  if (typeof window !== 'undefined')
-    window.removeEventListener('resize', updateVideoGridGap)
+  if (typeof window !== 'undefined') window.removeEventListener('resize', updateVideoGridGap)
 })
 
-watch(() => props.keyword, async (newKeyword, oldKeyword) => {
-  const normalizedNew = (newKeyword || '').trim()
-  const normalizedOld = (oldKeyword || '').trim()
+watch(
+  () => props.keyword,
+  async (newKeyword, oldKeyword) => {
+    const normalizedNew = (newKeyword || '').trim()
+    const normalizedOld = (oldKeyword || '').trim()
 
-  if (!normalizedNew) {
+    if (!normalizedNew) {
+      resetAll()
+      return
+    }
+
+    if (normalizedNew !== normalizedOld) {
+      resetAll()
+      await performSearch(false)
+    }
+  },
+)
+
+watch(
+  () => props.filters,
+  () => {
+    if (!props.keyword.trim()) return
     resetAll()
-    return
-  }
-
-  if (normalizedNew !== normalizedOld) {
-    resetAll()
-    await performSearch(false)
-  }
-})
-
-watch(() => props.filters, () => {
-  if (!props.keyword.trim())
-    return
-  resetAll()
-  void performSearch(false)
-}, { deep: true })
+    void performSearch(false)
+  },
+  { deep: true },
+)
 
 async function performSearch(loadMore: boolean): Promise<boolean> {
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return false
+  if (!keyword) return false
 
   const isLoadMore = paginationMode.value === 'scroll' && loadMore
 
-  if (isLoadMore && (isLoading.value || exhausted.value))
-    return false
+  if (isLoadMore && (isLoading.value || exhausted.value)) return false
 
-  if (!isLoadMore)
-    setExhausted(false)
+  if (!isLoadMore) setExhausted(false)
 
-  const targetPage = isLoadMore ? getNextPage(true) : (currentPage.value > 0 ? currentPage.value : getNextPage(false))
+  const targetPage = isLoadMore
+    ? getNextPage(true)
+    : currentPage.value > 0
+      ? currentPage.value
+      : getNextPage(false)
   const previousLength = getCurrentResultLength()
 
   let success = false
   const useVideoFilters = isVideoFilterActive.value
 
   if (useVideoFilters) {
-    success = await search(
-      keyword,
-      (params, request) => api.search.searchVideo(params, request),
-      {
-        page: targetPage,
-        page_size: SEARCH_PAGE_SIZES.video,
-        ...buildVideoSearchParams({
-          loadMore: isLoadMore,
-          context: context.value,
-          filters: props.filters,
-        }),
-      },
-    )
-  }
-  else {
-    success = await search(
-      keyword,
-      (params, request) => api.search.searchAll(params, request),
-      {
-        page: targetPage,
-        page_size: SEARCH_PAGE_SIZES.all,
-        context: targetPage > 1 ? context.value : '',
-        web_roll_page: targetPage,
-      },
-    )
+    success = await search(keyword, (params, request) => api.search.searchVideo(params, request), {
+      page: targetPage,
+      page_size: SEARCH_PAGE_SIZES.video,
+      ...buildVideoSearchParams({
+        loadMore: isLoadMore,
+        context: context.value,
+        filters: props.filters,
+      }),
+    })
+  } else {
+    success = await search(keyword, (params, request) => api.search.searchAll(params, request), {
+      page: targetPage,
+      page_size: SEARCH_PAGE_SIZES.all,
+      context: targetPage > 1 ? context.value : '',
+      web_roll_page: targetPage,
+    })
   }
 
-  if (!success || !lastResponse.value?.data)
-    return false
+  if (!success || !lastResponse.value?.data) return false
 
   const rawData = lastResponse.value.data
 
@@ -393,21 +385,19 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     results.value = mergeSections(results.value, normalizedData, {
       appendVideoOnly: paginationMode.value === 'scroll',
     })
-  }
-  else {
+  } else {
     results.value = normalizedData
   }
 
   const userSection = Array.isArray(results.value?.result)
     ? results.value.result.find((s: any) => s?.result_type === 'bili_user')
     : undefined
-  await batchQueryUserRelations(Array.isArray(userSection?.data)
-    ? userSection.data.map((u: any) => u.mid).filter(Boolean)
-    : [])
+  await batchQueryUserRelations(
+    Array.isArray(userSection?.data) ? userSection.data.map((u: any) => u.mid).filter(Boolean) : [],
+  )
 
   const fallbackLength = incomingSections.reduce((sum: number, section: any) => {
-    if (Array.isArray(section?.data))
-      return sum + section.data.length
+    if (Array.isArray(section?.data)) return sum + section.data.length
     return sum
   }, 0)
   extractPagination(rawData, fallbackLength)
@@ -418,20 +408,15 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     const finalLength = getCurrentResultLength()
     const newItems = Math.max(finalLength - previousLength, 0)
     const incomingLength = incomingSections.reduce((sum: number, section: any) => {
-      if (isLoadMore && section?.result_type !== 'video')
-        return sum
-      if (Array.isArray(section?.data))
-        return sum + section.data.length
+      if (isLoadMore && section?.result_type !== 'video') return sum
+      if (Array.isArray(section?.data)) return sum + section.data.length
       return sum
     }, 0)
 
-    if (incomingLength === 0)
-      setExhausted(true)
-    else if (newItems <= 0 && targetPage >= totalPages.value)
-      setExhausted(true)
+    if (incomingLength === 0) setExhausted(true)
+    else if (newItems <= 0 && targetPage >= totalPages.value) setExhausted(true)
 
-    if (isLoadMore)
-      await handleLoadMoreCompletion(haveScrollbar)
+    if (isLoadMore) await handleLoadMoreCompletion(haveScrollbar)
   }
 
   return true
@@ -450,8 +435,7 @@ function mergeSections(previous: any, incoming: any, options: { appendVideoOnly?
   })
 
   incomingSections.forEach((section: any) => {
-    if (options.appendVideoOnly && section?.result_type !== 'video')
-      return
+    if (options.appendVideoOnly && section?.result_type !== 'video') return
 
     const data = Array.isArray(section?.data) ? [...section.data] : []
     if (sectionMap.has(section.result_type)) {
@@ -462,8 +446,7 @@ function mergeSections(previous: any, incoming: any, options: { appendVideoOnly?
         ...section,
         data: dedupeSectionItems(section.result_type, merged),
       })
-    }
-    else {
+    } else {
       sectionMap.set(section.result_type, {
         ...section,
         data: dedupeSectionItems(section.result_type, data),
@@ -513,12 +496,10 @@ function getSectionItemKey(type: string, item: any): string {
 }
 
 async function handlePageChange(page: number) {
-  if (paginationMode.value !== 'pagination')
-    return
+  if (paginationMode.value !== 'pagination') return
 
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return
+  if (!keyword) return
 
   handleBackToTop()
   await nextTick()
@@ -529,31 +510,22 @@ async function handlePageChange(page: number) {
   const useVideoFilters = isVideoFilterActive.value
 
   if (useVideoFilters) {
-    success = await search(
-      keyword,
-      (params, request) => api.search.searchVideo(params, request),
-      {
-        page,
-        page_size: SEARCH_PAGE_SIZES.video,
-        ...buildVideoSearchParams({
-          loadMore: false,
-          context: context.value,
-          filters: props.filters,
-        }),
-      },
-    )
-  }
-  else {
-    success = await search(
-      keyword,
-      (params, request) => api.search.searchAll(params, request),
-      {
-        page,
-        page_size: SEARCH_PAGE_SIZES.all,
-        context: page > 1 ? context.value : '',
-        web_roll_page: page,
-      },
-    )
+    success = await search(keyword, (params, request) => api.search.searchVideo(params, request), {
+      page,
+      page_size: SEARCH_PAGE_SIZES.video,
+      ...buildVideoSearchParams({
+        loadMore: false,
+        context: context.value,
+        filters: props.filters,
+      }),
+    })
+  } else {
+    success = await search(keyword, (params, request) => api.search.searchAll(params, request), {
+      page,
+      page_size: SEARCH_PAGE_SIZES.all,
+      context: page > 1 ? context.value : '',
+      web_roll_page: page,
+    })
   }
 
   if (!success || !lastResponse.value?.data) {
@@ -579,13 +551,12 @@ async function handlePageChange(page: number) {
   const userSection = Array.isArray(results.value?.result)
     ? results.value.result.find((s: any) => s?.result_type === 'bili_user')
     : undefined
-  await batchQueryUserRelations(Array.isArray(userSection?.data)
-    ? userSection.data.map((u: any) => u.mid).filter(Boolean)
-    : [])
+  await batchQueryUserRelations(
+    Array.isArray(userSection?.data) ? userSection.data.map((u: any) => u.mid).filter(Boolean) : [],
+  )
 
   const fallbackLength = incomingSections.reduce((sum: number, section: any) => {
-    if (Array.isArray(section?.data))
-      return sum + section.data.length
+    if (Array.isArray(section?.data)) return sum + section.data.length
     return sum
   }, 0)
   extractPagination(rawData, fallbackLength)
@@ -605,10 +576,8 @@ function resetAll() {
 }
 
 function handleLoadMore() {
-  if (paginationMode.value !== 'scroll')
-    return
-  if (isLoading.value || exhausted.value)
-    return
+  if (paginationMode.value !== 'scroll') return
+  if (isLoading.value || exhausted.value) return
 
   requestLoadMore()
 }
@@ -656,7 +625,7 @@ function getVideoListItemKey(item: any) {
             class="activity-card"
           >
             <div class="activity-cover">
-              <img v-if="item.cover" :src="item.cover" :alt="item.title">
+              <img v-if="item.cover" :src="item.cover" :alt="item.title" />
             </div>
             <div class="activity-info">
               <div class="activity-title">
@@ -678,14 +647,21 @@ function getVideoListItemKey(item: any) {
       </div>
 
       <!-- 各类 section -->
-      <template v-for="(section, index) in results?.result" :key="`${section?.result_type ?? 'unknown'}-${index}`">
+      <template
+        v-for="(section, index) in results?.result"
+        :key="`${section?.result_type ?? 'unknown'}-${index}`"
+      >
         <!-- 跳过视频（将在最后渲染） -->
         <template v-if="section?.result_type === 'video'" />
 
         <!-- 番剧/影视 -->
         <div
-          v-else-if="!isInPaginationNonFirstPage && (section?.result_type === 'media_bangumi' || section?.result_type === 'media_ft')
-            && Array.isArray(section.data) && section.data.length"
+          v-else-if="
+            !isInPaginationNonFirstPage &&
+            (section?.result_type === 'media_bangumi' || section?.result_type === 'media_ft') &&
+            Array.isArray(section.data) &&
+            section.data.length
+          "
         >
           <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
             {{ section.result_type === 'media_ft' ? t('search.film_tv') : t('search.bangumi') }}
@@ -699,16 +675,25 @@ function getVideoListItemKey(item: any) {
             >
               <a
                 class="media-ft-highlight-cover"
-                :href="item.goto_url || item.url || `https://www.bilibili.com/bangumi/media/md${item.media_id}`"
+                :href="
+                  item.goto_url ||
+                  item.url ||
+                  `https://www.bilibili.com/bangumi/media/md${item.media_id}`
+                "
                 target="_blank"
               >
-                <img :src="item.cover" :alt="removeHighlight(item.title)">
+                <img :src="item.cover" :alt="removeHighlight(item.title)" />
                 <div v-if="item.badges && item.badges.length" class="media-ft-highlight-badge">
                   {{ item.badges[0].text }}
                 </div>
               </a>
               <div class="media-ft-highlight-info">
-                <div class="media-ft-highlight-title bew-card-title-text" text="$bew-text-1" font-medium v-html="sanitizeHighlightTitle(item.title)" />
+                <div
+                  class="media-ft-highlight-title bew-card-title-text"
+                  text="$bew-text-1"
+                  font-medium
+                  v-html="sanitizeHighlightTitle(item.title)"
+                />
                 <div class="media-ft-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
                   <span v-if="item.media_score?.score" text="$bew-theme-color" font-bold>
                     {{ t('search.score', { score: item.media_score.score.toFixed(1) }) }}
@@ -722,19 +707,25 @@ function getVideoListItemKey(item: any) {
                 </div>
                 <MediaEpisodeSelect
                   v-if="item.eps && item.eps.length"
-                  :episodes="item.eps.map((ep: any) => ({
-                    id: ep.id,
-                    title: ep.title || ep.index,
-                    url: ep.url,
-                    cover: ep.cover,
-                    badge: ep.badges?.[0]?.text,
-                  }))"
+                  :episodes="
+                    item.eps.map((ep: any) => ({
+                      id: ep.id,
+                      title: ep.title || ep.index,
+                      url: ep.url,
+                      cover: ep.cover,
+                      badge: ep.badges?.[0]?.text,
+                    }))
+                  "
                   :fallback-url="item.goto_url || item.url"
                 />
                 <div class="media-ft-highlight-actions" flex items-center gap-3>
                   <a
                     class="media-ft-highlight-button"
-                    :href="item.goto_url || item.url || `https://www.bilibili.com/bangumi/media/md${item.media_id}`"
+                    :href="
+                      item.goto_url ||
+                      item.url ||
+                      `https://www.bilibili.com/bangumi/media/md${item.media_id}`
+                    "
                     target="_blank"
                   >
                     {{ t('search.watch_now') }}
@@ -751,13 +742,20 @@ function getVideoListItemKey(item: any) {
               class="bangumi-highlight-card"
             >
               <a class="bangumi-highlight-cover" :href="bangumi.url" target="_blank">
-                <img :src="bangumi.cover" :alt="bangumi.title">
-                <div v-if="bangumi.badge?.text || bangumi.capsuleText" class="bangumi-highlight-badge">
+                <img :src="bangumi.cover" :alt="bangumi.title" />
+                <div
+                  v-if="bangumi.badge?.text || bangumi.capsuleText"
+                  class="bangumi-highlight-badge"
+                >
                   {{ bangumi.badge?.text || bangumi.capsuleText }}
                 </div>
               </a>
               <div class="bangumi-highlight-info">
-                <div class="bangumi-highlight-title bew-card-title-text" text="$bew-text-1" font-medium>
+                <div
+                  class="bangumi-highlight-title bew-card-title-text"
+                  text="$bew-text-1"
+                  font-medium
+                >
                   {{ bangumi.title }}
                 </div>
                 <div class="bangumi-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
@@ -765,8 +763,12 @@ function getVideoListItemKey(item: any) {
                     {{ t('search.score', { score: bangumi.score?.toFixed(1) }) }}
                   </span>
                   <span v-if="bangumi.areas">{{ bangumi.areas }}</span>
-                  <span v-if="bangumi.episodeCount">{{ t('search.episode_count', { count: bangumi.episodeCount }) }}</span>
-                  <span v-if="bangumi.publishDateFormatted">{{ t('search.first_aired', { date: bangumi.publishDateFormatted }) }}</span>
+                  <span v-if="bangumi.episodeCount">{{
+                    t('search.episode_count', { count: bangumi.episodeCount })
+                  }}</span>
+                  <span v-if="bangumi.publishDateFormatted">{{
+                    t('search.first_aired', { date: bangumi.publishDateFormatted })
+                  }}</span>
                 </div>
                 <div v-if="bangumi.desc" class="bangumi-highlight-desc">
                   {{ bangumi.desc }}
@@ -791,15 +793,27 @@ function getVideoListItemKey(item: any) {
         </div>
 
         <!-- 跳过活动和游戏 -->
-        <template v-else-if="section?.result_type === 'activity' || section?.result_type === 'web_game'" />
+        <template
+          v-else-if="section?.result_type === 'activity' || section?.result_type === 'web_game'"
+        />
 
         <!-- 赛事 -->
-        <div v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'esports' && Array.isArray(section.data) && section.data.length">
+        <div
+          v-else-if="
+            !isInPaginationNonFirstPage &&
+            section?.result_type === 'esports' &&
+            Array.isArray(section.data) &&
+            section.data.length
+          "
+        >
           <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
             {{ t('search.esports_schedule') }}
           </h3>
           <div class="esports-grid" flex="~ wrap gap-4" mb-4>
-            <template v-for="contestData in section.data" :key="`esports-data-${contestData.contest?.[0]?.ID}`">
+            <template
+              v-for="contestData in section.data"
+              :key="`esports-data-${contestData.contest?.[0]?.ID}`"
+            >
               <EsportsMatchCard
                 v-for="contest in contestData.contest?.slice(0, 5)"
                 :key="`contest-${contest.ID}`"
@@ -818,7 +832,14 @@ function getVideoListItemKey(item: any) {
         </div>
 
         <!-- 用户 -->
-        <div v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'bili_user' && Array.isArray(section.data) && section.data.length">
+        <div
+          v-else-if="
+            !isInPaginationNonFirstPage &&
+            section?.result_type === 'bili_user' &&
+            Array.isArray(section.data) &&
+            section.data.length
+          "
+        >
           <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
             {{ t('search.users') }}
           </h3>
@@ -829,16 +850,21 @@ function getVideoListItemKey(item: any) {
               class="user-highlight-card"
             >
               <div class="user-highlight-header" flex items-center gap-3>
-                <UserAvatarLink :mid="user.mid" :name="user.name" :live-status="user.liveStatus" :roomid="user.roomid">
-                  <img
-                    :src="user.face"
-                    :alt="user.name"
-                    class="user-highlight-avatar"
-                  >
+                <UserAvatarLink
+                  :mid="user.mid"
+                  :name="user.name"
+                  :live-status="user.liveStatus"
+                  :roomid="user.roomid"
+                >
+                  <img :src="user.face" :alt="user.name" class="user-highlight-avatar" />
                 </UserAvatarLink>
                 <div class="user-highlight-info" flex="~ col" gap-1 flex-1>
                   <div
-                    class="user-highlight-name bew-body-text" text="$bew-text-1" font-medium flex items-center
+                    class="user-highlight-name bew-body-text"
+                    text="$bew-text-1"
+                    font-medium
+                    flex
+                    items-center
                     gap-2
                   >
                     <a :href="user.url" target="_blank">{{ user.name }}</a>
@@ -858,7 +884,9 @@ function getVideoListItemKey(item: any) {
                     </span>
                   </div>
                   <div text="xs $bew-text-3" flex items-center gap-3>
-                    <span>{{ t('search.fans_count', { count: formatNumber(user.fans || 0) }) }}</span>
+                    <span>{{
+                      t('search.fans_count', { count: formatNumber(user.fans || 0) })
+                    }}</span>
                     <span>{{ t('search.video_count', { count: user.videos || 0 }) }}</span>
                   </div>
                   <div v-if="user.desc" class="user-highlight-desc" mt-1>
@@ -871,7 +899,13 @@ function getVideoListItemKey(item: any) {
                   :disabled="userRelations[user.mid]?.isLoading"
                   @click.stop="handleUserFollow(user.mid)"
                 >
-                  {{ userRelations[user.mid]?.isLoading ? '...' : userRelations[user.mid]?.isFollowing ? t('search.followed') : `+ ${t('search.follow')}` }}
+                  {{
+                    userRelations[user.mid]?.isLoading
+                      ? '...'
+                      : userRelations[user.mid]?.isFollowing
+                        ? t('search.followed')
+                        : `+ ${t('search.follow')}`
+                  }}
                 </button>
               </div>
               <div
@@ -880,7 +914,10 @@ function getVideoListItemKey(item: any) {
                 :style="{ gridTemplateColumns: `repeat(${userSamplesColumns}, minmax(0, 1fr))` }"
                 mt-3
               >
-                <template v-for="(sample, idx) in getUserSamplesWithPlaceholders(user.samples)" :key="sample?.id || `placeholder-${idx}`">
+                <template
+                  v-for="(sample, idx) in getUserSamplesWithPlaceholders(user.samples)"
+                  :key="sample?.id || `placeholder-${idx}`"
+                >
                   <VideoCard
                     v-if="sample"
                     :video="{
@@ -912,7 +949,12 @@ function getVideoListItemKey(item: any) {
 
         <!-- 专栏 -->
         <div
-          v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'article' && Array.isArray(section.data) && section.data.length"
+          v-else-if="
+            !isInPaginationNonFirstPage &&
+            section?.result_type === 'article' &&
+            Array.isArray(section.data) &&
+            section.data.length
+          "
           class="article-results"
           grid="~ cols-1 md:cols-2 gap-4"
         >

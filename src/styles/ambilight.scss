@@ -1,5 +1,5 @@
 // BewlyCat 视频环境光（Ambilight）层级与穿透样式
-@use "./videoPageSurfaces" as surfaces;
+@use './videoPageSurfaces' as surfaces;
 
 .bewly-ambilight-host {
   position: absolute;
@@ -84,7 +84,7 @@ html[data-bewly-ambilight] {
     // 带海报的电影/番剧页（.home-container.special）：隐藏静态海报头图及底部白色渐变遮罩，
     // 并收起默认模式下为海报预留的大幅顶部留白，避免遮挡光晕或透入宽银幕上下留白区域
     .home-container .special-cover,
-    :is(.home-container, #__next, #app) > :is([class*="specialCover"], [class*="special_cover"]) {
+    :is(.home-container, #__next, #app) > :is([class*='specialCover'], [class*='special_cover']) {
       display: none !important;
     }
 
@@ -109,7 +109,10 @@ html[data-bewly-ambilight] {
       > .left-entry > .mini-header__logo,
       > .left-entry > .download-entry > .download-entry__title,
       > .right-entry > .right-entry-item > .right-entry__outside,
-      > .right-entry > .right-entry-item > .right-entry__outside > :is(.right-entry-icon, .right-entry-text) {
+      > .right-entry
+        > .right-entry-item
+        > .right-entry__outside
+        > :is(.right-entry-icon, .right-entry-text) {
         color: var(--text1) !important;
       }
     }
@@ -117,8 +120,8 @@ html[data-bewly-ambilight] {
     // 避免在 :has() 内使用 [class*="..."]，防止浏览器把所有 class 变更纳入全局 :has() 失效集
     #bilibili-player-wrap:not(
       :has(
-        [data-screen="full"],
-        [data-screen="web"],
+        [data-screen='full'],
+        [data-screen='web'],
         .squirtle-video-pagefullscreen.bpx-state-entered,
         .squirtle-video-fullscreen.bpx-state-entered
       )
@@ -128,18 +131,18 @@ html[data-bewly-ambilight] {
 
       :is(
           .video_playerInner,
-          [class*="video_playerInner"],
-          [class*="NanoPlayer_nonoPlayerContainer"],
-          [class*="NanoPlayer_nonoPlayerPrimaryArea"],
-          [class*="NanoPlayer_nanoDocker"]
-        ):not([class*="video_playerFullScreen"]):not([class*="Mini"]):not([class*="mini"]) {
+          [class*='video_playerInner'],
+          [class*='NanoPlayer_nonoPlayerContainer'],
+          [class*='NanoPlayer_nonoPlayerPrimaryArea'],
+          [class*='NanoPlayer_nanoDocker']
+        ):not([class*='video_playerFullScreen']):not([class*='Mini']):not([class*='mini']) {
         background: transparent !important;
         box-shadow: none !important;
       }
     }
 
     // 番剧与电影页实色子卡片、选集格子与已追番按钮改为半透明填充，避免在光晕上形成白块
-    [class*="numberListItem_number_list_item"]:not([class*="numberListItem_select"]) {
+    [class*='numberListItem_number_list_item']:not([class*='numberListItem_select']) {
       --bg1: var(--bew-fill-1);
 
       &:hover {
@@ -147,7 +150,7 @@ html[data-bewly-ambilight] {
       }
     }
 
-    [class*="EpisodeVirtualList_numberItem"]:not([class*="EpisodeVirtualList_activeNumber"]) {
+    [class*='EpisodeVirtualList_numberItem']:not([class*='EpisodeVirtualList_activeNumber']) {
       background: var(--bew-fill-1) !important;
       border-color: transparent !important;
 
@@ -156,10 +159,10 @@ html[data-bewly-ambilight] {
       }
     }
 
-    [class*="upinfo_upInfoCard"],
-    [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
-      [class*="rankList_sp_right"]
-      [class*="rankList_sp_msg"],
+    [class*='upinfo_upInfoCard'],
+    [class*='rankList_sponsor_rank_item'][class*='rankList_pos_rank_module']
+      [class*='rankList_sp_right']
+      [class*='rankList_sp_msg'],
     .sponsor-rank-item.pos-rank-module .sp-right .sp-msg,
     .main-container .review-module .review-list .review-item .review-body,
     .main-container .season-list .ss-list-wrapper .expand-more,
@@ -170,7 +173,7 @@ html[data-bewly-ambilight] {
       box-shadow: none !important;
     }
 
-    [class*="follow_btnFollow"][class*="follow_followed"] {
+    [class*='follow_btnFollow'][class*='follow_followed'] {
       background: var(--bew-fill-1) !important;
       box-shadow: none !important;
 
@@ -180,10 +183,10 @@ html[data-bewly-ambilight] {
     }
 
     .plp-l .toolbar,
-    [class*="toolbar_toolbar"],
-    [class*="mediainfo_mediaInfo"],
-    [class*="recommend_wrap"],
-    [class*="sponsor_sponsor_module"],
+    [class*='toolbar_toolbar'],
+    [class*='mediainfo_mediaInfo'],
+    [class*='recommend_wrap'],
+    [class*='sponsor_sponsor_module'],
     .main-container .tool-bar,
     .main-container .media-info,
     .main-container .review-module,
@@ -194,7 +197,9 @@ html[data-bewly-ambilight] {
   }
 
   // 播放器背景透明化（小窗保持实底防下方评论透字；番剧全屏/网页全屏保留黑底）
-  .bpx-player-container:not(:fullscreen):not([data-screen="full"]):not([data-screen="web"]):not([data-screen="mini"]) {
+  .bpx-player-container:not(:fullscreen):not([data-screen='full']):not([data-screen='web']):not(
+      [data-screen='mini']
+    ) {
     .bpx-player-primary-area,
     .bpx-player-video-area,
     .bpx-player-video-perch,

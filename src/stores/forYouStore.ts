@@ -133,10 +133,13 @@ export const useForYouStore = defineStore('forYou', () => {
   }
 
   // The store outlives Home, including while the setting is changed from the Dock.
-  watch(() => settings.value.preserveForYouState, (preserve) => {
-    if (!preserve)
-      resetState()
-  }, { flush: 'sync' })
+  watch(
+    () => settings.value.preserveForYouState,
+    (preserve) => {
+      if (!preserve) resetState()
+    },
+    { flush: 'sync' },
+  )
 
   // 标记为已初始化
   const markAsInitialized = () => {

@@ -9,12 +9,9 @@ const model = defineModel()
 </script>
 
 <template>
-  <label
-    :class="{ disabled }" cursor="pointer" pointer="auto" flex items-center
-    gap-3
-  >
+  <label :class="{ disabled }" cursor="pointer" pointer="auto" flex items-center gap-3>
     <span>{{ label }}</span>
-    <input v-model="model" type="checkbox" class="radio-input" :disabled="disabled">
+    <input v-model="model" type="checkbox" class="radio-input" :disabled="disabled" />
     <span class="radio-switch" aria-hidden="true" />
   </label>
 </template>
@@ -70,12 +67,12 @@ label {
     height: var(--b-switch-thumb-size);
     background: white;
     border-radius: var(--bew-badge-radius);
-    content: "";
+    content: '';
     transform: translate(var(--b-switch-thumb-offset), -50%) scale(var(--b-switch-thumb-scale));
   }
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   &:focus-visible + .radio-switch {
     outline: 2px solid var(--bew-theme-color-40);
     outline-offset: var(--bew-space-0-5);
@@ -118,7 +115,8 @@ input[type="checkbox"] {
   &:checked + .radio-switch::after {
     // Track width minus the thumb and equal outer-edge inset on both sides.
     --b-switch-thumb-offset: calc(
-      var(--b-switch-width) - var(--b-switch-thumb-size) - var(--b-switch-edge-inset) - var(--b-switch-edge-inset)
+      var(--b-switch-width) - var(--b-switch-thumb-size) - var(--b-switch-edge-inset) -
+        var(--b-switch-edge-inset)
     );
   }
 }

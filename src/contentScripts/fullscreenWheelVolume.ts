@@ -17,8 +17,7 @@ let lastWheelTime = 0
 
 function getFullscreenVideo() {
   const fullscreenElement = document.fullscreenElement
-  if (!fullscreenElement)
-    return null
+  if (!fullscreenElement) return null
   const video = getVideoElement()
   return video && fullscreenElement.contains(video) ? video : null
 }
@@ -28,7 +27,10 @@ function isInsideScrollable(target: EventTarget | null, boundary: Element) {
   let element = target instanceof Element ? target : null
   while (element && element !== boundary) {
     const { overflowY } = getComputedStyle(element)
-    if ((overflowY === 'auto' || overflowY === 'scroll') && element.scrollHeight > element.clientHeight)
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll') &&
+      element.scrollHeight > element.clientHeight
+    )
       return true
     element = element.parentElement
   }
@@ -36,10 +38,13 @@ function isInsideScrollable(target: EventTarget | null, boundary: Element) {
 }
 
 function handleWheel(event: WheelEvent) {
-  if (!settings.value.customFullscreenWheelVolume || event.ctrlKey || !event.deltaY)
-    return
+  if (!settings.value.customFullscreenWheelVolume || event.ctrlKey || !event.deltaY) return
   const fullscreenElement = document.fullscreenElement
-  if (!fullscreenElement || !getFullscreenVideo() || isInsideScrollable(event.target, fullscreenElement))
+  if (
+    !fullscreenElement ||
+    !getFullscreenVideo() ||
+    isInsideScrollable(event.target, fullscreenElement)
+  )
     return
 
   // 阻止 B 站原生全屏滚轮调音，避免两套幅度叠加。
@@ -47,14 +52,19 @@ function handleWheel(event: WheelEvent) {
   event.stopImmediatePropagation()
 
   const now = performance.now()
-  if (now - lastWheelTime > WHEEL_IDLE_RESET_MS || Math.sign(event.deltaY) !== Math.sign(accumulatedDelta))
+  if (
+    now - lastWheelTime > WHEEL_IDLE_RESET_MS ||
+    Math.sign(event.deltaY) !== Math.sign(accumulatedDelta)
+  )
     accumulatedDelta = 0
   lastWheelTime = now
 
-  const delta = event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? event.deltaY : Math.sign(event.deltaY) * WHEEL_NOTCH_PX
+  const delta =
+    event.deltaMode === WheelEvent.DOM_DELTA_PIXEL
+      ? event.deltaY
+      : Math.sign(event.deltaY) * WHEEL_NOTCH_PX
   accumulatedDelta += delta
-  if (Math.abs(accumulatedDelta) < WHEEL_NOTCH_PX)
-    return
+  if (Math.abs(accumulatedDelta) < WHEEL_NOTCH_PX) return
 
   // 每次事件最多调节一格，避免高精度滚轮单格数值偏大导致跳档。
   const direction = accumulatedDelta < 0 ? 1 : -1
@@ -66,22 +76,19 @@ function handleWheel(event: WheelEvent) {
 // it only exists while the feature is on and something is fullscreen.
 function syncWheelListener() {
   const shouldListen = settings.value.customFullscreenWheelVolume && !!document.fullscreenElement
-  if (shouldListen === wheelListenerActive)
-    return
+  if (shouldListen === wheelListenerActive) return
 
   wheelListenerActive = shouldListen
   if (shouldListen) {
     window.addEventListener('wheel', handleWheel, WHEEL_LISTENER_OPTIONS)
-  }
-  else {
+  } else {
     window.removeEventListener('wheel', handleWheel, WHEEL_LISTENER_OPTIONS)
     accumulatedDelta = 0
   }
 }
 
 export function initFullscreenWheelVolume() {
-  if (initialized)
-    return
+  if (initialized) return
   initialized = true
   document.addEventListener('fullscreenchange', syncWheelListener)
   watch(() => settings.value.customFullscreenWheelVolume, syncWheelListener, { immediate: true })

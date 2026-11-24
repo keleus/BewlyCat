@@ -35,9 +35,19 @@ interface SelectableReason {
 // 同类原因（如多个「频道:xxx」）的 id 相同，只能用在列表中的位置标识选中项
 const selectedIndex = ref<number>(0)
 
-const dislikeReasons = computed(() => props.video?.threePointV2?.find(option => option.type === ThreePointV2Type.Dislike)?.reasons || [])
-const feedbackReasons = computed(() => props.video?.threePointV2?.find(option => option.type === ThreePointV2Type.Feedback)?.reasons || [])
-const toSelectableReason = (type: FeedFeedbackType) => (reason: DislikeReason): SelectableReason => ({ type, reason })
+const dislikeReasons = computed(
+  () =>
+    props.video?.threePointV2?.find((option) => option.type === ThreePointV2Type.Dislike)
+      ?.reasons || [],
+)
+const feedbackReasons = computed(
+  () =>
+    props.video?.threePointV2?.find((option) => option.type === ThreePointV2Type.Feedback)
+      ?.reasons || [],
+)
+const toSelectableReason =
+  (type: FeedFeedbackType) =>
+  (reason: DislikeReason): SelectableReason => ({ type, reason })
 const selectableOptions = computed<SelectableReason[]>(() => [
   ...dislikeReasons.value.map(toSelectableReason(ThreePointV2Type.Dislike)),
   ...feedbackReasons.value.map(toSelectableReason(ThreePointV2Type.Feedback)),
@@ -48,14 +58,12 @@ watch(selectableOptions, () => {
 })
 
 function selectOption(index: number) {
-  if (index >= 0 && index < selectableOptions.value.length)
-    selectedIndex.value = index
+  if (index >= 0 && index < selectableOptions.value.length) selectedIndex.value = index
 }
 
 function getSelectedPayload(): Record<string, number | undefined> | undefined {
   const option = selectableOptions.value[selectedIndex.value]
-  if (!option)
-    return undefined
+  if (!option) return undefined
 
   const { id, mid, rid, tag_id } = option.reason
   return option.type === ThreePointV2Type.Feedback
@@ -82,7 +90,7 @@ async function handleAppDislike() {
 
   loadingDislikeDialog.value = true
   try {
-    if (!await ensureFreshAppAccessToken()) {
+    if (!(await ensureFreshAppAccessToken())) {
       toast.warning(t('auth.auth_access_key_first'))
       return
     }
@@ -98,29 +106,23 @@ async function handleAppDislike() {
       build: 1,
       mobi_app: 'android',
     })
-    if (res.code === 0)
-      emit('removed')
-    else
-      toast.error(res.message)
-  }
-  finally {
+    if (res.code === 0) emit('removed')
+    else toast.error(res.message)
+  } finally {
     loadingDislikeDialog.value = false
   }
 }
 
 onKeyStroke((e: KeyboardEvent) => {
-  if (!showDislikeDialog.value)
-    return
+  if (!showDislikeDialog.value) return
 
   if (e.key >= '1' && e.key <= '9') {
     e.preventDefault()
     selectOption(Number(e.key) - 1)
-  }
-  else if (e.key === 'ArrowUp') {
+  } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectOption(selectedIndex.value - 1)
-  }
-  else if (e.key === 'ArrowDown') {
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectOption(selectedIndex.value + 1)
   }
@@ -142,23 +144,27 @@ onKeyStroke((e: KeyboardEvent) => {
         v-for="(reason, index) in dislikeReasons"
         :key="index"
         :class="{ 'activated-dislike-reason': selectedIndex === index }"
-        p="x-6 y-4" rounded="$bew-radius" cursor-pointer bg="$bew-fill-1 hover:$bew-fill-2"
+        p="x-6 y-4"
+        rounded="$bew-radius"
+        cursor-pointer
+        bg="$bew-fill-1 hover:$bew-fill-2"
         flex="~ gap-2 items-center justify-between"
         @click="selectOption(index)"
       >
         <div flex="~ gap-2">
           <div
-            bg="$bew-theme-color" color-white w-20px h-20px rounded-10
+            bg="$bew-theme-color"
+            color-white
+            w-20px
+            h-20px
+            rounded-10
             flex="~ justify-center items-center"
           >
             {{ index + 1 }}
           </div>
           {{ reason.name }}
         </div>
-        <Icon
-          v-if="selectedIndex === index" icon="line-md:confirm"
-          w-18px h-18px
-        />
+        <Icon v-if="selectedIndex === index" icon="line-md:confirm" w-18px h-18px />
       </li>
     </ul>
     <template v-if="feedbackReasons.length > 0">
@@ -168,13 +174,20 @@ onKeyStroke((e: KeyboardEvent) => {
           v-for="(reason, index) in feedbackReasons"
           :key="index"
           :class="{ 'activated-dislike-reason': selectedIndex === dislikeReasons.length + index }"
-          p="x-6 y-4" rounded="$bew-radius" cursor-pointer bg="$bew-fill-1 hover:$bew-fill-2"
+          p="x-6 y-4"
+          rounded="$bew-radius"
+          cursor-pointer
+          bg="$bew-fill-1 hover:$bew-fill-2"
           flex="~ gap-2 items-center justify-between"
           @click="selectOption(dislikeReasons.length + index)"
         >
           <div flex="~ gap-2">
             <div
-              bg="$bew-theme-color" color-white w-20px h-20px rounded-10
+              bg="$bew-theme-color"
+              color-white
+              w-20px
+              h-20px
+              rounded-10
               flex="~ justify-center items-center"
             >
               {{ dislikeReasons.length + index + 1 }}
@@ -182,8 +195,10 @@ onKeyStroke((e: KeyboardEvent) => {
             {{ reason.name }}
           </div>
           <Icon
-            v-if="selectedIndex === dislikeReasons.length + index" icon="line-md:confirm"
-            w-18px h-18px
+            v-if="selectedIndex === dislikeReasons.length + index"
+            icon="line-md:confirm"
+            w-18px
+            h-18px
           />
         </li>
       </ul>
@@ -194,7 +209,7 @@ onKeyStroke((e: KeyboardEvent) => {
 
 <style lang="scss" scoped>
 .activated-dislike-reason {
-  --uno: "bg-$bew-theme-color-20 color-$bew-theme-color";
+  --uno: 'bg-$bew-theme-color-20 color-$bew-theme-color';
 }
 
 .divider {

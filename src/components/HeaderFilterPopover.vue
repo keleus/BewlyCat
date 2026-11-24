@@ -32,8 +32,7 @@ const panelStyle = ref<Record<string, string>>({})
 function placePanel() {
   const root = rootRef.value
   const trigger = triggerRef.value
-  if (!root || !trigger)
-    return
+  if (!root || !trigger) return
 
   const viewportWidth = document.documentElement.clientWidth
   const viewportHeight = document.documentElement.clientHeight
@@ -41,7 +40,10 @@ function placePanel() {
   const triggerRect = trigger.getBoundingClientRect()
   const width = Math.min(PANEL_WIDTH, viewportWidth - VIEWPORT_MARGIN * 2)
   // 默认与按钮右对齐；窄屏换行后按钮靠左时，向右推回视口内。
-  const left = Math.max(VIEWPORT_MARGIN, Math.min(triggerRect.right - width, viewportWidth - VIEWPORT_MARGIN - width))
+  const left = Math.max(
+    VIEWPORT_MARGIN,
+    Math.min(triggerRect.right - width, viewportWidth - VIEWPORT_MARGIN - width),
+  )
   const top = rootRect.bottom + PANEL_GAP
 
   panelStyle.value = {
@@ -58,25 +60,20 @@ function show() {
 }
 
 function close(options: { restoreFocus?: boolean } = {}) {
-  if (!open.value)
-    return
+  if (!open.value) return
   open.value = false
-  if (options.restoreFocus)
-    triggerRef.value?.focus({ preventScroll: true })
+  if (options.restoreFocus) triggerRef.value?.focus({ preventScroll: true })
   emit('close')
 }
 
 function toggle() {
-  if (open.value)
-    close()
-  else
-    show()
+  if (open.value) close()
+  else show()
 }
 
 onClickOutside(rootRef, () => close())
 useEventListener(window, 'resize', () => {
-  if (open.value)
-    placePanel()
+  if (open.value) placePanel()
 })
 
 defineExpose({ close })
@@ -113,7 +110,7 @@ defineExpose({ close })
       <div
         v-if="open"
         class="header-filter__panel bew-popover-surface"
-        style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1));"
+        style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1))"
         :style="panelStyle"
         role="dialog"
         :aria-label="title"

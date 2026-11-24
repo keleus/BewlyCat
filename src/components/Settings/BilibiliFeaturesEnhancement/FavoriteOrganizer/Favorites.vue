@@ -20,8 +20,7 @@ let abortController: AbortController | null = null
 onBeforeUnmount(() => abortController?.abort())
 
 const progressText = computed(() => {
-  if (!progress.value)
-    return ''
+  if (!progress.value) return ''
   return progress.value.phase === 'scan'
     ? t('settings.favorite_organizer.scanning', { count: progress.value.scanned })
     : t('settings.favorite_organizer.copying', { count: progress.value.copied })
@@ -45,8 +44,7 @@ function describeError(error: unknown) {
 }
 
 async function startOrganize() {
-  if (running.value)
-    return
+  if (running.value) return
 
   running.value = true
   result.value = null
@@ -58,11 +56,11 @@ async function startOrganize() {
     result.value = await organizeDefaultFavoriteFolder((value) => {
       progress.value = value
     }, signal)
-  }
-  catch (error) {
-    errorMessage.value = signal.aborted ? t('settings.favorite_organizer.stopped') : describeError(error)
-  }
-  finally {
+  } catch (error) {
+    errorMessage.value = signal.aborted
+      ? t('settings.favorite_organizer.stopped')
+      : describeError(error)
+  } finally {
     running.value = false
     progress.value = null
     abortController = null
@@ -111,12 +109,29 @@ function stopOrganize() {
               {{ errorMessage }}
             </p>
             <template v-if="result">
-              <p>{{ t('settings.favorite_organizer.result_summary', { scanned: result.scanned }) }}</p>
+              <p>
+                {{ t('settings.favorite_organizer.result_summary', { scanned: result.scanned }) }}
+              </p>
               <ul>
-                <li v-for="folder in result.folders" :key="folder.mediaId" :class="{ 'organizer-status__error': folder.error }">
-                  {{ folder.error
-                    ? t('settings.favorite_organizer.result_folder_failed', { title: folder.title, matched: folder.matched, copied: folder.copied, message: folder.error })
-                    : t('settings.favorite_organizer.result_folder', { title: folder.title, matched: folder.matched, copied: folder.copied }) }}
+                <li
+                  v-for="folder in result.folders"
+                  :key="folder.mediaId"
+                  :class="{ 'organizer-status__error': folder.error }"
+                >
+                  {{
+                    folder.error
+                      ? t('settings.favorite_organizer.result_folder_failed', {
+                          title: folder.title,
+                          matched: folder.matched,
+                          copied: folder.copied,
+                          message: folder.error,
+                        })
+                      : t('settings.favorite_organizer.result_folder', {
+                          title: folder.title,
+                          matched: folder.matched,
+                          copied: folder.copied,
+                        })
+                  }}
                 </li>
               </ul>
             </template>

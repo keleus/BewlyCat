@@ -92,8 +92,14 @@ function isPointInsideContentCard(x: number, y: number) {
   const elements = document.querySelectorAll<HTMLElement>(BLANK_CLICK_CONTENT_CARD_SELECTOR)
   for (let i = 0; i < elements.length; i++) {
     const rect = elements[i].getBoundingClientRect()
-    if (rect.width > 0 && rect.height > 0
-      && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+    if (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      x >= rect.left &&
+      x <= rect.right &&
+      y >= rect.top &&
+      y <= rect.bottom
+    ) {
       return true
     }
   }
@@ -107,8 +113,7 @@ function getCollapseLabel() {
 
 function updateCollapseButtonLabel(button: HTMLButtonElement) {
   const label = getCollapseLabel()
-  if (button.textContent !== label)
-    button.textContent = label
+  if (button.textContent !== label) button.textContent = label
 }
 
 function getCard(element: Element | null): HTMLElement | null {
@@ -120,20 +125,16 @@ function getCommentAction(card: HTMLElement): HTMLElement | null {
 }
 
 function scrollCardIntoView(card: HTMLElement) {
-  if (!card.isConnected)
-    return
+  if (!card.isConnected) return
   card.scrollIntoView({ block: 'start' })
   window.scrollBy({ top: -CARD_SCROLL_OFFSET })
 }
 
 function getRenderedRect(element: Element) {
-  if (!element.isConnected)
-    return null
+  if (!element.isConnected) return null
   if (typeof element.checkVisibility === 'function') {
-    if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))
-      return null
-  }
-  else {
+    if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return null
+  } else {
     const style = getComputedStyle(element)
     if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
       return null
@@ -154,24 +155,23 @@ function isCommentActionExpanded(action: HTMLElement) {
 
 function collapseVisibleComments(clickY: number) {
   const actions = new Set<HTMLElement>()
-  const candidates: Array<{ card: HTMLElement, distance: number }> = []
+  const candidates: Array<{ card: HTMLElement; distance: number }> = []
 
   document.querySelectorAll<HTMLElement>(FEED_COMMENT_CONTAINER_SELECTOR).forEach((container) => {
-    if (container.parentElement?.closest(COMMENT_CONTAINER_SELECTOR))
-      return
+    if (container.parentElement?.closest(COMMENT_CONTAINER_SELECTOR)) return
     const card = getCard(container)
     const action = card ? getCommentAction(card) : null
     if (!card || !action || !isCommentActionExpanded(action) || !isElementInViewport(container))
       return
     actions.add(action)
     const rect = card.getBoundingClientRect()
-    const distance = clickY < rect.top ? rect.top - clickY : clickY > rect.bottom ? clickY - rect.bottom : 0
+    const distance =
+      clickY < rect.top ? rect.top - clickY : clickY > rect.bottom ? clickY - rect.bottom : 0
     candidates.push({ card, distance })
   })
 
   actions.forEach((action) => {
-    if (action.isConnected)
-      action.click()
+    if (action.isConnected) action.click()
   })
 
   let primaryCard: HTMLElement | undefined
@@ -186,36 +186,43 @@ function collapseVisibleComments(clickY: number) {
 }
 
 function isBlankAreaClick(event: MouseEvent) {
-  if (!event.isTrusted || event.button !== 0 || event.detail === 0)
-    return false
+  if (!event.isTrusted || event.button !== 0 || event.detail === 0) return false
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
     return false
-  if (event.clientX >= document.documentElement.clientWidth || event.clientY >= document.documentElement.clientHeight)
+  if (
+    event.clientX >= document.documentElement.clientWidth ||
+    event.clientY >= document.documentElement.clientHeight
+  )
     return false
 
   const target = event.target instanceof Element ? event.target : null
-  if (!target || target.closest(BLANK_CLICK_EXCLUDED_SELECTOR) || target.closest(ORIGINAL_MOMENTS_CARD_SELECTOR))
+  if (
+    !target ||
+    target.closest(BLANK_CLICK_EXCLUDED_SELECTOR) ||
+    target.closest(ORIGINAL_MOMENTS_CARD_SELECTOR)
+  )
     return false
   if (!target.matches(BLANK_LAYOUT_SELECTOR) && getComputedStyle(target).cursor === 'pointer')
     return false
 
   const selection = window.getSelection()
-  if (selection && !selection.isCollapsed)
-    return false
+  if (selection && !selection.isCollapsed) return false
 
   // 目标不在卡片、评论、侧栏卡片或交互元素内，且不落在内容卡片矩形上，即视为空白区域。
   return !isPointInsideContentCard(event.clientX, event.clientY)
 }
 
 function isEditableElement(element: Element) {
-  return element instanceof HTMLElement
-    && (element.isContentEditable
-      || element.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]') !== null)
+  return (
+    element instanceof HTMLElement &&
+    (element.isContentEditable ||
+      element.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]') !==
+        null)
+  )
 }
 
 export function setupOriginalMomentsFoldComments() {
-  if (location.hostname !== 't.bilibili.com')
-    return
+  if (location.hostname !== 't.bilibili.com') return
 
   const feedObservers = new Map<HTMLElement, MutationObserver>()
   const pendingContainers = new Set<HTMLElement>()
@@ -227,16 +234,21 @@ export function setupOriginalMomentsFoldComments() {
   let actionClickEnabled = false
 
   function removeCardFoldButtons(card: HTMLElement) {
-    card.querySelectorAll<HTMLButtonElement>(`.${COLLAPSE_BUTTON_CLASS}`).forEach(button => button.remove())
+    card
+      .querySelectorAll<HTMLButtonElement>(`.${COLLAPSE_BUTTON_CLASS}`)
+      .forEach((button) => button.remove())
   }
 
   function ensureButton(container: HTMLElement) {
-    if (!isOriginalMomentsFeed() || !container.isConnected || !container.closest(ORIGINAL_MOMENTS_FEED_SELECTOR))
+    if (
+      !isOriginalMomentsFeed() ||
+      !container.isConnected ||
+      !container.closest(ORIGINAL_MOMENTS_FEED_SELECTOR)
+    )
       return
 
     const card = getCard(container)
-    if (!card || container.parentElement?.closest(COMMENT_CONTAINER_SELECTOR))
-      return
+    if (!card || container.parentElement?.closest(COMMENT_CONTAINER_SELECTOR)) return
 
     if (!settings.value.originalMomentsShowFoldCommentsButton) {
       removeCardFoldButtons(card)
@@ -256,8 +268,7 @@ export function setupOriginalMomentsFoldComments() {
       return
     }
     if (cardButton) {
-      if (cardButton.parentElement === container)
-        updateCollapseButtonLabel(cardButton)
+      if (cardButton.parentElement === container) updateCollapseButtonLabel(cardButton)
       return
     }
 
@@ -269,8 +280,7 @@ export function setupOriginalMomentsFoldComments() {
       event.preventDefault()
       event.stopPropagation()
       const action = getCommentAction(card)
-      if (!action || !isCommentActionExpanded(action))
-        return
+      if (!action || !isCommentActionExpanded(action)) return
       action.click()
       action.focus({ preventScroll: true })
       requestAnimationFrame(() => scrollCardIntoView(card))
@@ -286,29 +296,24 @@ export function setupOriginalMomentsFoldComments() {
   }
 
   function queueContainer(container: HTMLElement) {
-    if (!settings.value.originalMomentsShowFoldCommentsButton)
-      return
+    if (!settings.value.originalMomentsShowFoldCommentsButton) return
     pendingContainers.add(container)
-    if (pendingFrame === undefined)
-      pendingFrame = requestAnimationFrame(flushPendingContainers)
+    if (pendingFrame === undefined) pendingFrame = requestAnimationFrame(flushPendingContainers)
   }
 
   function queueFromAddedNode(node: Node) {
-    if (!(node instanceof Element))
-      return
+    if (!(node instanceof Element)) return
     if (node instanceof HTMLElement && node.matches(COMMENT_CONTAINER_SELECTOR)) {
       queueContainer(node)
       return
     }
-    if (node.closest(COMMENT_CONTAINER_SELECTOR))
-      return
+    if (node.closest(COMMENT_CONTAINER_SELECTOR)) return
     node.querySelectorAll<HTMLElement>(COMMENT_CONTAINER_SELECTOR).forEach(queueContainer)
   }
 
   function handleNativeFoldButton(node: HTMLElement) {
     const card = getCard(node)
-    if (card)
-      removeCardFoldButtons(card)
+    if (card) removeCardFoldButtons(card)
   }
 
   // B-E 的按钮会直接追加到评论容器，直接在 feed 观察器里识别，避免为每个容器单独挂观察器。
@@ -317,58 +322,61 @@ export function setupOriginalMomentsFoldComments() {
       const target = mutation.target instanceof Element ? mutation.target : null
       if (target instanceof HTMLElement && target.matches(COMMENT_CONTAINER_SELECTOR)) {
         mutation.addedNodes.forEach((node) => {
-          if (node instanceof HTMLElement
-            && (node.classList.contains(NATIVE_COLLAPSE_BUTTON_CLASS)
-              || node.querySelector(NATIVE_COLLAPSE_BUTTON_SELECTOR) !== null)) {
+          if (
+            node instanceof HTMLElement &&
+            (node.classList.contains(NATIVE_COLLAPSE_BUTTON_CLASS) ||
+              node.querySelector(NATIVE_COLLAPSE_BUTTON_SELECTOR) !== null)
+          ) {
             handleNativeFoldButton(node)
           }
         })
         // 评论组件会在转发/评论面板切换时增删直接子节点，借此同步按钮。
         queueContainer(target)
       }
-      if (target?.closest(COMMENT_CONTAINER_SELECTOR))
-        continue
+      if (target?.closest(COMMENT_CONTAINER_SELECTOR)) continue
       mutation.addedNodes.forEach(queueFromAddedNode)
     }
   }
 
   function isObservedFeedNode(node: Node) {
     for (const root of feedObservers.keys()) {
-      if (root.contains(node))
-        return true
+      if (root.contains(node)) return true
     }
     return false
   }
 
   function observeFeed() {
-    const roots = new Set(Array.from(document.querySelectorAll<HTMLElement>(ORIGINAL_MOMENTS_FEED_SELECTOR)))
+    const roots = new Set(
+      Array.from(document.querySelectorAll<HTMLElement>(ORIGINAL_MOMENTS_FEED_SELECTOR)),
+    )
     let rootsChanged = false
 
     for (const [root, observer] of feedObservers) {
       if (!roots.has(root)) {
         observer.disconnect()
         feedObservers.delete(root)
-        root.querySelectorAll<HTMLElement>(`.${COLLAPSE_BUTTON_CLASS}`).forEach(button => button.remove())
+        root
+          .querySelectorAll<HTMLElement>(`.${COLLAPSE_BUTTON_CLASS}`)
+          .forEach((button) => button.remove())
         rootsChanged = true
       }
     }
     for (const root of roots) {
-      if (feedObservers.has(root))
-        continue
+      if (feedObservers.has(root)) continue
       const observer = new MutationObserver(handleMutations)
       observer.observe(root, { childList: true, subtree: true })
       feedObservers.set(root, observer)
       rootsChanged = true
     }
 
-    if (!rootsChanged)
-      return
-    roots.forEach(root => root.querySelectorAll<HTMLElement>(COMMENT_CONTAINER_SELECTOR).forEach(queueContainer))
+    if (!rootsChanged) return
+    roots.forEach((root) =>
+      root.querySelectorAll<HTMLElement>(COMMENT_CONTAINER_SELECTOR).forEach(queueContainer),
+    )
   }
 
   function scheduleObserveFeed() {
-    if (feedRefreshFrame !== undefined)
-      return
+    if (feedRefreshFrame !== undefined) return
     feedRefreshFrame = requestAnimationFrame(() => {
       feedRefreshFrame = undefined
       observeFeed()
@@ -376,29 +384,25 @@ export function setupOriginalMomentsFoldComments() {
   }
 
   function handleBlankAreaPointerDown(event: PointerEvent) {
-    if (event.button !== 0)
-      return
+    if (event.button !== 0) return
     // 用空白点击清空选区或让输入框/编辑器失焦时，不应顺手收起评论。
     const selection = window.getSelection()
     const activeElement = findLeafActiveElement(document)
-    suppressBlankClick = (selection !== null && !selection.isCollapsed)
-      || (activeElement !== undefined && isEditableElement(activeElement))
+    suppressBlankClick =
+      (selection !== null && !selection.isCollapsed) ||
+      (activeElement !== undefined && isEditableElement(activeElement))
   }
 
   function handleBlankAreaClick(event: MouseEvent) {
     const suppressed = suppressBlankClick
     suppressBlankClick = false
-    if (suppressed || !isBlankAreaClick(event))
-      return
+    if (suppressed || !isBlankAreaClick(event)) return
     const card = collapseVisibleComments(event.clientY)
-    if (!card)
-      return
+    if (!card) return
     requestAnimationFrame(() => {
-      if (!card.isConnected)
-        return
+      if (!card.isConnected) return
       const rect = card.getBoundingClientRect()
-      if (rect.bottom > 0 && rect.top < window.innerHeight)
-        return
+      if (rect.bottom > 0 && rect.top < window.innerHeight) return
       scrollCardIntoView(card)
     })
   }
@@ -408,40 +412,35 @@ export function setupOriginalMomentsFoldComments() {
   }
 
   function handleActionClick(event: MouseEvent) {
-    if (!isOriginalMomentsFeed())
-      return
+    if (!isOriginalMomentsFeed()) return
     const target = event.target instanceof Element ? event.target : null
     const action = target?.closest<HTMLElement>('.bili-dyn-action')
-    if (!action || !action.matches('.comment, .forward'))
-      return
+    if (!action || !action.matches('.comment, .forward')) return
     const card = getCard(action)
-    if (!card)
-      return
+    if (!card) return
     requestAnimationFrame(() => {
-      if (card.isConnected)
-        syncCardFoldButtons(card)
+      if (card.isConnected) syncCardFoldButtons(card)
     })
   }
 
   function setActionClickEnabled(enabled: boolean) {
-    if (enabled === actionClickEnabled)
-      return
+    if (enabled === actionClickEnabled) return
     actionClickEnabled = enabled
     if (enabled)
       document.addEventListener('click', handleActionClick, { capture: true, passive: true })
-    else
-      document.removeEventListener('click', handleActionClick, true)
+    else document.removeEventListener('click', handleActionClick, true)
   }
 
   function setBlankClickEnabled(enabled: boolean) {
-    if (enabled === blankClickEnabled)
-      return
+    if (enabled === blankClickEnabled) return
     blankClickEnabled = enabled
     if (enabled) {
-      document.addEventListener('pointerdown', handleBlankAreaPointerDown, { capture: true, passive: true })
+      document.addEventListener('pointerdown', handleBlankAreaPointerDown, {
+        capture: true,
+        passive: true,
+      })
       document.addEventListener('click', handleBlankAreaClick, { passive: true })
-    }
-    else {
+    } else {
       document.removeEventListener('pointerdown', handleBlankAreaPointerDown, true)
       document.removeEventListener('click', handleBlankAreaClick)
       suppressBlankClick = false
@@ -449,13 +448,15 @@ export function setupOriginalMomentsFoldComments() {
   }
 
   function syncBlankClick() {
-    setBlankClickEnabled(settings.value.originalMomentsClickBlankToFoldComments && isOriginalMomentsFeed())
+    setBlankClickEnabled(
+      settings.value.originalMomentsClickBlankToFoldComments && isOriginalMomentsFeed(),
+    )
   }
 
   function stopFeedObservation() {
     pageObserver?.disconnect()
     pageObserver = undefined
-    feedObservers.forEach(observer => observer.disconnect())
+    feedObservers.forEach((observer) => observer.disconnect())
     feedObservers.clear()
     if (pendingFrame !== undefined) {
       cancelAnimationFrame(pendingFrame)
@@ -467,7 +468,9 @@ export function setupOriginalMomentsFoldComments() {
     }
     pendingContainers.clear()
     setActionClickEnabled(false)
-    document.querySelectorAll<HTMLElement>(`.${COLLAPSE_BUTTON_CLASS}`).forEach(button => button.remove())
+    document
+      .querySelectorAll<HTMLElement>(`.${COLLAPSE_BUTTON_CLASS}`)
+      .forEach((button) => button.remove())
   }
 
   function syncFoldButtons() {
@@ -498,10 +501,13 @@ export function setupOriginalMomentsFoldComments() {
     setActionClickEnabled(true)
     if (!pageObserver) {
       pageObserver = new MutationObserver((mutations) => {
-        if (mutations.some(mutation => !isObservedFeedNode(mutation.target)))
+        if (mutations.some((mutation) => !isObservedFeedNode(mutation.target)))
           scheduleObserveFeed()
       })
-      pageObserver.observe(document.body || document.documentElement, { childList: true, subtree: true })
+      pageObserver.observe(document.body || document.documentElement, {
+        childList: true,
+        subtree: true,
+      })
     }
     observeFeed()
   }
@@ -509,7 +515,9 @@ export function setupOriginalMomentsFoldComments() {
   void settingsReady.then(() => {
     refresh()
     watch([() => settings.value.language, i18n.global.locale], () => {
-      document.querySelectorAll<HTMLButtonElement>(`.${COLLAPSE_BUTTON_CLASS}`).forEach(updateCollapseButtonLabel)
+      document
+        .querySelectorAll<HTMLButtonElement>(`.${COLLAPSE_BUTTON_CLASS}`)
+        .forEach(updateCollapseButtonLabel)
     })
     watch(() => settings.value.originalMomentsShowFoldCommentsButton, syncFoldButtons)
     watch(() => settings.value.originalMomentsClickBlankToFoldComments, syncBlankClick)

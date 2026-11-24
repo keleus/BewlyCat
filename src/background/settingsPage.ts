@@ -14,24 +14,22 @@ import {
 
 // 新标签页加载完成前收不到消息；这段时间内再次点击不能多开一个设置页。
 const NEW_TAB_LOADING_GRACE_MS = 5000
-let recentlyCreatedTab: { tabId: number, createdAt: number } | undefined
+let recentlyCreatedTab: { tabId: number; createdAt: number } | undefined
 
 async function focusTab(tabId: number, windowId?: number) {
   await browser.tabs.update(tabId, { active: true })
-  if (windowId !== undefined)
-    await browser.windows.update(windowId, { focused: true })
+  if (windowId !== undefined) await browser.windows.update(windowId, { focused: true })
 }
 
 // 由已打开的设置页自报标签页，无需为查找自身页面申请 tabs 权限。
 async function navigateExistingSettingsPage(target?: SettingsNavigationTarget) {
   try {
-    const location = await browser.runtime.sendMessage({
+    const location = (await browser.runtime.sendMessage({
       type: NAVIGATE_SETTINGS_PAGE_MESSAGE,
       data: target,
-    }) as SettingsPageTabLocation | undefined
+    })) as SettingsPageTabLocation | undefined
     return location?.tabId === undefined ? undefined : location
-  }
-  catch {
+  } catch {
     // 没有打开的设置页时不存在接收方。
     return undefined
   }
@@ -42,10 +40,12 @@ async function reuseLoadingSettingsTab(url: string, target?: SettingsNavigationT
     return false
 
   try {
-    await browser.tabs.update(recentlyCreatedTab.tabId, target ? { url, active: true } : { active: true })
+    await browser.tabs.update(
+      recentlyCreatedTab.tabId,
+      target ? { url, active: true } : { active: true },
+    )
     return true
-  }
-  catch {
+  } catch {
     // 标签页已被关闭。
     return false
   }
@@ -59,8 +59,7 @@ async function createSettingsTab(url: string, sourceTab?: Tabs.Tab) {
       windowId: sourceTab?.windowId,
       index: sourceTab?.index === undefined ? undefined : sourceTab.index + 1,
     })
-  }
-  catch {
+  } catch {
     // 无痕窗口等场景不允许打开扩展页，交由浏览器选择普通窗口。
     return browser.tabs.create({ url, active: true })
   }
@@ -74,12 +73,10 @@ async function openSettingsPage(target?: SettingsNavigationTarget, sourceTab?: T
   }
 
   const url = `${browser.runtime.getURL(SETTINGS_PAGE_PATH)}${buildSettingsPageHash(target)}`
-  if (await reuseLoadingSettingsTab(url, target))
-    return
+  if (await reuseLoadingSettingsTab(url, target)) return
 
   const tab = await createSettingsTab(url, sourceTab)
-  if (tab.id !== undefined)
-    recentlyCreatedTab = { tabId: tab.id, createdAt: Date.now() }
+  if (tab.id !== undefined) recentlyCreatedTab = { tabId: tab.id, createdAt: Date.now() }
 }
 
 async function forwardToRecentBilibiliTab(request: BilibiliTabRequest) {
@@ -87,17 +84,14 @@ async function forwardToRecentBilibiliTab(request: BilibiliTabRequest) {
   tabs.sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))
 
   for (const tab of tabs) {
-    if (tab.id === undefined)
-      continue
+    if (tab.id === undefined) continue
     try {
       const result = await browser.tabs.sendMessage(tab.id, {
         type: BILIBILI_TAB_REQUEST_MESSAGE,
         data: request,
       })
-      if (result !== undefined)
-        return result
-    }
-    catch {
+      if (result !== undefined) return result
+    } catch {
       // 标签页已休眠或没有内容脚本，继续尝试下一个。
     }
   }
@@ -110,6 +104,7 @@ export function setupSettingsPage() {
     void openSettingsPage(undefined, tab)
   })
   onMessage<SettingsNavigationTarget | undefined>(OPEN_SETTINGS_PAGE_MESSAGE, (target, sender) =>
-    openSettingsPage(target, sender?.tab))
+    openSettingsPage(target, sender?.tab),
+  )
   onMessage<BilibiliTabRequest>(BILIBILI_TAB_REQUEST_MESSAGE, forwardToRecentBilibiliTab)
 }

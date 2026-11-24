@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useVideoPreviewSwipeSeek } from '~/composables/useVideoPreviewSwipeSeek'
 import { settings } from '~/logic'
 
-const props = defineProps<{ url: string, live?: boolean }>()
+const props = defineProps<{ url: string; live?: boolean }>()
 const emit = defineEmits<{
   video: [element: Element | null]
   canplay: [event: Event]
@@ -24,15 +24,17 @@ const {
   handlePreviewDragStart,
 } = useVideoPreviewSwipeSeek(videoRef, swipeSeek, controls)
 
-const interactionEvents = computed(() => swipeSeek.value
-  ? {
-      pointerdown: handlePreviewPointerDown,
-      pointermove: handlePreviewPointerMove,
-      pointerup: finishPreviewScrub,
-      pointercancel: (event: PointerEvent) => finishPreviewScrub(event, true),
-      dragstart: handlePreviewDragStart,
-    }
-  : {})
+const interactionEvents = computed(() =>
+  swipeSeek.value
+    ? {
+        pointerdown: handlePreviewPointerDown,
+        pointermove: handlePreviewPointerMove,
+        pointerup: finishPreviewScrub,
+        pointercancel: (event: PointerEvent) => finishPreviewScrub(event, true),
+        dragstart: handlePreviewDragStart,
+      }
+    : {},
+)
 
 function handleClick(event: MouseEvent) {
   handlePreviewClick(event)
@@ -53,7 +55,7 @@ function syncFullscreen() {
   wasFullscreen = fullscreen
 }
 
-watch(videoRef, element => emit('video', element), { flush: 'post' })
+watch(videoRef, (element) => emit('video', element), { flush: 'post' })
 watch(swipeSeek, resetPreviewScrub)
 onMounted(() => document.addEventListener('fullscreenchange', syncFullscreen))
 onBeforeUnmount(() => {

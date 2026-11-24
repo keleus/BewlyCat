@@ -9,11 +9,7 @@
     "tagName": "v${version}"
   },
   "hooks": {
-    "before:init": [
-      "pnpm run lint",
-      "pnpm run typecheck",
-      "pnpm run test --run"
-    ],
+    "before:init": ["pnpm run lint", "pnpm run typecheck", "pnpm run test --run"],
     "after:bump": [
       "pnpm run build",
       "pnpm run build-firefox",

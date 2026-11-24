@@ -76,7 +76,7 @@ function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
           alt=""
           loading="lazy"
           decoding="async"
-        >
+        />
         <span v-else class="moment-card__forward-video-avatar" aria-hidden="true">
           <span i-tabler-user />
         </span>
@@ -131,7 +131,7 @@ function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__forward-video {
   display: flex;

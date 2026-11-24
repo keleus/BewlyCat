@@ -17,23 +17,26 @@ import type { WatchLaterTarget } from '~/utils/watchLaterSnapshot'
  * 不支持 / 不想显示时调用方直接传 undefined。封面容器需带 bew-cover-action-host 类，
  * 宿主 hover / 键盘 focus 下显示，动态页可保留已加入后常驻。状态与增删逻辑复用 watchLaterActions。
  */
-const props = withDefaults(defineProps<{
-  target?: WatchLaterTarget
-  persistent?: boolean
-  size?: 'sm' | 'md'
-  tooltipPlacement?: 'left' | 'right' | 'top' | 'bottom' | 'bottom-left' | 'bottom-right'
-}>(), {
-  size: 'md',
-  persistent: false,
-  tooltipPlacement: 'bottom-right',
-})
+const props = withDefaults(
+  defineProps<{
+    target?: WatchLaterTarget
+    persistent?: boolean
+    size?: 'sm' | 'md'
+    tooltipPlacement?: 'left' | 'right' | 'top' | 'bottom' | 'bottom-left' | 'bottom-right'
+  }>(),
+  {
+    size: 'md',
+    persistent: false,
+    tooltipPlacement: 'bottom-right',
+  },
+)
 
 // 未渲染的按钮不会执行下方的状态计算，也就不订阅共享列表，避免长列表无效依赖。
-const visible = computed(() => Boolean(
-  settings.value.showVideoCardWatchLater
-  && props.target
-  && getWatchLaterTargetKey(props.target),
-))
+const visible = computed(() =>
+  Boolean(
+    settings.value.showVideoCardWatchLater && props.target && getWatchLaterTargetKey(props.target),
+  ),
+)
 
 // 仅在按钮渲染后才建立对共享稍后再看状态的依赖。
 const added = computed(() => visible.value && isInWatchLater(props.target!))
@@ -41,9 +44,8 @@ const loading = computed(() => visible.value && isWatchLaterTargetLoading(props.
 
 const { t } = useI18n()
 const label = computed(() =>
-  added.value
-    ? t('common.added_to_watch_later')
-    : t('common.add_to_watch_later'))
+  added.value ? t('common.added_to_watch_later') : t('common.add_to_watch_later'),
+)
 
 function warmState() {
   // 预热共享缓存；缓存有效期内不会发请求，多处调用共享同一次加载。
@@ -66,21 +68,15 @@ function handleClick(event: MouseEvent) {
 // 挂载即预热：已添加的视频刷新后无需悬停就能呈现常驻按钮；请求由状态层全局去重。
 // 后台标签页延迟到重新可见时再加载，避免挤占后台请求。
 onMounted(() => {
-  if (!visible.value)
-    return
-  if (document.visibilityState === 'visible')
-    warmState()
-  else
-    document.addEventListener('visibilitychange', handleWarmOnVisible)
+  if (!visible.value) return
+  if (document.visibilityState === 'visible') warmState()
+  else document.addEventListener('visibilitychange', handleWarmOnVisible)
 })
 // target 可能异步补齐（visible 晚于挂载变 true），届时补一次预热（warmState 自带去重）。
 watch(visible, (isVisible) => {
-  if (!isVisible)
-    return
-  if (document.visibilityState === 'visible')
-    warmState()
-  else
-    document.addEventListener('visibilitychange', handleWarmOnVisible)
+  if (!isVisible) return
+  if (document.visibilityState === 'visible') warmState()
+  else document.addEventListener('visibilitychange', handleWarmOnVisible)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleWarmOnVisible)
@@ -88,10 +84,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    v-if="visible"
-    class="bew-watch-later-cover"
-  >
+  <div v-if="visible" class="bew-watch-later-cover">
     <!-- floating：按钮常驻封面内（封面 overflow:hidden），提示必须传送至顶层才不会被裁切 -->
     <Tooltip :content="label" :placement="tooltipPlacement" type="dark" floating>
       <button

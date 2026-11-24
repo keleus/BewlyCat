@@ -30,16 +30,10 @@ const HOST_SHARED_VUE_COMPONENTS = new Set([
 ])
 
 // 仅挂载在宿主文档（light DOM）内的 Vue 组件，无需注入 #bewly Shadow DOM
-const HOST_ONLY_VUE_COMPONENTS = new Set([
-  'components/PlayerLoudnessControl.vue',
-])
+const HOST_ONLY_VUE_COMPONENTS = new Set(['components/PlayerLoudnessControl.vue'])
 
 // 同时作用于宿主文档与 #bewly Shadow DOM 的基础样式
-const SHARED_STYLES = new Set([
-  'styles/variables.scss',
-  'styles/main.scss',
-  'styles/fonts.scss',
-])
+const SHARED_STYLES = new Set(['styles/variables.scss', 'styles/main.scss', 'styles/fonts.scss'])
 
 // 仅用于 #bewly Shadow DOM 的全局样式，不注入 B 站宿主文档
 const SHADOW_ONLY_STYLES = new Set([
@@ -61,10 +55,7 @@ const HOST_ONLY_STYLES = new Set([
 ])
 
 // 独立设置页中仅作用于宿主文档的样式（toast 与 html/body 壳样式）
-const OPTIONS_HOST_ONLY_STYLES = new Set([
-  'styles/toast.scss',
-  'options/options.scss',
-])
+const OPTIONS_HOST_ONLY_STYLES = new Set(['styles/toast.scss', 'options/options.scss'])
 
 function isInlineOrRawQuery(query: string): boolean {
   return /(?:^|&)(?:inline|raw|url)(?:=|&|$)/.test(query)
@@ -75,38 +66,28 @@ function classifyContentStyleModule(normalizedId: string): StyleTarget | null {
 
   // ?inline / ?raw / ?url 是显式按字符串或资源导入（如按页加载的 adaptedStyles/pages/*.scss?inline），
   // 不参与主样式表的宿主 / Shadow DOM 拆分。
-  if (isInlineOrRawQuery(query))
-    return null
+  if (isInlineOrRawQuery(query)) return null
 
   // vue-toastification 的容器直接挂载在 document.body（宿主文档）
-  if (filePath.endsWith('/vue-toastification/dist/index.css'))
-    return 'host-only'
+  if (filePath.endsWith('/vue-toastification/dist/index.css')) return 'host-only'
 
-  if (!filePath.startsWith(SRC_ROOT))
-    return 'shadow-only'
+  if (!filePath.startsWith(SRC_ROOT)) return 'shadow-only'
 
   const relPath = filePath.slice(SRC_ROOT.length)
 
   if (relPath.endsWith('.vue')) {
-    if (HOST_ONLY_VUE_COMPONENTS.has(relPath))
-      return 'host-only'
-    if (HOST_SHARED_VUE_COMPONENTS.has(relPath))
-      return 'shared'
+    if (HOST_ONLY_VUE_COMPONENTS.has(relPath)) return 'host-only'
+    if (HOST_SHARED_VUE_COMPONENTS.has(relPath)) return 'shared'
     return 'shadow-only'
   }
 
-  if (relPath.startsWith('styles/adaptedStyles/'))
-    return 'host-only'
-  if (HOST_ONLY_STYLES.has(relPath))
-    return 'host-only'
-  if (SHARED_STYLES.has(relPath))
-    return 'shared'
-  if (SHADOW_ONLY_STYLES.has(relPath))
-    return 'shadow-only'
+  if (relPath.startsWith('styles/adaptedStyles/')) return 'host-only'
+  if (HOST_ONLY_STYLES.has(relPath)) return 'host-only'
+  if (SHARED_STYLES.has(relPath)) return 'shared'
+  if (SHADOW_ONLY_STYLES.has(relPath)) return 'shadow-only'
 
   // src/styles/ 下未来新增的未分类样式默认保底两边注入，避免意外缺失宿主或 Shadow DOM 样式
-  if (relPath.startsWith('styles/'))
-    return 'shared'
+  if (relPath.startsWith('styles/')) return 'shared'
 
   return 'shadow-only'
 }
@@ -114,20 +95,15 @@ function classifyContentStyleModule(normalizedId: string): StyleTarget | null {
 function classifyOptionsStyleModule(normalizedId: string): StyleTarget | null {
   const [filePath, query = ''] = normalizedId.split('?')
 
-  if (isInlineOrRawQuery(query))
-    return null
+  if (isInlineOrRawQuery(query)) return null
 
-  if (filePath.endsWith('/vue-toastification/dist/index.css'))
-    return 'host-only'
+  if (filePath.endsWith('/vue-toastification/dist/index.css')) return 'host-only'
 
-  if (!filePath.startsWith(SRC_ROOT))
-    return 'shadow-only'
+  if (!filePath.startsWith(SRC_ROOT)) return 'shadow-only'
 
   const relPath = filePath.slice(SRC_ROOT.length)
-  if (OPTIONS_HOST_ONLY_STYLES.has(relPath))
-    return 'host-only'
-  if (SHARED_STYLES.has(relPath))
-    return 'shared'
+  if (OPTIONS_HOST_ONLY_STYLES.has(relPath)) return 'host-only'
+  if (SHARED_STYLES.has(relPath)) return 'shared'
   return 'shadow-only'
 }
 
@@ -152,16 +128,13 @@ export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plu
       name: 'collect-host-styles',
       apply: 'build',
       transform(code, id) {
-        if (!isCSSRequest(id))
-          return null
+        if (!isCSSRequest(id)) return null
 
         const target = classifyContentStyleModule(normalizePath(id))
-        if (!target || target === 'shadow-only')
-          return null
+        if (!target || target === 'shadow-only') return null
 
         hostCssById.set(id, code)
-        if (target === 'host-only')
-          return { code: '', map: null }
+        if (target === 'host-only') return { code: '', map: null }
 
         return null
       },
@@ -177,7 +150,7 @@ export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plu
         ([, output]) => output.type === 'asset' && output.fileName === 'style.css',
       )
       const entryChunk = Object.values(bundle).find(
-        output => output.type === 'chunk' && output.fileName === 'index.global.js',
+        (output) => output.type === 'chunk' && output.fileName === 'index.global.js',
       )
 
       if (!styleEntry || styleEntry[1].type !== 'asset') {
@@ -190,13 +163,12 @@ export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plu
       }
 
       const [styleKey, styleAsset] = styleEntry
-      const css = typeof styleAsset.source === 'string'
-        ? styleAsset.source
-        : new TextDecoder().decode(styleAsset.source)
+      const css =
+        typeof styleAsset.source === 'string'
+          ? styleAsset.source
+          : new TextDecoder().decode(styleAsset.source)
 
-      const injectedGlobals = [
-        `globalThis.${BUNDLED_STYLE_GLOBAL}=${JSON.stringify(css)};`,
-      ]
+      const injectedGlobals = [`globalThis.${BUNDLED_STYLE_GLOBAL}=${JSON.stringify(css)};`]
 
       if (splitHostStyles) {
         const orderedHostCss: string[] = []
@@ -219,12 +191,8 @@ export function embedBundledStyles(options: EmbedBundledStylesOptions = {}): Plu
         }
 
         const rawHostCss = orderedHostCss.join('\n')
-        const hostCss = isDev
-          ? rawHostCss
-          : minifyHostCss(rawHostCss, 'bewly-host-styles.css')
-        injectedGlobals.push(
-          `globalThis.${HOST_STYLE_GLOBAL}=${JSON.stringify(hostCss)};`,
-        )
+        const hostCss = isDev ? rawHostCss : minifyHostCss(rawHostCss, 'bewly-host-styles.css')
+        injectedGlobals.push(`globalThis.${HOST_STYLE_GLOBAL}=${JSON.stringify(hostCss)};`)
       }
 
       entryChunk.code = `${injectedGlobals.join('\n')}\n${entryChunk.code}`
@@ -250,16 +218,13 @@ export function splitOptionsExternalStyles(): Plugin[] {
       name: 'collect-options-host-styles',
       apply: 'build',
       transform(code, id) {
-        if (!isCSSRequest(id))
-          return null
+        if (!isCSSRequest(id)) return null
 
         const target = classifyOptionsStyleModule(normalizePath(id))
-        if (!target || target === 'shadow-only')
-          return null
+        if (!target || target === 'shadow-only') return null
 
         hostCssById.set(id, code)
-        if (target === 'host-only')
-          return { code: '', map: null }
+        if (target === 'host-only') return { code: '', map: null }
 
         return null
       },
@@ -286,19 +251,19 @@ export function splitOptionsExternalStyles(): Plugin[] {
         }
 
         const [cssKey, cssAsset] = cssEntry
-        const shadowCssSource = typeof cssAsset.source === 'string'
-          ? cssAsset.source
-          : new TextDecoder().decode(cssAsset.source)
+        const shadowCssSource =
+          typeof cssAsset.source === 'string'
+            ? cssAsset.source
+            : new TextDecoder().decode(cssAsset.source)
 
         const orderedHostCss: string[] = []
         const seenIds = new Set<string>()
-        const chunks = Object.values(bundle).filter(output => output.type === 'chunk')
+        const chunks = Object.values(bundle).filter((output) => output.type === 'chunk')
         // 入口 chunk 优先，确保宿主基础样式按导入顺序层叠。
         chunks.sort((a, b) => Number(b.isEntry) - Number(a.isEntry))
         for (const chunk of chunks) {
           for (const moduleId of chunk.moduleIds) {
-            if (seenIds.has(moduleId))
-              continue
+            if (seenIds.has(moduleId)) continue
             const cssPart = hostCssById.get(moduleId)
             if (cssPart) {
               orderedHostCss.push(cssPart)
@@ -317,9 +282,7 @@ export function splitOptionsExternalStyles(): Plugin[] {
         }
 
         const rawHostCss = orderedHostCss.join('\n')
-        const hostCss = isDev
-          ? rawHostCss
-          : minifyHostCss(rawHostCss, 'bewly-options-host.css')
+        const hostCss = isDev ? rawHostCss : minifyHostCss(rawHostCss, 'bewly-options-host.css')
 
         delete bundle[cssKey]
         this.emitFile({
@@ -334,9 +297,10 @@ export function splitOptionsExternalStyles(): Plugin[] {
         })
 
         const [, htmlAsset] = htmlEntry
-        const htmlSource = typeof htmlAsset.source === 'string'
-          ? htmlAsset.source
-          : new TextDecoder().decode(htmlAsset.source)
+        const htmlSource =
+          typeof htmlAsset.source === 'string'
+            ? htmlAsset.source
+            : new TextDecoder().decode(htmlAsset.source)
         const replacementLinks = [
           '    <link rel="stylesheet" href="./assets/host.css">',
           '    <link rel="preload" as="style" href="./assets/shadow.css">',
@@ -359,7 +323,7 @@ export function watchLocaleFiles(): Plugin {
     name: 'watch-locale-files',
     apply: 'build',
     buildStart() {
-      for (const fileName of readdirSync(localesDir).filter(name => /\.ya?ml$/.test(name)))
+      for (const fileName of readdirSync(localesDir).filter((name) => /\.ya?ml$/.test(name)))
         this.addWatchFile(r('src/_locales', fileName))
     },
   }

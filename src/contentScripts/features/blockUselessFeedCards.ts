@@ -43,19 +43,16 @@ function getObserveRoot(): Element {
 }
 
 function ensureObserveRoot() {
-  if (!feedCardObserver)
-    return
+  if (!feedCardObserver) return
 
   const preferred = getObserveRoot()
-  if (observeRoot === preferred && observeRoot?.isConnected)
-    return
+  if (observeRoot === preferred && observeRoot?.isConnected) return
 
   try {
     feedCardObserver.disconnect()
     feedCardObserver.observe(preferred, OBSERVER_OPTIONS)
     observeRoot = preferred
-  }
-  catch {
+  } catch {
     // ignore
   }
 }
@@ -69,8 +66,9 @@ function syncFeedCard(feedCard: HTMLElement) {
 
 function getFeedCardSlot(element: Element): HTMLElement | null {
   // 首屏卡片有 .feed-card 外层，后续懒加载卡片则可能直接使用 .bili-feed-card。
-  return element.closest<HTMLElement>('.feed-card')
-    || element.closest<HTMLElement>('.bili-feed-card')
+  return (
+    element.closest<HTMLElement>('.feed-card') || element.closest<HTMLElement>('.bili-feed-card')
+  )
 }
 
 function scanForRcmdCards(root: ParentNode) {
@@ -79,14 +77,12 @@ function scanForRcmdCards(root: ParentNode) {
   // 新增或更新的节点可能位于已有卡片内部。
   if (root instanceof Element) {
     const closestFeedCard = getFeedCardSlot(root)
-    if (closestFeedCard)
-      feedCardSlots.add(closestFeedCard)
+    if (closestFeedCard) feedCardSlots.add(closestFeedCard)
   }
 
   root.querySelectorAll?.<HTMLElement>(FEED_CARD_SELECTOR).forEach((feedCard) => {
     const feedCardSlot = getFeedCardSlot(feedCard)
-    if (feedCardSlot)
-      feedCardSlots.add(feedCardSlot)
+    if (feedCardSlot) feedCardSlots.add(feedCardSlot)
   })
 
   feedCardSlots.forEach(syncFeedCard)
@@ -94,8 +90,7 @@ function scanForRcmdCards(root: ParentNode) {
 
 function flushPending() {
   flushFrame = undefined
-  if (!feedCardObserver)
-    return
+  if (!feedCardObserver) return
   if (document.visibilityState === 'hidden') {
     deferFullScan()
     return
@@ -104,11 +99,9 @@ function flushPending() {
   if (fullScanPending) {
     fullScanPending = false
     scanForRcmdCards(document)
-  }
-  else {
+  } else {
     for (const root of pendingRoots) {
-      if (root.isConnected)
-        scanForRcmdCards(root)
+      if (root.isConnected) scanForRcmdCards(root)
     }
   }
 
@@ -119,23 +112,20 @@ function flushPending() {
 }
 
 function scheduleFlushPending() {
-  if (flushFrame !== undefined)
-    return
+  if (flushFrame !== undefined) return
 
   flushFrame = requestAnimationFrame(flushPending)
 }
 
 function deferFullScan() {
-  if (flushFrame !== undefined)
-    cancelAnimationFrame(flushFrame)
+  if (flushFrame !== undefined) cancelAnimationFrame(flushFrame)
   flushFrame = undefined
   pendingRoots.clear()
   fullScanPending = true
 }
 
 function queueRoot(root: Element) {
-  if (fullScanPending || !root.isConnected)
-    return
+  if (fullScanPending || !root.isConnected) return
 
   // 主线程繁忙时也限制待处理引用；溢出后只保留一次重新扫描的标记。
   if (pendingRoots.size >= MAX_PENDING_ROOTS) {
@@ -149,15 +139,12 @@ function queueRoot(root: Element) {
 function handleVisibilityChange() {
   // 后台标签页会暂停 RAF，但 MutationObserver 仍可能接收原站的更新。
   // 不把期间替换、移除的 DOM 树一直保存在 Set 中，回到前台再扫描当前节点。
-  if (document.visibilityState === 'hidden')
-    deferFullScan()
-  else if (fullScanPending || pendingRoots.size > 0)
-    scheduleFlushPending()
+  if (document.visibilityState === 'hidden') deferFullScan()
+  else if (fullScanPending || pendingRoots.size > 0) scheduleFlushPending()
 }
 
 function start() {
-  if (feedCardObserver)
-    return
+  if (feedCardObserver) return
 
   // Initial scan (covers already-rendered cards)
   scanForRcmdCards(document)
@@ -174,7 +161,10 @@ function start() {
         const wasVideoCard = mutation.oldValue?.split(/\s+/).includes(VIDEO_CARD_CLASS)
 
         // Bilibili attaches recommendation classes asynchronously during hydration.
-        if (target instanceof Element && (target.classList.contains(VIDEO_CARD_CLASS) || wasVideoCard))
+        if (
+          target instanceof Element &&
+          (target.classList.contains(VIDEO_CARD_CLASS) || wasVideoCard)
+        )
           queueRoot(target)
 
         continue
@@ -186,14 +176,12 @@ function start() {
 
       for (let index = 0; index < mutation.addedNodes.length; index++) {
         const node = mutation.addedNodes[index]
-        if (node.nodeType !== Node.ELEMENT_NODE)
-          continue
+        if (node.nodeType !== Node.ELEMENT_NODE) continue
         queueRoot(node as Element)
       }
     }
 
-    if (fullScanPending || pendingRoots.size > 0)
-      scheduleFlushPending()
+    if (fullScanPending || pendingRoots.size > 0) scheduleFlushPending()
   })
 
   observeRoot = getObserveRoot()
@@ -202,27 +190,22 @@ function start() {
 }
 
 function stop() {
-  if (!feedCardObserver)
-    return
+  if (!feedCardObserver) return
 
   feedCardObserver.disconnect()
   feedCardObserver = null
   observeRoot = null
 
   document.removeEventListener('visibilitychange', handleVisibilityChange)
-  if (flushFrame !== undefined)
-    cancelAnimationFrame(flushFrame)
+  if (flushFrame !== undefined) cancelAnimationFrame(flushFrame)
   flushFrame = undefined
   pendingRoots.clear()
   fullScanPending = false
 }
 
 export function setUselessFeedCardBlockerEnabled(enabled: boolean) {
-  if (typeof window === 'undefined' || typeof MutationObserver === 'undefined')
-    return
+  if (typeof window === 'undefined' || typeof MutationObserver === 'undefined') return
 
-  if (enabled)
-    start()
-  else
-    stop()
+  if (enabled) start()
+  else stop()
 }

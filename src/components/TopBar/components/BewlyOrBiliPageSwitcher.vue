@@ -2,7 +2,11 @@
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import {
+  IFRAME_PAGE_SWITCH_BEWLY,
+  IFRAME_PAGE_SWITCH_BILI,
+  IFRAME_TOP_BAR_CHANGE,
+} from '~/constants/globalEvents'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
@@ -27,15 +31,13 @@ const originalBiliAppPage = getNativeBiliAppPage(window.location.href)
 function getSearchKeyword(url: string): string {
   try {
     return new URL(url).searchParams.get('keyword')?.trim() || ''
-  }
-  catch {
+  } catch {
     return ''
   }
 }
 
 const isPluginSearchResultsPage = computed(() => {
-  return isHomePage()
-    && activatedPage.value === AppPage.SearchResults
+  return isHomePage() && activatedPage.value === AppPage.SearchResults
 })
 
 const options = readonly([
@@ -52,12 +54,15 @@ const options = readonly([
 ])
 
 const showBewlyOrBiliPageSwitcher = computed(() => {
-  if (settings.value.useOriginalBilibiliHomepage || isInIframe())
-    return false
+  if (settings.value.useOriginalBilibiliHomepage || isInIframe()) return false
 
   if (isHomePage()) {
-    return settings.value.showBewlyOrBiliPageSwitcher
-      && Boolean(getDockItemByPage(isPluginSearchResultsPage.value ? AppPage.Search : activatedPage.value))
+    return (
+      settings.value.showBewlyOrBiliPageSwitcher &&
+      Boolean(
+        getDockItemByPage(isPluginSearchResultsPage.value ? AppPage.Search : activatedPage.value),
+      )
+    )
   }
 
   return settings.value.showBewlyOrBiliPageSwitcherOnMorePages && originalBiliAppPage !== undefined
@@ -66,28 +71,24 @@ const showBewlyOrBiliPageSwitcher = computed(() => {
 const showSwitcherInLayoutEditor = computed(() => showBewlyOrBiliPageSwitcher.value)
 
 const isOriginalBiliPageActive = computed(() => {
-  if (originalBiliAppPage !== undefined && !isHomePage())
-    return true
+  if (originalBiliAppPage !== undefined && !isHomePage()) return true
   return getDockItemConfigByPage(activatedPage.value)?.useOriginalBiliPage ?? false
 })
 
 const liquidIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
 
 watch(showSwitcherInLayoutEditor, (visible) => {
-  if (visible)
-    void liquidIndicatorRef.value?.updateIndicator(true)
+  if (visible) void liquidIndicatorRef.value?.updateIndicator(true)
 })
 
 function switchPage(nextUseOriginalBiliPage: boolean) {
-  if (isLayoutEditing.value)
-    return
+  if (isLayoutEditing.value) return
 
-  if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value)
-    return
+  if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value) return
 
-  const page = originalBiliAppPage
-    ?? (isPluginSearchResultsPage.value ? AppPage.Search : activatedPage.value)
-  let dockItem = settings.value.dockItemsConfig.find(dockItem => dockItem.page === page)
+  const page =
+    originalBiliAppPage ?? (isPluginSearchResultsPage.value ? AppPage.Search : activatedPage.value)
+  let dockItem = settings.value.dockItemsConfig.find((dockItem) => dockItem.page === page)
   if (!dockItem) {
     const defaultDockItem = getDockItemByPage(page)
     if (defaultDockItem) {
@@ -118,22 +119,23 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   }
 
   // iframe 位于 Shadow DOM 内，切回 Bewly 页面时同步通知尚未卸载的 iframe
-  const iframe = document.getElementById('bewly')
-    ?.shadowRoot
-    ?.querySelector<HTMLIFrameElement>('iframe[src*="bilibili.com"]')
+  const iframe = document
+    .getElementById('bewly')
+    ?.shadowRoot?.querySelector<HTMLIFrameElement>('iframe[src*="bilibili.com"]')
   if (iframe && iframe.contentWindow) {
-    if (nextUseOriginalBiliPage)
-      iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BILI, '*')
-    else
-      iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BEWLY, '*')
+    if (nextUseOriginalBiliPage) iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BILI, '*')
+    else iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BEWLY, '*')
 
     // 同步当前顶栏偏好，避免 iframe 卸载前短暂恢复原版顶栏
-    iframe.contentWindow.postMessage({
-      type: IFRAME_TOP_BAR_CHANGE,
-      useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
-      enableTopBar: settings.value.enableTopBar,
-      enableTopBarModule: settings.value.enableTopBarModule,
-    }, '*')
+    iframe.contentWindow.postMessage(
+      {
+        type: IFRAME_TOP_BAR_CHANGE,
+        useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
+        enableTopBar: settings.value.enableTopBar,
+        enableTopBarModule: settings.value.enableTopBarModule,
+      },
+      '*',
+    )
   }
 }
 </script>
@@ -167,10 +169,13 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
         />
 
         <button
-          v-for="option in options" :key="option.name"
+          v-for="option in options"
+          :key="option.name"
           class="bewly-bili-switcher-button bew-segment-control__item"
           data-segment-item
-          :data-active="option.useOriginalBiliPage === isOriginalBiliPageActive ? 'true' : undefined"
+          :data-active="
+            option.useOriginalBiliPage === isOriginalBiliPageActive ? 'true' : undefined
+          "
           :class="{
             active: option.useOriginalBiliPage === isOriginalBiliPageActive,
           }"

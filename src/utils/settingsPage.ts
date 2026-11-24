@@ -15,9 +15,9 @@ export interface SettingsPageTabLocation {
   windowId?: number
 }
 
-export type BilibiliTabRequest
-  = | { action: 'applyPlaybackRate', rate: number }
-    | { action: 'getEvolvedThemeColor' }
+export type BilibiliTabRequest =
+  | { action: 'applyPlaybackRate'; rate: number }
+  | { action: 'getEvolvedThemeColor' }
 
 const MENU_SLUGS: Record<SettingsMenu, string> = {
   General: 'general',
@@ -44,8 +44,7 @@ export function requestBilibiliTab<R>(request: BilibiliTabRequest): Promise<R | 
 }
 
 export function buildSettingsPageHash(target?: SettingsNavigationTarget): string {
-  if (!target)
-    return ''
+  if (!target) return ''
 
   const path = [MENU_SLUGS[target.menu], target.secondaryPage].filter(Boolean).join('/')
   const query = target.targetTitleKey
@@ -56,13 +55,13 @@ export function buildSettingsPageHash(target?: SettingsNavigationTarget): string
 
 export function parseSettingsPageHash(hash: string): SettingsNavigationTarget | undefined {
   const match = hash.match(/^#\/([^?]*)(?:\?(.*))?$/)
-  if (!match)
-    return undefined
+  if (!match) return undefined
 
   const [menuSlug, secondaryPage] = match[1].split('/')
-  const menu = (Object.keys(MENU_SLUGS) as SettingsMenu[]).find(key => MENU_SLUGS[key] === menuSlug)
-  if (!menu)
-    return undefined
+  const menu = (Object.keys(MENU_SLUGS) as SettingsMenu[]).find(
+    (key) => MENU_SLUGS[key] === menuSlug,
+  )
+  if (!menu) return undefined
 
   return {
     menu,

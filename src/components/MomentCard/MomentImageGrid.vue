@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const previewUrls = computed(() => images.map(url => getMomentOriginalImageUrl(url)))
+const previewUrls = computed(() => images.map((url) => getMomentOriginalImageUrl(url)))
 const isTwoColumns = computed(() => getMomentImageGridColumns(images.length) === 2)
 
 function handlePreview(event: MouseEvent, index: number) {
@@ -33,8 +33,7 @@ function handlePreview(event: MouseEvent, index: number) {
 }
 
 function handleCoverLoad(event: Event, index: number) {
-  if (index === 0)
-    emit('coverLoad', event)
+  if (index === 0) emit('coverLoad', event)
 }
 </script>
 
@@ -61,7 +60,7 @@ function handleCoverLoad(event: Event, index: number) {
         :fetchpriority="imageIndex < 3 ? 'auto' : 'low'"
         decoding="async"
         @load="handleCoverLoad($event, imageIndex)"
-      >
+      />
     </button>
 
     <slot />

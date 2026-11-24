@@ -48,10 +48,7 @@ const panelStyle = computed(() => {
         <p class="bew-confirm-dialog__message">
           {{ request.message }}
         </p>
-        <div
-          v-if="request.toggleFields?.length"
-          class="bew-confirm-dialog__fields"
-        >
+        <div v-if="request.toggleFields?.length" class="bew-confirm-dialog__fields">
           <div
             v-for="field in request.toggleFields"
             :key="field.id"

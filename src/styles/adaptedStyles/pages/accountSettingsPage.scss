@@ -23,8 +23,8 @@
       img,
       video,
       iframe,
-      [style*="background-image: url"],
-      [style*="background: url"],
+      [style*='background-image: url'],
+      [style*='background: url'],
       .invitation-img,
       .no-level-img,
       .points-header-warp {
@@ -33,16 +33,16 @@
 
       // Elements inside an already restored container must not be inverted again,
       // e.g. the `<img>` inside the avatar preview `.pre-container` on the avatar upload page
-      [style*="background-image: url"],
-      [style*="background: url"],
+      [style*='background-image: url'],
+      [style*='background: url'],
       .invitation-img,
       .no-level-img,
       .points-header-warp {
         img,
         video,
         iframe,
-        [style*="background-image: url"],
-        [style*="background: url"] {
+        [style*='background-image: url'],
+        [style*='background: url'] {
           filter: none;
         }
       }

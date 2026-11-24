@@ -34,12 +34,10 @@ function refreshAnimeTimeTable() {
 }
 
 function getAnimeTimeTable() {
-  api.anime.getAnimeTimeTable()
-    .then((res: TimetableResult) => {
-      const { code, result } = res
-      if (code === 0)
-        Object.assign(animeTimeTable, result as TimetableItem[])
-    })
+  api.anime.getAnimeTimeTable().then((res: TimetableResult) => {
+    const { code, result } = res
+    if (code === 0) Object.assign(animeTimeTable, result as TimetableItem[])
+  })
 }
 
 defineExpose({ refreshAnimeTimeTable })
@@ -74,19 +72,15 @@ defineExpose({ refreshAnimeTimeTable })
                   ? `drop-shadow(50px 0 var(--bew-text-1))`
                   : `drop-shadow(38px 0 var(--bew-text-3))`,
               }"
-              style="
-                transform: translateX(-100%);
-                background-size: 247px 663px;
-              "
+              style="transform: translateX(-100%); background-size: 247px 663px"
             />
             <h3 :text="item.is_today ? '$bew-text-1' : '$bew-text-3'">
               <span class="anime-timetable__day">{{
                 daysOfTheWeekList[item.day_of_week - 1]
               }}</span>
-              <span
-                :text="`base ${item.is_today ? '$bew-text-2' : '$bew-text-3'}`"
-                ml-2
-              >{{ item.date }}</span>
+              <span :text="`base ${item.is_today ? '$bew-text-2' : '$bew-text-3'}`" ml-2>{{
+                item.date
+              }}</span>
             </h3>
           </div>
           <span
@@ -99,9 +93,7 @@ defineExpose({ refreshAnimeTimeTable })
           <ul
             grid
             gap-4
-            :border-l="`~ 2px dashed ${
-              item.is_today ? '$bew-theme-color-40' : '$bew-fill-2'
-            }`"
+            :border-l="`~ 2px dashed ${item.is_today ? '$bew-theme-color-40' : '$bew-fill-2'}`"
             p="t-3 l-3"
           >
             <li v-for="episode in item.episodes" :key="episode.season_id">
@@ -130,24 +122,24 @@ defineExpose({ refreshAnimeTimeTable })
               <div flex gap-4>
                 <a
                   :href="`//www.bilibili.com/bangumi/play/ss${episode.season_id}`"
-                  target="_blank" tabindex="-1"
+                  target="_blank"
+                  tabindex="-1"
                   shrink-0
                 >
                   <img
-                    :src="`${removeHttpFromUrl(
-                      episode.square_cover,
-                    )}@80w_80h.webp`"
+                    :src="`${removeHttpFromUrl(episode.square_cover)}@80w_80h.webp`"
                     :alt="episode.title"
                     w-18
                     aspect="square"
                     rounded="$bew-radius-half"
-                  >
+                  />
                 </a>
                 <div flex="~ col">
                   <a
                     :href="`//www.bilibili.com/bangumi/play/ss${episode.season_id}`"
                     target="_blank"
-                  >{{ episode.title }}</a>
+                    >{{ episode.title }}</a
+                  >
                   <p mt-auto text="$bew-theme-color">
                     {{ episode.pub_index }}
                   </p>

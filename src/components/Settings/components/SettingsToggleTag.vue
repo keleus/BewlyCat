@@ -1,20 +1,25 @@
 <script setup lang="ts">
 import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
 
-const props = withDefaults(defineProps<{
-  label: string
-  description?: string
-  icon?: string
-  inverted?: boolean
-  showStateIcon?: boolean
-  searchable?: boolean
-}>(), {
-  searchable: false,
-})
+const props = withDefaults(
+  defineProps<{
+    label: string
+    description?: string
+    icon?: string
+    inverted?: boolean
+    showStateIcon?: boolean
+    searchable?: boolean
+  }>(),
+  {
+    searchable: false,
+  },
+)
 
 const model = defineModel<boolean>({ required: true })
-const active = computed(() => props.inverted ? !model.value : model.value)
-const { visible, selfMatch } = useSettingsSearchNode(() => props.label, { searchable: props.searchable })
+const active = computed(() => (props.inverted ? !model.value : model.value))
+const { visible, selfMatch } = useSettingsSearchNode(() => props.label, {
+  searchable: props.searchable,
+})
 
 function toggle() {
   model.value = !model.value

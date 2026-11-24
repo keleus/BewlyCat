@@ -80,7 +80,7 @@ const emit = defineEmits<{
   coverLoad: [event: Event, momentId: string]
   previewVideo: [element: Element | null, moment: DisplayMoment]
   previewCanplay: [event: Event]
-  openLink: [payload: { url: string, kind: MomentLinkKind, video?: DisplayForwardVideo }]
+  openLink: [payload: { url: string; kind: MomentLinkKind; video?: DisplayForwardVideo }]
   toggleLike: [moment: DisplayMoment]
   toggleReservation: [moment: DisplayMoment]
   removed: [moment: DisplayMoment]
@@ -100,18 +100,22 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 })
 
 const authorUrl = computed(() => getMomentAuthorUrl(moment.author))
-const forwardAuthorUrl = computed(() => getMomentAuthorUrl({
-  mid: moment.forward?.authorMid,
-  url: moment.forward?.authorUrl,
-}))
+const forwardAuthorUrl = computed(() =>
+  getMomentAuthorUrl({
+    mid: moment.forward?.authorMid,
+    url: moment.forward?.authorUrl,
+  }),
+)
 
 // 稍后再看目标在数据边界统一规整：识别不到任何视频 ID 时为 undefined，按钮自然不渲染。
 // 注意只能挑 aid/bvid/epid：moment.id 是动态 ID，normalize 会把通用 id 兜底当 aid，直接传整个 moment 会误加入。
-const watchLaterTarget = computed(() => normalizeWatchLaterTarget({
-  aid: moment.aid,
-  bvid: moment.bvid,
-  epid: moment.epid,
-}))
+const watchLaterTarget = computed(() =>
+  normalizeWatchLaterTarget({
+    aid: moment.aid,
+    bvid: moment.bvid,
+    epid: moment.epid,
+  }),
+)
 const descriptionId = computed(() => `moment-card-desc-${moment.id.replace(/[^\w-]/g, '-')}`)
 const commentsId = computed(() => `moment-card-comments-${moment.id.replace(/[^\w-]/g, '-')}`)
 const repostExpanded = ref(false)
@@ -122,15 +126,13 @@ const footerRef = ref<InstanceType<typeof MomentCardFooter> | null>(null)
 
 // 转发框与评论区互斥：展开其中一个时收起另一个。
 function toggleComments() {
-  if (!commentPreview.expanded)
-    repostExpanded.value = false
+  if (!commentPreview.expanded) repostExpanded.value = false
   toggleCommentPreview(commentPreview)
 }
 
 function toggleRepost() {
   repostExpanded.value = !repostExpanded.value
-  if (repostExpanded.value && commentPreview.expanded)
-    toggleCommentPreview(commentPreview)
+  if (repostExpanded.value && commentPreview.expanded) toggleCommentPreview(commentPreview)
 }
 
 // 全局 bew-expand-host 的挂载时序：挂载时停在 0fr，enter() 后再过渡到 1fr；
@@ -149,8 +151,7 @@ function useExpandHost(isOpen: () => boolean) {
   function enter() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (isOpen())
-          entered.value = true
+        if (isOpen()) entered.value = true
       })
     })
   }
@@ -174,8 +175,7 @@ watch(repostExpanded, (expanded) => {
   if (expanded) {
     repostHost.mount()
     repostHost.enter()
-  }
-  else {
+  } else {
     repostHost.leave()
   }
 })
@@ -191,26 +191,30 @@ let commentsReady = false
 let pendingHotCommentLocate = false
 let hotCommentLocateTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(() => commentPreview.expanded, (expanded) => {
-  if (expanded) {
-    commentsReady = false
-    commentsPreparing.value = true
-    commentsHost.mount()
-    // 收起动画未结束就重新展开时子组件仍挂载、首屏已就绪，不会再发出 ready，由此直接播放展开。
-    if (!commentPreview.loading && (commentPreview.page > 0 || commentPreview.error || commentPreview.done))
-      handleCommentsReady()
-  }
-  else {
-    pendingHotCommentLocate = false
-    clearTimeout(hotCommentLocateTimer)
-    commentsPreparing.value = false
-    commentsHost.leave()
-  }
-})
+watch(
+  () => commentPreview.expanded,
+  (expanded) => {
+    if (expanded) {
+      commentsReady = false
+      commentsPreparing.value = true
+      commentsHost.mount()
+      // 收起动画未结束就重新展开时子组件仍挂载、首屏已就绪，不会再发出 ready，由此直接播放展开。
+      if (
+        !commentPreview.loading &&
+        (commentPreview.page > 0 || commentPreview.error || commentPreview.done)
+      )
+        handleCommentsReady()
+    } else {
+      pendingHotCommentLocate = false
+      clearTimeout(hotCommentLocateTimer)
+      commentsPreparing.value = false
+      commentsHost.leave()
+    }
+  },
+)
 
 function handleCommentsReady() {
-  if (commentsReady)
-    return
+  if (commentsReady) return
   commentsReady = true
   commentsPreparing.value = false
   commentsHost.enter()
@@ -238,8 +242,7 @@ function openHotComment() {
 onBeforeUnmount(() => clearTimeout(hotCommentLocateTimer))
 
 async function collapseComments() {
-  if (!commentPreview.expanded)
-    return
+  if (!commentPreview.expanded) return
   toggleComments()
   await nextTick()
   footerRef.value?.focusCommentsToggle()
@@ -248,10 +251,12 @@ async function collapseComments() {
 const ownScrollGalleryWidth = computed(() => Math.max(0, cardWidth - 32))
 const forwardScrollGalleryWidth = computed(() => Math.max(0, cardWidth - 58))
 
-const showVideoDuration = computed(() => settings.value.showVideoCardDuration && Boolean(moment.duration))
-const showVideoCoverStats = computed(() =>
-  (settings.value.showVideoCardViewCount && Boolean(moment.videoPlay))
-  || showVideoDuration.value,
+const showVideoDuration = computed(
+  () => settings.value.showVideoCardDuration && Boolean(moment.duration),
+)
+const showVideoCoverStats = computed(
+  () =>
+    (settings.value.showVideoCardViewCount && Boolean(moment.videoPlay)) || showVideoDuration.value,
 )
 
 // The shared context menu expects the same video shape as VideoCard. A dynamic
@@ -270,13 +275,15 @@ function getMenuVideo(source: {
   author?: Author
 }) {
   const aid = Number(source.aid || 0)
-  if (!Number.isFinite(aid) || aid <= 0)
-    return null
+  if (!Number.isFinite(aid) || aid <= 0) return null
 
-  const url = localizeBilibiliUrl(source.url
-    || (source.bvid ? `https://www.bilibili.com/video/${source.bvid}` : `https://www.bilibili.com/video/av${aid}`))
-  if (!url)
-    return null
+  const url = localizeBilibiliUrl(
+    source.url ||
+      (source.bvid
+        ? `https://www.bilibili.com/video/${source.bvid}`
+        : `https://www.bilibili.com/video/av${aid}`),
+  )
+  if (!url) return null
 
   return {
     id: aid,
@@ -294,8 +301,7 @@ function getMenuVideo(source: {
 }
 
 const menuVideo = computed<Video | null>(() => {
-  if (!moment.isVideo || moment.isLive)
-    return null
+  if (!moment.isVideo || moment.isLive) return null
 
   return getMenuVideo({
     aid: moment.aid,
@@ -316,8 +322,7 @@ const menuVideo = computed<Video | null>(() => {
 })
 
 const cardHref = computed(() => {
-  if (moment.isLive && moment.roomId)
-    return `https://live.bilibili.com/${moment.roomId}`
+  if (moment.isLive && moment.roomId) return `https://live.bilibili.com/${moment.roomId}`
   return (moment.isVideo && getMomentVideoUrl(moment)) || moment.url
 })
 const showVideoOptions = ref(false)
@@ -330,8 +335,7 @@ function handleMoreBtnClick(event: Event) {
   event.stopPropagation()
   event.preventDefault()
 
-  if (!moreBtnRef.value)
-    return
+  if (!moreBtnRef.value) return
 
   const anchor = moreBtnRef.value.getBoundingClientRect()
   const position = computeFloatingMenuPosition(anchor, window.innerWidth, window.innerHeight)
@@ -352,33 +356,40 @@ function closeVideoOptions() {
 }
 
 let cardElement: HTMLElement | null = null
-let cardPointerStart: { id: number, x: number, y: number, time: number } | undefined
+let cardPointerStart: { id: number; x: number; y: number; time: number } | undefined
 let suppressPointerNavigation = false
 
 function hasSelectedCardText(target: Node | null = cardElement) {
   const root = cardElement?.getRootNode() as ShadowRoot & { getSelection?: () => Selection | null }
   const selection = root?.getSelection?.() || window.getSelection()
-  return Boolean(target && selection?.toString() && selection.rangeCount && selection.getRangeAt(0).intersectsNode(target))
+  return Boolean(
+    target &&
+    selection?.toString() &&
+    selection.rangeCount &&
+    selection.getRangeAt(0).intersectsNode(target),
+  )
 }
 
 function handleCardPointerDown(event: PointerEvent) {
-  if (!event.isPrimary || event.button !== 0)
-    return
-  cardPointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp }
+  if (!event.isPrimary || event.button !== 0) return
+  cardPointerStart = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    time: event.timeStamp,
+  }
   // 点击清除现有选区也不应顺带打开动态。
   suppressPointerNavigation = hasSelectedCardText()
 }
 
 function handleCardPointerMove(event: PointerEvent) {
-  if (!cardPointerStart || cardPointerStart.id !== event.pointerId)
-    return
+  if (!cardPointerStart || cardPointerStart.id !== event.pointerId) return
   if (Math.hypot(event.clientX - cardPointerStart.x, event.clientY - cardPointerStart.y) > 6)
     suppressPointerNavigation = true
 }
 
 function handleCardPointerUp(event: PointerEvent) {
-  if (!cardPointerStart || cardPointerStart.id !== event.pointerId)
-    return
+  if (!cardPointerStart || cardPointerStart.id !== event.pointerId) return
   handleCardPointerMove(event)
   if (event.timeStamp - cardPointerStart.time >= 500 || event.type === 'pointercancel')
     suppressPointerNavigation = true
@@ -387,34 +398,30 @@ function handleCardPointerUp(event: PointerEvent) {
 
 function preventSelectedTextNavigation(event: MouseEvent) {
   // 修饰键和非主键交给浏览器，不受上次拖选留下的状态影响。
-  if (shouldUseNativeLinkOpen(event))
-    return false
+  if (shouldUseNativeLinkOpen(event)) return false
   // 键盘激活仍然可用；拖选、长按和触屏滚动后的合成 click 不执行导航。
-  if (!event.detail || (!suppressPointerNavigation && !hasSelectedCardText()))
-    return false
+  if (!event.detail || (!suppressPointerNavigation && !hasSelectedCardText())) return false
   event.preventDefault()
   event.stopPropagation()
   return true
 }
 
 function handleCardClick(event: MouseEvent, targetMoment = moment) {
-  if (event.defaultPrevented || shouldUseNativeLinkOpen(event))
-    return
+  if (event.defaultPrevented || shouldUseNativeLinkOpen(event)) return
   const target = event.target
   if (target instanceof Element) {
-    const interactive = target.closest('button, a, input, textarea, select, [role="button"], [contenteditable="true"]')
-    if (interactive && interactive !== event.currentTarget)
-      return
+    const interactive = target.closest(
+      'button, a, input, textarea, select, [role="button"], [contenteditable="true"]',
+    )
+    if (interactive && interactive !== event.currentTarget) return
   }
-  if (preventSelectedTextNavigation(event))
-    return
+  if (preventSelectedTextNavigation(event)) return
   event.stopPropagation()
   emit('openDetail', targetMoment)
 }
 
 function handleDetailLinkClick(event: MouseEvent, targetMoment = moment, forceDialog = false) {
-  if (shouldUseNativeLinkOpen(event) || preventSelectedTextNavigation(event))
-    return
+  if (shouldUseNativeLinkOpen(event) || preventSelectedTextNavigation(event)) return
   event.preventDefault()
   event.stopPropagation()
   emit('openDetail', targetMoment, forceDialog)
@@ -422,7 +429,10 @@ function handleDetailLinkClick(event: MouseEvent, targetMoment = moment, forceDi
 
 function handlePermalinkClick(event: MouseEvent) {
   // 预览先处理控制条和拖动手势，再由冒泡阶段决定是否打开视频。
-  if (event.eventPhase === Event.CAPTURING_PHASE && (event.target as HTMLElement | null)?.closest('.moment-video-preview'))
+  if (
+    event.eventPhase === Event.CAPTURING_PHASE &&
+    (event.target as HTMLElement | null)?.closest('.moment-video-preview')
+  )
     return
 
   // 整卡 a 内嵌的交互件（稍后再看等）自行处理点击，这里只拦掉默认跳转
@@ -432,11 +442,9 @@ function handlePermalinkClick(event: MouseEvent) {
     return
   }
 
-  if (preventSelectedTextNavigation(event))
-    return
+  if (preventSelectedTextNavigation(event)) return
   // 媒体卡片才打开视频/直播，保留中键及修饰键的原生打开方式。
-  if (shouldUseNativeLinkOpen(event))
-    return
+  if (shouldUseNativeLinkOpen(event)) return
 
   event.preventDefault()
   event.stopPropagation()
@@ -445,8 +453,7 @@ function handlePermalinkClick(event: MouseEvent) {
 
 function getForwardOriginMoment(): DisplayMoment | null {
   const forward = moment.forward
-  if (!forward?.url)
-    return null
+  if (!forward?.url) return null
 
   const images = forward.images || []
   return {
@@ -504,7 +511,7 @@ function handleCardRef(element: Element | ComponentPublicInstance | null) {
 onBeforeUnmount(() => {
   // 离开虚拟窗口后主动解除图片资源引用，包含头像、转发、图集和评论图片。
   // 卡片高度由父级保留，回滚重新挂载时再按原 URL 加载。
-  cardElement?.querySelectorAll('source').forEach(source => source.removeAttribute('srcset'))
+  cardElement?.querySelectorAll('source').forEach((source) => source.removeAttribute('srcset'))
   cardElement?.querySelectorAll('img').forEach((image) => {
     image.removeAttribute('srcset')
     image.removeAttribute('src')
@@ -524,11 +531,14 @@ function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
   emit('previewVideo', element instanceof Element ? element : null, moment)
 }
 
-function handleOpenLink(event: MouseEvent, url?: string, kind?: MomentLinkKind, video?: DisplayForwardVideo) {
-  if (preventSelectedTextNavigation(event))
-    return
-  if (!url || shouldUseNativeLinkOpen(event))
-    return
+function handleOpenLink(
+  event: MouseEvent,
+  url?: string,
+  kind?: MomentLinkKind,
+  video?: DisplayForwardVideo,
+) {
+  if (preventSelectedTextNavigation(event)) return
+  if (!url || shouldUseNativeLinkOpen(event)) return
 
   event.preventDefault()
   event.stopPropagation()
@@ -545,14 +555,12 @@ function handleForwardAuthorClick(event: MouseEvent) {
 
 function handleForwardVideoClick(event: MouseEvent) {
   const video = moment.forward?.video
-  if (!video?.url)
-    return
+  if (!video?.url) return
   handleOpenLink(event, video.url, 'video', video)
 }
 
 function handleRichLinkClick(event: MouseEvent, url?: string) {
-  if (preventSelectedTextNavigation(event))
-    return
+  if (preventSelectedTextNavigation(event)) return
   if (url && isMomentLotteryUrl(url) && !shouldUseNativeLinkOpen(event)) {
     event.preventDefault()
     event.stopPropagation()
@@ -577,7 +585,12 @@ function handleAdditionalClick(event: MouseEvent) {
     data-layout-settings-page="moments"
     data-layout-settings-title-key="settings.moments_card_open_mode"
     :class="{
-      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
+      'moment-card--text':
+        !moment.images.length &&
+        !moment.isVideo &&
+        !moment.isLive &&
+        !moment.isChargeExclusive &&
+        !moment.forward?.video,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
       'moment-card--forward-video': !!moment.forward?.video,
       'moment-card--forward-draw': Boolean(moment.forward?.images?.length),
@@ -588,7 +601,9 @@ function handleAdditionalClick(event: MouseEvent) {
     tabindex="0"
     role="button"
     :style="cardLayoutStyles"
-    @mouseenter="!moment.isLive && !settings.momentsOnlyCoverVideoPreview && emit('mediaEnter', moment)"
+    @mouseenter="
+      !moment.isLive && !settings.momentsOnlyCoverVideoPreview && emit('mediaEnter', moment)
+    "
     @mouseleave="emit('mediaLeave', moment)"
     @pointerdown.capture="handleCardPointerDown"
     @pointermove.capture="handleCardPointerMove"
@@ -634,7 +649,8 @@ function handleAdditionalClick(event: MouseEvent) {
       <div
         class="moment-card__main"
         :class="{
-          'moment-card__main--video': moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
+          'moment-card__main--video':
+            moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
           'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
         }"
       >
@@ -672,8 +688,14 @@ function handleAdditionalClick(event: MouseEvent) {
             :desc="moment.descInherited ? getCardPreviewText(moment) : ''"
             :author="moment.author.name"
             :text-cover-text="t('moment_card.video_post')"
-            :charge-badge="moment.isChargeExclusive ? (moment.chargeBadge || t('moment_card.charging_exclusive')) : ''"
-            :show-stats="showVideoCoverStats && !(previewActive && settings.momentsEnableVideoControls)"
+            :charge-badge="
+              moment.isChargeExclusive
+                ? moment.chargeBadge || t('moment_card.charging_exclusive')
+                : ''
+            "
+            :show-stats="
+              showVideoCoverStats && !(previewActive && settings.momentsEnableVideoControls)
+            "
             :show-play="settings.showVideoCardViewCount && Boolean(moment.videoPlay)"
             :play="moment.videoPlay"
             :show-duration="showVideoDuration"
@@ -698,7 +720,10 @@ function handleAdditionalClick(event: MouseEvent) {
         </template>
         <template v-else>
           <MomentMediaCover
-            v-if="(moment.isVideo || moment.isLive) && (moment.images.length || !moment.isChargeExclusive || moment.isVideo)"
+            v-if="
+              (moment.isVideo || moment.isLive) &&
+              (moment.images.length || !moment.isChargeExclusive || moment.isVideo)
+            "
             :cover="moment.images.length ? getMomentThumbnailUrl(moment.images[0]) : ''"
             :alt="moment.title"
             :href="cardHref"
@@ -706,15 +731,27 @@ function handleAdditionalClick(event: MouseEvent) {
             :ready="ready"
             :preview-active="previewActive"
             :preview-url="previewUrl"
-            :show-stats="moment.isVideo && showVideoCoverStats && !(previewActive && settings.momentsEnableVideoControls)"
+            :show-stats="
+              moment.isVideo &&
+              showVideoCoverStats &&
+              !(previewActive && settings.momentsEnableVideoControls)
+            "
             :show-play="settings.showVideoCardViewCount && Boolean(moment.videoPlay)"
             :play="moment.videoPlay"
             :show-duration="showVideoDuration"
             :duration="moment.duration"
-            :charge-badge="moment.isChargeExclusive ? (moment.chargeBadge || t('moment_card.charging_exclusive')) : ''"
+            :charge-badge="
+              moment.isChargeExclusive
+                ? moment.chargeBadge || t('moment_card.charging_exclusive')
+                : ''
+            "
             @permalink-click="handlePermalinkClick"
-            @media-enter="(moment.isLive || settings.momentsOnlyCoverVideoPreview) && emit('mediaEnter', moment)"
-            @media-leave="(moment.isLive || settings.momentsOnlyCoverVideoPreview) && emit('mediaLeave', moment)"
+            @media-enter="
+              (moment.isLive || settings.momentsOnlyCoverVideoPreview) && emit('mediaEnter', moment)
+            "
+            @media-leave="
+              (moment.isLive || settings.momentsOnlyCoverVideoPreview) && emit('mediaLeave', moment)
+            "
             @cover-load="handleCoverLoad"
             @preview-video="handlePreviewVideo"
             @preview-canplay="(event: Event) => emit('previewCanplay', event)"
@@ -722,21 +759,34 @@ function handleAdditionalClick(event: MouseEvent) {
           />
           <div class="moment-card__body">
             <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
-              <a :href="moment.url" class="moment-card__text-link" draggable="false" tabindex="-1" @click="handleDetailLinkClick($event)">
-                <VideoWatchedTag
-                  v-if="moment.isVideo"
-                  :aid="moment.aid"
-                  :bvid="moment.bvid"
-                />
+              <a
+                :href="moment.url"
+                class="moment-card__text-link"
+                draggable="false"
+                tabindex="-1"
+                @click="handleDetailLinkClick($event)"
+              >
+                <VideoWatchedTag v-if="moment.isVideo" :aid="moment.aid" :bvid="moment.bvid" />
                 {{ moment.title }}
               </a>
             </p>
             <p
-              v-if="moment.mediaMeta && !moment.isForward && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
+              v-if="
+                moment.mediaMeta &&
+                !moment.isForward &&
+                !moment.isChargeExclusive &&
+                (!moment.isVideo || moment.isLive)
+              "
               class="moment-card__media-meta"
               :class="{ 'moment-card__media-meta--live': moment.isLive }"
             >
-              <a :href="moment.url" class="moment-card__text-link" draggable="false" tabindex="-1" @click="handleDetailLinkClick($event)">
+              <a
+                :href="moment.url"
+                class="moment-card__text-link"
+                draggable="false"
+                tabindex="-1"
+                @click="handleDetailLinkClick($event)"
+              >
                 {{ moment.mediaMeta }}
               </a>
             </p>
@@ -806,10 +856,7 @@ function handleAdditionalClick(event: MouseEvent) {
         </template>
       </div>
 
-      <Teleport
-        v-if="showVideoOptions"
-        :to="mainAppRef"
-      >
+      <Teleport v-if="showVideoOptions" :to="mainAppRef">
         <MomentContextMenu
           :moment="moment"
           :video="menuVideo"
@@ -860,15 +907,14 @@ function handleAdditionalClick(event: MouseEvent) {
         @toggle-comments="toggleComments"
         @toggle-like="emit('toggleLike', moment)"
       />
-      <div
-        v-if="repostMounted"
-        class="bew-expand-host"
-        :class="{ 'is-entered': repostEntered }"
-      >
+      <div v-if="repostMounted" class="bew-expand-host" :class="{ 'is-entered': repostEntered }">
         <MomentRepost
           :moment-id="moment.id"
           @close="repostExpanded = false"
-          @sent="repostCount++; repostExpanded = false"
+          @sent="
+            repostCount++;
+            repostExpanded = false
+          "
         />
       </div>
       <div
@@ -883,9 +929,11 @@ function handleAdditionalClick(event: MouseEvent) {
           :state="commentPreview"
           @ready="handleCommentsReady"
           @collapse="collapseComments"
-          @count-change="delta => commentCountDelta += delta"
+          @count-change="(delta) => (commentCountDelta += delta)"
           @reposted="repostCount++"
-          @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
+          @open-image-preview="
+            (urls, index, trigger) => emit('openImagePreview', urls, index, trigger)
+          "
         />
       </div>
     </div>
@@ -893,7 +941,7 @@ function handleAdditionalClick(event: MouseEvent) {
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card--preparing {
   visibility: hidden;
@@ -974,7 +1022,8 @@ function handleAdditionalClick(event: MouseEvent) {
 // 留白区链接只铺在 main 内，只有 main 里的链接与按钮需要抬到它之上。
 // 不能放宽到整张卡片：作用域属性挂在祖先上，会连带改写评论区、转发框等子组件里
 // 自行定位的按钮（如评论缩略图的绝对定位删除按钮被改成 relative 后挤出裁切区）。
-.moment-card__main :is(a, button, [role="button"]):not(.moment-card__permalink):not(.bew-watch-later-cover__btn) {
+.moment-card__main
+  :is(a, button, [role='button']):not(.moment-card__permalink):not(.bew-watch-later-cover__btn) {
   @include mixins.interactive-layer;
 }
 

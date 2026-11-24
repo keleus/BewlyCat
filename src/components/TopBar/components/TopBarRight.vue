@@ -8,7 +8,12 @@ import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { getUserID, isInIframe, removeHttpFromUrl } from '~/utils/main'
-import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumberBadge } from '~/utils/topBarBadge'
+import {
+  isComponentVisible,
+  shouldShowBadge,
+  shouldShowDotBadge,
+  shouldShowNumberBadge,
+} from '~/utils/topBarBadge'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { MESSAGE_URL } from '../constants/urls'
@@ -92,20 +97,20 @@ const editableTopBarComponents: EditableTopBarComponent[] = [
 function ensureTopBarComponentsConfig() {
   const currentConfig = settings.value.topBarComponentsConfig
   if (!Array.isArray(currentConfig)) {
-    settings.value.topBarComponentsConfig = editableTopBarComponents.map(component => ({
+    settings.value.topBarComponentsConfig = editableTopBarComponents.map((component) => ({
       key: component.key,
       visible: true,
-      badgeType: component.supportsBadge ? 'number' as const : 'none' as const,
+      badgeType: component.supportsBadge ? ('number' as const) : ('none' as const),
     }))
     return
   }
 
   const missingConfig = editableTopBarComponents
-    .filter(component => !currentConfig.some(config => config.key === component.key))
-    .map(component => ({
+    .filter((component) => !currentConfig.some((config) => config.key === component.key))
+    .map((component) => ({
       key: component.key,
       visible: true,
-      badgeType: component.supportsBadge ? 'number' as const : 'none' as const,
+      badgeType: component.supportsBadge ? ('number' as const) : ('none' as const),
     }))
 
   if (missingConfig.length)
@@ -113,7 +118,7 @@ function ensureTopBarComponentsConfig() {
 }
 
 watch(
-  () => settings.value.topBarComponentsConfig?.map(config => config.key).join('|'),
+  () => settings.value.topBarComponentsConfig?.map((config) => config.key).join('|'),
   ensureTopBarComponentsConfig,
   { immediate: true },
 )
@@ -147,19 +152,20 @@ function handleNotificationsLinkClick(event: MouseEvent) {
     return
   }
 
-  if (drawerVisible.value)
-    drawerVisible.value.notifications = true
+  if (drawerVisible.value) drawerVisible.value.notifications = true
 }
 
 watch(isLayoutEditing, (editing) => {
-  if (editing)
-    topBarStore.closeAllPopups()
+  if (editing) topBarStore.closeAllPopups()
 })
 
-watch(popupVisible, () => {
-  if (isLayoutEditing.value)
-    topBarStore.closeAllPopups()
-}, { deep: true })
+watch(
+  popupVisible,
+  () => {
+    if (isLayoutEditing.value) topBarStore.closeAllPopups()
+  },
+  { deep: true },
+)
 
 const avatarPopRef = ref()
 const notificationsPopRef = ref()
@@ -185,14 +191,11 @@ setupTopBarItemTransformer('more', morePopRef)
 watch(
   () => popupVisible.value?.notifications ?? false,
   (newVal, oldVal) => {
-    if (newVal === undefined || oldVal === undefined)
-      return
+    if (newVal === undefined || oldVal === undefined) return
 
-    if (oldVal !== undefined && MESSAGE_URL.test(location.href))
-      return
+    if (oldVal !== undefined && MESSAGE_URL.test(location.href)) return
 
-    if (newVal === oldVal)
-      return
+    if (newVal === oldVal) return
 
     refreshUnreadMessageSharedState()
   },
@@ -202,51 +205,47 @@ watch(
 watch(
   () => drawerVisible.value?.notifications ?? false,
   (newVal, oldVal) => {
-    if (newVal === oldVal)
-      return
+    if (newVal === oldVal) return
 
     refreshUnreadMessageSharedState()
   },
 )
 
 const focused = useWindowFocus()
-watch(() => focused.value, (newVal, _) => {
-  if (!isLogin.value)
-    return
+watch(
+  () => focused.value,
+  (newVal, _) => {
+    if (!isLogin.value) return
 
-  if (!newVal) {
-    if (MESSAGE_URL.test(location.href) && !isInIframe())
-      refreshUnreadMessageSharedState()
-    return
-  }
+    if (!newVal) {
+      if (MESSAGE_URL.test(location.href) && !isInIframe()) refreshUnreadMessageSharedState()
+      return
+    }
 
-  syncSharedData().catch((error) => {
-    console.error('同步顶栏共享状态失败:', error)
-  })
+    syncSharedData().catch((error) => {
+      console.error('同步顶栏共享状态失败:', error)
+    })
 
-  nextTick(() => {
-    favoritesPopRef.value?.refreshFavoriteData?.()
-  })
-})
+    nextTick(() => {
+      favoritesPopRef.value?.refreshFavoriteData?.()
+    })
+  },
+)
 
 watch(
   () => popupVisible.value?.moments ?? false,
   async (newVal, oldVal) => {
-    if (newVal === undefined || oldVal === undefined)
-      return
+    if (newVal === undefined || oldVal === undefined) return
 
-    if (newVal === oldVal)
-      return
+    if (newVal === oldVal) return
 
     // 弹窗关闭时更新
     if (isLogin.value) {
       if (!newVal) {
         await syncMomentsState()
-      }
-      else {
+      } else {
         nextTick(() => {
-          if (momentsPopRef.value)
-            momentsPopRef.value.initData?.()
+          if (momentsPopRef.value) momentsPopRef.value.initData?.()
         })
       }
     }
@@ -254,60 +253,53 @@ watch(
 )
 
 // 修改通知点击处理
-function handleNotificationsClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
+function handleNotificationsClick(item: {
+  name: string
+  url: string
+  unreadCount: number
+  icon: string
+}) {
   emit('notificationsClick', item)
 }
 
 // 判断分割线是否应该显示：左右两组至少各有一个可见时才显示
 const shouldShowDivider = computed(() => {
-  if (isLayoutEditing.value)
-    return true
+  if (isLayoutEditing.value) return true
 
-  const leftSideVisible = isComponentVisible('moments')
-    || isComponentVisible('favorites')
-    || isComponentVisible('history')
-    || isComponentVisible('watchLater')
-    || isComponentVisible('creatorCenter')
+  const leftSideVisible =
+    isComponentVisible('moments') ||
+    isComponentVisible('favorites') ||
+    isComponentVisible('history') ||
+    isComponentVisible('watchLater') ||
+    isComponentVisible('creatorCenter')
 
-  const rightSideVisible = isComponentVisible('upload')
-    || isComponentVisible('notifications')
+  const rightSideVisible = isComponentVisible('upload') || isComponentVisible('notifications')
 
   return leftSideVisible && rightSideVisible
 })
 </script>
 
 <template>
-  <div
-    class="right-side"
-    flex="inline xl:1 justify-end items-center"
-  >
+  <div class="right-side" flex="inline xl:1 justify-end items-center">
     <div
       class="others"
-      flex="~ items-center gap-1" px-1
+      flex="~ items-center gap-1"
+      px-1
       text="$bew-text-1"
       :style="{ height: 'var(--bew-control-height)' }"
     >
-      <div
-        v-if="!isLogin"
-        class="right-side-item"
-        important-w-auto
-      >
+      <div v-if="!isLogin" class="right-side-item" important-w-auto>
         <a
           href="https://passport.bilibili.com/login"
           class="login"
           @click="(event: MouseEvent) => handleTopBarItemClick(event, 'login')"
         >
-          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
-            $t('topbar.sign_in')
-          }}
+          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />
+          {{ $t('topbar.sign_in') }}
         </a>
       </div>
       <template v-if="isLogin || isLayoutEditing">
-        <div
-          class="hidden lg:flex"
-          :class="{ 'top-bar-editing-group': isLayoutEditing }"
-          gap-1
-        >
+        <div class="hidden lg:flex" :class="{ 'top-bar-editing-group': isLayoutEditing }" gap-1>
           <!-- Moments -->
           <div
             v-if="isLayoutEditing || isComponentVisible('moments')"
@@ -316,28 +308,24 @@ const shouldShowDivider = computed(() => {
             :class="{ active: popupVisible?.moments }"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'moments')"
           >
-            <TopBarItemEditor
-              component-key="moments"
-              :title="$t('topbar.moments')"
-            >
+            <TopBarItemEditor component-key="moments" :title="$t('topbar.moments')">
               <template v-if="newMomentsCount > 0 && shouldShowBadge('moments')">
-                <div
-                  v-if="shouldShowNumberBadge('moments')"
-                  class="unread-num-dot"
-                >
+                <div v-if="shouldShowNumberBadge('moments')" class="unread-num-dot">
                   {{ newMomentsCount > 99 ? '99+' : newMomentsCount }}
                 </div>
-                <div
-                  v-else-if="shouldShowDotBadge('moments')"
-                  class="unread-dot"
-                />
+                <div v-else-if="shouldShowDotBadge('moments')" class="unread-dot" />
               </template>
               <ALink
                 :class="{ 'white-icon': forceWhiteIcon }"
                 :href="getTopBarItemHref('moments', 'https://t.bilibili.com')"
                 :title="$t('topbar.moments')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
+                :custom-click-event="
+                  isLayoutEditing ||
+                  (!settings.touchScreenOptimization &&
+                    settings.openTopBarItemsInBewly &&
+                    !settings.useOriginalBilibiliHomepage)
+                "
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'moments')"
               >
                 <div i-tabler:windmill />
@@ -363,16 +351,18 @@ const shouldShowDivider = computed(() => {
             :class="{ active: popupVisible?.favorites }"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'favorites')"
           >
-            <TopBarItemEditor
-              component-key="favorites"
-              :title="$t('topbar.favorites')"
-            >
+            <TopBarItemEditor component-key="favorites" :title="$t('topbar.favorites')">
               <ALink
                 :class="{ 'white-icon': forceWhiteIcon }"
                 :href="getTopBarItemHref('favorites', `https://space.bilibili.com/${mid}/favlist`)"
                 :title="$t('topbar.favorites')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
+                :custom-click-event="
+                  isLayoutEditing ||
+                  (!settings.touchScreenOptimization &&
+                    settings.openTopBarItemsInBewly &&
+                    !settings.useOriginalBilibiliHomepage)
+                "
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'favorites')"
               >
                 <div i-mingcute:star-line />
@@ -399,16 +389,18 @@ const shouldShowDivider = computed(() => {
             :class="{ active: popupVisible?.history }"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'history')"
           >
-            <TopBarItemEditor
-              component-key="history"
-              :title="$t('topbar.history')"
-            >
+            <TopBarItemEditor component-key="history" :title="$t('topbar.history')">
               <ALink
                 :class="{ 'white-icon': forceWhiteIcon }"
                 :href="getTopBarItemHref('history', 'https://www.bilibili.com/history')"
                 :title="$t('topbar.history')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
+                :custom-click-event="
+                  isLayoutEditing ||
+                  (!settings.touchScreenOptimization &&
+                    settings.openTopBarItemsInBewly &&
+                    !settings.useOriginalBilibiliHomepage)
+                "
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'history')"
               >
                 <div i-mingcute:time-line />
@@ -433,28 +425,24 @@ const shouldShowDivider = computed(() => {
             :class="{ active: popupVisible?.watchLater }"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'watchLater')"
           >
-            <TopBarItemEditor
-              component-key="watchLater"
-              :title="$t('topbar.watch_later')"
-            >
+            <TopBarItemEditor component-key="watchLater" :title="$t('topbar.watch_later')">
               <template v-if="watchLaterCount > 0 && shouldShowBadge('watchLater')">
-                <div
-                  v-if="shouldShowNumberBadge('watchLater')"
-                  class="unread-num-dot"
-                >
+                <div v-if="shouldShowNumberBadge('watchLater')" class="unread-num-dot">
                   {{ watchLaterCount > 99 ? '99+' : watchLaterCount }}
                 </div>
-                <div
-                  v-else-if="shouldShowDotBadge('watchLater')"
-                  class="unread-dot"
-                />
+                <div v-else-if="shouldShowDotBadge('watchLater')" class="unread-dot" />
               </template>
               <ALink
                 :class="{ 'white-icon': forceWhiteIcon }"
                 :href="getTopBarItemHref('watchLater', 'https://www.bilibili.com/watchlater/list')"
                 :title="$t('topbar.watch_later')"
                 type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly && !settings.useOriginalBilibiliHomepage)"
+                :custom-click-event="
+                  isLayoutEditing ||
+                  (!settings.touchScreenOptimization &&
+                    settings.openTopBarItemsInBewly &&
+                    !settings.useOriginalBilibiliHomepage)
+                "
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'watchLater')"
               >
                 <div i-mingcute:carplay-line />
@@ -478,10 +466,7 @@ const shouldShowDivider = computed(() => {
             class="right-side-item"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'creatorCenter')"
           >
-            <TopBarItemEditor
-              component-key="creatorCenter"
-              :title="$t('topbar.creative_center')"
-            >
+            <TopBarItemEditor component-key="creatorCenter" :title="$t('topbar.creative_center')">
               <a
                 :class="{ 'white-icon': forceWhiteIcon }"
                 href="https://member.bilibili.com/platform/home"
@@ -506,10 +491,7 @@ const shouldShowDivider = computed(() => {
           data-layout-settings-title-key="settings.topbar_actions"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'more')"
         >
-          <a
-            :class="{ 'white-icon': forceWhiteIcon }"
-            title="More"
-          >
+          <a :class="{ 'white-icon': forceWhiteIcon }" title="More">
             <div i-mingcute:menu-line />
           </a>
 
@@ -519,7 +501,9 @@ const shouldShowDivider = computed(() => {
               ref="morePopRef"
               class="bew-popover"
               @click.stop="() => {}"
-              @bewly-page-click="(event: MouseEvent, key: string) => handleClickTopBarItem(event, key)"
+              @bewly-page-click="
+                (event: MouseEvent, key: string) => handleClickTopBarItem(event, key)
+              "
             />
           </Transition>
         </div>
@@ -527,13 +511,17 @@ const shouldShowDivider = computed(() => {
         <div
           class="hidden lg:flex"
           :class="{ 'top-bar-editing-group': isLayoutEditing }"
-          gap-1 items-center
+          gap-1
+          items-center
         >
           <!-- Divider -->
           <div
             v-if="shouldShowDivider"
             :class="{ 'white-icon': forceWhiteIcon }"
-            w-2px h-16px bg="$bew-border-color" mx-1
+            w-2px
+            h-16px
+            bg="$bew-border-color"
+            mx-1
             rounded="$bew-radius-sm"
           />
 
@@ -545,10 +533,7 @@ const shouldShowDivider = computed(() => {
             :class="{ active: popupVisible?.upload }"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'upload')"
           >
-            <TopBarItemEditor
-              component-key="upload"
-              :title="$t('topbar.upload')"
-            >
+            <TopBarItemEditor component-key="upload" :title="$t('topbar.upload')">
               <a
                 class="upload"
                 :class="{ 'white-icon': forceWhiteIcon }"
@@ -579,25 +564,20 @@ const shouldShowDivider = computed(() => {
             :class="{ active: popupVisible?.notifications }"
             @click="(event: MouseEvent) => handleTopBarItemClick(event, 'notifications')"
           >
-            <TopBarItemEditor
-              component-key="notifications"
-              :title="$t('topbar.notifications')"
-            >
+            <TopBarItemEditor component-key="notifications" :title="$t('topbar.notifications')">
               <template v-if="unReadMessageCount > 0 && shouldShowBadge('notifications')">
-                <div
-                  v-if="shouldShowNumberBadge('notifications')"
-                  class="unread-num-dot"
-                >
+                <div v-if="shouldShowNumberBadge('notifications')" class="unread-num-dot">
                   {{ unReadMessageCount > 99 ? '99+' : unReadMessageCount }}
                 </div>
-                <div
-                  v-else-if="shouldShowDotBadge('notifications')"
-                  class="unread-dot"
-                />
+                <div v-else-if="shouldShowDotBadge('notifications')" class="unread-dot" />
               </template>
 
               <ALink
-                :href="settings.openNotificationsPageAsDrawer ? undefined : 'https://message.bilibili.com'"
+                :href="
+                  settings.openNotificationsPageAsDrawer
+                    ? undefined
+                    : 'https://message.bilibili.com'
+                "
                 :class="{ 'white-icon': forceWhiteIcon }"
                 :title="$t('topbar.notifications')"
                 type="topBar"
@@ -632,10 +612,7 @@ const shouldShowDivider = computed(() => {
         class="avatar right-side-item"
         @click="(event: MouseEvent) => handleTopBarItemClick(event, 'userPanel')"
       >
-        <TopBarItemEditor
-          component-key="avatar"
-          :title="$t('settings.topbar_user_menu')"
-        >
+        <TopBarItemEditor component-key="avatar" :title="$t('settings.topbar_user_menu')">
           <template v-if="isLogin">
             <!-- B币领取提醒dot -->
             <div
@@ -672,8 +649,11 @@ const shouldShowDivider = computed(() => {
                 opacity: popupVisible?.userPanel ? 1 : 0,
                 background: `url(${browser.runtime.getURL('/assets/big-vip.svg')}) center / contain no-repeat`,
               }"
-              w="28%" h="28%" z-1
-              pos="absolute bottom-16px right-12px" duration-300
+              w="28%"
+              h="28%"
+              z-1
+              pos="absolute bottom-16px right-12px"
+              duration-300
             />
 
             <Transition name="slide-in">
@@ -683,7 +663,8 @@ const shouldShowDivider = computed(() => {
                 :user-info="userInfo"
                 after:h="!0"
                 class="bew-popover"
-                pos="!left-auto !right-0" transform="!translate-x-0"
+                pos="!left-auto !right-0"
+                transform="!translate-x-0"
                 @click.stop="() => {}"
               />
             </Transition>
@@ -700,15 +681,12 @@ const shouldShowDivider = computed(() => {
         :force-white-icon="forceWhiteIcon"
       />
     </div>
-    <AddOpenTabsDialog
-      v-if="showAddOpenTabsDialog"
-      @close="showAddOpenTabsDialog = false"
-    />
+    <AddOpenTabsDialog v-if="showAddOpenTabsDialog" @close="showAddOpenTabsDialog = false" />
   </div>
 </template>
 
 <style lang="scss" scoped>
-@use "../styles/index.scss";
+@use '../styles/index.scss';
 
 .others {
   position: relative;

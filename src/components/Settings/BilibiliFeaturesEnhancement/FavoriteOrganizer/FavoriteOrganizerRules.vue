@@ -4,7 +4,11 @@ import { useI18n } from 'vue-i18n'
 import type { FavoriteOrganizerFolder, FavoriteOrganizerRule } from '~/logic'
 import { settings } from '~/logic'
 import type { List as FavoriteFolder } from '~/models/video/favoriteCategory'
-import { hasRuleConditions, isDefaultFavoriteFolder, loadOwnFavoriteFolders } from '~/utils/favoriteOrganizer'
+import {
+  hasRuleConditions,
+  isDefaultFavoriteFolder,
+  loadOwnFavoriteFolders,
+} from '~/utils/favoriteOrganizer'
 import { getUserID } from '~/utils/main'
 
 import type { FavoriteOrganizerRuleDraft } from '../../types'
@@ -25,21 +29,28 @@ const loadError = ref('')
 const editor = ref<EditorState | null>(null)
 
 const configuredFolders = computed(() => settings.value.favoriteOrganizerFolders)
-const ownFolderMap = computed(() => new Map(ownFolders.value.map(folder => [folder.id, folder])))
-const ruleRows = computed(() => configuredFolders.value.flatMap(folder => folder.rules.map(rule => ({ folder, rule }))))
+const ownFolderMap = computed(() => new Map(ownFolders.value.map((folder) => [folder.id, folder])))
+const ruleRows = computed(() =>
+  configuredFolders.value.flatMap((folder) => folder.rules.map((rule) => ({ folder, rule }))),
+)
 
 const folderOptions = computed(() => {
   const options = [
     { value: 0, label: t('settings.favorite_organizer.folder_placeholder') },
     ...ownFolders.value
-      .filter(folder => !isDefaultFavoriteFolder(folder))
-      .map(folder => ({ value: folder.id, label: folder.title })),
+      .filter((folder) => !isDefaultFavoriteFolder(folder))
+      .map((folder) => ({ value: folder.id, label: folder.title })),
   ]
   // 编辑已失效收藏夹的规则时保留原选项，避免被静默改成其他收藏夹
   const mediaId = editor.value?.initial?.mediaId
-  if (mediaId && !options.some(option => option.value === mediaId)) {
-    const folder = configuredFolders.value.find(item => item.mediaId === mediaId)
-    options.push({ value: mediaId, label: t('settings.favorite_organizer.folder_missing_option', { title: folder?.title || mediaId }) })
+  if (mediaId && !options.some((option) => option.value === mediaId)) {
+    const folder = configuredFolders.value.find((item) => item.mediaId === mediaId)
+    options.push({
+      value: mediaId,
+      label: t('settings.favorite_organizer.folder_missing_option', {
+        title: folder?.title || mediaId,
+      }),
+    })
   }
   return options
 })
@@ -47,18 +58,15 @@ const folderOptions = computed(() => {
 onMounted(loadFolders)
 
 async function loadFolders() {
-  if (!accountId || loading.value)
-    return
+  if (!accountId || loading.value) return
   loading.value = true
   loadError.value = ''
   try {
     ownFolders.value = await loadOwnFavoriteFolders(accountId)
     loaded.value = true
-  }
-  catch {
+  } catch {
     loadError.value = t('settings.favorite_organizer.load_folders_failed')
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
@@ -67,7 +75,11 @@ function folderTitle(folder: FavoriteOrganizerFolder) {
   return ownFolderMap.value.get(folder.mediaId)?.title || folder.title || String(folder.mediaId)
 }
 
-function openEditor(mode: EditorState['mode'], folder?: FavoriteOrganizerFolder, rule?: FavoriteOrganizerRule) {
+function openEditor(
+  mode: EditorState['mode'],
+  folder?: FavoriteOrganizerFolder,
+  rule?: FavoriteOrganizerRule,
+) {
   editor.value = {
     mode,
     initial: folder && rule ? { mediaId: folder.mediaId, rule } : undefined,
@@ -76,9 +88,11 @@ function openEditor(mode: EditorState['mode'], folder?: FavoriteOrganizerFolder,
 
 function saveRule(draft: FavoriteOrganizerRuleDraft, removeRuleIds: string[]) {
   const removed = new Set(removeRuleIds)
-  const folders = configuredFolders.value.map(folder => ({ ...folder, rules: [...folder.rules] }))
-  const previousFolder = folders.find(folder => folder.rules.some(rule => rule.id === draft.rule.id))
-  let target = folders.find(folder => folder.mediaId === draft.mediaId)
+  const folders = configuredFolders.value.map((folder) => ({ ...folder, rules: [...folder.rules] }))
+  const previousFolder = folders.find((folder) =>
+    folder.rules.some((rule) => rule.id === draft.rule.id),
+  )
+  let target = folders.find((folder) => folder.mediaId === draft.mediaId)
   if (!target) {
     target = { mediaId: draft.mediaId, title: '', rules: [] }
     folders.push(target)
@@ -87,23 +101,26 @@ function saveRule(draft: FavoriteOrganizerRuleDraft, removeRuleIds: string[]) {
 
   if (previousFolder === target) {
     // 原收藏夹内编辑时保持位置不变
-    const index = target.rules.findIndex(rule => rule.id === draft.rule.id)
+    const index = target.rules.findIndex((rule) => rule.id === draft.rule.id)
     target.rules.splice(index, 1, draft.rule)
-  }
-  else {
+  } else {
     if (previousFolder)
-      previousFolder.rules = previousFolder.rules.filter(rule => rule.id !== draft.rule.id)
+      previousFolder.rules = previousFolder.rules.filter((rule) => rule.id !== draft.rule.id)
     target.rules.push(draft.rule)
   }
-  target.rules = target.rules.filter(rule => !removed.has(rule.id))
+  target.rules = target.rules.filter((rule) => !removed.has(rule.id))
 
-  settings.value.favoriteOrganizerFolders = folders.filter(folder => folder.rules.length)
+  settings.value.favoriteOrganizerFolders = folders.filter((folder) => folder.rules.length)
 }
 
 function removeRule(folder: FavoriteOrganizerFolder, rule: FavoriteOrganizerRule) {
   settings.value.favoriteOrganizerFolders = configuredFolders.value
-    .map(item => item === folder ? { ...item, rules: item.rules.filter(itemRule => itemRule.id !== rule.id) } : item)
-    .filter(item => item.rules.length)
+    .map((item) =>
+      item === folder
+        ? { ...item, rules: item.rules.filter((itemRule) => itemRule.id !== rule.id) }
+        : item,
+    )
+    .filter((item) => item.rules.length)
 }
 </script>
 
@@ -140,7 +157,10 @@ function removeRule(folder: FavoriteOrganizerFolder, rule: FavoriteOrganizerRule
             <div class="organizer-rule-row__folder">
               <i i-mingcute:star-line />
               <strong>{{ folderTitle(folder) }}</strong>
-              <span v-if="loaded && !ownFolderMap.has(folder.mediaId)" class="organizer-rule-row__warning">
+              <span
+                v-if="loaded && !ownFolderMap.has(folder.mediaId)"
+                class="organizer-rule-row__warning"
+              >
                 {{ t('settings.favorite_organizer.folder_missing') }}
               </span>
             </div>

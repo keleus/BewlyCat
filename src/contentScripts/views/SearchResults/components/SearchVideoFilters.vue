@@ -4,9 +4,9 @@ import { computed, ref, watch } from 'vue'
 import DatePicker from './DatePicker.vue'
 
 const props = defineProps<{
-  orderOptions: ReadonlyArray<{ value: string, label: string }>
-  durationOptions: ReadonlyArray<{ value: number, label: string }>
-  timeRangeOptions: ReadonlyArray<{ value: string, label: string }>
+  orderOptions: ReadonlyArray<{ value: string; label: string }>
+  durationOptions: ReadonlyArray<{ value: number; label: string }>
+  timeRangeOptions: ReadonlyArray<{ value: string; label: string }>
 }>()
 
 const videoOrder = defineModel<string>('videoOrder', { default: '' })
@@ -22,12 +22,14 @@ const customEndInput = ref('')
 const isMoreFiltersExpanded = ref(false)
 
 // 监听父组件的日期变化，同步到本地输入
-watch([customStartDate, customEndDate], ([start, end]) => {
-  if (customStartInput.value !== start)
-    customStartInput.value = start || ''
-  if (customEndInput.value !== end)
-    customEndInput.value = end || ''
-}, { immediate: true })
+watch(
+  [customStartDate, customEndDate],
+  ([start, end]) => {
+    if (customStartInput.value !== start) customStartInput.value = start || ''
+    if (customEndInput.value !== end) customEndInput.value = end || ''
+  },
+  { immediate: true },
+)
 
 // 监听自定义日期输入，只有两个日期都选择后才触发筛选
 watch([customStartInput, customEndInput], ([start, end]) => {
@@ -85,7 +87,9 @@ const maxDate = computed(() => formatDate(new Date()))
       </div>
       <button
         class="more-filters-btn"
-        flex items-center gap-1
+        flex
+        items-center
+        gap-1
         type="button"
         @click="isMoreFiltersExpanded = !isMoreFiltersExpanded"
       >

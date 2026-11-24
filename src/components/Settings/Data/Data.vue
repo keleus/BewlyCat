@@ -7,7 +7,10 @@ import Dialog from '~/components/Dialog.vue'
 import Radio from '~/components/Radio.vue'
 import { useSettingsCloudSyncPreference } from '~/composables/useSettingsCloudSyncPreference'
 import { sendMessage } from '~/utils/messaging'
-import type { SettingsCloudSyncEnableResponse, SettingsCloudSyncStatus } from '~/utils/settingsCloudSyncProtocol'
+import type {
+  SettingsCloudSyncEnableResponse,
+  SettingsCloudSyncStatus,
+} from '~/utils/settingsCloudSyncProtocol'
 import {
   SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE,
   SETTINGS_CLOUD_SYNC_STATUS_MESSAGE,
@@ -44,27 +47,26 @@ function handleSyncToggle(value: boolean) {
 async function sendEnableSettingsCloudSyncRequest(mode: 'auto' | 'pull' | 'push') {
   // The background runs the first coordination inline and reports the outcome;
   // the switch state mirrors back through storage.onChanged only on success.
-  const response = await sendMessage<{ mode: 'auto' | 'pull' | 'push' }, SettingsCloudSyncEnableResponse>(
-    SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE,
-    { mode },
-  )
-  if (!response)
-    throw new Error('Missing settings cloud sync bootstrap response')
+  const response = await sendMessage<
+    { mode: 'auto' | 'pull' | 'push' },
+    SettingsCloudSyncEnableResponse
+  >(SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE, { mode })
+  if (!response) throw new Error('Missing settings cloud sync bootstrap response')
   if (!response.ok && response.reason === 'initialization-failed')
     throw new Error('Settings cloud sync bootstrap failed')
   return response.ok
 }
 
 async function requestEnableSettingsCloudSync() {
-  if (isSyncToggling.value)
-    return
+  if (isSyncToggling.value) return
 
   isSyncToggling.value = true
   let failedPhase: 'status' | 'enable' = 'status'
   try {
-    const status = await sendMessage<undefined, SettingsCloudSyncStatus>(SETTINGS_CLOUD_SYNC_STATUS_MESSAGE)
-    if (!status)
-      throw new Error('Missing cloud sync status response')
+    const status = await sendMessage<undefined, SettingsCloudSyncStatus>(
+      SETTINGS_CLOUD_SYNC_STATUS_MESSAGE,
+    )
+    if (!status) throw new Error('Missing cloud sync status response')
 
     if (status.state === 'compatible') {
       // Cloud already holds a snapshot: let the user pick which side takes
@@ -82,19 +84,21 @@ async function requestEnableSettingsCloudSync() {
     }
 
     failedPhase = 'enable'
-    if (!await sendEnableSettingsCloudSyncRequest('auto')) {
+    if (!(await sendEnableSettingsCloudSyncRequest('auto'))) {
       revertSyncSwitch()
       toast.error(t('settings.sync_cloud_incompatible'))
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error)
     revertSyncSwitch()
-    toast.error(t(failedPhase === 'status'
-      ? 'settings.sync_cloud_status_failed'
-      : 'settings.sync_cloud_enable_failed'))
-  }
-  finally {
+    toast.error(
+      t(
+        failedPhase === 'status'
+          ? 'settings.sync_cloud_status_failed'
+          : 'settings.sync_cloud_enable_failed',
+      ),
+    )
+  } finally {
     isSyncToggling.value = false
   }
 }
@@ -103,25 +107,22 @@ async function enableSyncWithMode(mode: 'pull' | 'push') {
   pendingEnableChoice.value = true
   showSyncConflictDialog.value = false
   try {
-    if (!await sendEnableSettingsCloudSyncRequest(mode)) {
+    if (!(await sendEnableSettingsCloudSyncRequest(mode))) {
       revertSyncSwitch()
       toast.error(t('settings.sync_cloud_incompatible'))
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error)
     revertSyncSwitch()
     toast.error(t('settings.sync_cloud_enable_failed'))
-  }
-  finally {
+  } finally {
     pendingEnableChoice.value = false
   }
 }
 
 function handleSyncDialogClose() {
   showSyncConflictDialog.value = false
-  if (!pendingEnableChoice.value && settingsCloudSyncPreference.value !== true)
-    revertSyncSwitch()
+  if (!pendingEnableChoice.value && settingsCloudSyncPreference.value !== true) revertSyncSwitch()
 }
 </script>
 

@@ -2,7 +2,10 @@ import type { API_COLLECTION } from '~/background/messageListeners/api'
 import { isSearchResultApiMethod } from '~/constants/searchApi'
 import { settings } from '~/logic'
 import { clearApiFailureIfSucceeded, recordBackgroundUnavailable } from '~/utils/apiDiagnostics'
-import { applyBilibiliTranslatedTitles, getBilibiliLocaleRequestParam } from '~/utils/bilibiliLocale'
+import {
+  applyBilibiliTranslatedTitles,
+  getBilibiliLocaleRequestParam,
+} from '~/utils/bilibiliLocale'
 import { sendAbortableApiMessage, sendMessage } from '~/utils/messaging'
 
 export interface ApiRequestOptions {
@@ -23,11 +26,9 @@ function getSearchQueryId(method: string, options?: object): string {
   const keyword = String((options as Record<string, unknown> | undefined)?.keyword ?? '')
   const cacheKey = `${method}:${keyword}`
   const cached = searchQueryIds.get(cacheKey)
-  if (cached)
-    return cached
+  if (cached) return cached
 
-  if (searchQueryIds.size >= 100)
-    searchQueryIds.clear()
+  if (searchQueryIds.size >= 100) searchQueryIds.clear()
 
   const id = createSearchQueryId()
   searchQueryIds.set(cacheKey, id)
@@ -38,73 +39,87 @@ type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}
   ? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
   : Lowercase<S>
 
+type APIEndpointMethod<E> = E extends { _fetch: { method: infer M extends string } } ? M : never
+type APIEndpointParams<E> = E extends { params?: infer P } ? P : unknown
+type APIEndpointBody<E> = E extends { _fetch: { body?: infer B } } ? B : unknown
+
 type APIFunction<T = typeof API_COLLECTION> = {
   [K in keyof T as CamelCase<string & K>]: {
-    // @ts-expect-error allow params
-    [P in keyof T[K]]: T[K][P] extends (...args: any[]) => any ? T[K][P] : Lowercase<T[K][P]['_fetch']['method']> extends 'get' ? (options?: Partial<T[K][P]['params']>, request?: ApiRequestOptions) => Promise<any> : (options?: Partial<T[K][P]['params'] & T[K][P]['_fetch']['body']>) => Promise<any>
+    [P in keyof T[K]]: T[K][P] extends (...args: any[]) => any
+      ? T[K][P]
+      : Lowercase<APIEndpointMethod<T[K][P]>> extends 'get'
+        ? (
+            options?: Partial<APIEndpointParams<T[K][P]>>,
+            request?: ApiRequestOptions,
+          ) => Promise<any>
+        : (options?: Partial<APIEndpointParams<T[K][P]> & APIEndpointBody<T[K][P]>>) => Promise<any>
   }
 }
 
-// eslint-disable-next-line ts/no-unsafe-declaration-merging
-export interface APIClient extends APIFunction<typeof API_COLLECTION> {
+// oxlint-disable-next-line typescript/no-unsafe-declaration-merging
+export interface APIClient extends APIFunction<typeof API_COLLECTION> {}
 
-}
-
-// eslint-disable-next-line ts/no-unsafe-declaration-merging
 export class APIClient {
   private readonly cache = new Map<string | symbol, any>()
 
   constructor() {
     // @ts-expect-error ignore
-    return new Proxy({}, {
-      get: (_, namespace) => { // namespace
-        if (this.cache.has(namespace)) {
-          return this.cache.get(namespace)
-        }
-        else {
-          const api = new Proxy({}, {
-            get(_, p) {
-              return (options?: object, request?: ApiRequestOptions) => {
-                const isSearchResultRequest = namespace === 'search'
-                  && typeof p === 'string'
-                  && isSearchResultApiMethod(p)
-                const requestOptions = isSearchResultRequest
-                  ? { qv_id: getSearchQueryId(p, options), ...options }
-                  : options
+    return new Proxy(
+      {},
+      {
+        get: (_, namespace) => {
+          // namespace
+          if (this.cache.has(namespace)) {
+            return this.cache.get(namespace)
+          } else {
+            const api = new Proxy(
+              {},
+              {
+                get(_, p) {
+                  return (options?: object, request?: ApiRequestOptions) => {
+                    const isSearchResultRequest =
+                      namespace === 'search' && typeof p === 'string' && isSearchResultApiMethod(p)
+                    const requestOptions = isSearchResultRequest
+                      ? { qv_id: getSearchQueryId(p, options), ...options }
+                      : options
 
-                const message: Record<string, any> = {
-                  contentScriptQuery: p as string,
-                  ...requestOptions,
-                }
+                    const message: Record<string, any> = {
+                      contentScriptQuery: p as string,
+                      ...requestOptions,
+                    }
 
-                // 去个性化搜索仍经后台获取匿名 WBI key 并签名，只省略 Cookie。
-                if (isSearchResultRequest && settings.value.depersonalizeSearchResults)
-                  message.bewlyNoCookie = true
+                    // 去个性化搜索仍经后台获取匿名 WBI key 并签名，只省略 Cookie。
+                    if (isSearchResultRequest && settings.value.depersonalizeSearchResults)
+                      message.bewlyNoCookie = true
 
-                // 后台无法得知页面语言，由这里传入；同时参与响应缓存键，避免不同语言共用缓存。
-                const locale = getBilibiliLocaleRequestParam()
-                if (locale)
-                  message.bewlyLocale = locale
+                    // 后台无法得知页面语言，由这里传入；同时参与响应缓存键，避免不同语言共用缓存。
+                    const locale = getBilibiliLocaleRequestParam()
+                    if (locale) message.bewlyLocale = locale
 
-                const response = (request?.signal
-                  ? sendAbortableApiMessage(p as string, message, request.signal)
-                  : sendMessage(p as string, message)
-                ).then((result) => {
-                  clearApiFailureIfSucceeded(p as string, result)
-                  return result
-                }).catch((error) => {
-                  recordBackgroundUnavailable(p as string, requestOptions, error)
-                  throw error
-                })
-                return locale ? response.then(applyBilibiliTranslatedTitles) : response
-              }
-            },
-          })
-          this.cache.set(namespace, api)
-          return api
-        }
+                    const response = (
+                      request?.signal
+                        ? sendAbortableApiMessage(p as string, message, request.signal)
+                        : sendMessage(p as string, message)
+                    )
+                      .then((result) => {
+                        clearApiFailureIfSucceeded(p as string, result)
+                        return result
+                      })
+                      .catch((error) => {
+                        recordBackgroundUnavailable(p as string, requestOptions, error)
+                        throw error
+                      })
+                    return locale ? response.then(applyBilibiliTranslatedTitles) : response
+                  }
+                },
+              },
+            )
+            this.cache.set(namespace, api)
+            return api
+          }
+        },
       },
-    })
+    )
   }
 }
 

@@ -33,9 +33,12 @@ const langOptions = computed(() => {
   ]
 })
 
-watch(() => settings.value.language, (newValue) => {
-  locale.value = newValue
-})
+watch(
+  () => settings.value.language,
+  (newValue) => {
+    locale.value = newValue
+  },
+)
 </script>
 
 <template>
@@ -48,16 +51,16 @@ watch(() => settings.value.language, (newValue) => {
 
     <SettingsItemGroup :title="$t('settings.group_language')">
       <SettingsItem :title="$t('settings.select_language')" right-width="auto">
-        <Select
-          v-model="settings.language"
-          :options="langOptions"
-          w="160px"
-        />
+        <Select v-model="settings.language" :options="langOptions" w="160px" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_interaction')">
-      <SettingsItem :title="$t('settings.touch_screen_optimization')" :desc="$t('settings.touch_screen_optimization_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.touch_screen_optimization')"
+        :desc="$t('settings.touch_screen_optimization_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.touchScreenOptimization" />
       </SettingsItem>
     </SettingsItemGroup>
@@ -66,5 +69,4 @@ watch(() => settings.value.language, (newValue) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-</style>
+<style lang="scss" scoped></style>

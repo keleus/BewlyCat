@@ -12,7 +12,10 @@ const { t } = useI18n()
 const authorName = computed(() => {
   if (Array.isArray(props.author)) {
     if (props.author.length > 1)
-      return t('video_card.group_contribution', { firstAuthor: props.author[0].name, num: props.author.length })
+      return t('video_card.group_contribution', {
+        firstAuthor: props.author[0].name,
+        num: props.author.length,
+      })
     return props.author[0]?.name
   }
   return props.author?.name
@@ -26,7 +29,9 @@ const authorJumpUrl = computed(() =>
   <component
     :is="authorJumpUrl ? 'a' : 'span'"
     class="channel-name keep-one-line"
-    block min-w-0 max-w-full
+    block
+    min-w-0
+    max-w-full
     :class="authorJumpUrl ? 'cursor-pointer hover:text-$bew-theme-color' : ''"
     mr-4
     :href="authorJumpUrl || undefined"

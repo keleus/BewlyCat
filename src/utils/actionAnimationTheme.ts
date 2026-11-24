@@ -24,8 +24,7 @@ interface HslColor {
 
 function parseRgbColor(value: string): RgbColor | null {
   const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
-  if (!match)
-    return null
+  if (!match) return null
 
   return {
     r: Number(match[1]) / 255,
@@ -39,13 +38,10 @@ function rgbToHsl({ r, g, b }: RgbColor): HslColor {
   const min = Math.min(r, g, b)
   const lightness = (max + min) / 2
 
-  if (max === min)
-    return { hue: 0, saturation: 0, lightness }
+  if (max === min) return { hue: 0, saturation: 0, lightness }
 
   const delta = max - min
-  const saturation = lightness > 0.5
-    ? delta / (2 - max - min)
-    : delta / (max + min)
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min)
 
   let hue = 0
   switch (max) {
@@ -64,8 +60,7 @@ function rgbToHsl({ r, g, b }: RgbColor): HslColor {
 }
 
 function resolveCssColor(value: string): RgbColor | null {
-  if (!value)
-    return null
+  if (!value) return null
 
   const probe = document.createElement('span')
   probe.style.position = 'fixed'
@@ -91,24 +86,20 @@ function isSameRgbColor(a: RgbColor, b: RgbColor): boolean {
 /** 生成让 B 站动效画布跟随主题色的 CSS 滤镜；主题色为插件默认主题色时返回 `none`。 */
 export function createActionAnimationFilter(themeColor: string): string {
   const rgb = resolveCssColor(themeColor || originalSettings.themeColor)
-  if (!rgb)
-    return 'none'
+  if (!rgb) return 'none'
 
   // 默认主题色 #00a1d6 与 SVGA 资源的 #00aeec 色相只差约 1°，但明度更低，按差值计算会让原生动效整体变暗，这里保持原样
   const defaultRgb = resolveCssColor(originalSettings.themeColor)
-  if (defaultRgb && isSameRgbColor(rgb, defaultRgb))
-    return 'none'
+  if (defaultRgb && isSameRgbColor(rgb, defaultRgb)) return 'none'
 
   const { hue, saturation, lightness } = rgbToHsl(rgb)
   const hueRotate = Math.round(hue - BILIBILI_ACTION_ANIMATION_HUE)
   const saturationRatio = clamp(saturation / BILIBILI_ACTION_ANIMATION_SATURATION, 0.2, 2.4)
   const brightnessRatio = clamp(lightness / BILIBILI_ACTION_ANIMATION_LIGHTNESS, 0.6, 1.35)
-  const isIdentity = hueRotate === 0
-    && Math.abs(saturationRatio - 1) < 0.02
-    && Math.abs(brightnessRatio - 1) < 0.02
+  const isIdentity =
+    hueRotate === 0 && Math.abs(saturationRatio - 1) < 0.02 && Math.abs(brightnessRatio - 1) < 0.02
 
-  if (isIdentity)
-    return 'none'
+  if (isIdentity) return 'none'
 
   return `hue-rotate(${hueRotate}deg) saturate(${saturationRatio.toFixed(2)}) brightness(${brightnessRatio.toFixed(2)})`
 }

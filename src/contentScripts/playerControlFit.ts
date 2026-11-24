@@ -19,15 +19,17 @@ let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null
 
 function measureControlBottomRight(controlBottom: HTMLElement): number {
   const style = getComputedStyle(controlBottom)
-  return controlBottom.getBoundingClientRect().right
-    - Number.parseFloat(style.paddingRight)
-    - Number.parseFloat(style.borderRightWidth)
+  return (
+    controlBottom.getBoundingClientRect().right -
+    Number.parseFloat(style.paddingRight) -
+    Number.parseFloat(style.borderRightWidth)
+  )
 }
 
 function findManagedControls(right: HTMLElement): HTMLElement[] {
-  return MANAGED_CONTROL_SELECTORS
-    .map(selector => right.querySelector<HTMLElement>(selector))
-    .filter((control): control is HTMLElement => Boolean(control))
+  return MANAGED_CONTROL_SELECTORS.map((selector) =>
+    right.querySelector<HTMLElement>(selector),
+  ).filter((control): control is HTMLElement => Boolean(control))
 }
 
 function stopObservingControlBottom() {
@@ -59,41 +61,34 @@ function fitControls() {
   }
 
   // 视口未显示播放器时无法测量，等尺寸变化后再判断。
-  if (!controlBottom.clientWidth)
-    return
+  if (!controlBottom.clientWidth) return
 
   const contentRight = measureControlBottomRight(controlBottom)
   const previousFlexShrink = right.style.flexShrink
   right.style.flexShrink = '0'
   try {
-    for (const control of controls)
-      control.classList.remove(COLLAPSED_CLASS)
+    for (const control of controls) control.classList.remove(COLLAPSED_CLASS)
 
-    if (right.getBoundingClientRect().right <= contentRight + SUBPIXEL_TOLERANCE)
-      return
+    if (right.getBoundingClientRect().right <= contentRight + SUBPIXEL_TOLERANCE) return
 
     for (let i = controls.length - 1; i >= 0; i--) {
       controls[i].classList.add(COLLAPSED_CLASS)
-      if (right.getBoundingClientRect().right <= contentRight + SUBPIXEL_TOLERANCE)
-        return
+      if (right.getBoundingClientRect().right <= contentRight + SUBPIXEL_TOLERANCE) return
     }
-  }
-  finally {
+  } finally {
     right.style.flexShrink = previousFlexShrink
   }
 }
 
 function scheduleFit() {
-  if (fitFrame !== null)
-    return
+  if (fitFrame !== null) return
 
   // 延到下一帧再改 DOM，避免在 ResizeObserver 回调内触发循环告警。
   fitFrame = requestAnimationFrame(fitControls)
 }
 
 function scheduleFitAfterResize() {
-  if (resizeSettleTimer !== null)
-    clearTimeout(resizeSettleTimer)
+  if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer)
 
   resizeSettleTimer = setTimeout(() => {
     resizeSettleTimer = null
@@ -102,8 +97,7 @@ function scheduleFitAfterResize() {
 }
 
 function observeControlBottom(controlBottom: HTMLElement) {
-  if (observedControlBottom === controlBottom && resizeObserver)
-    return
+  if (observedControlBottom === controlBottom && resizeObserver) return
 
   stopObservingControlBottom()
   observedControlBottom = controlBottom
@@ -111,13 +105,12 @@ function observeControlBottom(controlBottom: HTMLElement) {
   resizeObserver = observer
   // 底栏尺寸覆盖播放器缩放和模式切换；分区尺寸覆盖原生按钮增减、时间与清晰度文字、弹幕发送区变化。
   observer.observe(controlBottom)
-  Array.from(controlBottom.children).forEach(section => observer.observe(section))
+  Array.from(controlBottom.children).forEach((section) => observer.observe(section))
 }
 
 export function schedulePlayerControlFit(control: HTMLElement) {
   const controlBottom = control.closest<HTMLElement>(CONTROL_BAR_SELECTOR)?.parentElement
-  if (!controlBottom)
-    return
+  if (!controlBottom) return
 
   observeControlBottom(controlBottom)
   scheduleFit()

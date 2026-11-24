@@ -8,17 +8,17 @@ import '~/styles/segmentLiquidIndicator.scss'
 import '~/styles/segmentControl.scss'
 import '~/styles/fonts.scss'
 import './options.scss'
-
 import { createApp } from 'vue'
 
 import { localSettingsReady, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
-import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { setBilibiliCookieSnapshot } from '~/utils/main'
 
 import { ensureLocaleMessages, i18n } from './i18n'
 import Options from './Options.vue'
 import { registerSettingsComponents } from './settingsComponents'
+
+import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 
 const BILIBILI_URL = 'https://www.bilibili.com/'
 const OPTIONS_SHADOW_CSS_HREF = './assets/shadow.css'
@@ -27,9 +27,8 @@ const OPTIONS_SHADOW_CSS_HREF = './assets/shadow.css'
 async function syncBilibiliCookies() {
   try {
     const cookies = await browser.cookies.getAll({ url: BILIBILI_URL })
-    setBilibiliCookieSnapshot(new Map(cookies.map(cookie => [cookie.name, cookie.value])))
-  }
-  catch (error) {
+    setBilibiliCookieSnapshot(new Map(cookies.map((cookie) => [cookie.name, cookie.value])))
+  } catch (error) {
     console.error('[BewlyCat] 读取 B 站 Cookie 失败:', error)
   }
 }
@@ -51,8 +50,7 @@ function mountOptionsPage() {
 
   let revealed = false
   const revealHost = () => {
-    if (revealed)
-      return
+    if (revealed) return
     revealed = true
     host.style.visibility = ''
   }
@@ -63,10 +61,8 @@ function mountOptionsPage() {
   shadowRoot.append(resetStyle, shadowStyleLink, root)
   document.body.appendChild(host)
 
-  if (shadowStyleLink.sheet)
-    revealHost()
-  else
-    window.setTimeout(revealHost, 300)
+  if (shadowStyleLink.sheet) revealHost()
+  else window.setTimeout(revealHost, 300)
 
   const app = createApp(Options)
   setupApp(app)

@@ -3,15 +3,15 @@
 // Local levelling, not an integrated programme loudness / true-peak meter.
 class KFilter {
   constructor(highpass) {
-    const k = Math.tan(Math.PI * (highpass ? 38.13547087602444 : 1681.974450955533) / sampleRate)
+    const k = Math.tan((Math.PI * (highpass ? 38.13547087602444 : 1681.974450955533)) / sampleRate)
     const q = highpass ? 0.5003270373238773 : 0.7071752369554196
     const a0 = 1 + k / q + k * k
     const vh = 10 ** (3.999843853973347 / 20)
     const vb = vh ** 0.4996667741545416
-    this.b0 = highpass ? 1 : (vh + vb * k / q + k * k) / a0
-    this.b1 = highpass ? -2 : 2 * (k * k - vh) / a0
-    this.b2 = highpass ? 1 : (vh - vb * k / q + k * k) / a0
-    this.a1 = 2 * (k * k - 1) / a0
+    this.b0 = highpass ? 1 : (vh + (vb * k) / q + k * k) / a0
+    this.b1 = highpass ? -2 : (2 * (k * k - vh)) / a0
+    this.b2 = highpass ? 1 : (vh - (vb * k) / q + k * k) / a0
+    this.a1 = (2 * (k * k - 1)) / a0
     this.a2 = (1 - k / q + k * k) / a0
     this.reset()
   }
@@ -55,20 +55,17 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
         this.flush()
         this.desiredDb = this.gainDb
       }
-      if (data.type === 'reset')
-        this.reset()
+      if (data.type === 'reset') this.reset()
       if (data.type === 'seed' && Number.isFinite(data.gainDb)) {
         const seeded = Math.max(-18, Math.min(6, data.gainDb))
         this.gainDb = seeded
         this.desiredDb = seeded
       }
       if (data.type === 'configure') {
-        if (Number.isFinite(data.target))
-          this.target = Math.max(-24, Math.min(-14, data.target))
+        if (Number.isFinite(data.target)) this.target = Math.max(-24, Math.min(-14, data.target))
         if (Number.isFinite(data.strength))
           this.strength = Math.max(0.4, Math.min(1, data.strength))
-        if (Number.isFinite(data.volume))
-          this.volume = Math.max(0, Math.min(1, data.volume))
+        if (Number.isFinite(data.volume)) this.volume = Math.max(0, Math.min(1, data.volume))
         this.active = data.active === true
       }
     }
@@ -77,8 +74,8 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
   // 同一视频内跳转/切流时仅清空滤波器与测量窗口，保留当前增益避免均衡失效 ~1s。
   flush() {
     this.blocks.fill(0)
-    this.delay.forEach(c => c.fill(0))
-    this.filters.forEach(c => c.forEach(f => f.reset()))
+    this.delay.forEach((c) => c.fill(0))
+    this.filters.forEach((c) => c.forEach((f) => f.reset()))
     this.blockIndex = 0
     this.blockCount = 0
     this.power = 0
@@ -103,16 +100,12 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
     this.blocks[this.blockIndex] = power
     this.blockIndex = (this.blockIndex + 1) % 30
     this.blockCount = Math.min(30, this.blockCount + 1)
-    if (this.blockCount < 4)
-      return
+    if (this.blockCount < 4) return
     let momentary = 0
     let shortTerm = 0
-    for (let i = 0;
-      i < this.blockCount;
-      i++) {
+    for (let i = 0; i < this.blockCount; i++) {
       const p = this.blocks[(this.blockIndex - 1 - i + 30) % 30]
-      if (i < 4)
-        momentary += p / 4
+      if (i < 4) momentary += p / 4
       shortTerm += p / this.blockCount
     }
     const loudness = -0.691 + 10 * Math.log10(Math.max(momentary, 1e-12))
@@ -122,28 +115,26 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
       this.desiredDb = this.gainDb
       return
     }
-    const reference = 0.75 * loudness + 0.25 * (-0.691 + 10 * Math.log10(Math.max(shortTerm, 1e-12)))
+    const reference =
+      0.75 * loudness + 0.25 * (-0.691 + 10 * Math.log10(Math.max(shortTerm, 1e-12)))
     const desired = Math.max(-18, Math.min(6, (this.target - reference) * this.strength))
-    if (Math.abs(desired - this.gainDb) > 1)
-      this.desiredDb = desired
-    this.port.postMessage({ loudness, gainDb: this.gainDb, peakReductionDb: 20 * Math.log10(this.limiterGain) })
+    if (Math.abs(desired - this.gainDb) > 1) this.desiredDb = desired
+    this.port.postMessage({
+      loudness,
+      gainDb: this.gainDb,
+      peakReductionDb: 20 * Math.log10(this.limiterGain),
+    })
   }
 
   process(inputs, outputs) {
-    if (this.disposed)
-      return false
+    if (this.disposed) return false
     const input = inputs[0]
     const output = outputs[0]
-    if (!input?.length || !output?.length || !this.active)
-      return true
+    if (!input?.length || !output?.length || !this.active) return true
     const release = 1 - Math.exp(-1 / (sampleRate * 0.08))
-    for (let i = 0;
-      i < output[0].length;
-      i++) {
+    for (let i = 0; i < output[0].length; i++) {
       let weightedPower = 0
-      for (let c = 0;
-        c < 2;
-        c++) {
+      for (let c = 0; c < 2; c++) {
         const x = input[c]?.[i] ?? input[0][i]
         const y = this.filters[c][1].tick(this.filters[c][0].tick(x))
         weightedPower += y * y
@@ -151,16 +142,13 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
       // HTMLMediaElement volume is upstream: compensate measurement, not user volume.
       this.power += weightedPower / Math.max(this.volume * this.volume, 1e-6)
       this.frames++
-      if (this.frames >= Math.round(sampleRate * 0.1))
-        this.analyze()
+      if (this.frames >= Math.round(sampleRate * 0.1)) this.analyze()
       const delta = this.desiredDb - this.gainDb
       this.gainDb += Math.max(-8 / sampleRate, Math.min(1.5 / sampleRate, delta))
       const gain = 10 ** (this.gainDb / 20)
       const index = this.frame % this.capacity
       let peak = 0
-      for (let c = 0;
-        c < 2;
-        c++) {
+      for (let c = 0; c < 2; c++) {
         const x = (input[c]?.[i] ?? input[0][i]) * gain
         this.delay[c][index] = x
         peak = Math.max(peak, Math.abs(x))
@@ -168,7 +156,10 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
       // Monotonic deque: bounded O(1) look-ahead maximum, no per-render allocations.
       while (this.head !== this.tail && this.peakFrames[this.head] < this.frame - this.delayFrames)
         this.head = (this.head + 1) % this.capacity
-      while (this.head !== this.tail && this.peakValues[(this.tail - 1 + this.capacity) % this.capacity] <= peak)
+      while (
+        this.head !== this.tail &&
+        this.peakValues[(this.tail - 1 + this.capacity) % this.capacity] <= peak
+      )
         this.tail = (this.tail - 1 + this.capacity) % this.capacity
       this.peakValues[this.tail] = peak
       this.peakFrames[this.tail] = this.frame
@@ -176,10 +167,9 @@ class LocalLoudnessProcessor extends AudioWorkletProcessor {
       const limit = Math.min(1, 0.891250938 / Math.max(this.peakValues[this.head], 1e-9))
       this.limiterGain = Math.min(limit, this.limiterGain + (1 - this.limiterGain) * release)
       const read = (this.frame - this.delayFrames + this.capacity) % this.capacity
-      for (let c = 0;
-        c < output.length;
-        c++)
-        output[c][i] = this.frame < this.delayFrames ? 0 : this.delay[Math.min(c, 1)][read] * this.limiterGain
+      for (let c = 0; c < output.length; c++)
+        output[c][i] =
+          this.frame < this.delayFrames ? 0 : this.delay[Math.min(c, 1)][read] * this.limiterGain
       this.frame++
     }
     return true

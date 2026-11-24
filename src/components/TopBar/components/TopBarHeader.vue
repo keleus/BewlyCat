@@ -6,7 +6,11 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
-import { experimentalTopBarStyles, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX } from '~/logic/storage'
+import {
+  experimentalTopBarStyles,
+  FROSTED_GLASS_BLUR_MAX_PX,
+  FROSTED_GLASS_BLUR_MIN_PX,
+} from '~/logic/storage'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import TopBarItemEditor from './TopBarItemEditor.vue'
@@ -26,8 +30,9 @@ const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 // 搜索控件常驻挂载，显隐交给 TopBarSearch 内部的 Transition 播放动画；
 // 若在此处跟随 showSearchBar 卸载整棵子树，内部的 slide-out 过渡会被同步卸载吞掉。
 // 仅布局编辑模式需要整体隐藏（搜索页本身有搜索框，不展示编辑目标）。
-const showTopBarSearchEditor = computed(() =>
-  !isLayoutEditing.value || activatedPage.value !== AppPage.Search)
+const showTopBarSearchEditor = computed(
+  () => !isLayoutEditing.value || activatedPage.value !== AppPage.Search,
+)
 
 const FADE_STOP_COUNT = 16
 
@@ -41,19 +46,19 @@ function fadeStops(peak: number): [number, number][] {
 
 // 分段线性拐点会被读成一条亮暗带（Mach band）；余弦让收尾斜率渐近于 0。
 function smoothFade(color: (alphaPercent: number) => string, peak: number) {
-  const stops = fadeStops(peak).map(([position, alpha]) => `${color(+alpha.toFixed(2))} ${position}%`)
+  const stops = fadeStops(peak).map(
+    ([position, alpha]) => `${color(+alpha.toFixed(2))} ${position}%`,
+  )
   return `linear-gradient(to bottom, ${stops.join(', ')})`
 }
 
 function overlayMask(plateauVar: string) {
-  return `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0%, ${
-    fadeStops(100)
-      .map(([position, alpha]) => {
-        const t = +(position / 100).toFixed(4)
-        return `rgb(0 0 0 / ${+alpha.toFixed(2)}%) calc(var(${plateauVar}) + ${t} * (100% - var(${plateauVar})))`
-      })
-      .join(', ')
-  })`
+  return `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0%, ${fadeStops(100)
+    .map(([position, alpha]) => {
+      const t = +(position / 100).toFixed(4)
+      return `rgb(0 0 0 / ${+alpha.toFixed(2)}%) calc(var(${plateauVar}) + ${t} * (100% - var(${plateauVar})))`
+    })
+    .join(', ')})`
 }
 
 // 毛玻璃：满强度到主控件下沿（约 55px），收尾落在 64px 顶栏内。
@@ -77,15 +82,21 @@ function smoothstep(t: number) {
 // 用连续滚动进度替代 scrollTop===0 的布尔翻转：靠近顶部时遮罩逐级减淡
 const maskProgress = computed(() => smoothstep(scrollTop.value / MASK_RAMP_SCROLL_PX))
 
-const isShadowStyle = computed(() =>
-  settings.value.topBarStyle === 'transparent'
-  || settings.value.topBarStyle === 'expTransparent')
+const isShadowStyle = computed(
+  () =>
+    settings.value.topBarStyle === 'transparent' || settings.value.topBarStyle === 'expTransparent',
+)
 
 // 雾配方只认「页面自带横幅」：那种底图的亮暗不受主题控制，只能恒用黑雾托住白图标。
 // 不能改认 forceWhiteIcon —— 它在「暗色 + 壁纸」也为真，会让暗色下有无壁纸变成两种配方（#1095）。
-const fadeGradient = computed(() => hasPageBackdrop.value
-  ? smoothFade(alpha => `rgb(0 0 0 / ${alpha}%)`, 60)
-  : smoothFade(alpha => `color-mix(in oklab, var(--bew-bg), transparent ${+(100 - alpha).toFixed(2)}%)`, 80))
+const fadeGradient = computed(() =>
+  hasPageBackdrop.value
+    ? smoothFade((alpha) => `rgb(0 0 0 / ${alpha}%)`, 60)
+    : smoothFade(
+        (alpha) => `color-mix(in oklab, var(--bew-bg), transparent ${+(100 - alpha).toFixed(2)}%)`,
+        80,
+      ),
+)
 
 // 页面横幅不受主题控制，恒用暗玻璃；其余跟随亮暗。
 const useDarkGlass = computed(() => forceWhiteIcon.value || props.isDark)
@@ -117,15 +128,17 @@ const fadeGradientStyle = computed(() => ({
 
 // 暗色下用独立黑色层表达滚动加深，避免提高与页面同色的 --bew-bg 雾层时缺少可见变化。
 const scrolledShadeStyle = computed(() => ({
-  opacity: (settings.value.enableFrostedGlass
-    ? SCROLLED_SHADE_ALPHA_GLASS
-    : SCROLLED_SHADE_ALPHA_SOLID) * maskProgress.value,
+  opacity:
+    (settings.value.enableFrostedGlass ? SCROLLED_SHADE_ALPHA_GLASS : SCROLLED_SHADE_ALPHA_SOLID) *
+    maskProgress.value,
   maskImage: SCROLLED_OVERLAY_MASK,
   WebkitMaskImage: SCROLLED_OVERLAY_MASK,
 }))
 
 // 实验三档走余弦渐变管线；其余档位沿用 v1.5.x 的遮罩表现。
-const useLegacyRendering = computed(() => !experimentalTopBarStyles.includes(settings.value.topBarStyle))
+const useLegacyRendering = computed(
+  () => !experimentalTopBarStyles.includes(settings.value.topBarStyle),
+)
 
 // v1.5.x 的三停轻雾：顶部八成、中部六成（黑雾六/四成），随滚动由 0.8 收紧到 1。
 const legacyFadeGradientStyle = computed(() => ({
@@ -140,7 +153,10 @@ const legacyFadeGradientStyle = computed(() => ({
 
 // 旧版白雾保持 v1.5.x 的纯 blur 配方，半径跟随全局毛玻璃浓度滑块。
 const legacyGlassFilter = computed(() => {
-  const intensity = Math.min(FROSTED_GLASS_BLUR_MAX_PX, Math.max(FROSTED_GLASS_BLUR_MIN_PX, settings.value.frostedGlassBlurIntensity))
+  const intensity = Math.min(
+    FROSTED_GLASS_BLUR_MAX_PX,
+    Math.max(FROSTED_GLASS_BLUR_MIN_PX, settings.value.frostedGlassBlurIntensity),
+  )
   return `blur(${intensity}px)`
 })
 
@@ -156,7 +172,8 @@ const themeGradientColor = computed(() =>
   // 实验档在毛玻璃下用加深的主题色；旧版三档保持 v1.5.x 的强度。
   !useLegacyRendering.value && settings.value.enableFrostedGlass
     ? 'var(--bew-theme-color-20)'
-    : 'var(--bew-theme-color-10)')
+    : 'var(--bew-theme-color-10)',
+)
 
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
@@ -174,56 +191,50 @@ let resizeObserver: ResizeObserver | null = null
 let searchTransitionFrame: number | null = null
 
 function setupResizeObserver() {
-  if (resizeObserver)
-    resizeObserver.disconnect()
+  if (resizeObserver) resizeObserver.disconnect()
 
   resizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       const width = entry.contentRect.width
       if (entry.target === leftSection.value) {
         leftWidth.value = width
-      }
-      else if (entry.target === rightSection.value) {
+      } else if (entry.target === rightSection.value) {
         rightWidth.value = width
-      }
-      else if (entry.target === searchSection.value) {
+      } else if (entry.target === searchSection.value) {
         centerWidth.value = width
         refreshSearchContent()
-      }
-      else if (entry.target === searchContent.value) {
+      } else if (entry.target === searchContent.value) {
         searchContentWidth.value = width
       }
     }
   })
 
-  if (leftSection.value)
-    resizeObserver.observe(leftSection.value)
-  if (rightSection.value)
-    resizeObserver.observe(rightSection.value)
-  if (searchSection.value)
-    resizeObserver.observe(searchSection.value)
+  if (leftSection.value) resizeObserver.observe(leftSection.value)
+  if (rightSection.value) resizeObserver.observe(rightSection.value)
+  if (searchSection.value) resizeObserver.observe(searchSection.value)
 }
 
 // 监听 searchContent 变化
 watch(searchContent, (newEl, oldEl) => {
   if (resizeObserver) {
-    if (oldEl)
-      resizeObserver.unobserve(oldEl)
-    if (newEl)
-      resizeObserver.observe(newEl)
+    if (oldEl) resizeObserver.unobserve(oldEl)
+    if (newEl) resizeObserver.observe(newEl)
   }
 })
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
-  if (searchTransitionFrame !== null)
-    cancelAnimationFrame(searchTransitionFrame)
+  if (searchTransitionFrame !== null) cancelAnimationFrame(searchTransitionFrame)
 })
 
-useMutationObserver(searchSection, () => {
-  refreshSearchContent()
-}, { childList: true, subtree: true })
+useMutationObserver(
+  searchSection,
+  () => {
+    refreshSearchContent()
+  },
+  { childList: true, subtree: true },
+)
 
 onMounted(() => {
   leftWidth.value = leftSection.value?.offsetWidth ?? 0
@@ -243,22 +254,19 @@ onMounted(() => {
 })
 
 const maxOffset = computed(() => {
-  if (!centerWidth.value || !searchContentWidth.value)
-    return 0
+  if (!centerWidth.value || !searchContentWidth.value) return 0
   return Math.max(0, (centerWidth.value - searchContentWidth.value) / 2)
 })
 
 const searchOffset = computed(() => {
   // 窄屏优先把完整的中间栏交给搜索框，避免平移后浪费可用宽度。
-  if (isNarrowLayout.value)
-    return 0
+  if (isNarrowLayout.value) return 0
 
   // 左右区域宽度不同时，补偿一半宽度差，让有足够空余的搜索框相对页面居中。
   // 实际偏移仍受搜索区域剩余空间限制，空间不足时不会挤压两侧控件。
   const desired = (rightWidth.value - leftWidth.value) / 2
   const limit = maxOffset.value
-  if (!limit)
-    return 0
+  if (!limit) return 0
   return Math.min(Math.max(desired, -limit), limit)
 })
 
@@ -275,7 +283,8 @@ function refreshSearchContent() {
     :class="{ 'top-bar-header--editing': isLayoutEditing }"
     max-w="$bew-page-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
-    p="x-12" m-auto
+    p="x-12"
+    m-auto
     h="$bew-top-bar-height"
   >
     <!-- 旧版三档：常驻雾层沿用 v1.5.x 结构，滚动层只在毛玻璃开启时生效 -->
@@ -300,11 +309,7 @@ function refreshSearchContent() {
       <div class="top-bar-header__fog" :style="fadeGradientStyle" />
     </template>
 
-    <div
-      v-if="isDark"
-      class="top-bar-header__scrolled-shade"
-      :style="scrolledShadeStyle"
-    />
+    <div v-if="isDark" class="top-bar-header__scrolled-shade" :style="scrolledShadeStyle" />
 
     <!-- Top bar theme color gradient：只在暗色渲染，黑雾与底色雾同为深色，
          叠淡主题渐变不影响白图标对比度，故不再按 forceWhiteIcon 关闭——
@@ -312,7 +317,10 @@ function refreshSearchContent() {
     <Transition name="fade">
       <div
         v-if="settings.showTopBarThemeColorGradient && reachTop && isDark"
-        pos="absolute top-0 left-0" w-full h="$bew-top-bar-height" pointer-events-none
+        pos="absolute top-0 left-0"
+        w-full
+        h="$bew-top-bar-height"
+        pointer-events-none
         :style="{ background: `linear-gradient(to bottom, ${themeGradientColor}, transparent)` }"
       />
     </Transition>
@@ -328,14 +336,8 @@ function refreshSearchContent() {
       :class="{ 'top-bar-header__search--transition-enabled': isSearchTransitionEnabled }"
       :style="{ transform: `translateX(${searchOffset}px)` }"
     >
-      <div
-        class="top-bar-header__search-content"
-        data-top-bar-search-content
-      >
-        <div
-          v-if="showTopBarSearchEditor"
-          class="top-bar-header__search-control"
-        >
+      <div class="top-bar-header__search-content" data-top-bar-search-content>
+        <div v-if="showTopBarSearchEditor" class="top-bar-header__search-control">
           <TopBarItemEditor
             component-key="search"
             :title="$t('settings.show_hot_search_in_top_bar')"
@@ -351,9 +353,7 @@ function refreshSearchContent() {
 
     <!-- right content -->
     <div ref="rightSection" class="top-bar-header__side top-bar-header__side--right">
-      <TopBarRight
-        @notifications-click="handleNotificationsItemClick"
-      />
+      <TopBarRight @notifications-click="handleNotificationsItemClick" />
     </div>
   </main>
 </template>
@@ -371,7 +371,9 @@ function refreshSearchContent() {
 }
 
 .top-bar-header__glass-overlay {
-  --overlay-mask-plateau-frosted: calc((var(--bew-top-bar-height) + var(--bew-top-bar-primary-control-height)) / 2);
+  --overlay-mask-plateau-frosted: calc(
+    (var(--bew-top-bar-height) + var(--bew-top-bar-primary-control-height)) / 2
+  );
   position: absolute;
   top: 0;
   left: 0;
@@ -418,7 +420,13 @@ function refreshSearchContent() {
   pointer-events: none;
   background-color: var(--bew-bg);
   transition: opacity var(--bew-duration-fast) linear;
-  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 100%), rgb(0 0 0 / 100%) 24px, rgb(0 0 0 / 90%) 44px, transparent);
+  mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 100%),
+    rgb(0 0 0 / 100%) 24px,
+    rgb(0 0 0 / 90%) 44px,
+    transparent
+  );
   -webkit-mask-image: linear-gradient(
     to bottom,
     rgb(0 0 0 / 100%),

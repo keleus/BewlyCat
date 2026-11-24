@@ -3,7 +3,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function computeFloatingMenuPosition(
-  anchor: { top: number, right: number, bottom: number },
+  anchor: { top: number; right: number; bottom: number },
   viewportWidth: number,
   viewportHeight: number,
 ) {

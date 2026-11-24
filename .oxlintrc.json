@@ -1,0 +1,72 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "vue", "promise"],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true,
+    "webextensions": true
+  },
+  "globals": {
+    "__BUILD_COMMIT__": "readonly",
+    "__DEV__": "readonly"
+  },
+  "rules": {
+    "eqeqeq": ["error", "smart"],
+    "import/no-duplicates": "error",
+    "no-alert": "off",
+    "no-console": [
+      "error",
+      {
+        "allow": ["debug", "warn", "error", "log"]
+      }
+    ],
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "ignoreRestSiblings": true,
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "no-var": "error",
+    "prefer-const": [
+      "error",
+      {
+        "destructuring": "all",
+        "ignoreReadBeforeAssign": true
+      }
+    ],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "disallowTypeAnnotations": false,
+        "prefer": "type-imports"
+      }
+    ],
+    "vue/no-required-prop-with-default": "off"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**", ".github/scripts/**", "*.config.*"],
+      "env": {
+        "node": true
+      },
+      "plugins": ["node"]
+    }
+  ],
+  "ignorePatterns": [
+    "dist",
+    "extension",
+    "extension-firefox",
+    "extension-safari",
+    "extension-safari-macos",
+    "node_modules",
+    ".pnpm-store",
+    ".kiro",
+    "src/auto-imports.d.ts"
+  ]
+}

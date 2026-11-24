@@ -7,8 +7,7 @@ const INITIAL_ZERO_REPORT_DELAY_MS = 400
  * 让首页的顶栏和 Dock 与新标签中打开的原版页面保持相同的右侧位置。
  */
 export function reportScrollbarGutterToParent() {
-  if (window.self === window.top)
-    return
+  if (window.self === window.top) return
 
   let lastWidth = -1
   let frame = 0
@@ -23,8 +22,7 @@ export function reportScrollbarGutterToParent() {
 
   function postWidth(width: number) {
     clearInitialZeroTimer()
-    if (width === lastWidth)
-      return
+    if (width === lastWidth) return
     lastWidth = width
     window.parent.postMessage({ type: IFRAME_SCROLLBAR_GUTTER_CHANGE, width }, '*')
   }
@@ -40,8 +38,7 @@ export function reportScrollbarGutterToParent() {
     // 首次加载期间（文档未完成或 SPA 首屏尚未撑开）不立即上报 0，
     // 避免父页顶栏和 Dock 在加载期间先向右跳再恢复。
     if (lastWidth === -1 && width === 0) {
-      if (document.readyState !== 'complete')
-        return
+      if (document.readyState !== 'complete') return
       if (initialZeroTimer === undefined) {
         initialZeroTimer = setTimeout(() => {
           initialZeroTimer = undefined
@@ -55,8 +52,7 @@ export function reportScrollbarGutterToParent() {
   }
 
   function scheduleReport() {
-    if (!frame)
-      frame = requestAnimationFrame(report)
+    if (!frame) frame = requestAnimationFrame(report)
   }
 
   // 滚动条出现或消失时根元素宽度随之变化。

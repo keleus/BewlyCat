@@ -144,12 +144,12 @@
       }
 
       // & -> .el-select-dropdown
-      &.el-popper[x-placement^="bottom"] .popper__arrow {
+      &.el-popper[x-placement^='bottom'] .popper__arrow {
         border-bottom-color: var(--bew-border-color);
       }
 
       // & -> .el-select-dropdown
-      &.el-popper[x-placement^="bottom"] .popper__arrow:after {
+      &.el-popper[x-placement^='bottom'] .popper__arrow:after {
         border-bottom-color: var(--bew-content-alt-solid);
       }
 

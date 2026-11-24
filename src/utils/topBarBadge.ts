@@ -6,7 +6,7 @@ import { settings } from '~/logic'
  * @returns 组件配置
  */
 export function getComponentConfig(componentKey: string) {
-  return settings.value.topBarComponentsConfig?.find(item => item.key === componentKey)
+  return settings.value.topBarComponentsConfig?.find((item) => item.key === componentKey)
 }
 
 /**

@@ -13,8 +13,7 @@ export function setBilibiliCookieSnapshot(cookies: ReadonlyMap<string, string>) 
  * @returns cookie value
  */
 export function getCookie(name: string): string {
-  if (bilibiliCookieSnapshot)
-    return bilibiliCookieSnapshot.get(name) ?? ''
+  if (bilibiliCookieSnapshot) return bilibiliCookieSnapshot.get(name) ?? ''
 
   const value = `; ${document.cookie}`
   const parts: Array<string> = value.split(`; ${name}=`)
@@ -62,12 +61,10 @@ export function openLinkToNewTab(url: string, features: string = '') {
 }
 
 export function isElectron(): boolean {
-  if (typeof navigator === 'undefined')
-    return false
+  if (typeof navigator === 'undefined') return false
 
   // 检测 userAgent
-  if (/Electron/i.test(navigator.userAgent))
-    return true
+  if (/Electron/i.test(navigator.userAgent)) return true
 
   return false
 }
@@ -107,8 +104,7 @@ export function hexToHSL(hex: string, alpha: number | null = null): string {
   // Calculate the hue
   if (max === min) {
     h = s = 0 // achromatic
-  }
-  else {
+  } else {
     const d = max - min
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
 
@@ -132,27 +128,23 @@ export function hexToHSL(hex: string, alpha: number | null = null): string {
   s = Math.round(s * 100)
   l = Math.round(l * 100)
 
-  if (alpha !== null)
-    return `hsla(${h}, ${s}%, ${l}%, ${alpha})`
+  if (alpha !== null) return `hsla(${h}, ${s}%, ${l}%, ${alpha})`
   return `hsl(${h}, ${s}%, ${l}%)`
 }
 
-const pendingSmoothScrolls = new WeakMap<HTMLElement, { target: number, finish: () => void }>()
+const pendingSmoothScrolls = new WeakMap<HTMLElement, { target: number; finish: () => void }>()
 
 // A slight adjustment to Material's standard curve: cubic-bezier(0.4, 0, 0.23, 1).
 function standardScrollEasing(progress: number): number {
-  if (progress <= 0 || progress >= 1)
-    return progress
+  if (progress <= 0 || progress >= 1) return progress
 
   let low = 0
   let high = 1
   for (let i = 0; i < 20; i++) {
     const t = (low + high) / 2
     const x = 1.2 * t * (1 - t) ** 2 + 0.69 * t ** 2 * (1 - t) + t ** 3
-    if (x < progress)
-      low = t
-    else
-      high = t
+    if (x < progress) low = t
+    else high = t
   }
   const t = (low + high) / 2
   return t * t * (3 - 2 * t)
@@ -164,8 +156,7 @@ export function isProgrammaticScrollActive(element: HTMLElement): boolean {
 
 export function cancelProgrammaticScroll(element: HTMLElement): void {
   const pending = pendingSmoothScrolls.get(element)
-  if (!pending)
-    return
+  if (!pending) return
 
   pending.finish()
   // Stop native smooth scrolling too, before the next view restores its position.
@@ -186,12 +177,10 @@ export function jumpScrollTo(element: HTMLElement, top: number): void {
  */
 export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number) {
   const pending = pendingSmoothScrolls.get(element)
-  if (pending?.target === targetScrollTop)
-    return
+  if (pending?.target === targetScrollTop) return
   pending?.finish()
   // cancel if already on top
-  if (element.scrollTop === targetScrollTop)
-    return
+  if (element.scrollTop === targetScrollTop) return
 
   const doc = element.ownerDocument
   let startScrollTop = element.scrollTop
@@ -201,8 +190,7 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
   let timeout: ReturnType<typeof setTimeout>
   const finish = () => {
     clearTimeout(timeout)
-    if (animationFrame !== undefined)
-      cancelAnimationFrame(animationFrame)
+    if (animationFrame !== undefined) cancelAnimationFrame(animationFrame)
     element.removeEventListener('scrollend', finish)
     element.removeEventListener('wheel', finish)
     element.removeEventListener('touchstart', finish)
@@ -212,45 +200,49 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
     pendingSmoothScrolls.delete(element)
   }
   const finishAtTarget = () => {
-    if (useCustomAnimation)
-      element.scrollTo({ top: targetScrollTop, behavior: 'instant' })
+    if (useCustomAnimation) element.scrollTo({ top: targetScrollTop, behavior: 'instant' })
     finish()
   }
   function handleVisibilityChange() {
-    if (doc.hidden && useCustomAnimation)
-      finishAtTarget()
+    if (doc.hidden && useCustomAnimation) finishAtTarget()
   }
   function handlePointerDown(event: PointerEvent) {
     const path = event.composedPath()
     const rect = element.getBoundingClientRect()
-    const inBounds = event.clientX >= rect.left && event.clientX <= rect.right
-      && event.clientY >= rect.top && event.clientY <= rect.bottom
-    const onNativeScrollbar = path.includes(element) && inBounds
-      && (event.clientX >= rect.left + element.clientLeft + element.clientWidth
-        || event.clientY >= rect.top + element.clientTop + element.clientHeight)
-    const onOverlayScrollbar = path.some(node => node instanceof Element && node.matches('.os-scrollbar, .os-scrollbar *'))
-    if (onNativeScrollbar || onOverlayScrollbar)
-      finish()
+    const inBounds =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    const onNativeScrollbar =
+      path.includes(element) &&
+      inBounds &&
+      (event.clientX >= rect.left + element.clientLeft + element.clientWidth ||
+        event.clientY >= rect.top + element.clientTop + element.clientHeight)
+    const onOverlayScrollbar = path.some(
+      (node) => node instanceof Element && node.matches('.os-scrollbar, .os-scrollbar *'),
+    )
+    if (onNativeScrollbar || onOverlayScrollbar) finish()
   }
   function handleKeyDown(event: KeyboardEvent) {
     if (!['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key))
       return
     const target = event.composedPath()[0]
-    if (target instanceof HTMLElement && (target.isContentEditable || /^(?:INPUT|TEXTAREA|SELECT)$/.test(target.tagName)))
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable || /^(?:INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+    )
       return
-    if (event.key === ' ' && target instanceof HTMLElement && target.closest('button'))
-      return
+    if (event.key === ' ' && target instanceof HTMLElement && target.closest('button')) return
     // App shortcuts can prevent the native scroll later in the same dispatch.
     setTimeout(() => {
-      if (!event.defaultPrevented && pendingSmoothScrolls.get(element)?.finish === finish)
-        finish()
+      if (!event.defaultPrevented && pendingSmoothScrolls.get(element)?.finish === finish) finish()
     }, 0)
   }
   // Also release the guard when scrolling is interrupted, or scrollend is unavailable.
   timeout = setTimeout(finishAtTarget, 3000)
   pendingSmoothScrolls.set(element, { target: targetScrollTop, finish })
-  if (!useCustomAnimation)
-    element.addEventListener('scrollend', finish, { passive: true })
+  if (!useCustomAnimation) element.addEventListener('scrollend', finish, { passive: true })
   element.addEventListener('wheel', finish, { passive: true })
   element.addEventListener('touchstart', finish, { passive: true })
   doc.addEventListener('pointerdown', handlePointerDown, true)
@@ -266,7 +258,10 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
       const actualPosition = element.scrollTop
       // A shorter replacement list can clamp the viewport while animating.
       // Continue from the clamped position instead of jumping back down.
-      if (Math.abs(actualPosition - targetScrollTop) + 2 < Math.abs(lastPosition - targetScrollTop)) {
+      if (
+        Math.abs(actualPosition - targetScrollTop) + 2 <
+        Math.abs(lastPosition - targetScrollTop)
+      ) {
         duration = Math.max(1, duration - (time - startTime))
         startTime = time
         startScrollTop = actualPosition
@@ -275,19 +270,19 @@ export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number)
       const eased = standardScrollEasing(progress)
       lastPosition = startScrollTop + (targetScrollTop - startScrollTop) * eased
       element.scrollTo({ top: lastPosition, behavior: 'instant' })
-      if (progress < 1)
-        animationFrame = requestAnimationFrame(animate)
-      else
-        finish()
+      if (progress < 1) animationFrame = requestAnimationFrame(animate)
+      else finish()
     }
     animationFrame = requestAnimationFrame(animate)
-  }
-  else {
+  } else {
     element.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
   }
 }
 
-export function injectCSS(css: string, element: HTMLElement | ShadowRoot = document.documentElement): HTMLStyleElement {
+export function injectCSS(
+  css: string,
+  element: HTMLElement | ShadowRoot = document.documentElement,
+): HTMLStyleElement {
   const el = document.createElement('style')
   el.setAttribute('rel', 'stylesheet')
   el.textContent = css
@@ -314,10 +309,12 @@ export function isHomePage(url: string = location.href): boolean {
   try {
     const urlObj = new URL(stripBilibiliLocaleUrl(url))
     const isHttp = urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
-    const isBilibiliHomeHost = urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
-    return isHttp && isBilibiliHomeHost && (urlObj.pathname === '/' || urlObj.pathname === '/index.html')
-  }
-  catch {
+    const isBilibiliHomeHost =
+      urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
+    return (
+      isHttp && isBilibiliHomeHost && (urlObj.pathname === '/' || urlObj.pathname === '/index.html')
+    )
+  } catch {
     return false
   }
 }
@@ -326,8 +323,7 @@ export function isHomePage(url: string = location.href): boolean {
  * 判断实际首页，排除复用首页路径的搜索、历史等 BewlyCat 内置页面。
  */
 export function isActualHomepage(url: string = location.href): boolean {
-  if (!isHomePage(url))
-    return false
+  if (!isHomePage(url)) return false
 
   const page = new URL(url).searchParams.get('page')
   return page === null || page === 'Home'
@@ -345,17 +341,17 @@ export function isWatchLaterListPage(url: string): boolean {
   try {
     const urlObj = new URL(stripBilibiliLocaleUrl(url))
     const isHttp = urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
-    const isBilibiliHost = urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
-    if (!isHttp || !isBilibiliHost)
-      return false
+    const isBilibiliHost =
+      urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
+    if (!isHttp || !isBilibiliHost) return false
 
     if (urlObj.pathname === '/watchlater/list' || urlObj.pathname === '/watchlater/list/')
       return true
 
-    const isLegacyWatchLaterPath = urlObj.pathname === '/watchlater' || urlObj.pathname === '/watchlater/'
+    const isLegacyWatchLaterPath =
+      urlObj.pathname === '/watchlater' || urlObj.pathname === '/watchlater/'
     return isLegacyWatchLaterPath && /^#\/list(?:[/?]|$)/.test(urlObj.hash)
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -369,14 +365,14 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
   url = stripBilibiliLocaleUrl(url)
   if (
     // video page
-    /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url) ||
     // anime playback, movie, and legacy medialist playback pages
-    || /https?:\/\/(?:www\.)?bilibili\.com\/(?:bangumi|medialist)\/play\/.*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/(?:bangumi|medialist)\/play\/.*/.test(url) ||
     // watch later playlist
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater\?(?:bvid|avid).*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater\?(?:bvid|avid).*/.test(url) ||
     // favorite playlist
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(url) ||
+    /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(url)
   ) {
     return true
   }
@@ -389,7 +385,9 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
  */
 export function isGlassSupportedPlaybackPage(url: string = location.href): boolean {
   url = stripBilibiliLocaleUrl(url)
-  return /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list|(?:medialist|bangumi)\/play)\/.*/.test(url)
+  return /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list|(?:medialist|bangumi)\/play)\/.*/.test(
+    url,
+  )
 }
 
 /**
@@ -403,11 +401,11 @@ export function isVideoPlaybackPage(url: string = location.href): boolean {
   url = stripBilibiliLocaleUrl(url)
   return (
     // normal video page and playlist video page
-    /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url) ||
     // anime, movie, and course playback pages
-    || /https?:\/\/(?:www\.)?bilibili\.com\/(?:bangumi|cheese)\/play\/.*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/(?:bangumi|cheese)\/play\/.*/.test(url) ||
     // media playlist playback pages
-    || /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/play\/.*/.test(url)
+    /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/play\/.*/.test(url)
   )
 }
 
@@ -417,9 +415,7 @@ export function isVideoPlaybackPage(url: string = location.href): boolean {
  * @returns true if the current page is the notifications page
  */
 export function isNotificationPage(url: string = location.href): boolean {
-  if (
-    /https?:\/\/message\.bilibili\.com\.*/.test(url)
-  ) {
+  if (/https?:\/\/message\.bilibili\.com\.*/.test(url)) {
     return true
   }
   return false
@@ -449,9 +445,7 @@ export function isSearchResultsPage(url: string = location.href): boolean {
  * @returns true if the current page is a user space page
  */
 export function isUserSpacePage(url: string = location.href): boolean {
-  if (
-    /https?:\/\/space\.bilibili\.com\.*/.test(url)
-  ) {
+  if (/https?:\/\/space\.bilibili\.com\.*/.test(url)) {
     return true
   }
   return false
@@ -466,7 +460,13 @@ export function isUserSpacePage(url: string = location.href): boolean {
  * @param quality - The quality of the compressed image (0-1).
  * @param callback - The callback function to execute with the compressed file.
  */
-export function compressAndResizeImage(file: File, maxWidth: number, maxHeight: number, quality: number, callback: any) {
+export function compressAndResizeImage(
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  quality: number,
+  callback: any,
+) {
   // Create an Image object
   const img = new Image()
 
@@ -486,13 +486,12 @@ export function compressAndResizeImage(file: File, maxWidth: number, maxHeight: 
 
       if (width > height) {
         if (width > maxWidth) {
-          height = Math.round(height * maxWidth / width)
+          height = Math.round((height * maxWidth) / width)
           width = maxWidth
         }
-      }
-      else {
+      } else {
         if (height > maxHeight) {
-          width = Math.round(width * maxHeight / height)
+          width = Math.round((width * maxHeight) / height)
           height = maxHeight
         }
       }
@@ -510,16 +509,20 @@ export function compressAndResizeImage(file: File, maxWidth: number, maxHeight: 
       ctx.drawImage(img, 0, 0, width, height)
 
       // Compress the image
-      canvas.toBlob((blob) => {
-        // Create a new blob file
-        const compressedFile = new File([blob as Blob], file.name, {
-          type: 'image/jpeg',
-          lastModified: Date.now(),
-        })
+      canvas.toBlob(
+        (blob) => {
+          // Create a new blob file
+          const compressedFile = new File([blob as Blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          })
 
-        // Execute the callback with the new compressed file
-        callback(compressedFile)
-      }, 'image/jpeg', quality)
+          // Execute the callback with the new compressed file
+          callback(compressedFile)
+        },
+        'image/jpeg',
+        quality,
+      )
     }
   }
 
@@ -569,8 +572,7 @@ export async function generateBlurredWallpaper(
         // Convert to base64 with compression
         const blurredDataUrl = canvas.toDataURL('image/jpeg', 0.7)
         resolve(blurredDataUrl)
-      }
-      catch (error) {
+      } catch (error) {
         reject(error)
       }
     }
@@ -600,16 +602,18 @@ export function compareVersions(version1: string, version2: string): number {
     const num1 = v1Parts[i] || 0 // Defaults to 0 if undefined
     const num2 = v2Parts[i] || 0 // Defaults to 0 if undefined
 
-    if (num1 > num2)
-      return 1
-    if (num1 < num2)
-      return -1
+    if (num1 > num2) return 1
+    if (num1 < num2) return -1
   }
 
   return 0 // Versions are equal
 }
 
-export function queryDomUntilFound(selector: string, timeout = 500, abort?: AbortController): Promise<HTMLElement | null> {
+export function queryDomUntilFound(
+  selector: string,
+  timeout = 500,
+  abort?: AbortController,
+): Promise<HTMLElement | null> {
   return new Promise((resolve) => {
     const interval = setInterval(() => {
       const element = document.querySelector(selector)
@@ -635,8 +639,7 @@ export function queryDomUntilFound(selector: string, timeout = 500, abort?: Abor
 export function isInIframe(): boolean {
   try {
     return window.self !== window.top
-  }
-  catch {
+  } catch {
     // If we can't access window.top due to security restrictions,
     // we're definitely in an iframe
     return true
@@ -684,12 +687,12 @@ export function cleanBilibiliUrl(url: string): string {
 
     // Only clean bilibili.com URLs
     const hostname = urlObj.hostname.toLowerCase()
-    const isBilibiliHost = hostname === 'bilibili.com'
-      || hostname === 'b23.tv'
-      || hostname.endsWith('.bilibili.com')
-      || hostname.endsWith('.b23.tv')
-    if (!isBilibiliHost)
-      return url
+    const isBilibiliHost =
+      hostname === 'bilibili.com' ||
+      hostname === 'b23.tv' ||
+      hostname.endsWith('.bilibili.com') ||
+      hostname.endsWith('.b23.tv')
+    if (!isBilibiliHost) return url
 
     // Remove tracking parameters
     for (const param of BILIBILI_TRACKING_PARAMS) {
@@ -698,12 +701,10 @@ export function cleanBilibiliUrl(url: string): string {
 
     // If no search params left, return URL without trailing ?
     let cleanedUrl = urlObj.toString()
-    if (urlObj.searchParams.toString() === '')
-      cleanedUrl = cleanedUrl.replace(/\?$/, '')
+    if (urlObj.searchParams.toString() === '') cleanedUrl = cleanedUrl.replace(/\?$/, '')
 
     return cleanedUrl
-  }
-  catch {
+  } catch {
     return url
   }
 }
@@ -719,23 +720,19 @@ export function cleanBilibiliUrl(url: string): string {
  */
 export function cleanBilibiliShareText(
   text: string,
-  options: { includeTitle?: boolean, removeTrackingParams?: boolean } = {},
+  options: { includeTitle?: boolean; removeTrackingParams?: boolean } = {},
 ): string {
   const { includeTitle = false, removeTrackingParams = true } = options
 
   // 提取文本中第一个成对的「【...】」内容，支持嵌套
   const extractFirstBracketContent = (s: string): string | null => {
     const start = s.indexOf('【')
-    if (start === -1)
-      return null
+    if (start === -1) return null
     let depth = 0
     for (let i = start; i < s.length; i++) {
-      if (s[i] === '【')
-        depth++
-      else if (s[i] === '】')
-        depth--
-      if (depth === 0 && i > start)
-        return s.slice(start + 1, i)
+      if (s[i] === '【') depth++
+      else if (s[i] === '】') depth--
+      if (depth === 0 && i > start) return s.slice(start + 1, i)
     }
     return null
   }
@@ -747,14 +744,13 @@ export function cleanBilibiliShareText(
 
   if (url) {
     const cleanedUrl = removeTrackingParams ? cleanBilibiliUrl(url) : url
-    if (title)
-      return includeTitle ? `${title} ${cleanedUrl}` : cleanedUrl
+    if (title) return includeTitle ? `${title} ${cleanedUrl}` : cleanedUrl
     return cleanedUrl
   }
 
   // 不符合分享格式时，尝试清理文本中的链接
   if (removeTrackingParams) {
-    return text.replace(/(https?:\/\/\S+)/g, url => cleanBilibiliUrl(url))
+    return text.replace(/(https?:\/\/\S+)/g, (url) => cleanBilibiliUrl(url))
   }
 
   return text

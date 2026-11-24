@@ -10,7 +10,10 @@ import { buildSettingsPageHash } from '~/utils/settingsPage'
 
 import SettingsSearchResults from './components/SettingsSearchResults.vue'
 import SettingsSectionHeading from './components/SettingsSectionHeading.vue'
-import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
+import {
+  createPinnedChannelHistory,
+  pinnedChannelHistoryKey,
+} from './composables/usePinnedChannelHistory'
 import { useSettingsNavigation } from './composables/useSettingsNavigation'
 import { useSettingsSearch } from './composables/useSettingsSearch'
 import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilter'
@@ -28,10 +31,12 @@ const props = defineProps<{
 const pendingNavigation = defineModel<SettingsNavigationTarget | undefined>('pendingNavigation')
 const menus = props.menus ?? defaultSettingsMenus
 
-const pinnedChannelHistory = createPinnedChannelHistory(computed({
-  get: () => settings.value.topBarPinnedChannels,
-  set: keys => settings.value.topBarPinnedChannels = keys,
-}))
+const pinnedChannelHistory = createPinnedChannelHistory(
+  computed({
+    get: () => settings.value.topBarPinnedChannels,
+    set: (keys) => (settings.value.topBarPinnedChannels = keys),
+  }),
+)
 provide(pinnedChannelHistoryKey, pinnedChannelHistory)
 
 const { t } = useI18n()
@@ -54,16 +59,24 @@ const { mainAppRef } = useBewlyApp()
 
 // 鼠标点选后焦点仍留在控件上时，之后的任意按键（包括系统快捷键）都会让浏览器
 // 把它判定为键盘聚焦并显示焦点环，因此点击后释放焦点。
-const POINTER_RELEASED_FOCUS_SELECTOR = 'a, button, [role="button"], [role="tab"], input[type="checkbox"], input[type="radio"]'
-useEventListener(mainAppRef, 'click', (event: MouseEvent) => {
-  // 键盘触发的 click 其 detail 为 0，需要保留焦点和焦点环。
-  if (event.detail === 0)
-    return
+const POINTER_RELEASED_FOCUS_SELECTOR =
+  'a, button, [role="button"], [role="tab"], input[type="checkbox"], input[type="radio"]'
+useEventListener(
+  mainAppRef,
+  'click',
+  (event: MouseEvent) => {
+    // 键盘触发的 click 其 detail 为 0，需要保留焦点和焦点环。
+    if (event.detail === 0) return
 
-  const activeElement = (mainAppRef.value.getRootNode() as ShadowRoot).activeElement
-  if (activeElement instanceof HTMLElement && activeElement.matches(POINTER_RELEASED_FOCUS_SELECTOR))
-    activeElement.blur()
-}, { capture: true })
+    const activeElement = (mainAppRef.value.getRootNode() as ShadowRoot).activeElement
+    if (
+      activeElement instanceof HTMLElement &&
+      activeElement.matches(POINTER_RELEASED_FOCUS_SELECTOR)
+    )
+      activeElement.blur()
+  },
+  { capture: true },
+)
 
 function focusSettingsSearch() {
   searchInputRef.value?.focus({ preventScroll: true })
@@ -76,7 +89,9 @@ watch([activatedMenuItem, activeSecondaryPage], () => {
 })
 
 const title = computed(() => t(activeMenu.value.titleKey))
-const titleDetail = computed(() => activeSecondaryPage.value ? t(activeSecondaryPage.value.titleKey) : undefined)
+const titleDetail = computed(() =>
+  activeSecondaryPage.value ? t(activeSecondaryPage.value.titleKey) : undefined,
+)
 
 const search = useSettingsSearch({ visibleMenus, menus })
 const {
@@ -104,23 +119,24 @@ watch(isSearching, () => {
 })
 
 // 快捷键分组等 details 默认折叠，结果页里命中的项需要展开才能看到。
-watch(searchResults, async () => {
-  if (!isSearching.value)
-    return
-  await nextTick()
-  const viewport = scrollViewportRef.value
-  if (!viewport)
-    return
+watch(
+  searchResults,
+  async () => {
+    if (!isSearching.value) return
+    await nextTick()
+    const viewport = scrollViewportRef.value
+    if (!viewport) return
 
-  for (const match of Array.from(viewport.querySelectorAll('.settings-search-match'))) {
-    let ancestor = match.parentElement
-    while (ancestor && ancestor !== viewport) {
-      if (ancestor instanceof HTMLDetailsElement && !ancestor.open)
-        ancestor.open = true
-      ancestor = ancestor.parentElement
+    for (const match of Array.from(viewport.querySelectorAll('.settings-search-match'))) {
+      let ancestor = match.parentElement
+      while (ancestor && ancestor !== viewport) {
+        if (ancestor instanceof HTMLDetailsElement && !ancestor.open) ancestor.open = true
+        ancestor = ancestor.parentElement
+      }
     }
-  }
-}, { flush: 'post' })
+  },
+  { flush: 'post' },
+)
 
 const searchNavigation = useSettingsSearchNavigation({
   scrollViewportRef,
@@ -131,36 +147,45 @@ const searchNavigation = useSettingsSearchNavigation({
 })
 
 function navigateToTarget(target: SettingsNavigationTarget) {
-  const storageKey = menus.find(menu => menu.value === target.menu)?.storageKey
+  const storageKey = menus.find((menu) => menu.value === target.menu)?.storageKey
   searchNavigation.navigateToSearchResult({
     menu: target.menu as MenuType,
     targetTitleKey: target.targetTitleKey,
-    storageValues: target.secondaryPage && storageKey
-      ? [{ key: storageKey, value: target.secondaryPage }]
-      : undefined,
+    storageValues:
+      target.secondaryPage && storageKey
+        ? [{ key: storageKey, value: target.secondaryPage }]
+        : undefined,
   })
 }
 
 function handleSidebarLinkClick(menu?: MenuType) {
-  if (menu)
-    expandedMenus.value.add(menu)
+  if (menu) expandedMenus.value.add(menu)
   // 侧栏导航视为离开搜索结果页。
   searchQuery.value = ''
 }
 
-watch(pendingNavigation, (target) => {
-  if (!target)
-    return
+watch(
+  pendingNavigation,
+  (target) => {
+    if (!target) return
 
-  navigateToTarget(target)
-  pendingNavigation.value = undefined
-}, { immediate: true })
+    navigateToTarget(target)
+    pendingNavigation.value = undefined
+  },
+  { immediate: true },
+)
 
-function getMenuHref(menu: (typeof visibleMenus.value)[number], secondaryPage = getSecondaryPage(menu)?.value) {
+function getMenuHref(
+  menu: (typeof visibleMenus.value)[number],
+  secondaryPage = getSecondaryPage(menu)?.value,
+) {
   return buildSettingsPageHash({ menu: menu.value as SettingsMenu, secondaryPage })
 }
 
-useSettingsUrlSync(computed(() => getMenuHref(activeMenu.value)), navigateToTarget)
+useSettingsUrlSync(
+  computed(() => getMenuHref(activeMenu.value)),
+  navigateToTarget,
+)
 
 watchEffect(() => {
   document.title = isSearching.value
@@ -175,7 +200,7 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
   <div class="settings-page">
     <aside class="settings-sidebar">
       <div class="settings-sidebar__brand">
-        <img :src="brandIconUrl" alt="" width="32" height="32">
+        <img :src="brandIconUrl" alt="" width="32" height="32" />
         <span>BewlyCat</span>
       </div>
       <nav class="settings-sidebar__nav" :aria-label="$t('settings.title')">
@@ -190,16 +215,25 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
                 class="settings-sidebar__item"
                 :class="{
                   'settings-sidebar__item--parent': menu.pages,
-                  'is-active': !isSearching && menu.value === activeMenu.value && (!menu.pages || !expandedMenus.has(menu.value)),
+                  'is-active':
+                    !isSearching &&
+                    menu.value === activeMenu.value &&
+                    (!menu.pages || !expandedMenus.has(menu.value)),
                   'is-current': !isSearching && menu.value === activeMenu.value,
                 }"
                 :href="getMenuHref(menu)"
-                :aria-current="!isSearching && menu.value === activeMenu.value && !menu.pages ? 'page' : undefined"
+                :aria-current="
+                  !isSearching && menu.value === activeMenu.value && !menu.pages
+                    ? 'page'
+                    : undefined
+                "
                 @click="handleSidebarLinkClick(menu.value)"
               >
                 <span
                   class="settings-sidebar__icon"
-                  :class="!isSearching && menu.value === activeMenu.value ? menu.iconActivated : menu.icon"
+                  :class="
+                    !isSearching && menu.value === activeMenu.value ? menu.iconActivated : menu.icon
+                  "
                 />
                 <span>{{ $t(menu.titleKey) }}</span>
               </a>
@@ -226,7 +260,10 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
             >
               <div class="settings-sidebar__children-inner">
                 <ul>
-                  <template v-for="(group, groupIndex) in secondaryGroups.get(menu.value)" :key="group.key ?? groupIndex">
+                  <template
+                    v-for="(group, groupIndex) in secondaryGroups.get(menu.value)"
+                    :key="group.key ?? groupIndex"
+                  >
                     <li v-if="group.key" class="settings-sidebar__group-label">
                       {{ $t(group.key) }}
                     </li>
@@ -235,12 +272,18 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
                         class="settings-sidebar__item settings-sidebar__item--child"
                         :class="{ 'is-active': !isSearching && page === activeSecondaryPage }"
                         :href="getMenuHref(menu, page.value)"
-                        :aria-current="!isSearching && page === activeSecondaryPage ? 'page' : undefined"
+                        :aria-current="
+                          !isSearching && page === activeSecondaryPage ? 'page' : undefined
+                        "
                         @click="handleSidebarLinkClick()"
                       >
                         <span
                           class="settings-sidebar__icon"
-                          :class="!isSearching && page === activeSecondaryPage ? page.iconActivated : page.icon"
+                          :class="
+                            !isSearching && page === activeSecondaryPage
+                              ? page.iconActivated
+                              : page.icon
+                          "
                         />
                         <span>{{ $t(page.titleKey) }}</span>
                       </a>
@@ -284,7 +327,7 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
             :aria-label="$t('settings.search.placeholder')"
             :aria-describedby="isSearching ? 'settings-search-status' : undefined"
             @keydown.esc="searchQuery = ''"
-          >
+          />
         </div>
       </header>
 
@@ -314,17 +357,28 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
       <div ref="scrollViewportRef" class="settings-viewport">
         <!-- 按页面重建节点以重播入场动画；旧页立即移除，避免两页文字叠影。 -->
         <main
-          :key="isSearching ? 'search-results' : `${activeMenu.value}/${activeSecondaryPage?.value ?? ''}`"
+          :key="
+            isSearching
+              ? 'search-results'
+              : `${activeMenu.value}/${activeSecondaryPage?.value ?? ''}`
+          "
           class="settings-main"
         >
           <template v-if="isSearching">
-            <SettingsSearchResults :sections="searchResultSections" :summary="searchResultsSummary" />
+            <SettingsSearchResults
+              :sections="searchResultSections"
+              :summary="searchResultsSummary"
+            />
           </template>
           <template v-else>
             <SettingsSectionHeading
               v-if="activeSecondaryPage"
               :title="$t(activeSecondaryPage.titleKey)"
-              :desc="activeSecondaryPage.descriptionKey ? $t(activeSecondaryPage.descriptionKey) : undefined"
+              :desc="
+                activeSecondaryPage.descriptionKey
+                  ? $t(activeSecondaryPage.descriptionKey)
+                  : undefined
+              "
               :icon="activeSecondaryPage.iconActivated"
             />
             <Component :is="activeContent" />
@@ -513,7 +567,7 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
   transition: transform var(--bew-duration-normal) var(--bew-ease-standard);
 }
 
-.settings-sidebar__toggle[aria-expanded="true"] .settings-sidebar__chevron {
+.settings-sidebar__toggle[aria-expanded='true'] .settings-sidebar__chevron {
   transform: none;
 }
 
@@ -538,7 +592,7 @@ const brandIconUrl = browser.runtime.getURL('/assets/icon-512.png')
     left: var(--bew-space-3);
     height: 1px;
     background: var(--bew-border-color);
-    content: "";
+    content: '';
   }
 }
 

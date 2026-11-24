@@ -22,7 +22,8 @@ import PopMediaCard from './PopMediaCard.vue'
 const emit = defineEmits<{ addOpenTabs: [] }>()
 
 const topBarStore = useTopBarStore()
-const { watchLaterList, isLoadingWatchLater, watchLaterCount, isAddingOpenTabsToWatchLater } = storeToRefs(topBarStore)
+const { watchLaterList, isLoadingWatchLater, watchLaterCount, isAddingOpenTabsToWatchLater } =
+  storeToRefs(topBarStore)
 const viewAllUrl = computed((): string => {
   return 'https://www.bilibili.com/watchlater/list'
 })
@@ -37,14 +38,16 @@ const scrollContainer = ref<HTMLElement>()
  * index 为点击删除时在展示列表中的位置。点击即删除，误删由撤销兜底。
  */
 type RemoveStatus = 'removing' | 'removed' | 'restoring'
-const removeStatuses = reactive(new Map<number, { item: WatchLaterItem, index: number, status: RemoveStatus }>())
+const removeStatuses = reactive(
+  new Map<number, { item: WatchLaterItem; index: number; status: RemoveStatus }>(),
+)
 
 // store 删除后条目会从列表移除，这里按原位置插回以保留卡片
 const displayWatchLaterList = computed(() => {
   const list = [...watchLaterList.value]
   const entries = [...removeStatuses.values()].sort((a, b) => a.index - b.index)
   for (const entry of entries) {
-    if (!list.some(item => item.aid === entry.item.aid))
+    if (!list.some((item) => item.aid === entry.item.aid))
       list.splice(Math.min(entry.index, list.length), 0, entry.item)
   }
   return list
@@ -59,8 +62,7 @@ const LOAD_MORE_BOTTOM_THRESHOLD = 400
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
-  if (isLoadingWatchLater.value || !hasMoreContent.value)
-    return
+  if (isLoadingWatchLater.value || !hasMoreContent.value) return
 
   void topBarStore.loadMoreWatchLaterList()
 }
@@ -68,10 +70,12 @@ function handleReachBottom() {
 // 收起占位卡或播放并移除导致列表缩短后，如内容已不足以继续滚动则自动补拉下一页
 function checkAndLoadMoreIfUnderfilled() {
   const container = scrollContainer.value
-  if (!container)
-    return
+  if (!container) return
 
-  if (container.scrollHeight - container.scrollTop - container.clientHeight <= LOAD_MORE_BOTTOM_THRESHOLD)
+  if (
+    container.scrollHeight - container.scrollTop - container.clientHeight <=
+    LOAD_MORE_BOTTOM_THRESHOLD
+  )
     handleReachBottom()
 }
 
@@ -103,16 +107,15 @@ function openVideoPage(url: string) {
     // Keep the behavior consistent with ALink's target logic.
     if (isInIframe() || isHomePage()) {
       window.open(url, '_blank')
-    }
-    else {
+    } else {
       window.open(url, '_top')
     }
     return
   }
 
   if (
-    settings.value.topBarLinkOpenMode === 'newTab'
-    || (settings.value.topBarLinkOpenMode === 'currentTabIfHomepage' && !isActualHomepage())
+    settings.value.topBarLinkOpenMode === 'newTab' ||
+    (settings.value.topBarLinkOpenMode === 'currentTabIfHomepage' && !isActualHomepage())
   ) {
     window.open(url, '_blank')
     return
@@ -123,43 +126,33 @@ function openVideoPage(url: string) {
 
 // 点击即删除，卡片保留在原位并显示可撤销遮罩
 async function removeWatchLaterItem(item: WatchLaterItem, index: number) {
-  if (removeStatuses.has(item.aid))
-    return
+  if (removeStatuses.has(item.aid)) return
 
   removeStatuses.set(item.aid, { item, index, status: 'removing' })
   // 从响应式 Map 取代理引用，避免原始对象与 Proxy 比较恒不等且绕过响应式更新
   const entry = removeStatuses.get(item.aid)
-  if (!entry)
-    return
+  if (!entry) return
   const success = await topBarStore.deleteWatchLaterItem(index, item.aid)
-  if (removeStatuses.get(item.aid) !== entry)
-    return
-  if (success)
-    entry.status = 'removed'
-  else
-    removeStatuses.delete(item.aid)
+  if (removeStatuses.get(item.aid) !== entry) return
+  if (success) entry.status = 'removed'
+  else removeStatuses.delete(item.aid)
 }
 
 async function restoreWatchLaterItem(aid: number) {
   const entry = removeStatuses.get(aid)
-  if (!entry || entry.status !== 'removed')
-    return
+  if (!entry || entry.status !== 'removed') return
 
   entry.status = 'restoring'
   // 换算为 store 列表下标：只计算排在前面且仍在 store 列表中的条目
-  const storeAids = new Set(watchLaterList.value.map(item => item.aid))
-  const displayIndex = displayWatchLaterList.value.findIndex(item => item.aid === aid)
+  const storeAids = new Set(watchLaterList.value.map((item) => item.aid))
+  const displayIndex = displayWatchLaterList.value.findIndex((item) => item.aid === aid)
   const storeIndex = displayWatchLaterList.value
     .slice(0, Math.max(0, displayIndex))
-    .filter(item => storeAids.has(item.aid))
-    .length
+    .filter((item) => storeAids.has(item.aid)).length
   const success = await topBarStore.restoreWatchLaterItem(entry.item, storeIndex)
-  if (removeStatuses.get(aid) !== entry)
-    return
-  if (success)
-    removeStatuses.delete(aid)
-  else
-    entry.status = 'removed'
+  if (removeStatuses.get(aid) !== entry) return
+  if (success) removeStatuses.delete(aid)
+  else entry.status = 'removed'
 }
 
 // 收起已移除的占位卡片：条目已从服务器删除，这里仅移出展示集合，触发 removable-list 离场动画
@@ -178,11 +171,9 @@ function getProgressText(item: WatchLaterItem): string {
 
 /** 封面条的宽度百分比；脏数据（缺时长）时回退为 0，避免 NaN%。 */
 function getProgressPercentage(item: WatchLaterItem): number {
-  if (!item.duration)
-    return 0
+  if (!item.duration) return 0
   const percentage = (item.progress / item.duration) * 100
-  if (!Number.isFinite(percentage))
-    return 0
+  if (!Number.isFinite(percentage)) return 0
   return Math.min(100, Math.max(0, percentage))
 }
 
@@ -198,7 +189,9 @@ async function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: st
 
 <template>
   <div
-    h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
+    h="[calc(100vh-100px)]"
+    max-h-500px
+    important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
     pos="relative"
@@ -233,7 +226,13 @@ async function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: st
           :title="$t('watch_later.add_open_tabs_hint')"
           @click.stop="emit('addOpenTabs')"
         >
-          {{ $t(isAddingOpenTabsToWatchLater ? 'watch_later.adding_open_tabs' : 'watch_later.add_open_tabs') }}
+          {{
+            $t(
+              isAddingOpenTabsToWatchLater
+                ? 'watch_later.adding_open_tabs'
+                : 'watch_later.add_open_tabs',
+            )
+          }}
         </button>
         <ALink
           :href="playAllUrl"
@@ -272,12 +271,18 @@ async function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: st
       <!-- empty -->
       <Empty
         v-if="!isLoadingWatchLater && displayWatchLaterList.length === 0"
-        w="full" flex-1
+        w="full"
+        flex-1
         flex="~ items-center"
       />
 
       <!-- watchlater：卡片结构与收藏/动态弹窗视频卡保持一致，特有操作作为封面覆盖层 -->
-      <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col gap-2">
+      <TransitionGroup
+        name="removable-list"
+        tag="div"
+        class="removable-list-group"
+        flex="~ col gap-2"
+      >
         <div
           v-for="(item, index) in displayWatchLaterList"
           :key="item.aid"

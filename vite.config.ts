@@ -12,8 +12,7 @@ import { buildCommit, isDev, isFirefox, r } from './scripts/utils.ts'
 function withCompactI18nMessages(plugins: Plugin | Plugin[]): Plugin[] {
   return [plugins].flat().map((plugin) => {
     const hook = plugin.configResolved
-    if (!hook)
-      return plugin
+    if (!hook) return plugin
     const handler = typeof hook === 'function' ? hook : hook.handler
     return {
       ...plugin,
@@ -29,10 +28,6 @@ function withCompactI18nMessages(plugins: Plugin | Plugin[]): Plugin[] {
 export function createSharedConfig(): UserConfig {
   return {
     root: r('src'),
-    css: {
-      // 启用多核 worker 并行编译 200+ 个 SCSS 模块，避免纯 JS 版 Dart Sass 阻塞主线程。
-      preprocessorMaxWorkers: true,
-    },
     resolve: {
       alias: [
         { find: '~/', replacement: `${r('src')}/` },
@@ -51,32 +46,32 @@ export function createSharedConfig(): UserConfig {
         imports: [
           'vue',
           {
-            'webextension-polyfill': [
-              ['*', 'browser'],
-            ],
+            'webextension-polyfill': [['*', 'browser']],
           },
         ],
       }),
 
       // https://github.com/intlify/bundle-tools/tree/main/packages/unplugin-vue-i18n
-      withCompactI18nMessages(VueI18nPlugin({
-        runtimeOnly: true,
-        compositionOnly: true,
-        strictMessage: false,
-        include: [r('./src/_locales/**')],
-      })),
+      withCompactI18nMessages(
+        VueI18nPlugin({
+          runtimeOnly: true,
+          compositionOnly: true,
+          strictMessage: false,
+          include: [r('./src/_locales/**')],
+        }),
+      ),
 
       // https://github.com/unocss/unocss
       // UnoCSS(),
 
       replace({
-        '__DEV__': JSON.stringify(isDev),
-        '__BUILD_COMMIT__': JSON.stringify(buildCommit),
+        __DEV__: JSON.stringify(isDev),
+        __BUILD_COMMIT__: JSON.stringify(buildCommit),
         'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
         'process.env.FIREFOX': JSON.stringify(isFirefox),
-        '__VUE_OPTIONS_API__': JSON.stringify(true),
-        '__VUE_PROD_DEVTOOLS__': JSON.stringify(false),
-        'preventAssignment': true,
+        __VUE_OPTIONS_API__: JSON.stringify(true),
+        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+        preventAssignment: true,
       }),
     ],
   }

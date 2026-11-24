@@ -14,7 +14,9 @@ import Slider from '~/components/Slider.vue'
 import Tooltip from '~/components/Tooltip.vue'
 
 // 仅特定设置项触发时才展示的重型弹窗/编辑器按需拆包，避免把 qrcode 等依赖拉入设置页首屏。
-const AppAuthorizationDialog = defineAsyncComponent(() => import('~/components/AppAuthorizationDialog.vue'))
+const AppAuthorizationDialog = defineAsyncComponent(
+  () => import('~/components/AppAuthorizationDialog.vue'),
+)
 const CodeEditor = defineAsyncComponent(() => import('~/components/CodeEditor.vue'))
 
 // 设置界面直接在模板中使用、依赖全局注册的组件。内容脚本通过 ~/components 注册全部组件；
@@ -37,6 +39,5 @@ const settingsComponents = {
 }
 
 export function registerSettingsComponents(app: App) {
-  for (const [name, component] of Object.entries(settingsComponents))
-    app.component(name, component)
+  for (const [name, component] of Object.entries(settingsComponents)) app.component(name, component)
 }

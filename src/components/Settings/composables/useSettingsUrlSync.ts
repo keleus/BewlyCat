@@ -12,19 +12,20 @@ export function useSettingsUrlSync(
   // 打开页面或跟随地址栏跳转时已有历史记录，补全地址时不能再新增一条。
   let replaceNextUrl = true
 
-  watch(currentHash, (hash) => {
-    if (hash !== location.hash) {
-      if (replaceNextUrl)
-        history.replaceState(null, '', hash)
-      else
-        history.pushState(null, '', hash)
-    }
-    replaceNextUrl = false
-  }, { immediate: true })
+  watch(
+    currentHash,
+    (hash) => {
+      if (hash !== location.hash) {
+        if (replaceNextUrl) history.replaceState(null, '', hash)
+        else history.pushState(null, '', hash)
+      }
+      replaceNextUrl = false
+    },
+    { immediate: true },
+  )
 
   useEventListener(window, 'hashchange', () => {
-    if (location.hash === currentHash.value)
-      return
+    if (location.hash === currentHash.value) return
 
     const target = parseSettingsPageHash(location.hash)
     if (target) {
@@ -32,8 +33,7 @@ export function useSettingsUrlSync(
       navigate(target)
     }
     // 跳转后地址仍未规范（如不存在的二级页），或地址无法识别时，恢复为当前页面。
-    if (location.hash !== currentHash.value)
-      history.replaceState(null, '', currentHash.value)
+    if (location.hash !== currentHash.value) history.replaceState(null, '', currentHash.value)
     replaceNextUrl = false
   })
 }

@@ -16,7 +16,11 @@ import { settings } from '~/logic'
 import type { FavoriteArticle, FavoriteArticlesResult } from '~/models/article/favorite'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
-import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
+import type {
+  CollectedFavoriteSeason,
+  CollectedFavoriteSeasonsResult,
+  FavoriteSeasonMedia,
+} from '~/models/video/favoriteSeason'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
@@ -70,7 +74,7 @@ const selectedResourceKeys = ref<string[]>([])
  * removed 已取消收藏但保留原位可还原，restoring 还原中；记录所属收藏夹以便还原
  */
 type RemoveStatus = 'confirming' | 'removing' | 'removed' | 'restoring'
-const removeStatuses = reactive(new Map<string, { categoryId: number, status: RemoveStatus }>())
+const removeStatuses = reactive(new Map<string, { categoryId: number; status: RemoveStatus }>())
 const targetCategory = ref<CategoryItem>()
 const batchTransferDialogVisible = ref<boolean>(false)
 const batchTransferAction = ref<BatchTransferAction>('copy')
@@ -82,7 +86,7 @@ const editFolderDialogVisible = ref<boolean>(false)
 const editFolderId = ref<number>()
 const editFolderTitle = ref<string>('')
 const editFolderPublic = ref<boolean>(true)
-const itemMenuTarget = ref<{ type: SidebarManageSection, id: number } | null>(null)
+const itemMenuTarget = ref<{ type: SidebarManageSection; id: number } | null>(null)
 const itemMenuStyles = ref<CSSProperties>({})
 let contentRequestVersion = 0
 let disposed = false
@@ -107,51 +111,52 @@ const favoriteViewOptions = computed(() => [
 const selectedContentTitle = computed(() => {
   if (favoriteView.value === 'season')
     return selectedSeason.value?.title || t('favorites.season_section_title')
-  if (favoriteView.value === 'article')
-    return t('favorites.article_section_title')
+  if (favoriteView.value === 'article') return t('favorites.article_section_title')
   return selectedCategory.value?.title || t('favorites.video_section_title')
 })
 
 const selectedContentCount = computed(() => {
-  if (favoriteView.value === 'season')
-    return selectedSeason.value?.media_count ?? 0
-  if (favoriteView.value === 'article')
-    return articleFavoriteCount.value ?? favoriteArticles.length
+  if (favoriteView.value === 'season') return selectedSeason.value?.media_count ?? 0
+  if (favoriteView.value === 'article') return articleFavoriteCount.value ?? favoriteArticles.length
   return selectedCategory.value?.media_count ?? 0
 })
 
 const selectedContentCover = computed(() => {
-  if (activatedCategoryCover.value)
-    return activatedCategoryCover.value
-  if (favoriteView.value === 'season')
-    return selectedSeason.value?.cover || ''
+  if (activatedCategoryCover.value) return activatedCategoryCover.value
+  if (favoriteView.value === 'season') return selectedSeason.value?.cover || ''
   if (favoriteView.value === 'article' && favoriteArticles[0])
     return getFavoriteArticleCover(favoriteArticles[0])
   return ''
 })
 
 const canBatchManage = computed(() => {
-  return favoriteView.value === 'video'
-    && searchScope.value === 'current'
-    && Boolean(selectedCategory.value)
+  return (
+    favoriteView.value === 'video' &&
+    searchScope.value === 'current' &&
+    Boolean(selectedCategory.value)
+  )
 })
 
 const selectedFavoriteResources = computed(() => {
   const selectedKeys = new Set(selectedResourceKeys.value)
-  return favoriteResources.filter(item => selectedKeys.has(getFavoriteResourceKey(item)))
+  return favoriteResources.filter((item) => selectedKeys.has(getFavoriteResourceKey(item)))
 })
 
 const selectedCount = computed(() => selectedFavoriteResources.value.length)
 
 const isAllCurrentPageSelected = computed(() => {
-  return favoriteResources.length > 0
-    && favoriteResources.every(item => selectedResourceKeys.value.includes(getFavoriteResourceKey(item)))
+  return (
+    favoriteResources.length > 0 &&
+    favoriteResources.every((item) =>
+      selectedResourceKeys.value.includes(getFavoriteResourceKey(item)),
+    )
+  )
 })
 
 const targetCategoryOptions = computed(() => {
   return favoriteCategories
-    .filter(item => item.id !== selectedCategory.value?.id)
-    .map(item => ({ label: item.title, value: item }))
+    .filter((item) => item.id !== selectedCategory.value?.id)
+    .map((item) => ({ label: item.title, value: item }))
 })
 
 const batchTransferDialogTitle = computed(() => {
@@ -167,32 +172,44 @@ const batchTransferDialogDesc = computed(() => {
 })
 
 const defaultFolderId = computed(() => favoriteCategories[0]?.id)
-const editableFolderIds = computed(() => favoriteCategories.filter(item => item.id !== defaultFolderId.value).map(item => item.id))
+const editableFolderIds = computed(() =>
+  favoriteCategories.filter((item) => item.id !== defaultFolderId.value).map((item) => item.id),
+)
 const selectedFolderCount = computed(() => selectedFolderIds.value.length)
 const selectedSeasonCount = computed(() => selectedSeasonIds.value.length)
 const isManagingFolder = computed(() => sidebarManageSection.value === 'folder')
 const isManagingSeason = computed(() => sidebarManageSection.value === 'season')
 const canEditSelectedFolder = computed(() => selectedFolderIds.value.length === 1)
 const isAllFoldersSelected = computed(() => {
-  return editableFolderIds.value.length > 0
-    && editableFolderIds.value.every(id => selectedFolderIds.value.includes(id))
+  return (
+    editableFolderIds.value.length > 0 &&
+    editableFolderIds.value.every((id) => selectedFolderIds.value.includes(id))
+  )
 })
 const isAllSeasonsSelected = computed(() => {
-  return collectedFavoriteSeasons.length > 0
-    && collectedFavoriteSeasons.every(item => selectedSeasonIds.value.includes(item.id))
+  return (
+    collectedFavoriteSeasons.length > 0 &&
+    collectedFavoriteSeasons.every((item) => selectedSeasonIds.value.includes(item.id))
+  )
 })
 const itemMenuOptions = computed((): ContextMenuOption[] => {
-  if (!itemMenuTarget.value)
-    return []
+  if (!itemMenuTarget.value) return []
 
   if (itemMenuTarget.value.type === 'folder') {
     return [
       { value: 'edit', label: t('favorites.edit_folder'), icon: 'i-tabler:edit' },
-      { value: 'delete', label: t('common.operation.delete'), icon: 'i-tabler:trash', danger: true },
+      {
+        value: 'delete',
+        label: t('common.operation.delete'),
+        icon: 'i-tabler:trash',
+        danger: true,
+      },
     ]
   }
 
-  return [{ value: 'unfav', label: t('favorites.unfavorite'), icon: 'i-tabler:star-off', danger: true }]
+  return [
+    { value: 'unfav', label: t('favorites.unfavorite'), icon: 'i-tabler:star-off', danger: true },
+  ]
 })
 
 // 搜索范围选项
@@ -213,16 +230,12 @@ onMounted(() => {
 })
 
 async function initData() {
-  await Promise.all([
-    getFavoriteCategories(),
-    getCollectedFavoriteSeasons(),
-  ])
+  await Promise.all([getFavoriteCategories(), getCollectedFavoriteSeasons()])
 
   if (favoriteCategories.length > 0) {
     selectedCategory.value = favoriteCategories[0]
     loadSelectedContent()
-  }
-  else {
+  } else {
     isFullPageLoading.value = false
     noMoreContent.value = true
   }
@@ -231,21 +244,17 @@ async function initData() {
 function initPageAction() {
   handleReachBottom.value = async () => {
     // 视频/合集列表由 VideoCardGrid 自己监听 sentinel；全局哨兵只负责图文收藏。
-    if (favoriteView.value !== 'article')
-      return
+    if (favoriteView.value !== 'article') return
 
-    if (isLoading.value || noMoreContent.value)
-      return
+    if (isLoading.value || noMoreContent.value) return
 
     setTimeout(() => {
-      if (!isLoading.value && !noMoreContent.value)
-        loadNextPage()
+      if (!isLoading.value && !noMoreContent.value) loadNextPage()
     }, 50)
   }
 
   handlePageRefresh.value = () => {
-    if (isLoading.value)
-      return
+    if (isLoading.value) return
 
     loadSelectedContent()
   }
@@ -255,16 +264,14 @@ async function getFavoriteCategories() {
   const res: FavoritesCategoryResult = await api.favorite.getFavoriteCategories({
     up_mid: getUserID(),
   })
-  if (res.code === 0)
-    favoriteCategories.push(...res.data.list)
+  if (res.code === 0) favoriteCategories.push(...res.data.list)
 }
 
 async function getCollectedFavoriteSeasons() {
   const res: CollectedFavoriteSeasonsResult = await api.favorite.getCollectedFavoriteSeasons({
     up_mid: getUserID(),
   })
-  if (res.code === 0)
-    collectedFavoriteSeasons.push(...res.data.list)
+  if (res.code === 0) collectedFavoriteSeasons.push(...res.data.list)
 }
 
 function resetBatchSelection() {
@@ -300,27 +307,22 @@ function toggleSidebarManage(section: SidebarManageSection) {
 }
 
 function toggleCurrentSidebarManage() {
-  if (favoriteView.value === 'video')
-    toggleSidebarManage('folder')
-  else if (favoriteView.value === 'season')
-    toggleSidebarManage('season')
+  if (favoriteView.value === 'video') toggleSidebarManage('folder')
+  else if (favoriteView.value === 'season') toggleSidebarManage('season')
 }
 
 function toggleFolderSelection(item: CategoryItem) {
-  if (item.id === defaultFolderId.value)
-    return
+  if (item.id === defaultFolderId.value) return
 
   if (selectedFolderIds.value.includes(item.id))
-    selectedFolderIds.value = selectedFolderIds.value.filter(id => id !== item.id)
-  else
-    selectedFolderIds.value = [...selectedFolderIds.value, item.id]
+    selectedFolderIds.value = selectedFolderIds.value.filter((id) => id !== item.id)
+  else selectedFolderIds.value = [...selectedFolderIds.value, item.id]
 }
 
 function toggleSeasonSelection(item: CollectedFavoriteSeason) {
   if (selectedSeasonIds.value.includes(item.id))
-    selectedSeasonIds.value = selectedSeasonIds.value.filter(id => id !== item.id)
-  else
-    selectedSeasonIds.value = [...selectedSeasonIds.value, item.id]
+    selectedSeasonIds.value = selectedSeasonIds.value.filter((id) => id !== item.id)
+  else selectedSeasonIds.value = [...selectedSeasonIds.value, item.id]
 }
 
 function handleCategoryItemClick(item: CategoryItem) {
@@ -344,7 +346,9 @@ function toggleSelectAllFolders() {
 }
 
 function toggleSelectAllSeasons() {
-  selectedSeasonIds.value = isAllSeasonsSelected.value ? [] : collectedFavoriteSeasons.map(item => item.id)
+  selectedSeasonIds.value = isAllSeasonsSelected.value
+    ? []
+    : collectedFavoriteSeasons.map((item) => item.id)
 }
 
 function isFavoriteFolderPrivate(folder: CategoryItem) {
@@ -352,16 +356,14 @@ function isFavoriteFolderPrivate(folder: CategoryItem) {
 }
 
 function openEditFolderDialog() {
-  if (!canEditSelectedFolder.value || isSidebarOperating.value)
-    return
+  if (!canEditSelectedFolder.value || isSidebarOperating.value) return
 
   openSingleEditFolder(selectedFolderIds.value[0])
 }
 
 function openSingleEditFolder(folderId: number) {
-  const folder = favoriteCategories.find(item => item.id === folderId)
-  if (!folder)
-    return
+  const folder = favoriteCategories.find((item) => item.id === folderId)
+  if (!folder) return
 
   editFolderId.value = folder.id
   editFolderTitle.value = folder.title
@@ -399,8 +401,7 @@ async function handleEditFolderConfirm() {
   }
 
   const folderId = editFolderId.value
-  if (!folderId)
-    return
+  if (!folderId) return
 
   isSidebarOperating.value = true
   try {
@@ -415,7 +416,7 @@ async function handleEditFolderConfirm() {
       return
     }
 
-    const folder = favoriteCategories.find(item => item.id === folderId)
+    const folder = favoriteCategories.find((item) => item.id === folderId)
     if (folder) {
       folder.title = title
       folder.attr = editFolderPublic.value ? folder.attr & ~1 : folder.attr | 1
@@ -423,8 +424,7 @@ async function handleEditFolderConfirm() {
     closeEditFolderDialog()
     exitSidebarManage()
     notifyTopBarFavoritesChanged()
-  }
-  finally {
+  } finally {
     isSidebarOperating.value = false
   }
 }
@@ -439,21 +439,18 @@ async function deleteFolders(ids: number[]) {
       toast.error(res.message || t('favorites.delete_folders_failed'))
       return false
     }
-  }
-  catch {
+  } catch {
     toast.error(t('favorites.delete_folders_failed'))
     return false
   }
 
   for (let index = favoriteCategories.length - 1; index >= 0; index--) {
-    if (ids.includes(favoriteCategories[index].id))
-      favoriteCategories.splice(index, 1)
+    if (ids.includes(favoriteCategories[index].id)) favoriteCategories.splice(index, 1)
   }
 
   if (selectedCategory.value && ids.includes(selectedCategory.value.id)) {
     selectedCategory.value = favoriteCategories[0]
-    if (favoriteView.value === 'video')
-      loadSelectedContent()
+    if (favoriteView.value === 'video') loadSelectedContent()
   }
   notifyTopBarFavoritesChanged()
   return true
@@ -462,31 +459,30 @@ async function deleteFolders(ids: number[]) {
 async function unfavSeasons(ids: number[]) {
   const failedIds: number[] = []
   for (const seasonId of ids) {
-    const season = collectedFavoriteSeasons.find(item => item.id === seasonId)
+    const season = collectedFavoriteSeasons.find((item) => item.id === seasonId)
     if (!season) {
       failedIds.push(seasonId)
       continue
     }
 
     try {
-      const res = season.type === 11
-        ? await api.favorite.unfavFavoriteFolder({
-            media_id: seasonId,
-            csrf: getCSRF(),
-          })
-        : await api.favorite.unfavFavoriteSeason({
-            season_id: seasonId,
-            csrf: getCSRF(),
-          })
-      if (res.code !== 0)
-        failedIds.push(seasonId)
-    }
-    catch {
+      const res =
+        season.type === 11
+          ? await api.favorite.unfavFavoriteFolder({
+              media_id: seasonId,
+              csrf: getCSRF(),
+            })
+          : await api.favorite.unfavFavoriteSeason({
+              season_id: seasonId,
+              csrf: getCSRF(),
+            })
+      if (res.code !== 0) failedIds.push(seasonId)
+    } catch {
       failedIds.push(seasonId)
     }
   }
 
-  const removedIds = ids.filter(id => !failedIds.includes(id))
+  const removedIds = ids.filter((id) => !failedIds.includes(id))
   for (let index = collectedFavoriteSeasons.length - 1; index >= 0; index--) {
     if (removedIds.includes(collectedFavoriteSeasons[index].id))
       collectedFavoriteSeasons.splice(index, 1)
@@ -494,60 +490,52 @@ async function unfavSeasons(ids: number[]) {
 
   if (selectedSeason.value && removedIds.includes(selectedSeason.value.id)) {
     selectedSeason.value = collectedFavoriteSeasons[0]
-    if (favoriteView.value === 'season')
-      loadSelectedContent()
+    if (favoriteView.value === 'season') loadSelectedContent()
   }
 
   if (failedIds.length > 0)
     toast.error(t('favorites.unfav_seasons_failed', { count: failedIds.length }))
-  if (removedIds.length > 0)
-    notifyTopBarFavoritesChanged()
+  if (removedIds.length > 0) notifyTopBarFavoritesChanged()
   return failedIds
 }
 
 async function handleBatchDeleteFolders() {
-  if (selectedFolderCount.value === 0 || isSidebarOperating.value)
-    return
+  if (selectedFolderCount.value === 0 || isSidebarOperating.value) return
 
-  const result = await showConfirmDialog(t('favorites.delete_folders_confirm', { count: selectedFolderCount.value }))
-  if (!result)
-    return
+  const result = await showConfirmDialog(
+    t('favorites.delete_folders_confirm', { count: selectedFolderCount.value }),
+  )
+  if (!result) return
 
   isSidebarOperating.value = true
   try {
-    if (await deleteFolders([...selectedFolderIds.value]))
-      exitSidebarManage()
-  }
-  finally {
+    if (await deleteFolders([...selectedFolderIds.value])) exitSidebarManage()
+  } finally {
     isSidebarOperating.value = false
   }
 }
 
 async function handleBatchUnfavSeasons() {
-  if (selectedSeasonCount.value === 0 || isSidebarOperating.value)
-    return
+  if (selectedSeasonCount.value === 0 || isSidebarOperating.value) return
 
-  const result = await showConfirmDialog(t('favorites.unfav_seasons_confirm', { count: selectedSeasonCount.value }))
-  if (!result)
-    return
+  const result = await showConfirmDialog(
+    t('favorites.unfav_seasons_confirm', { count: selectedSeasonCount.value }),
+  )
+  if (!result) return
 
   isSidebarOperating.value = true
   try {
     const failedIds = await unfavSeasons([...selectedSeasonIds.value])
-    if (failedIds.length === 0)
-      exitSidebarManage()
-    else
-      selectedSeasonIds.value = failedIds
-  }
-  finally {
+    if (failedIds.length === 0) exitSidebarManage()
+    else selectedSeasonIds.value = failedIds
+  } finally {
     isSidebarOperating.value = false
   }
 }
 
 async function handleItemMenuSelect(value: string | number) {
   const target = itemMenuTarget.value
-  if (!target || isSidebarOperating.value)
-    return
+  if (!target || isSidebarOperating.value) return
 
   // Capture target then close menu before any await, so a later closeItemMenu
   // from ContextMenu cannot race with the confirm dialog lifecycle.
@@ -560,28 +548,24 @@ async function handleItemMenuSelect(value: string | number) {
     }
 
     const result = await showConfirmDialog(t('favorites.delete_folders_confirm', { count: 1 }))
-    if (!result)
-      return
+    if (!result) return
 
     isSidebarOperating.value = true
     try {
       await deleteFolders([target.id])
-    }
-    finally {
+    } finally {
       isSidebarOperating.value = false
     }
     return
   }
 
   const result = await showConfirmDialog(t('favorites.unfav_seasons_confirm', { count: 1 }))
-  if (!result)
-    return
+  if (!result) return
 
   isSidebarOperating.value = true
   try {
     await unfavSeasons([target.id])
-  }
-  finally {
+  } finally {
     isSidebarOperating.value = false
   }
 }
@@ -597,9 +581,8 @@ function isSelectedFavoriteResource(item: FavoriteResource | FavoriteItem) {
 function toggleFavoriteResourceSelection(item: FavoriteResource | FavoriteItem) {
   const key = getFavoriteResourceKey(item)
   if (selectedResourceKeys.value.includes(key))
-    selectedResourceKeys.value = selectedResourceKeys.value.filter(itemKey => itemKey !== key)
-  else
-    selectedResourceKeys.value = [...selectedResourceKeys.value, key]
+    selectedResourceKeys.value = selectedResourceKeys.value.filter((itemKey) => itemKey !== key)
+  else selectedResourceKeys.value = [...selectedResourceKeys.value, key]
 }
 
 function handleFavoriteCardClick(item: FavoriteItem, event: MouseEvent) {
@@ -611,7 +594,7 @@ function handleFavoriteCardClick(item: FavoriteItem, event: MouseEvent) {
 function toggleSelectAllCurrentPage() {
   selectedResourceKeys.value = isAllCurrentPageSelected.value
     ? []
-    : favoriteResources.map(item => getFavoriteResourceKey(item))
+    : favoriteResources.map((item) => getFavoriteResourceKey(item))
 }
 
 function toggleBatchManage() {
@@ -619,8 +602,7 @@ function toggleBatchManage() {
     closeBatchManage()
     return
   }
-  if (!canBatchManage.value)
-    return
+  if (!canBatchManage.value) return
 
   flushRemovedResources()
   exitSidebarManage()
@@ -628,12 +610,19 @@ function toggleBatchManage() {
   isBatchManaging.value = true
 }
 
-function removeResourcesFromList(categoryId: number, resourceKeys: string[], requestVersion: number) {
-  const category = favoriteCategories.find(item => item.id === categoryId)
-  if (category)
-    category.media_count = Math.max(0, category.media_count - resourceKeys.length)
+function removeResourcesFromList(
+  categoryId: number,
+  resourceKeys: string[],
+  requestVersion: number,
+) {
+  const category = favoriteCategories.find((item) => item.id === categoryId)
+  if (category) category.media_count = Math.max(0, category.media_count - resourceKeys.length)
 
-  if (requestVersion !== contentRequestVersion || favoriteView.value !== 'video' || selectedCategory.value?.id !== categoryId)
+  if (
+    requestVersion !== contentRequestVersion ||
+    favoriteView.value !== 'video' ||
+    selectedCategory.value?.id !== categoryId
+  )
     return
 
   const selectedKeys = new Set(resourceKeys)
@@ -641,13 +630,12 @@ function removeResourcesFromList(categoryId: number, resourceKeys: string[], req
     if (selectedKeys.has(getFavoriteResourceKey(favoriteResources[index])))
       favoriteResources.splice(index, 1)
   }
-  selectedResourceKeys.value = selectedResourceKeys.value.filter(key => !selectedKeys.has(key))
+  selectedResourceKeys.value = selectedResourceKeys.value.filter((key) => !selectedKeys.has(key))
 }
 
 function spliceResourceFromList(resourceKey: string) {
-  const index = favoriteResources.findIndex(item => getFavoriteResourceKey(item) === resourceKey)
-  if (index !== -1)
-    favoriteResources.splice(index, 1)
+  const index = favoriteResources.findIndex((item) => getFavoriteResourceKey(item) === resourceKey)
+  if (index !== -1) favoriteResources.splice(index, 1)
 }
 
 /** 批量管理前清理遮罩：已取消收藏的卡片移出列表，避免被再次选中；待确认的直接取消 */
@@ -655,8 +643,7 @@ function flushRemovedResources() {
   for (const [key, state] of removeStatuses) {
     if (state.status === 'confirming') {
       removeStatuses.delete(key)
-    }
-    else if (state.status === 'removed') {
+    } else if (state.status === 'removed') {
       removeStatuses.delete(key)
       spliceResourceFromList(key)
     }
@@ -664,13 +651,16 @@ function flushRemovedResources() {
 }
 
 function increaseTargetCategoryCount(categoryId: number, count: number) {
-  const category = favoriteCategories.find(item => item.id === categoryId)
-  if (category)
-    category.media_count += count
+  const category = favoriteCategories.find((item) => item.id === categoryId)
+  if (category) category.media_count += count
 }
 
 function openBatchTransferDialog(action: BatchTransferAction) {
-  if (selectedCount.value === 0 || targetCategoryOptions.value.length === 0 || isBatchOperating.value)
+  if (
+    selectedCount.value === 0 ||
+    targetCategoryOptions.value.length === 0 ||
+    isBatchOperating.value
+  )
     return
 
   batchTransferAction.value = action
@@ -684,17 +674,17 @@ function selectTargetCategory(category: CategoryItem) {
 }
 
 async function handleBatchDelete() {
-  if (!selectedCategory.value || selectedCount.value === 0 || isBatchOperating.value)
-    return
+  if (!selectedCategory.value || selectedCount.value === 0 || isBatchOperating.value) return
   const categoryId = selectedCategory.value.id
   const resourceKeys = selectedFavoriteResources.value.map(getFavoriteResourceKey)
   const requestVersion = contentRequestVersion
   const accountId = getUserID()
   isBatchOperating.value = true
   try {
-    const result = await showConfirmDialog(t('favorites.batch_unfavorite_confirm', { count: resourceKeys.length }))
-    if (!result || requestVersion !== contentRequestVersion || getUserID() !== accountId)
-      return
+    const result = await showConfirmDialog(
+      t('favorites.batch_unfavorite_confirm', { count: resourceKeys.length }),
+    )
+    if (!result || requestVersion !== contentRequestVersion || getUserID() !== accountId) return
 
     const res = await api.favorite.patchDelFavoriteResources({
       resources: resourceKeys.join(','),
@@ -705,14 +695,18 @@ async function handleBatchDelete() {
       removeResourcesFromList(categoryId, resourceKeys, requestVersion)
       notifyTopBarFavoritesChanged()
     }
-  }
-  finally {
+  } finally {
     isBatchOperating.value = false
   }
 }
 
 async function handleBatchMove() {
-  if (!selectedCategory.value || !targetCategory.value || selectedCount.value === 0 || isBatchOperating.value)
+  if (
+    !selectedCategory.value ||
+    !targetCategory.value ||
+    selectedCount.value === 0 ||
+    isBatchOperating.value
+  )
     return
 
   const categoryId = selectedCategory.value.id
@@ -732,18 +726,21 @@ async function handleBatchMove() {
     if (res.code === 0 && getUserID() === accountId) {
       increaseTargetCategoryCount(targetId, resourceKeys.length)
       removeResourcesFromList(categoryId, resourceKeys, requestVersion)
-      if (requestVersion === contentRequestVersion)
-        closeBatchManage()
+      if (requestVersion === contentRequestVersion) closeBatchManage()
       notifyTopBarFavoritesChanged()
     }
-  }
-  finally {
+  } finally {
     isBatchOperating.value = false
   }
 }
 
 async function handleBatchCopy() {
-  if (!selectedCategory.value || !targetCategory.value || selectedCount.value === 0 || isBatchOperating.value)
+  if (
+    !selectedCategory.value ||
+    !targetCategory.value ||
+    selectedCount.value === 0 ||
+    isBatchOperating.value
+  )
     return
 
   const categoryId = selectedCategory.value.id
@@ -764,22 +761,21 @@ async function handleBatchCopy() {
       increaseTargetCategoryCount(targetId, resourceKeys.length)
       if (requestVersion === contentRequestVersion) {
         const copiedKeys = new Set(resourceKeys)
-        selectedResourceKeys.value = selectedResourceKeys.value.filter(key => !copiedKeys.has(key))
+        selectedResourceKeys.value = selectedResourceKeys.value.filter(
+          (key) => !copiedKeys.has(key),
+        )
         closeBatchTransferDialog()
       }
       notifyTopBarFavoritesChanged()
     }
-  }
-  finally {
+  } finally {
     isBatchOperating.value = false
   }
 }
 
 async function handleBatchTransferConfirm() {
-  if (batchTransferAction.value === 'copy')
-    await handleBatchCopy()
-  else
-    await handleBatchMove()
+  if (batchTransferAction.value === 'copy') await handleBatchCopy()
+  else await handleBatchMove()
 }
 
 function resetContentState() {
@@ -790,11 +786,11 @@ function resetContentState() {
   favoriteResources.length = 0
   favoriteArticles.length = 0
   articleFavoriteOffset.value = ''
-  if (favoriteView.value === 'article')
-    articleFavoriteCount.value = undefined
+  if (favoriteView.value === 'article') articleFavoriteCount.value = undefined
   loadedSeasonMedias.value = []
   loadedSeasonComplete.value = false
-  activatedCategoryCover.value = favoriteView.value === 'season' ? selectedSeason.value?.cover || '' : ''
+  activatedCategoryCover.value =
+    favoriteView.value === 'season' ? selectedSeason.value?.cover || '' : ''
   noMoreContent.value = false
   isLoading.value = false
   isFullPageLoading.value = true
@@ -805,8 +801,8 @@ function loadSelectedContent() {
   const requestVersion = resetContentState()
 
   if (
-    (favoriteView.value === 'video' && !selectedCategory.value)
-    || (favoriteView.value === 'season' && !selectedSeason.value)
+    (favoriteView.value === 'video' && !selectedCategory.value) ||
+    (favoriteView.value === 'season' && !selectedSeason.value)
   ) {
     isFullPageLoading.value = false
     noMoreContent.value = true
@@ -822,48 +818,46 @@ function loadSelectedContent() {
 }
 
 function loadNextPage() {
-  if (isLoading.value || noMoreContent.value)
-    return
+  if (isLoading.value || noMoreContent.value) return
 
   currentPageNum.value += 1
   void loadActiveContent(currentPageNum.value, contentRequestVersion)
 }
 
 async function loadActiveContent(pn: number, requestVersion: number) {
-  if (requestVersion !== contentRequestVersion)
-    return
+  if (requestVersion !== contentRequestVersion) return
 
-  if (pn === 1)
-    isFullPageLoading.value = true
+  if (pn === 1) isFullPageLoading.value = true
   isLoading.value = true
 
   try {
     if (favoriteView.value === 'article') {
       await getFavoriteArticles(pn, requestVersion)
-    }
-    else if (favoriteView.value === 'season') {
+    } else if (favoriteView.value === 'season') {
       await getFavoriteSeasonResources(selectedSeason.value!.id, pn, requestVersion)
+    } else {
+      const mediaId =
+        searchScope.value === 'all'
+          ? (favoriteCategories[0]?.id ?? selectedCategory.value!.id)
+          : selectedCategory.value!.id
+      await getFavoriteResources(
+        mediaId,
+        pn,
+        keyword.value,
+        searchScope.value === 'all' ? 1 : 0,
+        requestVersion,
+      )
     }
-    else {
-      const mediaId = searchScope.value === 'all'
-        ? favoriteCategories[0]?.id ?? selectedCategory.value!.id
-        : selectedCategory.value!.id
-      await getFavoriteResources(mediaId, pn, keyword.value, searchScope.value === 'all' ? 1 : 0, requestVersion)
-    }
-  }
-  catch {
-    if (requestVersion === contentRequestVersion)
-      noMoreContent.value = true
-  }
-  finally {
+  } catch {
+    if (requestVersion === contentRequestVersion) noMoreContent.value = true
+  } finally {
     if (requestVersion === contentRequestVersion) {
       isLoading.value = false
       isFullPageLoading.value = false
     }
   }
 
-  if (requestVersion !== contentRequestVersion || noMoreContent.value)
-    return
+  if (requestVersion !== contentRequestVersion || noMoreContent.value) return
 
   if (!(await haveScrollbar())) {
     currentPageNum.value = pn + 1
@@ -892,8 +886,7 @@ async function getFavoriteResources(
     type,
   })
 
-  if (requestVersion !== contentRequestVersion)
-    return
+  if (requestVersion !== contentRequestVersion) return
 
   if (res.code !== 0) {
     noMoreContent.value = true
@@ -903,11 +896,12 @@ async function getFavoriteResources(
   const pageItems = Array.isArray(res.data.medias)
     ? res.data.medias.filter((item): item is FavoriteItem => item != null)
     : []
-  if (searchScope.value === 'current')
-    activatedCategoryCover.value = res.data.info.cover
+  if (searchScope.value === 'current') activatedCategoryCover.value = res.data.info.cover
   // 取消收藏/撤销会让服务器页边界移动，按资源标识去重兜底
   const existingKeys = new Set(favoriteResources.map(getFavoriteResourceKey))
-  favoriteResources.push(...pageItems.filter(item => !existingKeys.has(getFavoriteResourceKey(item))))
+  favoriteResources.push(
+    ...pageItems.filter((item) => !existingKeys.has(getFavoriteResourceKey(item))),
+  )
   noMoreContent.value = !res.data.has_more || pageItems.length === 0
 }
 
@@ -917,9 +911,13 @@ async function getFavoriteSeasonResources(
   requestVersion = contentRequestVersion,
 ) {
   const accountId = getUserID()
-  const page = await fetchFavoriteSeasonPage(seasonId, pn, FAVORITE_SEASON_PAGE_SIZE, selectedSeason.value?.type)
-  if (disposed || requestVersion !== contentRequestVersion || getUserID() !== accountId)
-    return
+  const page = await fetchFavoriteSeasonPage(
+    seasonId,
+    pn,
+    FAVORITE_SEASON_PAGE_SIZE,
+    selectedSeason.value?.type,
+  )
+  if (disposed || requestVersion !== contentRequestVersion || getUserID() !== accountId) return
 
   if (!page.ok) {
     noMoreContent.value = true
@@ -945,10 +943,7 @@ async function getFavoriteSeasonResources(
   favoriteResources.push(...loadedSeasonMedias.value.map(normalizeSeasonMedia))
 }
 
-async function getFavoriteArticles(
-  pn: number,
-  requestVersion = contentRequestVersion,
-) {
+async function getFavoriteArticles(pn: number, requestVersion = contentRequestVersion) {
   try {
     const res: FavoriteArticlesResult = await api.favorite.getFavoriteArticles({
       page: pn,
@@ -958,8 +953,7 @@ async function getFavoriteArticles(
       web_location: '333.1387',
     })
 
-    if (requestVersion !== contentRequestVersion)
-      return
+    if (requestVersion !== contentRequestVersion) return
 
     if (res.code !== 0) {
       noMoreContent.value = true
@@ -968,36 +962,35 @@ async function getFavoriteArticles(
     }
 
     const pageArticles = Array.isArray(res.data?.items)
-      ? res.data.items.filter((item): item is FavoriteArticle => item != null && Boolean(item.opus_id))
+      ? res.data.items.filter(
+          (item): item is FavoriteArticle => item != null && Boolean(item.opus_id),
+        )
       : []
     favoriteArticles.push(...pageArticles)
 
     const nextOffset = res.data?.offset
-    articleFavoriteOffset.value = nextOffset != null && nextOffset !== ''
-      ? String(nextOffset)
-      : (pageArticles.at(-1)?.opus_id ?? '')
+    articleFavoriteOffset.value =
+      nextOffset != null && nextOffset !== ''
+        ? String(nextOffset)
+        : (pageArticles.at(-1)?.opus_id ?? '')
 
     const hasMore = Boolean(res.data?.has_more) && pageArticles.length > 0
     // polymer 接口无 total，仅在没有更多时用已加载条数作为总数
-    if (!hasMore)
-      articleFavoriteCount.value = favoriteArticles.length
+    if (!hasMore) articleFavoriteCount.value = favoriteArticles.length
 
     if (favoriteArticles[0])
       activatedCategoryCover.value = getFavoriteArticleCover(favoriteArticles[0])
 
     noMoreContent.value = !hasMore
-  }
-  catch {
-    if (requestVersion !== contentRequestVersion)
-      return
+  } catch {
+    if (requestVersion !== contentRequestVersion) return
     noMoreContent.value = true
     toast.error(t('favorites.article_load_failed'))
   }
 }
 
 function handleFavoriteViewChange(view: FavoriteView) {
-  if (view === favoriteView.value)
-    return
+  if (view === favoriteView.value) return
 
   closeBatchManage()
   exitSidebarManage()
@@ -1005,8 +998,7 @@ function handleFavoriteViewChange(view: FavoriteView) {
   favoriteView.value = view
   searchScope.value = 'current'
 
-  if (view === 'video' && !selectedCategory.value)
-    selectedCategory.value = favoriteCategories[0]
+  if (view === 'video' && !selectedCategory.value) selectedCategory.value = favoriteCategories[0]
   else if (view === 'season' && !selectedSeason.value)
     selectedSeason.value = collectedFavoriteSeasons[0]
 
@@ -1034,8 +1026,7 @@ function changeSeason(seasonItem: CollectedFavoriteSeason) {
 }
 
 function handleSearch() {
-  if (favoriteView.value !== 'video')
-    return
+  if (favoriteView.value !== 'video') return
 
   closeBatchManage()
   exitSidebarManage()
@@ -1048,20 +1039,22 @@ function handleSearchScopeChange() {
 }
 
 function clearSearchKeyword() {
-  if (!keyword.value)
-    return
+  if (!keyword.value) return
 
   keyword.value = ''
   handleSearch()
 }
 
 async function handlePlayAll() {
-  if (favoriteView.value === 'article' || searchScope.value === 'all' || isResolvingSeasonPlayAll.value)
+  if (
+    favoriteView.value === 'article' ||
+    searchScope.value === 'all' ||
+    isResolvingSeasonPlayAll.value
+  )
     return
 
   if (favoriteView.value === 'season') {
-    if (!selectedSeason.value)
-      return
+    if (!selectedSeason.value) return
 
     isResolvingSeasonPlayAll.value = true
     try {
@@ -1080,15 +1073,16 @@ async function handlePlayAll() {
       if (result.usedFallback && result.reason !== 'beginning')
         toast.warning(t('favorites.season_play_all_fallback'))
       openLinkToNewTab(result.url)
-    }
-    finally {
+    } finally {
       isResolvingSeasonPlayAll.value = false
     }
     return
   }
 
   if (selectedCategory.value)
-    openLinkToNewTab(localizeBilibiliUrl(`https://www.bilibili.com/list/ml${selectedCategory.value.id}`))
+    openLinkToNewTab(
+      localizeBilibiliUrl(`https://www.bilibili.com/list/ml${selectedCategory.value.id}`),
+    )
 }
 
 function jumpToLoginPage() {
@@ -1098,23 +1092,20 @@ function jumpToLoginPage() {
 // 取消收藏先在卡片上二次确认，确认后才调用接口
 function handleUnfavorite(favoriteResource: FavoriteResource) {
   const resourceKey = getFavoriteResourceKey(favoriteResource)
-  if (!selectedCategory.value || removeStatuses.has(resourceKey))
-    return
+  if (!selectedCategory.value || removeStatuses.has(resourceKey)) return
 
   removeStatuses.set(resourceKey, { categoryId: selectedCategory.value.id, status: 'confirming' })
 }
 
 function cancelUnfavorite(favoriteResource: FavoriteItem) {
   const resourceKey = getFavoriteResourceKey(favoriteResource)
-  if (removeStatuses.get(resourceKey)?.status === 'confirming')
-    removeStatuses.delete(resourceKey)
+  if (removeStatuses.get(resourceKey)?.status === 'confirming') removeStatuses.delete(resourceKey)
 }
 
 async function confirmUnfavorite(favoriteResource: FavoriteItem) {
   const resourceKey = getFavoriteResourceKey(favoriteResource)
   const removeState = removeStatuses.get(resourceKey)
-  if (!removeState || removeState.status !== 'confirming')
-    return
+  if (!removeState || removeState.status !== 'confirming') return
 
   const { categoryId } = removeState
   const requestVersion = contentRequestVersion
@@ -1127,26 +1118,21 @@ async function confirmUnfavorite(favoriteResource: FavoriteItem) {
       media_id: categoryId,
       csrf: getCSRF(),
     })
-    if (getUserID() !== accountId)
-      return
+    if (getUserID() !== accountId) return
     if (res.code !== 0) {
       toast.error(res.message)
       return
     }
 
     success = true
-    const category = favoriteCategories.find(item => item.id === categoryId)
-    if (category)
-      category.media_count = Math.max(0, category.media_count - 1)
+    const category = favoriteCategories.find((item) => item.id === categoryId)
+    if (category) category.media_count = Math.max(0, category.media_count - 1)
     // 卡片保留在原位，显示还原按钮
-    if (requestVersion === contentRequestVersion)
-      removeState.status = 'removed'
+    if (requestVersion === contentRequestVersion) removeState.status = 'removed'
     notifyTopBarFavoritesChanged()
-  }
-  catch (error) {
+  } catch (error) {
     console.error('取消收藏失败:', error)
-  }
-  finally {
+  } finally {
     if (!success && removeStatuses.get(resourceKey) === removeState)
       removeStatuses.delete(resourceKey)
   }
@@ -1155,8 +1141,7 @@ async function confirmUnfavorite(favoriteResource: FavoriteItem) {
 async function restoreFavorite(favoriteResource: FavoriteItem) {
   const resourceKey = getFavoriteResourceKey(favoriteResource)
   const removeState = removeStatuses.get(resourceKey)
-  if (!removeState || removeState.status !== 'removed')
-    return
+  if (!removeState || removeState.status !== 'removed') return
 
   const { categoryId } = removeState
   const requestVersion = contentRequestVersion
@@ -1170,33 +1155,26 @@ async function restoreFavorite(favoriteResource: FavoriteItem) {
       del_media_ids: '',
       csrf: getCSRF(),
     })
-    if (getUserID() !== accountId)
-      return
+    if (getUserID() !== accountId) return
     if (res.code !== 0) {
       toast.error(res.message)
       return
     }
 
-    const category = favoriteCategories.find(item => item.id === categoryId)
-    if (category)
-      category.media_count += 1
-    if (requestVersion === contentRequestVersion)
-      removeStatuses.delete(resourceKey)
+    const category = favoriteCategories.find((item) => item.id === categoryId)
+    if (category) category.media_count += 1
+    if (requestVersion === contentRequestVersion) removeStatuses.delete(resourceKey)
     notifyTopBarFavoritesChanged()
-  }
-  catch (error) {
+  } catch (error) {
     console.error('重新收藏失败:', error)
-  }
-  finally {
-    if (removeState.status === 'restoring')
-      removeState.status = 'removed'
+  } finally {
+    if (removeState.status === 'restoring') removeState.status = 'removed'
   }
 }
 
 function getFavoriteRemovedState(item: FavoriteItem): VideoCardRemovedState | undefined {
   const removeState = removeStatuses.get(getFavoriteResourceKey(item))
-  if (!removeState)
-    return undefined
+  if (!removeState) return undefined
 
   const confirming = removeState.status === 'confirming' || removeState.status === 'removing'
   return {
@@ -1273,16 +1251,13 @@ function getFavoriteArticleCover(item: FavoriteArticle) {
 }
 
 function normalizeFavoriteArticleUrl(url: string) {
-  if (url.startsWith('//'))
-    return `https:${url}`
-  if (url.startsWith('/'))
-    return `https://www.bilibili.com${url}`
+  if (url.startsWith('//')) return `https:${url}`
+  if (url.startsWith('/')) return `https://www.bilibili.com${url}`
   return url
 }
 
 function getFavoriteArticleUrl(item: FavoriteArticle) {
-  if (item.jump_url)
-    return normalizeFavoriteArticleUrl(item.jump_url)
+  if (item.jump_url) return normalizeFavoriteArticleUrl(item.jump_url)
   return `https://www.bilibili.com/opus/${item.opus_id}`
 }
 
@@ -1310,18 +1285,28 @@ function transformFavoriteArticle(item: FavoriteArticle) {
         {{ selectedContentTitle }} ({{ selectedContentCount }})
       </h3>
 
-      <div
-        v-if="favoriteView === 'video'"
-        class="favorites-toolbar bew-toolbar-controls"
-      >
+      <div v-if="favoriteView === 'video'" class="favorites-toolbar bew-toolbar-controls">
         <Transition name="fade">
           <div v-if="!isBatchManaging" key="search" class="toolbar-search-group">
-            <Select v-model="searchScope" class="search-scope-select" :options="searchScopeOptions" @change="handleSearchScopeChange" />
+            <Select
+              v-model="searchScope"
+              class="search-scope-select"
+              :options="searchScopeOptions"
+              @change="handleSearchScopeChange"
+            />
             <Input
               v-model="keyword"
               class="favorites-search-input"
-              :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
-              :aria-label="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+              :placeholder="
+                searchScope === 'all'
+                  ? t('favorites.global_search_placeholder')
+                  : t('favorites.search_placeholder')
+              "
+              :aria-label="
+                searchScope === 'all'
+                  ? t('favorites.global_search_placeholder')
+                  : t('favorites.search_placeholder')
+              "
               @enter="handleSearch"
             >
               <template #suffix>
@@ -1357,14 +1342,20 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               <template #left>
                 <div :class="isAllCurrentPageSelected ? 'i-tabler:checkbox' : 'i-tabler:square'" />
               </template>
-              {{ isAllCurrentPageSelected ? t('favorites.batch_unselect_all') : t('favorites.batch_select_all') }}
+              {{
+                isAllCurrentPageSelected
+                  ? t('favorites.batch_unselect_all')
+                  : t('favorites.batch_select_all')
+              }}
             </Button>
             <span class="batch-selected-count bew-toolbar-note">
               {{ t('favorites.batch_selected_count', { count: selectedCount }) }}
             </span>
             <Button
               type="secondary"
-              :disabled="selectedCount === 0 || targetCategoryOptions.length === 0 || isBatchOperating"
+              :disabled="
+                selectedCount === 0 || targetCategoryOptions.length === 0 || isBatchOperating
+              "
               @click="openBatchTransferDialog('copy')"
             >
               <template #left>
@@ -1374,7 +1365,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
             </Button>
             <Button
               type="secondary"
-              :disabled="selectedCount === 0 || targetCategoryOptions.length === 0 || isBatchOperating"
+              :disabled="
+                selectedCount === 0 || targetCategoryOptions.length === 0 || isBatchOperating
+              "
               @click="openBatchTransferDialog('move')"
             >
               <template #left>
@@ -1423,7 +1416,10 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           </div>
           <Empty v-else-if="noMoreContent" :description="t('common.no_more_content')" />
         </div>
-        <div v-else-if="isLoading || isFullPageLoading" class="content-loading content-loading--initial">
+        <div
+          v-else-if="isLoading || isFullPageLoading"
+          class="content-loading content-loading--initial"
+        >
           <Loading />
         </div>
         <Empty v-else :description="t('common.no_data')" />
@@ -1431,7 +1427,13 @@ function transformFavoriteArticle(item: FavoriteArticle) {
 
       <template v-else>
         <Empty
-          v-if="favoriteView === 'video' && searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading"
+          v-if="
+            favoriteView === 'video' &&
+            searchScope === 'all' &&
+            !keyword.trim() &&
+            favoriteResources.length === 0 &&
+            !isLoading
+          "
           :description="t('favorites.global_search_hint')"
         />
 
@@ -1439,7 +1441,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           v-else
           :items="favoriteResources"
           :transform-item="transformFavoriteItem"
-          :get-item-key="item => item.id"
+          :get-item-key="(item) => item.id"
           grid-layout="adaptive"
           :initial-skeleton-count="favoriteView === 'season' ? FAVORITE_SEASON_PAGE_SIZE : 20"
           disable-content-visibility
@@ -1463,11 +1465,23 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               :class="{ selected: isSelectedFavoriteResource(item) }"
               @click.prevent.stop="toggleFavoriteResourceSelection(item)"
             >
-              <Tooltip :content="$t('favorites.batch_select_item')" placement="bottom-left" type="dark">
-                <div :class="isSelectedFavoriteResource(item) ? 'i-tabler:checkbox' : 'i-tabler:square'" />
+              <Tooltip
+                :content="$t('favorites.batch_select_item')"
+                placement="bottom-left"
+                type="dark"
+              >
+                <div
+                  :class="
+                    isSelectedFavoriteResource(item) ? 'i-tabler:checkbox' : 'i-tabler:square'
+                  "
+                />
               </Tooltip>
             </button>
-            <button v-else class="favorite-card-action danger" @click.prevent.stop="handleUnfavorite(item)">
+            <button
+              v-else
+              class="favorite-card-action danger"
+              @click.prevent.stop="handleUnfavorite(item)"
+            >
               <Tooltip :content="$t('favorites.unfavorite')" placement="bottom-left" type="dark">
                 <div i-ic-baseline-clear />
               </Tooltip>
@@ -1498,7 +1512,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
             </div>
             <Radio
               v-model="editFolderPublic"
-              :label="editFolderPublic ? t('favorites.folder_public') : t('favorites.folder_private')"
+              :label="
+                editFolderPublic ? t('favorites.folder_public') : t('favorites.folder_private')
+              "
             />
           </div>
         </div>
@@ -1526,7 +1542,11 @@ function transformFavoriteArticle(item: FavoriteArticle) {
             <span class="batch-target-folder-icon" i-tabler:folder />
             <span class="batch-target-folder-title">{{ option.label }}</span>
             <span class="batch-target-folder-count">{{ option.value.media_count }}</span>
-            <span v-if="targetCategory?.id === option.value.id" class="batch-target-folder-check" i-tabler:check />
+            <span
+              v-if="targetCategory?.id === option.value.id"
+              class="batch-target-folder-check"
+              i-tabler:check
+            />
           </button>
         </div>
       </Dialog>
@@ -1540,13 +1560,17 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           'bew-page-sidebar': !settings.enableSidebarCoverBlur,
         }"
       >
-        <div v-if="settings.enableSidebarCoverBlur" class="favorites-sidebar-background" aria-hidden="true">
+        <div
+          v-if="settings.enableSidebarCoverBlur"
+          class="favorites-sidebar-background"
+          aria-hidden="true"
+        >
           <div />
           <img
             v-if="selectedContentCover"
             :src="removeHttpFromUrl(`${selectedContentCover}@480w_270h_1c`)"
             alt=""
-          >
+          />
         </div>
 
         <div class="favorites-sidebar-content">
@@ -1555,8 +1579,11 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               v-if="selectedContentCover"
               :src="removeHttpFromUrl(`${selectedContentCover}@480w_270h_1c`)"
               :alt="selectedContentTitle"
-            >
-            <span v-else :class="favoriteView === 'article' ? 'i-tabler:article' : 'i-tabler:folder-star'" />
+            />
+            <span
+              v-else
+              :class="favoriteView === 'article' ? 'i-tabler:article' : 'i-tabler:folder-star'"
+            />
           </picture>
 
           <div class="favorites-sidebar-title">
@@ -1564,9 +1591,11 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               {{ selectedContentTitle }}
             </h3>
             <p>
-              {{ favoriteView === 'article'
-                ? t('favorites.article_count', { count: selectedContentCount })
-                : t('favorites.video_count', { count: selectedContentCount }) }}
+              {{
+                favoriteView === 'article'
+                  ? t('favorites.article_count', { count: selectedContentCount })
+                  : t('favorites.video_count', { count: selectedContentCount })
+              }}
             </p>
           </div>
 
@@ -1606,7 +1635,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                 :aria-label="t('favorites.sidebar_manage')"
                 @click="toggleCurrentSidebarManage"
               >
-                <span :class="sidebarManageSection ? 'i-tabler:x' : 'i-tabler:adjustments-horizontal'" />
+                <span
+                  :class="sidebarManageSection ? 'i-tabler:x' : 'i-tabler:adjustments-horizontal'"
+                />
               </button>
             </Tooltip>
           </div>
@@ -1698,21 +1729,33 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   <span
                     v-if="isManagingFolder"
                     class="category-icon"
-                    :class="item.id === defaultFolderId
-                      ? 'i-tabler:lock'
-                      : (selectedFolderIds.includes(item.id) ? 'i-tabler:checkbox' : 'i-tabler:square')"
+                    :class="
+                      item.id === defaultFolderId
+                        ? 'i-tabler:lock'
+                        : selectedFolderIds.includes(item.id)
+                          ? 'i-tabler:checkbox'
+                          : 'i-tabler:square'
+                    "
                   />
                   <span v-else class="category-icon" i-tabler:folder />
                   <span class="category-title">{{ item.title }}</span>
                   <Tooltip
-                    :content="isFavoriteFolderPrivate(item) ? t('favorites.folder_private') : t('favorites.folder_public')"
+                    :content="
+                      isFavoriteFolderPrivate(item)
+                        ? t('favorites.folder_private')
+                        : t('favorites.folder_public')
+                    "
                     placement="left"
                     type="dark"
                   >
                     <span
                       class="category-visibility"
                       :class="isFavoriteFolderPrivate(item) ? 'i-tabler:lock' : 'i-tabler:world'"
-                      :aria-label="isFavoriteFolderPrivate(item) ? t('favorites.folder_private') : t('favorites.folder_public')"
+                      :aria-label="
+                        isFavoriteFolderPrivate(item)
+                          ? t('favorites.folder_private')
+                          : t('favorites.folder_public')
+                      "
                     />
                   </Tooltip>
                   <span class="category-count">{{ item.media_count }}</span>
@@ -1723,7 +1766,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   :disabled="isFullPageLoading"
                   :aria-label="t('favorites.sidebar_manage')"
                   aria-haspopup="menu"
-                  :aria-expanded="itemMenuTarget?.type === 'folder' && itemMenuTarget.id === item.id"
+                  :aria-expanded="
+                    itemMenuTarget?.type === 'folder' && itemMenuTarget.id === item.id
+                  "
                   @click.prevent.stop="openItemMenu('folder', item.id, $event)"
                 >
                   <span i-mingcute:more-2-line />
@@ -1759,7 +1804,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   <span
                     v-if="isManagingSeason"
                     class="category-icon"
-                    :class="selectedSeasonIds.includes(item.id) ? 'i-tabler:checkbox' : 'i-tabler:square'"
+                    :class="
+                      selectedSeasonIds.includes(item.id) ? 'i-tabler:checkbox' : 'i-tabler:square'
+                    "
                   />
                   <span v-else class="category-icon" i-tabler:stack-2 />
                   <span class="category-title">{{ item.title }}</span>
@@ -1771,7 +1818,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   :disabled="isFullPageLoading"
                   :aria-label="t('favorites.sidebar_manage')"
                   aria-haspopup="menu"
-                  :aria-expanded="itemMenuTarget?.type === 'season' && itemMenuTarget.id === item.id"
+                  :aria-expanded="
+                    itemMenuTarget?.type === 'season' && itemMenuTarget.id === item.id
+                  "
                   @click.prevent.stop="openItemMenu('season', item.id, $event)"
                 >
                   <span i-mingcute:more-2-line />

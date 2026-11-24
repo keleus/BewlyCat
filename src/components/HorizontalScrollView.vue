@@ -8,15 +8,15 @@ const scrollListWrap = ref<HTMLElement>() as Ref<HTMLElement>
 // const showRightMask = ref<boolean>(false)
 const showScrollMask = ref<boolean>(true)
 
-watch([() => settings.value.enableHorizontalScrolling, scrollListWrap], ([enableHorizontalScrolling, scrollListWrap]) => {
-  if (!scrollListWrap)
-    return
+watch(
+  [() => settings.value.enableHorizontalScrolling, scrollListWrap],
+  ([enableHorizontalScrolling, scrollListWrap]) => {
+    if (!scrollListWrap) return
 
-  if (enableHorizontalScrolling)
-    scrollListWrap.addEventListener('wheel', handleMouseScroll)
-  else
-    scrollListWrap.removeEventListener('wheel', handleMouseScroll)
-})
+    if (enableHorizontalScrolling) scrollListWrap.addEventListener('wheel', handleMouseScroll)
+    else scrollListWrap.removeEventListener('wheel', handleMouseScroll)
+  },
+)
 
 onMounted(() => {
   // scrollListWrap.value.addEventListener('scroll', () => {
@@ -69,7 +69,8 @@ function handleMouseScroll(event: WheelEvent) {
       ref="scrollListWrap"
       w="[calc(100%+80px)]"
       h="[calc(100%+40px)]"
-      m="x--40px y--20px" p="x-40px y-20px"
+      m="x--40px y--20px"
+      p="x-40px y-20px"
       overflow-x-scroll
       overflow-y-hidden
       relative
@@ -82,7 +83,19 @@ function handleMouseScroll(event: WheelEvent) {
 
 <style lang="scss" scoped>
 .scroll-mask {
-  mask-image: linear-gradient(to right, transparent 0, black 40px, black calc(100% - 40px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, black 40px, black calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 40px,
+    black calc(100% - 40px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 40px,
+    black calc(100% - 40px),
+    transparent 100%
+  );
 }
 </style>

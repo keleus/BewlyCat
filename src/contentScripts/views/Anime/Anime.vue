@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { List as PopularAnimeItem, PopularAnimeResult } from '~/models/anime/popular'
-import type { ItemSubItem as RecommendationItem, RecommendationResult } from '~/models/anime/recommendation'
+import type {
+  ItemSubItem as RecommendationItem,
+  RecommendationResult,
+} from '~/models/anime/recommendation'
 import type { List as WatchListItem, WatchListResult } from '~/models/anime/watchList'
 import api from '~/utils/api'
 import { numFormatter } from '~/utils/dataFormatter'
@@ -22,7 +25,9 @@ const animeTimeTableRef = ref()
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 const isLoading = computed(() => {
-  return isLoadingAnimeWatchList.value || isLoadingPopularAnime.value || isLoadingRecommendAnime.value
+  return (
+    isLoadingAnimeWatchList.value || isLoadingPopularAnime.value || isLoadingRecommendAnime.value
+  )
 })
 
 onMounted(() => {
@@ -35,16 +40,13 @@ onMounted(() => {
 
 function initPageAction() {
   handleReachBottom.value = () => {
-    if (isLoadingRecommendAnime.value)
-      return
-    if (noMoreContent.value)
-      return
+    if (isLoadingRecommendAnime.value) return
+    if (noMoreContent.value) return
 
     getRecommendAnimeList()
   }
   handlePageRefresh.value = () => {
-    if (isLoading.value)
-      return
+    if (isLoading.value) return
 
     animeWatchList.length = 0
     recommendAnimeList.length = 0
@@ -61,19 +63,19 @@ function initPageAction() {
 
 function getAnimeWatchList() {
   isLoadingAnimeWatchList.value = true
-  api.anime.getAnimeWatchList({
-    vmid: getUserID() ?? 0,
-    pn: 1,
-    follow_status: 2,
-    ps: 30,
-  })
+  api.anime
+    .getAnimeWatchList({
+      vmid: getUserID() ?? 0,
+      pn: 1,
+      follow_status: 2,
+      ps: 30,
+    })
     .then((response: WatchListResult) => {
       const {
         code,
         data: { list },
       } = response
-      if (code === 0)
-        Object.assign(animeWatchList, list as WatchListItem[])
+      if (code === 0) Object.assign(animeWatchList, list as WatchListItem[])
     })
     .catch(() => Object.assign(animeWatchList, []))
     .finally(() => {
@@ -83,9 +85,10 @@ function getAnimeWatchList() {
 
 function getRecommendAnimeList() {
   isLoadingRecommendAnime.value = true
-  api.anime.getRecommendAnimeList({
-    coursor: cursor.value,
-  })
+  api.anime
+    .getRecommendAnimeList({
+      coursor: cursor.value,
+    })
     .then((response: RecommendationResult) => {
       const {
         code,
@@ -94,13 +97,11 @@ function getRecommendAnimeList() {
       if (code === 0 && has_next) {
         if (recommendAnimeList.length === 0)
           Object.assign(recommendAnimeList, items[0].sub_items as RecommendationItem[])
-        else
-          recommendAnimeList.push(...items[0].sub_items)
+        else recommendAnimeList.push(...items[0].sub_items)
 
         cursor.value = coursor
       }
-      if (code === 0 && !has_next)
-        noMoreContent.value = true
+      if (code === 0 && !has_next) noMoreContent.value = true
     })
     .finally(() => {
       isLoadingRecommendAnime.value = false
@@ -109,17 +110,17 @@ function getRecommendAnimeList() {
 
 function getPopularAnimeList() {
   isLoadingPopularAnime.value = true
-  api.anime.getPopularAnimeList()
+  api.anime
+    .getPopularAnimeList()
     .then((response: PopularAnimeResult) => {
       const {
         code,
         result: { list },
       } = response
-      if (code === 0)
-        Object.assign(popularAnimeList, list as PopularAnimeItem[])
+      if (code === 0) Object.assign(popularAnimeList, list as PopularAnimeItem[])
     })
     .catch(() => {})
-    .finally(() => isLoadingPopularAnime.value = false)
+    .finally(() => (isLoadingPopularAnime.value = false))
 }
 </script>
 
@@ -134,9 +135,7 @@ function getPopularAnimeList() {
           </h3>
           <Button
             size="large"
-            style="
-              --b-button-shadow: var(--bew-shadow-1);
-            "
+            style="--b-button-shadow: var(--bew-shadow-1)"
             @click="openLinkToNewTab(`https://space.bilibili.com/${getUserID() ?? 0}/bangumi`)"
           >
             {{ $t('common.view_all') }}
@@ -147,11 +146,13 @@ function getPopularAnimeList() {
           <div w-full flex>
             <BangumiCardSkeleton
               v-for="item in 6"
-              v-show="isLoadingAnimeWatchList" :key="item"
+              v-show="isLoadingAnimeWatchList"
+              :key="item"
               w="2xl:[calc(100%/6-1.5rem)] xl:[calc(100%/5-1.5rem)] lg:[calc(100%/4-1.5rem)] md:[calc(100%/3-1.5rem)] sm:[calc(100%/2-1.5rem)] [calc(100%-1.5rem)]"
               last:w="2xl:1/6 xl:1/5 lg:1/4 md:1/3 sm:1/2 full"
               shrink-0
-              mr-6 important-mb-0
+              mr-6
+              important-mb-0
               last:pr-6
             />
             <BangumiCard
@@ -166,13 +167,14 @@ function getPopularAnimeList() {
                 desc: item.progress !== '' ? item.progress : $t('anime.havent_seen'),
                 evaluate: item.evaluate,
                 tags: item.styles,
-                capsuleText: item.is_finish && item.total_count
-                  ? $t('anime.total_episodes', { ep: item.total_count })
-                  : (!item.is_finish && item.formal_ep_count
-                    ? $t('anime.update_to_n_episodes', {
-                      ep: item.formal_ep_count,
-                    })
-                    : ''),
+                capsuleText:
+                  item.is_finish && item.total_count
+                    ? $t('anime.total_episodes', { ep: item.total_count })
+                    : !item.is_finish && item.formal_ep_count
+                      ? $t('anime.update_to_n_episodes', {
+                          ep: item.formal_ep_count,
+                        })
+                      : '',
                 badge: {
                   text: item.badge_info.text || '',
                   bgColor: item.badge_info.bg_color || '',
@@ -182,7 +184,8 @@ function getPopularAnimeList() {
               w="2xl:[calc(100%/6-1.5rem)] xl:[calc(100%/5-1.5rem)] lg:[calc(100%/4-1.5rem)] md:[calc(100%/3-1.5rem)] sm:[calc(100%/2-1.5rem)] [calc(100%-1.5rem)]"
               last:w="2xl:1/6 xl:1/5 lg:1/4 md:1/3 sm:1/2 full"
               shrink-0
-              mr-6 important-mb-0
+              mr-6
+              important-mb-0
               last:pr-6
             />
           </div>
@@ -197,9 +200,7 @@ function getPopularAnimeList() {
           </h3>
           <Button
             size="large"
-            style="
-              --b-button-shadow: var(--bew-shadow-1);
-            "
+            style="--b-button-shadow: var(--bew-shadow-1)"
             @click="openLinkToNewTab(`https://www.bilibili.com/v/popular/rank/bangumi`)"
           >
             {{ $t('common.view_all') }}
@@ -210,11 +211,13 @@ function getPopularAnimeList() {
           <div w-full flex>
             <BangumiCardSkeleton
               v-for="item in 6"
-              v-show="isLoadingPopularAnime" :key="item"
+              v-show="isLoadingPopularAnime"
+              :key="item"
               w="2xl:[calc(100%/6-1.5rem)] xl:[calc(100%/5-1.5rem)] lg:[calc(100%/4-1.5rem)] md:[calc(100%/3-1.5rem)] sm:[calc(100%/2-1.5rem)] [calc(100%-1.5rem)]"
               last:w="2xl:1/6 xl:1/5 lg:1/4 md:1/3 sm:1/2 full"
               shrink-0
-              mr-6 important-mb-0
+              mr-6
+              important-mb-0
               last:pr-6
             />
             <BangumiCard
@@ -223,7 +226,8 @@ function getPopularAnimeList() {
               w="2xl:[calc(100%/6-1.5rem)] xl:[calc(100%/5-1.5rem)] lg:[calc(100%/4-1.5rem)] md:[calc(100%/3-1.5rem)] sm:[calc(100%/2-1.5rem)] [calc(100%-1.5rem)]"
               last:w="2xl:1/6 xl:1/5 lg:1/4 md:1/3 sm:1/2 full"
               shrink-0
-              mr-6 important-mb-0
+              mr-6
+              important-mb-0
               last:pr-6
               :bangumi="{
                 url: item.url,
@@ -297,6 +301,6 @@ function getPopularAnimeList() {
 
 <style lang="scss" scoped>
 .anime-section {
-  --uno: "mb-8 mt-14 first:mt-0";
+  --uno: 'mb-8 mt-14 first:mt-0';
 }
 </style>

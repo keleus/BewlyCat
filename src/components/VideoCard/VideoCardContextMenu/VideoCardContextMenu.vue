@@ -23,19 +23,22 @@ import UnfollowUserConfirmDialog from './components/UnfollowUserConfirmDialog.vu
 import type { ContextMenuPanelItem } from './ContextMenuPanel.vue'
 import ContextMenuPanel from './ContextMenuPanel.vue'
 
-const props = withDefaults(defineProps<{
-  video: Video
-  contextMenuStyles: CSSProperties
-  isFollowingPage?: boolean
-  hideBlockUser?: boolean
-  triggerElement?: HTMLElement | null
-  /** 追加在视频选项之后的分组，由调用方自行处理选中后的操作。 */
-  extraGroups?: ContextMenuPanelItem[][]
-}>(), {
-  isFollowingPage: false,
-  hideBlockUser: false,
-  extraGroups: () => [],
-})
+const props = withDefaults(
+  defineProps<{
+    video: Video
+    contextMenuStyles: CSSProperties
+    isFollowingPage?: boolean
+    hideBlockUser?: boolean
+    triggerElement?: HTMLElement | null
+    /** 追加在视频选项之后的分组，由调用方自行处理选中后的操作。 */
+    extraGroups?: ContextMenuPanelItem[][]
+  }>(),
+  {
+    isFollowingPage: false,
+    hideBlockUser: false,
+    extraGroups: () => [],
+  },
+)
 const emit = defineEmits<{
   (event: 'removed'): void
   (event: 'close'): void
@@ -51,26 +54,44 @@ useUserRelationScope(() => {
   return mid ? [mid] : []
 })
 // B 站 Web 首页的上报原因独立于菜单序号。
-const webVideoOptions = computed(() => [
-  { id: 1, reasonId: 1, key: 'notInterested' as const, name: t('video_card.operation.not_interested') },
-  { id: 2, reasonId: 4, key: 'notInterestedUploader' as const, name: t('video_card.operation.not_interested_uploader') },
-].filter(option => isOptionVisible(option.key)))
-const appVideoOptions = computed(() => (props.video.threePointV2 ?? []).filter(option =>
-  option.type !== ThreePointV2Type.WatchLater
-  && option.type !== ThreePointV2Type.Feedback
-  && (option.type !== ThreePointV2Type.Dislike || isOptionVisible('notInterested')),
-))
+const webVideoOptions = computed(() =>
+  [
+    {
+      id: 1,
+      reasonId: 1,
+      key: 'notInterested' as const,
+      name: t('video_card.operation.not_interested'),
+    },
+    {
+      id: 2,
+      reasonId: 4,
+      key: 'notInterestedUploader' as const,
+      name: t('video_card.operation.not_interested_uploader'),
+    },
+  ].filter((option) => isOptionVisible(option.key)),
+)
+const appVideoOptions = computed(() =>
+  (props.video.threePointV2 ?? []).filter(
+    (option) =>
+      option.type !== ThreePointV2Type.WatchLater &&
+      option.type !== ThreePointV2Type.Feedback &&
+      (option.type !== ThreePointV2Type.Dislike || isOptionVisible('notInterested')),
+  ),
+)
 const recommendationGroup = computed((): ContextMenuPanelItem[] => {
   if (getVideoType() === 'appRcmd') {
-    return appVideoOptions.value.map(option => ({
+    return appVideoOptions.value.map((option) => ({
       key: `app-${option.type}`,
-      name: option.type === ThreePointV2Type.Dislike ? t('video_card.operation.not_interested') : option.title,
+      name:
+        option.type === ThreePointV2Type.Dislike
+          ? t('video_card.operation.not_interested')
+          : option.title,
       icon: 'i-solar:confounded-circle-bold-duotone',
       select: () => handleAppMoreCommand(option.type),
     }))
   }
   if (getVideoType() === 'rcmd') {
-    return webVideoOptions.value.map(option => ({
+    return webVideoOptions.value.map((option) => ({
       key: `rcmd-${option.id}`,
       name: option.name,
       icon: 'i-solar:confounded-circle-bold-duotone',
@@ -111,60 +132,142 @@ enum VideoOption {
   BlockUser,
 }
 
-interface OptionItem { command: VideoOption, key: VideoCardContextMenuKey, name: string, icon: string, color?: string }
+interface OptionItem {
+  command: VideoOption
+  key: VideoCardContextMenuKey
+  name: string
+  icon: string
+  color?: string
+}
 
 function isOptionVisible(key: VideoCardContextMenuKey) {
-  return settings.value.videoCardContextMenuConfig.find(item => item.key === key)?.visible ?? true
+  return settings.value.videoCardContextMenuConfig.find((item) => item.key === key)?.visible ?? true
 }
 
 const canFavorite = computed(() => {
   const video = props.video
-  if (getVideoType() === 'bangumi' || getVideoType() === 'live'
-    || video.roomid || video.epid || video.type === 'bangumi' || video.type === 'ketang') {
+  if (
+    getVideoType() === 'bangumi' ||
+    getVideoType() === 'live' ||
+    video.roomid ||
+    video.epid ||
+    video.type === 'bangumi' ||
+    video.type === 'ketang'
+  ) {
     return false
   }
 
-  return Boolean(video.bvid || video.aid || (video.id > 0 && /\/video\/av\d+/.test(video.url || '')))
+  return Boolean(
+    video.bvid || video.aid || (video.id > 0 && /\/video\/av\d+/.test(video.url || '')),
+  )
 })
 
 const commonOptions = computed((): OptionItem[][] => {
   let result: OptionItem[][] = [
     canFavorite.value
-      ? [{ command: VideoOption.Favorite, key: 'favorite', name: t('video_card.operation.favorite'), icon: 'i-solar:star-bold-duotone' }]
+      ? [
+          {
+            command: VideoOption.Favorite,
+            key: 'favorite',
+            name: t('video_card.operation.favorite'),
+            icon: 'i-solar:star-bold-duotone',
+          },
+        ]
       : [],
+    props.video.url
+      ? [
+          {
+            command: VideoOption.OpenInNewTab,
+            key: 'openInNewTab' as const,
+            name: t('video_card.operation.open_in_new_tab'),
+            icon: 'i-solar:square-top-down-bold-duotone',
+          },
+          {
+            command: VideoOption.OpenInBackground,
+            key: 'openInBackground' as const,
+            name: t('video_card.operation.open_in_background'),
+            icon: 'i-solar:square-top-down-bold-duotone',
+          },
+          {
+            command: VideoOption.OpenInNewWindow,
+            key: 'openInNewWindow' as const,
+            name: t('video_card.operation.open_in_new_window'),
+            icon: 'i-solar:maximize-square-3-bold-duotone',
+          },
+          {
+            command: VideoOption.OpenInCurrentTab,
+            key: 'openInCurrentTab' as const,
+            name: t('video_card.operation.open_in_current_tab'),
+            icon: 'i-solar:square-top-down-bold-duotone',
+          },
+          {
+            command: VideoOption.OpenInDrawer,
+            key: 'openInDrawer' as const,
+            name: t('video_card.operation.open_in_drawer'),
+            icon: 'i-solar:archive-up-minimlistic-bold-duotone',
+          },
+          {
+            command: VideoOption.OpenInDialog,
+            key: 'openInDialog' as const,
+            name: t('video_card.operation.open_in_dialog'),
+            icon: 'i-solar:window-frame-bold-duotone',
+          },
+        ]
+      : [],
+
     [
       ...(props.video.url
         ? [
-            { command: VideoOption.OpenInNewTab, key: 'openInNewTab' as const, name: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-            { command: VideoOption.OpenInBackground, key: 'openInBackground' as const, name: t('video_card.operation.open_in_background'), icon: 'i-solar:square-top-down-bold-duotone' },
-            { command: VideoOption.OpenInNewWindow, key: 'openInNewWindow' as const, name: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
-            { command: VideoOption.OpenInCurrentTab, key: 'openInCurrentTab' as const, name: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-            { command: VideoOption.OpenInDrawer, key: 'openInDrawer' as const, name: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
-            { command: VideoOption.OpenInDialog, key: 'openInDialog' as const, name: t('video_card.operation.open_in_dialog'), icon: 'i-solar:window-frame-bold-duotone' },
+            {
+              command: VideoOption.CopyVideoLink,
+              key: 'copyVideoLink' as const,
+              name: t('video_card.operation.copy_video_link'),
+              icon: 'i-solar:copy-bold-duotone',
+            },
+          ]
+        : []),
+      ...(settings.value.enableCleanShareLink && props.video.url
+        ? [
+            {
+              command: VideoOption.CopyCleanVideoLink,
+              key: 'copyCleanVideoLink' as const,
+              name: t('video_card.operation.copy_clean_video_link'),
+              icon: 'i-solar:link-minimalistic-2-bold-duotone',
+            },
+          ]
+        : []),
+      ...(props.video.bvid
+        ? [
+            {
+              command: VideoOption.CopyBVNumber,
+              key: 'copyBVNumber' as const,
+              name: t('video_card.operation.copy_bv_number'),
+              icon: 'i-solar:copy-bold-duotone',
+            },
+          ]
+        : []),
+      ...(props.video.id
+        ? [
+            {
+              command: VideoOption.CopyAVNumber,
+              key: 'copyAVNumber' as const,
+              name: t('video_card.operation.copy_av_number'),
+              icon: 'i-solar:copy-bold-duotone',
+            },
           ]
         : []),
     ],
 
-    [
-      ...(props.video.url
-        ? [{ command: VideoOption.CopyVideoLink, key: 'copyVideoLink' as const, name: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' }]
-        : []),
-      ...(settings.value.enableCleanShareLink && props.video.url
-        ? [{ command: VideoOption.CopyCleanVideoLink, key: 'copyCleanVideoLink' as const, name: t('video_card.operation.copy_clean_video_link'), icon: 'i-solar:link-minimalistic-2-bold-duotone' }]
-        : []),
-      ...(props.video.bvid
-        ? [{ command: VideoOption.CopyBVNumber, key: 'copyBVNumber' as const, name: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' }]
-        : []),
-      ...(props.video.id
-        ? [{ command: VideoOption.CopyAVNumber, key: 'copyAVNumber' as const, name: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' }]
-        : []),
-    ],
-
-    [
-      ...(props.video.cover
-        ? [{ command: VideoOption.ViewTheOriginalCover, key: 'viewOriginalCover' as const, name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' }]
-        : []),
-    ],
+    props.video.cover
+      ? [
+          {
+            command: VideoOption.ViewTheOriginalCover,
+            key: 'viewOriginalCover' as const,
+            name: t('video_card.operation.view_the_original_cover'),
+            icon: 'i-solar:gallery-minimalistic-bold-duotone',
+          },
+        ]
+      : [],
   ]
 
   // 优先采用共享的查询/操作结果，未查询时沿用卡片数据与关注页语义。
@@ -173,55 +276,98 @@ const commonOptions = computed((): OptionItem[][] => {
     ? props.video.author[0]?.followed
     : props.video.author?.followed
   const authorFollowed = userRelationStore.getFollowing(authorMid) ?? providedFollowed
-  const canFollowAuthor = authorMid && userRelationStore.accountMid && authorMid !== userRelationStore.accountMid
+  const canFollowAuthor =
+    authorMid && userRelationStore.accountMid && authorMid !== userRelationStore.accountMid
 
   if (canFollowAuthor && (authorFollowed !== undefined || props.isFollowingPage)) {
     // 判断是否已关注：明确为 true，或者在 Following 页面且未明确为 false
-    const isFollowed = authorFollowed === true || (props.isFollowingPage && authorFollowed !== false)
+    const isFollowed =
+      authorFollowed === true || (props.isFollowingPage && authorFollowed !== false)
 
     if (isFollowed) {
       result.push([
-        { command: VideoOption.UnfollowUser, key: 'followUser', name: t('video_card.operation.unfollow_user'), icon: 'i-solar:user-minus-bold-duotone', color: 'text-orange-500' },
+        {
+          command: VideoOption.UnfollowUser,
+          key: 'followUser',
+          name: t('video_card.operation.unfollow_user'),
+          icon: 'i-solar:user-minus-bold-duotone',
+          color: 'text-orange-500',
+        },
       ])
-    }
-    else {
+    } else {
       result.push([
-        { command: VideoOption.FollowUser, key: 'followUser', name: t('video_card.operation.follow_user'), icon: 'i-solar:user-plus-bold-duotone', color: 'text-blue-500' },
+        {
+          command: VideoOption.FollowUser,
+          key: 'followUser',
+          name: t('video_card.operation.follow_user'),
+          icon: 'i-solar:user-plus-bold-duotone',
+          color: 'text-blue-500',
+        },
       ])
     }
   }
 
   // 已关注的 UP 主、正在关注页、动态及缺少作者 mid 的卡片隐藏拉黑选项。
-  if (authorMid && authorMid !== userRelationStore.accountMid && authorFollowed !== true && !props.isFollowingPage && !props.hideBlockUser) {
+  if (
+    authorMid &&
+    authorMid !== userRelationStore.accountMid &&
+    authorFollowed !== true &&
+    !props.isFollowingPage &&
+    !props.hideBlockUser
+  ) {
     result.push([
-      { command: VideoOption.BlockUser, key: 'blockUser', name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
+      {
+        command: VideoOption.BlockUser,
+        key: 'blockUser',
+        name: t('video_card.operation.block_user'),
+        icon: 'i-solar:user-block-bold-duotone',
+        color: 'text-red-500',
+      },
     ])
   }
 
   if (getVideoType() === 'bangumi' || getVideoType() === 'live' || isBangumiVideo(props.video)) {
     result = result.map((group) => {
       return group.filter((opt) => {
-        return opt.command !== VideoOption.CopyBVNumber && opt.command !== VideoOption.CopyAVNumber && opt.command !== VideoOption.CopyCleanVideoLink && opt.command !== VideoOption.ViewThisUserChannel
+        return (
+          opt.command !== VideoOption.CopyBVNumber &&
+          opt.command !== VideoOption.CopyAVNumber &&
+          opt.command !== VideoOption.CopyCleanVideoLink &&
+          opt.command !== VideoOption.ViewThisUserChannel
+        )
       })
     })
   }
-  return result.map(group => group.filter(option => isOptionVisible(option.key))).filter(group => group.length > 0)
+  return result
+    .map((group) => group.filter((option) => isOptionVisible(option.key)))
+    .filter((group) => group.length > 0)
 })
 
 // 菜单末尾的设置入口，打开设置并定位到本菜单的编辑区域；可在该编辑区域中隐藏。
-const customizeGroup = computed((): ContextMenuPanelItem[] => isOptionVisible('customizeMenu')
-  ? [{ key: 'customize-menu', name: t('video_card.operation.customize_menu'), icon: 'i-solar:settings-bold-duotone', select: openMenuSettings }]
-  : [])
+const customizeGroup = computed((): ContextMenuPanelItem[] =>
+  isOptionVisible('customizeMenu')
+    ? [
+        {
+          key: 'customize-menu',
+          name: t('video_card.operation.customize_menu'),
+          icon: 'i-solar:settings-bold-duotone',
+          select: openMenuSettings,
+        },
+      ]
+    : [],
+)
 
 const menuGroups = computed((): ContextMenuPanelItem[][] => [
   recommendationGroup.value,
-  ...commonOptions.value.map(group => group.map(option => ({
-    key: option.command,
-    name: option.name,
-    icon: option.icon,
-    color: option.color,
-    select: () => handleCommonCommand(option.command),
-  }))),
+  ...commonOptions.value.map((group) =>
+    group.map((option) => ({
+      key: option.command,
+      name: option.name,
+      icon: option.icon,
+      color: option.color,
+      select: () => handleCommonCommand(option.command),
+    })),
+  ),
   ...props.extraGroups,
   customizeGroup.value,
 ])
@@ -236,23 +382,18 @@ function openMenuSettings() {
 }
 
 function getAuthorMid() {
-  if (!props.video.author)
-    return undefined
+  if (!props.video.author) return undefined
 
-  return Array.isArray(props.video.author)
-    ? props.video.author[0]?.mid
-    : props.video.author.mid
+  return Array.isArray(props.video.author) ? props.video.author[0]?.mid : props.video.author.mid
 }
 
 async function submitWebDislike(reasonId: number) {
   const csrf = getCSRF()
   const authorMid = getAuthorMid()
 
-  if (!csrf || !props.video.id || !authorMid)
-    return
+  if (!csrf || !props.video.id || !authorMid) return
 
-  if (loadingWebDislike.value)
-    return
+  if (loadingWebDislike.value) return
 
   loadingWebDislike.value = true
 
@@ -266,13 +407,10 @@ async function submitWebDislike(reasonId: number) {
       csrf,
     })
 
-    if (response.code !== 0)
-      console.warn('Web dislike request failed:', response.message)
-  }
-  catch (error) {
+    if (response.code !== 0) console.warn('Web dislike request failed:', response.message)
+  } catch (error) {
     console.warn('Web dislike request error:', error)
-  }
-  finally {
+  } finally {
     loadingWebDislike.value = false
   }
 }
@@ -337,9 +475,10 @@ function handleCommonCommand(command: VideoOption) {
       break
     case VideoOption.CopyCleanVideoLink: {
       const cleanUrl = cleanBilibiliUrl(props.video.url!)
-      const text = settings.value.cleanShareLinkIncludeTitle && props.video.title
-        ? `${props.video.title} ${cleanUrl}`
-        : cleanUrl
+      const text =
+        settings.value.cleanShareLinkIncludeTitle && props.video.title
+          ? `${props.video.title} ${cleanUrl}`
+          : cleanUrl
       navigator.clipboard.writeText(text)
       handleClose()
       break
@@ -422,12 +561,10 @@ async function blockUser() {
       // 拉黑成功
       userRelationStore.setFollowing(authorMid, false, accountMid)
       handleRemoved()
-    }
-    else {
+    } else {
       console.error('Block user failed:', response.message)
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Block user error:', error)
   }
 }
@@ -453,12 +590,10 @@ async function followUser() {
       // 关注成功
       userRelationStore.setFollowing(authorMid, true, accountMid)
       handleClose()
-    }
-    else {
+    } else {
       console.error('Follow user failed:', response.message)
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Follow user error:', error)
   }
 }
@@ -484,12 +619,10 @@ async function unfollowUser() {
       // 取消关注成功
       userRelationStore.setFollowing(authorMid, false, accountMid)
       handleClose()
-    }
-    else {
+    } else {
       console.error('Unfollow user failed:', response.message)
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Unfollow user error:', error)
   }
 }
@@ -505,11 +638,7 @@ async function unfollowUser() {
       @close="handleClose"
     />
 
-    <FavoriteVideoDialog
-      v-if="showFavoriteDialog"
-      :video="video"
-      @close="handleClose"
-    />
+    <FavoriteVideoDialog v-if="showFavoriteDialog" :video="video" @close="handleClose" />
 
     <DislikeDialog
       v-if="showDislikeDialog"
@@ -543,10 +672,6 @@ async function unfollowUser() {
       @confirm="blockUser"
     />
 
-    <PipWindow
-      v-if="showPipWindow"
-      :url="video.url"
-      @close="handleClose"
-    />
+    <PipWindow v-if="showPipWindow" :url="video.url" @close="handleClose" />
   </div>
 </template>

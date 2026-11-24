@@ -6,12 +6,10 @@ let scrollContainer: HTMLElement | null = null
 let scrollContainerPaddingRight = ''
 
 function getDocumentElements() {
-  if (typeof document === 'undefined')
-    return null
+  if (typeof document === 'undefined') return null
 
   const { documentElement, body } = document
-  if (!documentElement || !body)
-    return null
+  if (!documentElement || !body) return null
 
   return { documentElement, body }
 }
@@ -23,8 +21,7 @@ function getScrollbarWidth(documentElement: HTMLElement) {
 }
 
 function isScrollable(element: HTMLElement, overflowY: string) {
-  if (overflowY === 'hidden')
-    return false
+  if (overflowY === 'hidden') return false
   return element.scrollHeight > element.clientHeight
 }
 
@@ -34,20 +31,17 @@ function getScrollContainer(documentElement: HTMLElement, body: HTMLElement) {
   const documentScrollable = isScrollable(documentElement, documentStyle.overflowY)
   const bodyScrollable = isScrollable(body, bodyStyle.overflowY)
 
-  if (bodyScrollable && !documentScrollable)
-    return body
+  if (bodyScrollable && !documentScrollable) return body
 
   return documentElement
 }
 
 export function lockPageScroll() {
   const elements = getDocumentElements()
-  if (!elements)
-    return
+  if (!elements) return
 
   lockCount += 1
-  if (lockCount > 1)
-    return
+  if (lockCount > 1) return
 
   const { documentElement, body } = elements
   htmlOverflow = documentElement.style.overflow
@@ -68,15 +62,12 @@ export function lockPageScroll() {
 
 export function unlockPageScroll() {
   const elements = getDocumentElements()
-  if (!elements)
-    return
+  if (!elements) return
 
-  if (lockCount === 0)
-    return
+  if (lockCount === 0) return
 
   lockCount -= 1
-  if (lockCount > 0)
-    return
+  if (lockCount > 0) return
 
   const { documentElement, body } = elements
   documentElement.style.overflow = htmlOverflow

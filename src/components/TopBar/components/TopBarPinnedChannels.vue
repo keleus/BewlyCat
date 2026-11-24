@@ -10,7 +10,11 @@ import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isComponentVisible } from '~/utils/topBarBadge'
 
-import { getPinnedVisibleCount, pinnedChannelLayout, validPinnedChannelKeys } from '../composables/usePinnedChannels'
+import {
+  getPinnedVisibleCount,
+  pinnedChannelLayout,
+  validPinnedChannelKeys,
+} from '../composables/usePinnedChannels'
 import { useTopBarPanel } from '../composables/useTopBarPanel'
 import { allChannelConfigs } from '../constants/channels'
 import ChannelIcon from './ChannelIcon.vue'
@@ -25,68 +29,101 @@ const anchor = ref<HTMLElement | null>(null)
 const panel = ref<HTMLElement | null>(null)
 const trigger = ref<HTMLButtonElement | null>(null)
 const measurement = ref<HTMLElement | null>(null)
-const channelMap = new Map(allChannelConfigs.map(channel => [channel.key, channel]))
+const channelMap = new Map(allChannelConfigs.map((channel) => [channel.key, channel]))
 const visibleCount = ref(0)
 const compact = ref(false)
 const header = computed(() => anchor.value?.closest<HTMLElement>('.top-bar-header') ?? null)
-const fixed = computed(() => header.value?.querySelector<HTMLElement>('[data-top-bar-fixed]') ?? null)
+const fixed = computed(
+  () => header.value?.querySelector<HTMLElement>('[data-top-bar-fixed]') ?? null,
+)
 const right = computed(() => header.value?.querySelector<HTMLElement>('.right-side') ?? null)
-const search = computed(() => header.value?.querySelector<HTMLElement>('.top-bar-header__search') ?? null)
+const search = computed(
+  () => header.value?.querySelector<HTMLElement>('.top-bar-header__search') ?? null,
+)
 
 // Only the pinned strip adapts. Other controls retain their existing breakpoints
 // and behavior; reserve space for the search input before allocating channels.
 function getAvailableWidth() {
-  if (!header.value || !fixed.value || !right.value)
-    return 0
+  if (!header.value || !fixed.value || !right.value) return 0
   const style = getComputedStyle(header.value)
-  const width = header.value.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight)
+  const width =
+    header.value.clientWidth -
+    Number.parseFloat(style.paddingLeft) -
+    Number.parseFloat(style.paddingRight)
   const gap = Number.parseFloat(style.columnGap) || 0
   const logoGap = Number.parseFloat(getComputedStyle(fixed.value.parentElement!).columnGap) || 0
   const searchReserve = search.value?.querySelector('.search-bar')
     ? Number.parseFloat(style.getPropertyValue('--bew-top-bar-pinned-search-reserve')) || 320
     : 0
-  return Math.max(0, width - fixed.value.getBoundingClientRect().width
-    - right.value.getBoundingClientRect().width - gap * 2 - logoGap - searchReserve)
+  return Math.max(
+    0,
+    width -
+      fixed.value.getBoundingClientRect().width -
+      right.value.getBoundingClientRect().width -
+      gap * 2 -
+      logoGap -
+      searchReserve,
+  )
 }
-const open = computed({ get: () => store.popupVisible.pinnedChannels, set: value => store.popupVisible.pinnedChannels = value })
-const channels = computed(() => validPinnedChannelKeys.value.map(key => channelMap.get(key)!))
+const open = computed({
+  get: () => store.popupVisible.pinnedChannels,
+  set: (value) => (store.popupVisible.pinnedChannels = value),
+})
+const channels = computed(() => validPinnedChannelKeys.value.map((key) => channelMap.get(key)!))
 const visible = computed(() => channels.value.slice(0, visibleCount.value))
 const overflow = computed(() => channels.value.slice(visibleCount.value))
-const enabled = computed(() => isLayoutEditing.value || (isComponentVisible('pinnedChannels') && channels.value.length > 0))
+const enabled = computed(
+  () =>
+    isLayoutEditing.value || (isComponentVisible('pinnedChannels') && channels.value.length > 0),
+)
 
 function close(restoreFocus = false) {
-  if (!open.value)
-    return
+  if (!open.value) return
   open.value = false
-  if (restoreFocus)
-    trigger.value?.focus()
+  if (restoreFocus) trigger.value?.focus()
 }
-const { panelStyle, position } = useTopBarPanel(anchor, panel, open, close, { width: 'content', minWidth: 160, maxWidth: 240, align: 'end', trigger })
+const { panelStyle, position } = useTopBarPanel(anchor, panel, open, close, {
+  width: 'content',
+  minWidth: 160,
+  maxWidth: 240,
+  align: 'end',
+  trigger,
+})
 function toggle() {
-  if (isLayoutEditing.value)
-    return
+  if (isLayoutEditing.value) return
   if (open.value) {
     close(true)
-  }
-  else {
+  } else {
     store.closeAllPopups()
     open.value = true
   }
 }
 function manage() {
   close()
-  openSettings({ menu: 'BewlyComponents', secondaryPage: 'topbar', targetTitleKey: 'settings.topbar_pinned_channels_title' })
+  openSettings({
+    menu: 'BewlyComponents',
+    secondaryPage: 'topbar',
+    targetTitleKey: 'settings.topbar_pinned_channels_title',
+  })
 }
 let frame = 0
 let disposed = false
-let metrics: { itemWidths: number[], moreWidths: number[], gap: number, inset: number, collapsedWidth: number, naturalWidth: number } | undefined
+let metrics:
+  | {
+      itemWidths: number[]
+      moreWidths: number[]
+      gap: number
+      inset: number
+      collapsedWidth: number
+      naturalWidth: number
+    }
+  | undefined
 function invalidateMetrics() {
   metrics = undefined
   measure()
 }
 function measure() {
-  if (disposed || frame)
-    return
+  if (disposed || frame) return
   frame = requestAnimationFrame(() => {
     frame = 0
     const el = measurement.value
@@ -97,12 +134,27 @@ function measure() {
     // Resizing only reallocates cached widths. Remeasure for content/font changes.
     if (!metrics) {
       const style = getComputedStyle(el)
-      const inset = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
-        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth)
-      const itemWidths = Array.from(el.querySelectorAll<HTMLElement>('[data-measure-item]'), item => item.getBoundingClientRect().width)
-      const moreWidths = [0, ...Array.from(el.querySelectorAll<HTMLElement>('[data-measure-more]'), item => item.getBoundingClientRect().width)]
+      const inset =
+        Number.parseFloat(style.paddingLeft) +
+        Number.parseFloat(style.paddingRight) +
+        Number.parseFloat(style.borderLeftWidth) +
+        Number.parseFloat(style.borderRightWidth)
+      const itemWidths = Array.from(
+        el.querySelectorAll<HTMLElement>('[data-measure-item]'),
+        (item) => item.getBoundingClientRect().width,
+      )
+      const moreWidths = [
+        0,
+        ...Array.from(
+          el.querySelectorAll<HTMLElement>('[data-measure-more]'),
+          (item) => item.getBoundingClientRect().width,
+        ),
+      ]
       const gap = Number.parseFloat(style.columnGap) || 0
-      const collapsedWidth = inset + (el.querySelector<HTMLElement>('[data-measure-collapsed]')?.getBoundingClientRect().width ?? 0)
+      const collapsedWidth =
+        inset +
+        (el.querySelector<HTMLElement>('[data-measure-collapsed]')?.getBoundingClientRect().width ??
+          0)
       const naturalWidth = itemWidths.length
         ? inset + itemWidths.reduce((sum, width) => sum + width, 0) + (itemWidths.length - 1) * gap
         : Number.parseFloat(style.getPropertyValue('--bew-control-height')) || 34
@@ -111,9 +163,17 @@ function measure() {
     const { itemWidths, moreWidths, gap, inset, collapsedWidth, naturalWidth } = metrics
     // Expanding a small selection is cheaper than showing the collapsed label;
     // do not apply expansion hysteresis when it would consume MORE space.
-    const previousCount = naturalWidth <= collapsedWidth ? channels.value.length : visibleCount.value
+    const previousCount =
+      naturalWidth <= collapsedWidth ? channels.value.length : visibleCount.value
     const availableWidth = getAvailableWidth()
-    const count = getPinnedVisibleCount(availableWidth, itemWidths, moreWidths, gap, inset, previousCount)
+    const count = getPinnedVisibleCount(
+      availableWidth,
+      itemWidths,
+      moreWidths,
+      gap,
+      inset,
+      previousCount,
+    )
     compact.value = count === 0 && availableWidth < collapsedWidth
     const root = anchor.value?.getRootNode() as ShadowRoot | undefined
     const focusedKey = root?.activeElement?.getAttribute('data-channel-key')
@@ -130,7 +190,8 @@ function measure() {
     if (!overflow.value.length) {
       // 无溢出时 trigger 未渲染（null），activeElement 也可能为 null，必须先确认确有焦点。
       const activeElement = root?.activeElement ?? null
-      const hadFocus = !!activeElement && (panel.value?.contains(activeElement) || activeElement === trigger.value)
+      const hadFocus =
+        !!activeElement && (panel.value?.contains(activeElement) || activeElement === trigger.value)
       close()
       if (hadFocus)
         void nextTick(() => anchor.value?.querySelector<HTMLElement>('[data-channel-key]')?.focus())
@@ -138,21 +199,35 @@ function measure() {
     position()
   })
 }
-watch([() => channels.value.length, locale, enabled], async () => {
-  metrics = undefined
-  await nextTick()
-  measure()
-}, { immediate: true })
-watch(channels, measure)
-useResizeObserver(computed(() => [header.value, fixed.value, right.value, search.value]), measure)
-useMutationObserver(search, (records) => {
-  // Only mounting/unmounting the search input changes the reserved space.
-  const changed = records.some(record => [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some(node =>
-    node instanceof Element && (node.matches('.search-bar') || node.querySelector('.search-bar')),
-  ))
-  if (changed)
+watch(
+  [() => channels.value.length, locale, enabled],
+  async () => {
+    metrics = undefined
+    await nextTick()
     measure()
-}, { childList: true, subtree: true })
+  },
+  { immediate: true },
+)
+watch(channels, measure)
+useResizeObserver(
+  computed(() => [header.value, fixed.value, right.value, search.value]),
+  measure,
+)
+useMutationObserver(
+  search,
+  (records) => {
+    // Only mounting/unmounting the search input changes the reserved space.
+    const changed = records.some((record) =>
+      [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some(
+        (node) =>
+          node instanceof Element &&
+          (node.matches('.search-bar') || node.querySelector('.search-bar')),
+      ),
+    )
+    if (changed) measure()
+  },
+  { childList: true, subtree: true },
+)
 watch([enabled, isLayoutEditing], () => close())
 useResizeObserver(measurement, invalidateMetrics)
 onMounted(() => {
@@ -169,27 +244,51 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <TopBarItemEditor component-key="pinnedChannels" :title="t('settings.topbar_pinned_channels_title')">
-    <div v-if="enabled" ref="anchor" class="pinned-channels-anchor" data-top-bar-editor-anchor data-top-bar-panel-anchor>
+  <TopBarItemEditor
+    component-key="pinnedChannels"
+    :title="t('settings.topbar_pinned_channels_title')"
+  >
+    <div
+      v-if="enabled"
+      ref="anchor"
+      class="pinned-channels-anchor"
+      data-top-bar-editor-anchor
+      data-top-bar-panel-anchor
+    >
       <div
         class="pinned-channels bew-segment-control bew-segment-control--surface"
-        :class="{ 'white-theme': forceWhiteIcon && settings.enableFrostedGlass, 'bew-segment-control--solid': !settings.enableFrostedGlass, 'pinned-channels--collapsed': channels.length > 0 && !visible.length && !compact }"
+        :class="{
+          'white-theme': forceWhiteIcon && settings.enableFrostedGlass,
+          'bew-segment-control--solid': !settings.enableFrostedGlass,
+          'pinned-channels--collapsed': channels.length > 0 && !visible.length && !compact,
+        }"
       >
         <ALink
-          v-for="channel in visible" :key="channel.key" :href="channel.href" type="topBar"
+          v-for="channel in visible"
+          :key="channel.key"
+          :href="channel.href"
+          type="topBar"
           class="pinned-channels__item bew-segment-control__item bew-segment-control__item--icon"
-          :title="t(channel.nameKey)" :aria-label="t(channel.nameKey)" :data-channel-key="channel.key"
-          :custom-click-event="isLayoutEditing" :custom-click-event-includes-modifiers="isLayoutEditing"
+          :title="t(channel.nameKey)"
+          :aria-label="t(channel.nameKey)"
+          :data-channel-key="channel.key"
+          :custom-click-event="isLayoutEditing"
+          :custom-click-event-includes-modifiers="isLayoutEditing"
           @auxclick="isLayoutEditing && $event.preventDefault()"
         >
           <ChannelIcon :icon="channel.icon" :color="forceWhiteIcon ? undefined : channel.color" />
         </ALink>
         <button
-          v-if="overflow.length || !channels.length" ref="trigger" type="button"
-          class="bew-segment-control__item" :class="{ 'bew-segment-control__item--icon': compact || !channels.length }"
+          v-if="overflow.length || !channels.length"
+          ref="trigger"
+          type="button"
+          class="bew-segment-control__item"
+          :class="{ 'bew-segment-control__item--icon': compact || !channels.length }"
           :aria-label="t('settings.pinned_manager.open', { count: overflow.length })"
-          :aria-expanded="open" aria-controls="pinned-channels-panel"
-          :title="t('settings.topbar_pinned_channels_title')" @click="toggle"
+          :aria-expanded="open"
+          aria-controls="pinned-channels-panel"
+          :title="t('settings.topbar_pinned_channels_title')"
+          @click="toggle"
         >
           <i v-if="compact || !channels.length" i-mingcute:pin-line aria-hidden="true" />
           <template v-else>
@@ -198,11 +297,20 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <div
-        v-if="open" id="pinned-channels-panel" ref="panel"
-        class="pinned-panel bew-popover bew-popover-surface" :style="panelStyle"
+        v-if="open"
+        id="pinned-channels-panel"
+        ref="panel"
+        class="pinned-panel bew-popover bew-popover-surface"
+        :style="panelStyle"
         :aria-label="t('settings.topbar_pinned_channels_title')"
       >
-        <ALink v-for="channel in overflow" :key="channel.key" :href="channel.href" type="topBar" class="pinned-panel__row">
+        <ALink
+          v-for="channel in overflow"
+          :key="channel.key"
+          :href="channel.href"
+          type="topBar"
+          class="pinned-panel__row"
+        >
           <ChannelIcon :icon="channel.icon" :color="channel.color" />{{ t(channel.nameKey) }}
         </ALink>
         <button type="button" class="pinned-panel__row pinned-panel__manage" @click="manage">
@@ -210,9 +318,22 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <div ref="measurement" class="pinned-measure bew-segment-control" aria-hidden="true" inert>
-        <span v-for="channel in channels" :key="channel.key" data-measure-item class="bew-segment-control__item bew-segment-control__item--icon" />
-        <span data-measure-collapsed class="bew-segment-control__item">{{ t('settings.pinned_manager.channels') }}</span>
-        <span v-for="count in channels.length" :key="`more-${count}`" data-measure-more class="bew-segment-control__item">+{{ count }}</span>
+        <span
+          v-for="channel in channels"
+          :key="channel.key"
+          data-measure-item
+          class="bew-segment-control__item bew-segment-control__item--icon"
+        />
+        <span data-measure-collapsed class="bew-segment-control__item">{{
+          t('settings.pinned_manager.channels')
+        }}</span>
+        <span
+          v-for="count in channels.length"
+          :key="`more-${count}`"
+          data-measure-more
+          class="bew-segment-control__item"
+          >+{{ count }}</span
+        >
       </div>
     </div>
   </TopBarItemEditor>

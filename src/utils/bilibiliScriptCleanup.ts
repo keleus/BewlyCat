@@ -9,24 +9,19 @@
 function cleanupGlobalObjects() {
   try {
     // 清理一些已知的B站全局对象（更谨慎的列表）
-    const bilibiliGlobals = [
-      '__INITIAL_STATE__',
-      '__playinfo__',
-    ]
+    const bilibiliGlobals = ['__INITIAL_STATE__', '__playinfo__']
 
     bilibiliGlobals.forEach((key) => {
       if ((window as any)[key]) {
         try {
           // 不删除，而是设置为 null，避免脚本报错
-          (window as any)[key] = null
-        }
-        catch {
+          ;(window as any)[key] = null
+        } catch {
           // 忽略错误
         }
       }
     })
-  }
-  catch (e) {
+  } catch (e) {
     console.warn('[BewlyBewly] Failed to cleanup global objects:', e)
   }
 }
@@ -39,8 +34,7 @@ export function cleanupBilibiliScripts() {
   try {
     // 清理全局对象
     cleanupGlobalObjects()
-  }
-  catch (e) {
+  } catch (e) {
     console.error('[BewlyBewly] Error during script cleanup:', e)
   }
 }

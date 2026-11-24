@@ -78,30 +78,36 @@ const {
   setHasMore,
   setExhausted,
   reset: resetLoadMore,
-} = useLoadMore(async () => {
-  const success = await performSearch(true)
-  const itemsCount = results.value?.length || 0
-  return { success, itemsCount }
-}, {
-  isLoading: () => isLoading.value,
-})
+} = useLoadMore(
+  async () => {
+    const success = await performSearch(true)
+    const itemsCount = results.value?.length || 0
+    return { success, itemsCount }
+  },
+  {
+    isLoading: () => isLoading.value,
+  },
+)
 
 // 监听关键词变化
-watch(() => props.keyword, async (newKeyword, oldKeyword) => {
-  const normalizedNew = (newKeyword || '').trim()
-  const normalizedOld = (oldKeyword || '').trim()
+watch(
+  () => props.keyword,
+  async (newKeyword, oldKeyword) => {
+    const normalizedNew = (newKeyword || '').trim()
+    const normalizedOld = (oldKeyword || '').trim()
 
-  if (!normalizedNew) {
-    resetAll()
-    return
-  }
+    if (!normalizedNew) {
+      resetAll()
+      return
+    }
 
-  // 关键词变化时才执行
-  if (normalizedNew !== normalizedOld) {
-    resetAll()
-    await performSearch(false)
-  }
-})
+    // 关键词变化时才执行
+    if (normalizedNew !== normalizedOld) {
+      resetAll()
+      await performSearch(false)
+    }
+  },
+)
 
 // 组件挂载时立即执行搜索
 onMounted(() => {
@@ -116,40 +122,44 @@ onMounted(() => {
 })
 
 // 监听筛选条件变化
-watch(() => props.filters, () => {
-  if (!props.keyword.trim())
-    return
+watch(
+  () => props.filters,
+  () => {
+    if (!props.keyword.trim()) return
 
-  resetAll()
-  void performSearch(false)
-}, { deep: true })
+    resetAll()
+    void performSearch(false)
+  },
+  { deep: true },
+)
 
 async function performSearch(loadMore: boolean): Promise<boolean> {
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return false
+  if (!keyword) return false
 
   // 分页模式下不支持 loadMore
   const isLoadMore = paginationMode.value === 'scroll' && loadMore
 
-  if (isLoadMore && (isLoading.value || exhausted.value))
-    return false
+  if (isLoadMore && (isLoading.value || exhausted.value)) return false
 
-  if (!isLoadMore)
-    setExhausted(false)
+  if (!isLoadMore) setExhausted(false)
 
   // 滚动模式下：loadMore 使用 getNextPage，否则从第1页开始
   // 翻页模式下：使用 currentPage（如果有设置）或从第1页开始
-  const targetPage = isLoadMore ? getNextPage(true) : (currentPage.value > 0 ? currentPage.value : getNextPage(false))
+  const targetPage = isLoadMore
+    ? getNextPage(true)
+    : currentPage.value > 0
+      ? currentPage.value
+      : getNextPage(false)
   const previousLength = results.value?.length || 0
 
   // 用户排序映射
-  const userOrderMap: Record<string, { order: string, order_sort: number }> = {
+  const userOrderMap: Record<string, { order: string; order_sort: number }> = {
     '': { order: '', order_sort: 0 },
-    'fans': { order: 'fans', order_sort: 0 },
-    'fans_desc': { order: 'fans', order_sort: 1 },
-    'level': { order: 'level', order_sort: 0 },
-    'level_desc': { order: 'level', order_sort: 1 },
+    fans: { order: 'fans', order_sort: 0 },
+    fans_desc: { order: 'fans', order_sort: 1 },
+    level: { order: 'level', order_sort: 0 },
+    level_desc: { order: 'level', order_sort: 1 },
   }
   const orderConfig = userOrderMap[props.filters.order] || { order: '', order_sort: 0 }
 
@@ -165,11 +175,9 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     },
   )
 
-  if (!success)
-    return false
+  if (!success) return false
 
-  if (!lastResponse.value?.data)
-    return false
+  if (!lastResponse.value?.data) return false
 
   const rawData = lastResponse.value.data
   const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
@@ -178,9 +186,8 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   if (isLoadMore && results.value) {
     const merged = [...results.value, ...incomingList]
     // 去重
-    results.value = dedupeByKey(merged, item => String(item?.mid ?? JSON.stringify(item)))
-  }
-  else {
+    results.value = dedupeByKey(merged, (item) => String(item?.mid ?? JSON.stringify(item)))
+  } else {
     results.value = incomingList
   }
 
@@ -200,14 +207,12 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
     if (incomingList.length === 0) {
       setExhausted(true)
-    }
-    else if (newItems <= 0 && targetPage >= totalPages.value) {
+    } else if (newItems <= 0 && targetPage >= totalPages.value) {
       setExhausted(true)
     }
 
     // 处理加载完成
-    if (isLoadMore)
-      await handleLoadMoreCompletion(haveScrollbar)
+    if (isLoadMore) await handleLoadMoreCompletion(haveScrollbar)
   }
 
   return true
@@ -215,12 +220,10 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
 // 翻页模式的页码切换
 async function handlePageChange(page: number) {
-  if (paginationMode.value !== 'pagination')
-    return
+  if (paginationMode.value !== 'pagination') return
 
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return
+  if (!keyword) return
 
   // 先滚动到顶部
   handleBackToTop()
@@ -229,12 +232,12 @@ async function handlePageChange(page: number) {
   isPageChanging.value = true
 
   // 用户排序映射
-  const userOrderMap: Record<string, { order: string, order_sort: number }> = {
+  const userOrderMap: Record<string, { order: string; order_sort: number }> = {
     '': { order: '', order_sort: 0 },
-    'fans': { order: 'fans', order_sort: 0 },
-    'fans_desc': { order: 'fans', order_sort: 1 },
-    'level': { order: 'level', order_sort: 0 },
-    'level_desc': { order: 'level', order_sort: 1 },
+    fans: { order: 'fans', order_sort: 0 },
+    fans_desc: { order: 'fans', order_sort: 1 },
+    level: { order: 'level', order_sort: 0 },
+    level_desc: { order: 'level', order_sort: 1 },
   }
   const orderConfig = userOrderMap[props.filters.order] || { order: '', order_sort: 0 }
 
@@ -284,7 +287,7 @@ function resetAll() {
   results.value = []
 }
 
-function handleFollowStateChanged(data: { mid: number, isFollowing: boolean }) {
+function handleFollowStateChanged(data: { mid: number; isFollowing: boolean }) {
   updateUserRelation(data.mid, data.isFollowing)
 }
 
@@ -322,16 +325,15 @@ defineExpose({
           isFollowed: userRelations[user.mid]?.isFollowing ? 1 : 0,
         }"
         :compact="true"
-        @follow-state-changed="(mid: number, isFollowing: boolean) => handleFollowStateChanged({ mid, isFollowing })"
+        @follow-state-changed="
+          (mid: number, isFollowing: boolean) => handleFollowStateChanged({ mid, isFollowing })
+        "
       />
     </div>
 
     <!-- 滚动加载模式 -->
     <template v-if="paginationMode === 'scroll'">
-      <SmoothLoading
-        :show="isLoading && results && results.length > 0"
-        :keep-space="true"
-      />
+      <SmoothLoading :show="isLoading && results && results.length > 0" :keep-space="true" />
 
       <Empty
         v-if="!isLoading && results && results.length > 0 && !hasMore"

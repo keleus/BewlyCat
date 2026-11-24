@@ -2,16 +2,26 @@ import type { DiffusionFieldGeometry } from './diffusionField'
 import { AmbilightDiffusionField } from './diffusionField'
 import { contentRect, glowGeometry } from './geometry'
 import { blendAlpha, blurredCoverage } from './math'
-import type { AmbilightBackdropAnchor, AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDiffusionQuality, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
+import type {
+  AmbilightBackdropAnchor,
+  AmbilightBackdropProbe,
+  AmbilightBackdropSample,
+  AmbilightDiffusionQuality,
+  AmbilightDisplayMode,
+  AmbilightEngineOptions,
+} from './types'
 
 const SAMPLE_WIDTH = 256
 const SAMPLE_HEIGHT = 144
 // 求解精度只改变扩散场网格大小，默认 medium 与原有 160×90 完全一致。
-const DIFFUSION_QUALITY_RESOLUTIONS: Record<AmbilightDiffusionQuality, { width: number, height: number }> = {
+const DIFFUSION_QUALITY_RESOLUTIONS: Record<
+  AmbilightDiffusionQuality,
+  { width: number; height: number }
+> = {
   'ultra-low': { width: 80, height: 45 },
-  'low': { width: 112, height: 63 },
-  'medium': { width: 160, height: 90 },
-  'high': { width: 224, height: 126 },
+  low: { width: 112, height: 63 },
+  medium: { width: 160, height: 90 },
+  high: { width: 224, height: 126 },
   'ultra-high': { width: 320, height: 180 },
 }
 const MIN_DIFFUSION_SIZE = 24
@@ -92,39 +102,39 @@ export class AmbilightEngine {
   private sourceCtx: CanvasRenderingContext2D | null = null
   private videoObjectFit = 'contain'
 
-  constructor(options: AmbilightEngineOptions, backdropProbe: AmbilightBackdropProbe | null = null) {
+  constructor(
+    options: AmbilightEngineOptions,
+    backdropProbe: AmbilightBackdropProbe | null = null,
+  ) {
     this.options = { ...options }
     this.diffusionIterations = this.getConfiguredIterations()
     this.backdropProbe = backdropProbe
   }
 
   private isAllowed(): boolean {
-    return !this.isHidden
-      && !this.isSleeping
-      && this.options.enabled
-      && Boolean(this.video?.isConnected)
-      && Boolean(this.hostElem)
+    return (
+      !this.isHidden &&
+      !this.isSleeping &&
+      this.options.enabled &&
+      Boolean(this.video?.isConnected) &&
+      Boolean(this.hostElem)
+    )
   }
 
   public invalidate(force = false) {
     this.layoutDirty = true
-    if (force)
-      this.needsForceDraw = true
+    if (force) this.needsForceDraw = true
 
-    if (this.layoutRafId !== null)
-      return
+    if (this.layoutRafId !== null) return
 
     this.layoutRafId = requestAnimationFrame(() => {
       this.layoutRafId = null
       this.updateLayout()
       if (this.isAllowed()) {
-        if (this.needsForceDraw || !this.hasPainted)
-          this.drawSingleFrame(true)
+        if (this.needsForceDraw || !this.hasPainted) this.drawSingleFrame(true)
         // 暂停时布局变化会改变光晕与文字的相对位置，画面不变也需重新估算
-        else if (this.video?.paused)
-          this.sampleBackdrop(performance.now(), false)
-        if (this.video && !this.video.paused)
-          this.startLoop()
+        else if (this.video?.paused) this.sampleBackdrop(performance.now(), false)
+        if (this.video && !this.video.paused) this.startLoop()
       }
       this.needsForceDraw = false
     })
@@ -132,15 +142,12 @@ export class AmbilightEngine {
 
   // 滚动由浏览器原生完成；这里只做视口可见性、sticky/fixed 兜底和文字采样。
   public handleScroll() {
-    if (!this.video || !this.canvas || !this.hostElem || this.isHidden)
-      return
-    if (this.scrollRafId !== null)
-      return
+    if (!this.video || !this.canvas || !this.hostElem || this.isHidden) return
+    if (this.scrollRafId !== null) return
 
     this.scrollRafId = requestAnimationFrame(() => {
       this.scrollRafId = null
-      if (!this.video || !this.canvas || !this.hostElem || this.isHidden)
-        return
+      if (!this.video || !this.canvas || !this.hostElem || this.isHidden) return
       if (this.layoutDirty) {
         this.invalidate()
         return
@@ -164,14 +171,11 @@ export class AmbilightEngine {
       // （如关闭评论区后的 .left-container.scroll-sticky）时切为 fixed 视口锁定，避免环境光随滚轮上下抖动。
       const shouldLock = this.isVideoViewportAnchored()
       const lockChanged = shouldLock !== this.isViewportLocked
-      if (lockChanged)
-        this.setViewportLocked(shouldLock)
+      if (lockChanged) this.setViewportLocked(shouldLock)
       this.syncCanvasPosition(r, lockChanged)
 
-      if (this.video.paused)
-        this.sampleBackdrop(performance.now(), false)
-      else if (this.rafId === null)
-        this.startLoop()
+      if (this.video.paused) this.sampleBackdrop(performance.now(), false)
+      else if (this.rafId === null) this.startLoop()
     })
   }
 
@@ -193,7 +197,13 @@ export class AmbilightEngine {
     this.cancelHostResize()
     this.hostResizeTimer = setTimeout(() => {
       this.hostResizeTimer = null
-      if (!this.isViewportLocked && this.hostElem && this.video && !this.isHidden && !this.isSleeping) {
+      if (
+        !this.isViewportLocked &&
+        this.hostElem &&
+        this.video &&
+        !this.isHidden &&
+        !this.isSleeping
+      ) {
         this.resizeHostToDocument()
         this.applyCanvasPosition(this.video.getBoundingClientRect(), true)
       }
@@ -201,19 +211,16 @@ export class AmbilightEngine {
   }
 
   public setSleeping(sleeping: boolean) {
-    if (this.isSleeping === sleeping)
-      return
+    if (this.isSleeping === sleeping) return
     this.isSleeping = sleeping
 
-    if (!this.hostElem)
-      return
+    if (!this.hostElem) return
 
     if (sleeping) {
       this.hostElem.classList.add('is-sleeping')
       this.cancelScrollRefresh()
       this.stopLoop()
-    }
-    else {
+    } else {
       this.hostElem.classList.remove('is-sleeping')
       this.invalidate(true)
     }
@@ -227,22 +234,20 @@ export class AmbilightEngine {
       this.diffusionFallback = false
       this.diffusionIterations = this.getConfiguredIterations()
       this.resetDiffusionField()
-    }
-    else if (previousIterations !== this.options.diffusionIterations) {
+    } else if (previousIterations !== this.options.diffusionIterations) {
       this.diffusionIterations = this.getConfiguredIterations()
     }
     // strength/saturation 只影响样式，不参与本地布局签名。
     if (options.strength !== undefined || options.saturation !== undefined) {
       this.applyCanvasStyles(
-        this.usesDiffusion() ? 0 : (this.layout?.visualBlur || this.options.blur),
+        this.usesDiffusion() ? 0 : this.layout?.visualBlur || this.options.blur,
       )
     }
     this.invalidate(true)
   }
 
   public bindVideo(video: HTMLVideoElement) {
-    if (this.video === video)
-      return
+    if (this.video === video) return
 
     this.unbindVideo()
     this.video = video
@@ -279,8 +284,7 @@ export class AmbilightEngine {
 
   public setDisplayMode(mode: AmbilightDisplayMode) {
     this.mode = mode
-    if (!this.hostElem)
-      return
+    if (!this.hostElem) return
 
     if (mode === 'mini') {
       this.setSleeping(true)
@@ -296,8 +300,7 @@ export class AmbilightEngine {
     if (hidden) {
       this.stopLoop()
       this.setSleeping(true)
-    }
-    else {
+    } else {
       this.setSleeping(false)
       this.invalidate(true)
     }
@@ -329,15 +332,15 @@ export class AmbilightEngine {
   }
 
   private ensureDom() {
-    if (this.hostElem && this.canvas)
-      return
+    if (this.hostElem && this.canvas) return
 
     const host = document.createElement('div')
     // 不透明画布在首帧绘制前是黑色，首帧画好后再淡入，避免页面加载时闪出黑块
     host.className = 'bewly-ambilight-host is-pending'
     host.setAttribute('aria-hidden', 'true')
     // 文档层：尺寸覆盖整篇文档并裁剪，画布用文档坐标绝对定位；浏览器滚动时原生移动。
-    host.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none!important;z-index:-1;overflow:hidden;contain:layout style;'
+    host.style.cssText =
+      'position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none!important;z-index:-1;overflow:hidden;contain:layout style;'
 
     const canvas = document.createElement('canvas')
     canvas.width = SAMPLE_WIDTH
@@ -355,8 +358,7 @@ export class AmbilightEngine {
   }
 
   private applyCanvasStyles(effectiveBlur?: number) {
-    if (!this.canvas)
-      return
+    if (!this.canvas) return
 
     const { blur, saturation, strength } = this.options
     const blurValue = effectiveBlur ?? blur
@@ -366,13 +368,11 @@ export class AmbilightEngine {
   }
 
   private onVideoPlay = () => {
-    if (this.isAllowed())
-      this.startLoop()
+    if (this.isAllowed()) this.startLoop()
   }
 
   private onVideoPlaying = () => {
-    if (this.isAllowed())
-      this.startLoop()
+    if (this.isAllowed()) this.startLoop()
   }
 
   private onVideoLoadedData = () => {
@@ -382,14 +382,12 @@ export class AmbilightEngine {
 
   private onVideoPause = () => {
     this.stopLoop()
-    if (this.isAllowed() && !this.layoutDirty)
-      this.drawSingleFrame(true)
+    if (this.isAllowed() && !this.layoutDirty) this.drawSingleFrame(true)
   }
 
   private onVideoEnded = () => {
     this.stopLoop()
-    if (this.isAllowed() && !this.layoutDirty)
-      this.drawSingleFrame(true)
+    if (this.isAllowed() && !this.layoutDirty) this.drawSingleFrame(true)
   }
 
   private onVideoSeeked = () => {
@@ -410,8 +408,7 @@ export class AmbilightEngine {
   }
 
   private bindVideoEvents() {
-    if (!this.video)
-      return
+    if (!this.video) return
 
     this.video.addEventListener('play', this.onVideoPlay)
     this.video.addEventListener('playing', this.onVideoPlaying)
@@ -425,11 +422,12 @@ export class AmbilightEngine {
     if (typeof ResizeObserver !== 'undefined') {
       this.videoResizeObserver?.disconnect()
       this.videoResizeObserver = new ResizeObserver(([entry]) => {
-        if (!this.layout || !entry)
-          return
+        if (!this.layout || !entry) return
         const { width, height } = entry.contentRect
-        if (Math.abs(width - this.layout.videoRectWidth) >= 0.5
-          || Math.abs(height - this.layout.videoRectHeight) >= 0.5) {
+        if (
+          Math.abs(width - this.layout.videoRectWidth) >= 0.5 ||
+          Math.abs(height - this.layout.videoRectHeight) >= 0.5
+        ) {
           this.invalidate()
         }
       })
@@ -440,8 +438,7 @@ export class AmbilightEngine {
   private unbindVideoEvents() {
     this.videoResizeObserver?.disconnect()
     this.videoResizeObserver = null
-    if (!this.video)
-      return
+    if (!this.video) return
 
     this.video.removeEventListener('play', this.onVideoPlay)
     this.video.removeEventListener('playing', this.onVideoPlaying)
@@ -457,23 +454,23 @@ export class AmbilightEngine {
   private isVideoVisible(r: DOMRect): boolean {
     // 50px 滞后缓冲带，避免在视口边缘滚动时反复休眠与唤醒
     const BUFFER = 50
-    return r.width >= 160
-      && r.height >= 90
-      && r.bottom > -BUFFER
-      && r.top < window.innerHeight + BUFFER
-      && r.right > -BUFFER
-      && r.left < window.innerWidth + BUFFER
+    return (
+      r.width >= 160 &&
+      r.height >= 90 &&
+      r.bottom > -BUFFER &&
+      r.top < window.innerHeight + BUFFER &&
+      r.right > -BUFFER &&
+      r.left < window.innerWidth + BUFFER
+    )
   }
 
   // 只在尺寸、播放器模式、spread/blur 等本地参数变化时执行；普通滚动不进入这里。
   private updateLayout() {
     this.layoutDirty = false
 
-    if (!this.video || !this.canvas || !this.hostElem || this.isHidden)
-      return
+    if (!this.video || !this.canvas || !this.hostElem || this.isHidden) return
 
-    if (this.mode === 'mini'
-      || this.video.closest('.bpx-player-container[data-screen="mini"]')) {
+    if (this.mode === 'mini' || this.video.closest('.bpx-player-container[data-screen="mini"]')) {
       this.setSleeping(true)
       return
     }
@@ -494,8 +491,7 @@ export class AmbilightEngine {
     )
 
     // 彻底清除 clipPath 挖孔：发光层位于底层 z-index: -1，由视频物理不透明画面自然覆盖
-    if (this.hostElem.style.clipPath)
-      this.hostElem.style.clipPath = ''
+    if (this.hostElem.style.clipPath) this.hostElem.style.clipPath = ''
 
     const wasViewportLocked = this.isViewportLocked
     const shouldLock = this.isVideoViewportAnchored()
@@ -529,8 +525,7 @@ export class AmbilightEngine {
     ].join(':')
 
     if (this.layout?.signature === signature) {
-      if (!this.isViewportLocked && !lockChanged && !this.hostSized)
-        this.resizeHostToDocument()
+      if (!this.isViewportLocked && !lockChanged && !this.hostSized) this.resizeHostToDocument()
       this.applyCanvasPosition(r, true)
       this.setSleeping(false)
       return
@@ -539,10 +534,8 @@ export class AmbilightEngine {
     if (!this.isViewportLocked && !lockChanged) {
       // 首次布局需立即测量宿主原点；后续播放器缩放/模式切换期间延后重测文档高度，
       // 避免写 height: 0px 后立即可见地触发整页强制同步重排。
-      if (!this.hostSized)
-        this.resizeHostToDocument()
-      else
-        this.scheduleHostResizeToDocument()
+      if (!this.hostSized) this.resizeHostToDocument()
+      else this.scheduleHostResizeToDocument()
     }
 
     const documentContentLeft = content.left + window.scrollX
@@ -582,8 +575,7 @@ export class AmbilightEngine {
   // 宽度使用 100% 而非写死 clientWidth 像素值，防止垂直滚动条出现滞后或非整数缩放取整撑出空水平滚动条。
   private resizeHostToDocument(): void {
     const host = this.hostElem
-    if (!host)
-      return
+    if (!host) return
 
     // 宿主自身也计入 scrollHeight，先收起再测量，否则文档内容变短后滚动区域无法回缩；
     // 在同一次布局读阶段一并读取 hostRect，避免写入高度后再次强制同步重排。
@@ -604,15 +596,21 @@ export class AmbilightEngine {
     let current: HTMLElement | null = this.video
     while (current && current !== document.body && current !== document.documentElement) {
       const style = window.getComputedStyle(current)
-      if (style.position === 'fixed')
-        return true
+      if (style.position === 'fixed') return true
       if (style.position === 'sticky') {
         const rect = current.getBoundingClientRect()
         const stickyTop = Number.parseFloat(style.top)
-        if (Number.isFinite(stickyTop) && window.scrollY > 0 && Math.abs(rect.top - stickyTop) <= 1.5)
+        if (
+          Number.isFinite(stickyTop) &&
+          window.scrollY > 0 &&
+          Math.abs(rect.top - stickyTop) <= 1.5
+        )
           return true
         const stickyBottom = Number.parseFloat(style.bottom)
-        if (Number.isFinite(stickyBottom) && Math.abs((window.innerHeight - rect.bottom) - stickyBottom) <= 1.5)
+        if (
+          Number.isFinite(stickyBottom) &&
+          Math.abs(window.innerHeight - rect.bottom - stickyBottom) <= 1.5
+        )
           return true
       }
       current = current.parentElement
@@ -622,8 +620,7 @@ export class AmbilightEngine {
 
   private setViewportLocked(locked: boolean): void {
     const host = this.hostElem
-    if (!host || this.isViewportLocked === locked)
-      return
+    if (!host || this.isViewportLocked === locked) return
 
     this.isViewportLocked = locked
     host.classList.toggle('is-viewport-locked', locked)
@@ -633,8 +630,7 @@ export class AmbilightEngine {
       host.style.width = '100%'
       host.style.height = '100%'
       this.hostSized = false
-    }
-    else {
+    } else {
       this.cancelHostResize()
       host.style.position = 'absolute'
       this.resizeHostToDocument()
@@ -645,8 +641,7 @@ export class AmbilightEngine {
   private applyCanvasPosition(r: DOMRect, force: boolean): void {
     const layout = this.layout
     const canvas = this.canvas
-    if (!layout || !canvas)
-      return
+    if (!layout || !canvas) return
 
     const viewportContentLeft = r.left + layout.contentOffsetX
     const viewportContentTop = r.top + layout.contentOffsetY
@@ -654,9 +649,11 @@ export class AmbilightEngine {
     const documentContentTop = viewportContentTop + window.scrollY
 
     if (this.isViewportLocked) {
-      if (!force
-        && Math.abs(layout.viewportContentLeft - viewportContentLeft) < 0.5
-        && Math.abs(layout.viewportContentTop - viewportContentTop) < 0.5) {
+      if (
+        !force &&
+        Math.abs(layout.viewportContentLeft - viewportContentLeft) < 0.5 &&
+        Math.abs(layout.viewportContentTop - viewportContentTop) < 0.5
+      ) {
         return
       }
 
@@ -669,9 +666,11 @@ export class AmbilightEngine {
       return
     }
 
-    if (!force
-      && Math.abs(layout.documentContentLeft - documentContentLeft) < 0.5
-      && Math.abs(layout.documentContentTop - documentContentTop) < 0.5) {
+    if (
+      !force &&
+      Math.abs(layout.documentContentLeft - documentContentLeft) < 0.5 &&
+      Math.abs(layout.documentContentTop - documentContentTop) < 0.5
+    ) {
       return
     }
 
@@ -691,13 +690,12 @@ export class AmbilightEngine {
   }
 
   private drawSingleFrame(force = false, frameTime?: number) {
-    if (!this.video || !this.ctx || this.video.readyState < 2 || !this.video.videoWidth)
-      return
+    if (!this.video || !this.ctx || this.video.readyState < 2 || !this.video.videoWidth) return
 
     const now = frameTime ?? performance.now()
     const dt = this.lastDrawTime ? Math.min(500, now - this.lastDrawTime) : 1000
     const isInitialPaint = !this.hasPainted
-    const blend = (isInitialPaint || force) ? 1 : blendAlpha(dt, this.options.smoothing)
+    const blend = isInitialPaint || force ? 1 : blendAlpha(dt, this.options.smoothing)
 
     if (this.usesDiffusion()) {
       try {
@@ -710,8 +708,7 @@ export class AmbilightEngine {
         }
         // 扩散场暂不可用时跳过本帧：画布此时没有模糊滤镜，不能直接画清晰视频
         return
-      }
-      catch {
+      } catch {
         // 画布被跨域视频污染或求解异常时，退回现有高斯路径，避免整块环境光消失
         this.enableDiffusionFallback()
       }
@@ -737,8 +734,7 @@ export class AmbilightEngine {
         this.hasPainted = false
         gaussianForce = true
       }
-      if (!this.hasPainted)
-        gaussianForce = true
+      if (!this.hasPainted) gaussianForce = true
 
       // 核心：基于时间差与阻尼时间的指数衰减算法
       this.ctx.globalAlpha = gaussianForce ? 1 : blend
@@ -747,8 +743,7 @@ export class AmbilightEngine {
       this.hostElem?.classList.remove('is-pending')
       this.lastDrawTime = now
       this.sampleBackdrop(now, isInitialPaint)
-    }
-    catch {
+    } catch {
       // 捕获跨域或未就绪异常
     }
   }
@@ -788,8 +783,7 @@ export class AmbilightEngine {
 
     const layout = this.createDiffusionLayout(this.layout)
     this.diffusionLayout = layout
-    if (layout && layout.key !== this.diffusionKey)
-      this.needsForceDraw = true
+    if (layout && layout.key !== this.diffusionKey) this.needsForceDraw = true
   }
 
   private createDiffusionLayout(layout: EngineLayout): DiffusionLayout | null {
@@ -798,10 +792,18 @@ export class AmbilightEngine {
     if (glowWidth <= 0 || glowHeight <= 0 || layout.contentWidth <= 0 || layout.contentHeight <= 0)
       return null
 
-    const target = DIFFUSION_QUALITY_RESOLUTIONS[this.options.diffusionQuality] ?? DIFFUSION_QUALITY_RESOLUTIONS.medium
+    const target =
+      DIFFUSION_QUALITY_RESOLUTIONS[this.options.diffusionQuality] ??
+      DIFFUSION_QUALITY_RESOLUTIONS.medium
     const scale = Math.min(target.width / glowWidth, target.height / glowHeight)
-    const width = Math.max(MIN_DIFFUSION_SIZE, Math.min(target.width, Math.round(glowWidth * scale)))
-    const height = Math.max(MIN_DIFFUSION_SIZE, Math.min(target.height, Math.round(glowHeight * scale)))
+    const width = Math.max(
+      MIN_DIFFUSION_SIZE,
+      Math.min(target.width, Math.round(glowWidth * scale)),
+    )
+    const height = Math.max(
+      MIN_DIFFUSION_SIZE,
+      Math.min(target.height, Math.round(glowHeight * scale)),
+    )
     const clampX = (value: number) => Math.max(0, Math.min(width, value))
     const clampY = (value: number) => Math.max(0, Math.min(height, value))
     const innerLeft = clampX((layout.marginX / glowWidth) * width)
@@ -809,8 +811,7 @@ export class AmbilightEngine {
     const innerRight = clampX(((layout.marginX + layout.contentWidth) / glowWidth) * width)
     const innerBottom = clampY(((layout.marginY + layout.contentHeight) / glowHeight) * height)
 
-    if (innerRight - innerLeft < 2 || innerBottom - innerTop < 2)
-      return null
+    if (innerRight - innerLeft < 2 || innerBottom - innerTop < 2) return null
 
     const cellWidth = glowWidth / width
     const cellHeight = glowHeight / height
@@ -832,8 +833,7 @@ export class AmbilightEngine {
 
   private getDiffusionDecayLength(geometry: DiffusionFieldGeometry): number {
     const decaySpeed = Math.max(0, Math.min(100, this.options.diffusionDecay))
-    if (decaySpeed <= 0)
-      return 0
+    if (decaySpeed <= 0) return 0
 
     const left = geometry.innerLeft * geometry.cellWidth
     const top = geometry.innerTop * geometry.cellHeight
@@ -850,26 +850,24 @@ export class AmbilightEngine {
 
   private prepareDiffusionSource(geometry: DiffusionFieldGeometry): ImageData | null {
     const video = this.video
-    if (!video || !video.videoWidth || !video.videoHeight)
-      return null
+    if (!video || !video.videoWidth || !video.videoHeight) return null
 
     const innerWidth = geometry.innerRight - geometry.innerLeft
     const innerHeight = geometry.innerBottom - geometry.innerTop
-    if (innerWidth <= 0 || innerHeight <= 0)
-      return null
+    if (innerWidth <= 0 || innerHeight <= 0) return null
 
     if (!this.sourceCanvas) {
       this.sourceCanvas = document.createElement('canvas')
-      this.sourceCtx = this.sourceCanvas.getContext('2d', { alpha: false, willReadFrequently: true })
+      this.sourceCtx = this.sourceCanvas.getContext('2d', {
+        alpha: false,
+        willReadFrequently: true,
+      })
     }
     const canvas = this.sourceCanvas
-    if (canvas.width !== geometry.width)
-      canvas.width = geometry.width
-    if (canvas.height !== geometry.height)
-      canvas.height = geometry.height
+    if (canvas.width !== geometry.width) canvas.width = geometry.width
+    if (canvas.height !== geometry.height) canvas.height = geometry.height
     const ctx = this.sourceCtx
-    if (!ctx)
-      return null
+    if (!ctx) return null
 
     ctx.fillStyle = '#000'
     ctx.fillRect(0, 0, geometry.width, geometry.height)
@@ -909,18 +907,15 @@ export class AmbilightEngine {
     const canvas = this.canvas
     const ctx = this.ctx
     const mode = this.options.diffusion
-    if (!layout || !canvas || !ctx || mode === 'gaussian')
-      return false
+    if (!layout || !canvas || !ctx || mode === 'gaussian') return false
 
     const source = this.prepareDiffusionSource(layout.geometry)
-    if (!source)
-      return false
+    if (!source) return false
 
     let field = this.diffusionField
     if (!field || this.diffusionKey !== layout.key) {
       field = new AmbilightDiffusionField(layout.geometry)
-      if (!field.hasFixedPixels)
-        return false
+      if (!field.hasFixedPixels) return false
       this.diffusionField = field
       this.diffusionKey = layout.key
       this.diffusionNeedsReset = true
@@ -952,10 +947,8 @@ export class AmbilightEngine {
     else if (elapsed < 4 && this.diffusionIterations < configuredIterations)
       this.diffusionIterations++
 
-    if (canvas.width !== field.width)
-      canvas.width = field.width
-    if (canvas.height !== field.height)
-      canvas.height = field.height
+    if (canvas.width !== field.width) canvas.width = field.width
+    if (canvas.height !== field.height) canvas.height = field.height
     ctx.putImageData(imageData, 0, 0)
     return true
   }
@@ -969,8 +962,14 @@ export class AmbilightEngine {
 
   // 低频估算各文字位置下的光晕，均按 CSS 合成所用的 sRGB 编码值给出；小窗时光晕已休眠，不采样
   private sampleBackdrop(now: number, force: boolean) {
-    if (!this.backdropProbe || !this.canvas || !this.layout || !this.hasPainted || !this.isAllowed()
-      || this.mode === 'mini') {
+    if (
+      !this.backdropProbe ||
+      !this.canvas ||
+      !this.layout ||
+      !this.hasPainted ||
+      !this.isAllowed() ||
+      this.mode === 'mini'
+    ) {
       return
     }
     const wait = BACKDROP_SAMPLE_INTERVAL - (now - this.lastBackdropSampleTime)
@@ -987,27 +986,23 @@ export class AmbilightEngine {
 
     // 浏览器原生滚动后，用画布当前视口矩形估算文字背景位置。
     const canvasRect = this.canvas.getBoundingClientRect()
-    if (canvasRect.width <= 0 || canvasRect.height <= 0)
-      return
+    if (canvasRect.width <= 0 || canvasRect.height <= 0) return
 
     const anchors = this.backdropProbe.getAnchors()
     let samples: AmbilightBackdropSample[] | null
     if (this.usesDiffusion()) {
       const field = this.diffusionField
-      if (!field?.hasSolution)
-        return
+      if (!field?.hasSolution) return
       samples = this.sampleDiffusionBackdrop(field, canvasRect, anchors)
-    }
-    else {
+    } else {
       samples = this.sampleGaussianBackdrop(canvasRect, anchors)
     }
 
-    if (samples?.length)
-      this.backdropProbe.onSample(samples)
+    if (samples?.length) this.backdropProbe.onSample(samples)
   }
 
   // 与 applyCanvasStyles 一致：强度超过 100% 时以 brightness 提亮，否则以透明度减弱
-  private getStrengthFactors(): { brightness: number, opacity: number } {
+  private getStrengthFactors(): { brightness: number; opacity: number } {
     const { strength } = this.options
     return {
       brightness: Math.max(1, strength / 100),
@@ -1026,8 +1021,7 @@ export class AmbilightEngine {
     return anchors.map(({ region, x, y }) => {
       const u = (x - canvasRect.left) / canvasRect.width
       const v = (y - canvasRect.top) / canvasRect.height
-      if (u < 0 || u > 1 || v < 0 || v > 1)
-        return { region, glow: 0, alpha: 0 }
+      if (u < 0 || u > 1 || v < 0 || v > 1) return { region, glow: 0, alpha: 0 }
       const { luma, alpha } = field.sample(u, v)
       return { region, glow: Math.min(1, brightness * luma), alpha: opacity * alpha }
     })
@@ -1039,30 +1033,37 @@ export class AmbilightEngine {
     canvasRect: DOMRect,
     anchors: readonly AmbilightBackdropAnchor[],
   ): AmbilightBackdropSample[] | null {
-    if (!this.canvas || !this.layout)
-      return null
+    if (!this.canvas || !this.layout) return null
 
     if (!this.backdropCtx) {
       const canvas = document.createElement('canvas')
       canvas.width = BACKDROP_SAMPLE_WIDTH
       canvas.height = BACKDROP_SAMPLE_HEIGHT
       this.backdropCtx = canvas.getContext('2d', { alpha: true, willReadFrequently: true })
-      if (!this.backdropCtx)
-        return null
+      if (!this.backdropCtx) return null
     }
 
     this.backdropCtx.clearRect(0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
     this.backdropCtx.drawImage(this.canvas, 0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
-    const { data } = this.backdropCtx.getImageData(0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
+    const { data } = this.backdropCtx.getImageData(
+      0,
+      0,
+      BACKDROP_SAMPLE_WIDTH,
+      BACKDROP_SAMPLE_HEIGHT,
+    )
 
     const { brightness, opacity } = this.getStrengthFactors()
     for (let i = 0; i < this.backdropLuma.length; i++) {
       const p = i * 4
       const alpha = data[p + 3] / 255
       this.backdropAlpha[i] = alpha
-      this.backdropLuma[i] = alpha > 0
-        ? Math.min(1, brightness * (0.2126 * data[p] + 0.7152 * data[p + 1] + 0.0722 * data[p + 2]) / 255)
-        : 0
+      this.backdropLuma[i] =
+        alpha > 0
+          ? Math.min(
+              1,
+              (brightness * (0.2126 * data[p] + 0.7152 * data[p + 1] + 0.0722 * data[p + 2])) / 255,
+            )
+          : 0
     }
 
     const glow = {
@@ -1074,12 +1075,22 @@ export class AmbilightEngine {
     }
     const samples: AmbilightBackdropSample[] = []
     for (const { region, x, y } of anchors) {
-      const coverage = glow.blur > 0
-        ? blurredCoverage(x, glow.left, glow.left + glow.width, glow.blur)
-        * blurredCoverage(y, glow.top, glow.top + glow.height, glow.blur)
-        : (x >= glow.left && x <= glow.left + glow.width && y >= glow.top && y <= glow.top + glow.height ? 1 : 0)
-      const cellX = Math.round(Math.min(1, Math.max(0, (x - glow.left) / glow.width)) * (BACKDROP_SAMPLE_WIDTH - 1))
-      const cellY = Math.round(Math.min(1, Math.max(0, (y - glow.top) / glow.height)) * (BACKDROP_SAMPLE_HEIGHT - 1))
+      const coverage =
+        glow.blur > 0
+          ? blurredCoverage(x, glow.left, glow.left + glow.width, glow.blur) *
+            blurredCoverage(y, glow.top, glow.top + glow.height, glow.blur)
+          : x >= glow.left &&
+              x <= glow.left + glow.width &&
+              y >= glow.top &&
+              y <= glow.top + glow.height
+            ? 1
+            : 0
+      const cellX = Math.round(
+        Math.min(1, Math.max(0, (x - glow.left) / glow.width)) * (BACKDROP_SAMPLE_WIDTH - 1),
+      )
+      const cellY = Math.round(
+        Math.min(1, Math.max(0, (y - glow.top) / glow.height)) * (BACKDROP_SAMPLE_HEIGHT - 1),
+      )
 
       // 模糊半径远大于单个格子，取 3×3 邻域均值；亮度按 alpha 加权，避免透明格子的颜色干扰
       let luma = 0
@@ -1111,21 +1122,17 @@ export class AmbilightEngine {
   }
 
   public startLoop() {
-    if (this.rafId !== null)
-      return
+    if (this.rafId !== null) return
 
     const tick = (now: number) => {
       this.rafId = null
 
-      if (!this.isAllowed() || !this.video || this.video.paused)
-        return
+      if (!this.isAllowed() || !this.video || this.video.paused) return
 
-      if (this.layoutDirty)
-        this.updateLayout()
+      if (this.layoutDirty) this.updateLayout()
 
       // 尺寸变化/唤醒会安排下一次布局；本轮不再绘制旧布局。
-      if (!this.isAllowed() || !this.video || this.video.paused || this.layoutDirty)
-        return
+      if (!this.isAllowed() || !this.video || this.video.paused || this.layoutDirty) return
 
       const force = this.needsForceDraw || !this.hasPainted
       const interval = 1000 / Math.max(8, this.options.fps)

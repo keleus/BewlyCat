@@ -12,12 +12,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'itemClick', item: { name: string, url: string, unreadCount: number, icon: string }): void
+  (e: 'itemClick', item: { name: string; url: string; unreadCount: number; icon: string }): void
 }>()
 
 const { t } = useI18n()
 const counts = computed(() => getNotificationCounts(props.unReadMessage, props.unReadDm))
-const list = computed((): { name: string, url: string, unreadCount: number, icon: string }[] => [
+const list = computed((): { name: string; url: string; unreadCount: number; icon: string }[] => [
   {
     name: t('topbar.noti_dropdown.replys'),
     url: 'https://message.bilibili.com/#/reply',
@@ -50,7 +50,10 @@ const list = computed((): { name: string, url: string, unreadCount: number, icon
   },
 ])
 
-function handleClick(event: MouseEvent, item: { name: string, url: string, unreadCount: number, icon: string }) {
+function handleClick(
+  event: MouseEvent,
+  item: { name: string; url: string; unreadCount: number; icon: string },
+) {
   emit('itemClick', item)
 }
 </script>

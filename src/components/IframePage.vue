@@ -3,7 +3,11 @@ import { useEventListener } from '@vueuse/core'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { IFRAME_DARK_MODE_CHANGE, IFRAME_SCROLLBAR_GUTTER_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import {
+  IFRAME_DARK_MODE_CHANGE,
+  IFRAME_SCROLLBAR_GUTTER_CHANGE,
+  IFRAME_TOP_BAR_CHANGE,
+} from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { releaseIframeMedia } from '~/utils/iframe'
@@ -29,26 +33,25 @@ const iframeScrollSyncFailed = ref(false)
 
 // 原版页面的滚动条位于 iframe 右缘，由 iframe 内的内容脚本报告其占位宽度。
 useEventListener(window, 'message', (event: MessageEvent) => {
-  if (event.source !== iframeRef.value?.contentWindow || event.data?.type !== IFRAME_SCROLLBAR_GUTTER_CHANGE)
+  if (
+    event.source !== iframeRef.value?.contentWindow ||
+    event.data?.type !== IFRAME_SCROLLBAR_GUTTER_CHANGE
+  )
     return
   const width = Number(event.data.width)
-  if (Number.isFinite(width))
-    emit('scrollbarGutter', Math.min(Math.max(width, 0), 32))
+  if (Number.isFinite(width)) emit('scrollbarGutter', Math.min(Math.max(width, 0), 32))
 })
 
 function cleanupIframeScrollSync() {
-  for (const stop of iframeScrollCleanupFns.value)
-    stop()
+  for (const stop of iframeScrollCleanupFns.value) stop()
   iframeScrollCleanupFns.value = []
 }
 
 function updateReachTopFromIframe() {
-  if (iframeScrollSyncFailed.value)
-    return
+  if (iframeScrollSyncFailed.value) return
 
   const iframeWindow = iframeRef.value?.contentWindow
-  if (!iframeWindow)
-    return
+  if (!iframeWindow) return
 
   try {
     const doc = iframeWindow.document
@@ -58,12 +61,10 @@ function updateReachTopFromIframe() {
     reachTop.value = iframeScrollTop <= 0
     // 原版页面的滚动发生在 iframe 内，需要交给外层顶栏处理自动隐藏。
     emit('scroll', iframeScrollTop)
-  }
-  catch (error) {
+  } catch (error) {
     if (!iframeScrollSyncFailed.value) {
       iframeScrollSyncFailed.value = true
-      if (import.meta.env.DEV)
-        console.warn('Failed to sync reachTop from iframe scroll:', error)
+      if (import.meta.env.DEV) console.warn('Failed to sync reachTop from iframe scroll:', error)
     }
     reachTop.value = false
     cleanupIframeScrollSync()
@@ -72,8 +73,7 @@ function updateReachTopFromIframe() {
 
 function setupIframeScrollSync() {
   const iframeWindow = iframeRef.value?.contentWindow
-  if (!iframeWindow)
-    return
+  if (!iframeWindow) return
 
   iframeScrollSyncFailed.value = false
   cleanupIframeScrollSync()
@@ -94,7 +94,9 @@ function setupIframeScrollSync() {
   const scrollTarget = doc?.scrollingElement ?? doc?.documentElement ?? doc?.body
   if (scrollTarget) {
     scrollTarget.addEventListener('scroll', handleScroll, { passive: true })
-    iframeScrollCleanupFns.value.push(() => scrollTarget.removeEventListener('scroll', handleScroll))
+    iframeScrollCleanupFns.value.push(() =>
+      scrollTarget.removeEventListener('scroll', handleScroll),
+    )
   }
 }
 
@@ -102,60 +104,78 @@ function canAccessIframeDocument(iframeWindow: Window): boolean {
   try {
     void iframeWindow.document?.documentElement
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
 
 function syncIframeTopBarVisibility() {
   const iframeWindow = iframeRef.value?.contentWindow
-  if (!iframeWindow)
-    return
+  if (!iframeWindow) return
 
   const useOriginalBilibiliTopBar = settings.value.useOriginalBilibiliTopBar
   const enableTopBar = settings.value.enableTopBar
   const enableTopBarModule = settings.value.enableTopBarModule
-  const showOriginal = shouldShowOriginalBilibiliTopBar(enableTopBarModule, enableTopBar, useOriginalBilibiliTopBar)
+  const showOriginal = shouldShowOriginalBilibiliTopBar(
+    enableTopBarModule,
+    enableTopBar,
+    useOriginalBilibiliTopBar,
+  )
 
   // 同源时直接同步类名，避免 iframe 消息监听器尚未就绪时短暂显示原版顶栏
   try {
-    iframeWindow.document.documentElement.classList.toggle('remove-top-bar', enableTopBarModule && !showOriginal)
-    iframeWindow.document.documentElement.classList.toggle('remove-custom-navbar', enableTopBarModule && enableTopBar)
-  }
-  catch {
+    iframeWindow.document.documentElement.classList.toggle(
+      'remove-top-bar',
+      enableTopBarModule && !showOriginal,
+    )
+    iframeWindow.document.documentElement.classList.toggle(
+      'remove-custom-navbar',
+      enableTopBarModule && enableTopBar,
+    )
+  } catch {
     // 跨域页面继续使用 postMessage 同步
   }
 
   try {
-    iframeWindow.postMessage({
-      type: IFRAME_TOP_BAR_CHANGE,
-      useOriginalBilibiliTopBar,
-      enableTopBar,
-      enableTopBarModule,
-    }, '*')
-  }
-  catch (error) {
+    iframeWindow.postMessage(
+      {
+        type: IFRAME_TOP_BAR_CHANGE,
+        useOriginalBilibiliTopBar,
+        enableTopBar,
+        enableTopBarModule,
+      },
+      '*',
+    )
+  } catch (error) {
     console.warn('Failed to send top bar change message to iframe:', error)
   }
 }
 
-watch(() => isDark.value, (newValue) => {
-  if (iframeRef.value?.contentWindow) {
-    try {
-      iframeRef.value.contentWindow.postMessage({
-        type: IFRAME_DARK_MODE_CHANGE,
-        isDark: newValue,
-      }, '*')
+watch(
+  () => isDark.value,
+  (newValue) => {
+    if (iframeRef.value?.contentWindow) {
+      try {
+        iframeRef.value.contentWindow.postMessage(
+          {
+            type: IFRAME_DARK_MODE_CHANGE,
+            isDark: newValue,
+          },
+          '*',
+        )
+      } catch (error) {
+        console.warn('Failed to send dark mode change message to iframe:', error)
+      }
     }
-    catch (error) {
-      console.warn('Failed to send dark mode change message to iframe:', error)
-    }
-  }
-})
+  },
+)
 
 watch(
-  [() => settings.value.useOriginalBilibiliTopBar, () => settings.value.enableTopBar, () => settings.value.enableTopBarModule],
+  [
+    () => settings.value.useOriginalBilibiliTopBar,
+    () => settings.value.enableTopBar,
+    () => settings.value.enableTopBarModule,
+  ],
   () => {
     syncIframeTopBarVisibility()
   },
@@ -163,20 +183,25 @@ watch(
 )
 
 // 监听深色模式基准颜色变化
-watch(() => settings.value.darkModeBaseColor, (newColor) => {
-  if (iframeRef.value?.contentWindow && isDark.value) {
-    try {
-      iframeRef.value.contentWindow.postMessage({
-        type: IFRAME_DARK_MODE_CHANGE,
-        isDark: isDark.value,
-        darkModeBaseColor: newColor,
-      }, '*')
+watch(
+  () => settings.value.darkModeBaseColor,
+  (newColor) => {
+    if (iframeRef.value?.contentWindow && isDark.value) {
+      try {
+        iframeRef.value.contentWindow.postMessage(
+          {
+            type: IFRAME_DARK_MODE_CHANGE,
+            isDark: isDark.value,
+            darkModeBaseColor: newColor,
+          },
+          '*',
+        )
+      } catch (error) {
+        console.warn('Failed to send dark mode base color change message to iframe:', error)
+      }
     }
-    catch (error) {
-      console.warn('Failed to send dark mode base color change message to iframe:', error)
-    }
-  }
-})
+  },
+)
 
 function clearIframeTimers() {
   clearTimeout(showLoadingTimeout)
@@ -198,8 +223,7 @@ function startNavigation() {
 
 // 处理iframe加载完成事件
 function handleIframeLoad() {
-  if (isDisposed)
-    return
+  if (isDisposed) return
 
   // 清除loading状态
   clearIframeTimers()
@@ -213,14 +237,16 @@ function handleIframeLoad() {
     initialThemeTimeout = setTimeout(() => {
       initialThemeTimeout = undefined
       try {
-        iframeRef.value?.contentWindow?.postMessage({
-          type: IFRAME_DARK_MODE_CHANGE,
-          isDark: isDark.value,
-          darkModeBaseColor: settings.value.darkModeBaseColor,
-        }, '*')
+        iframeRef.value?.contentWindow?.postMessage(
+          {
+            type: IFRAME_DARK_MODE_CHANGE,
+            isDark: isDark.value,
+            darkModeBaseColor: settings.value.darkModeBaseColor,
+          },
+          '*',
+        )
         syncIframeTopBarVisibility()
-      }
-      catch (error) {
+      } catch (error) {
         console.warn('Failed to send initial dark mode state to iframe:', error)
       }
     }, 100) // 减少延迟，因为iframe已经触发了load事件
@@ -233,8 +259,7 @@ onMounted(() => {
   startNavigation()
 
   nextTick(() => {
-    if (!isDisposed)
-      iframeRef.value?.focus()
+    if (!isDisposed) iframeRef.value?.focus()
   })
 })
 
@@ -268,9 +293,7 @@ defineExpose({
 </script>
 
 <template>
-  <div
-    pos="relative top-0 left-0" of-hidden w-full h-full
-  >
+  <div pos="relative top-0 left-0" of-hidden w-full h-full>
     <Transition name="fade">
       <Loading v-if="showLoading" w-full h-full pos="absolute top-0 left-0" />
     </Transition>
@@ -285,7 +308,8 @@ defineExpose({
       frameborder="0"
       pointer-events-auto
       pos="absolute left-0"
-      w-inherit h-inherit
+      w-inherit
+      h-inherit
       @load="handleIframeLoad"
     />
   </div>

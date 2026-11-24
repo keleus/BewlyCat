@@ -50,23 +50,21 @@ let loadSequence = 0
 const COLLAPSED_OPTION_LIMIT = 6
 
 const choiceCount = computed(() => Math.max(1, voteInfo.value?.choiceCount || 1))
-const isImageVote = computed(() => Boolean(
-  voteInfo.value?.type === 1
-  || voteInfo.value?.options.some(option => option.imageUrl),
-))
+const isImageVote = computed(() =>
+  Boolean(voteInfo.value?.type === 1 || voteInfo.value?.options.some((option) => option.imageUrl)),
+)
 const isEnded = computed(() => {
   const endTime = voteInfo.value?.endTime || props.fallbackEndTime || 0
-  return (endTime > 0 && Date.now() / 1000 >= endTime)
-    || voteInfo.value?.status === 4
+  return (endTime > 0 && Date.now() / 1000 >= endTime) || voteInfo.value?.status === 4
 })
-const isVoted = computed(() => Boolean(
-  submittedVotes.value.length || voteInfo.value?.selectedVotes.length,
-))
+const isVoted = computed(() =>
+  Boolean(submittedVotes.value.length || voteInfo.value?.selectedVotes.length),
+)
 const showResults = computed(() => isEnded.value || isVoted.value)
 const isCollapsible = computed(() => (voteInfo.value?.options.length || 0) > COLLAPSED_OPTION_LIMIT)
-const hiddenOptionCount = computed(() => isCollapsible.value
-  ? (voteInfo.value?.options.length || 0) - COLLAPSED_OPTION_LIMIT
-  : 0)
+const hiddenOptionCount = computed(() =>
+  isCollapsible.value ? (voteInfo.value?.options.length || 0) - COLLAPSED_OPTION_LIMIT : 0,
+)
 const visibleOptions = computed(() => {
   const options = voteInfo.value?.options || []
   return isCollapsible.value && !optionsExpanded.value
@@ -74,18 +72,16 @@ const visibleOptions = computed(() => {
     : options
 })
 const resultTotal = computed(() => Math.max(0, voteInfo.value?.total || 0))
-const maxOptionCount = computed(() => Math.max(
-  0,
-  ...voteInfo.value?.options.map(option => option.count) || [],
-))
+const maxOptionCount = computed(() =>
+  Math.max(0, ...(voteInfo.value?.options.map((option) => option.count) || [])),
+)
 const deadlineText = computed(() => {
   const endTime = voteInfo.value?.endTime || props.fallbackEndTime || 0
   const remainingMinutes = Math.ceil((endTime - Date.now() / 1000) / 60)
-  if (remainingMinutes <= 0)
-    return ''
+  if (remainingMinutes <= 0) return ''
 
   const days = Math.floor(remainingMinutes / (24 * 60))
-  const hours = Math.floor(remainingMinutes % (24 * 60) / 60)
+  const hours = Math.floor((remainingMinutes % (24 * 60)) / 60)
   const minutes = remainingMinutes % 60
   const parts = [
     days > 0 ? t('moments.vote_time_day', { count: days }) : '',
@@ -97,29 +93,35 @@ const deadlineText = computed(() => {
 
 function toNumberArray(value: unknown): number[] {
   if (Array.isArray(value))
-    return value.map(Number).filter(item => Number.isInteger(item) && item > 0)
+    return value.map(Number).filter((item) => Number.isInteger(item) && item > 0)
   if (typeof value === 'string')
-    return value.split(',').map(Number).filter(item => Number.isInteger(item) && item > 0)
+    return value
+      .split(',')
+      .map(Number)
+      .filter((item) => Number.isInteger(item) && item > 0)
   const numberValue = Number(value)
   return Number.isInteger(numberValue) && numberValue > 0 ? [numberValue] : []
 }
 
 function normalizeVoteInfo(response: any): VoteInfo | null {
   const raw = response?.data?.vote_info || response?.data?.info
-  if (!raw || typeof raw !== 'object')
-    return null
+  if (!raw || typeof raw !== 'object') return null
 
   const rawOptions = Array.isArray(raw.options) ? raw.options : []
-  const options = rawOptions.map((option: any, optionIndex: number) => ({
-    index: Number(option.opt_idx ?? option.idx ?? optionIndex + 1),
-    text: String(option.opt_desc ?? option.desc ?? option.title ?? ''),
-    count: Math.max(0, Number(option.cnt ?? option.total) || 0),
-    imageUrl: String(option.img_url ?? option.cover ?? ''),
-  })).filter((option: VoteOption) => option.index > 0 && (option.text || option.imageUrl))
+  const options = rawOptions
+    .map((option: any, optionIndex: number) => ({
+      index: Number(option.opt_idx ?? option.idx ?? optionIndex + 1),
+      text: String(option.opt_desc ?? option.desc ?? option.title ?? ''),
+      count: Math.max(0, Number(option.cnt ?? option.total) || 0),
+      imageUrl: String(option.img_url ?? option.cover ?? ''),
+    }))
+    .filter((option: VoteOption) => option.index > 0 && (option.text || option.imageUrl))
 
   const selectedFromOptions = rawOptions
     .filter((option: any) => Boolean(option.is_vote ?? option.my_vote ?? option.checked))
-    .map((option: any, optionIndex: number) => Number(option.opt_idx ?? option.idx ?? optionIndex + 1))
+    .map((option: any, optionIndex: number) =>
+      Number(option.opt_idx ?? option.idx ?? optionIndex + 1),
+    )
   const selected = [
     ...toNumberArray(raw.my_votes ?? raw.my_vote ?? raw.votes),
     ...toNumberArray(response?.data?.my_votes ?? response?.data?.my_vote ?? response?.data?.votes),
@@ -144,36 +146,30 @@ async function loadVote() {
   loadError.value = ''
   try {
     const response = await api.moment.getMomentVote({ vote_id: props.voteId })
-    if (sequence !== loadSequence)
-      return
-    if (response?.code !== 0)
-      throw new Error(response?.message || t('moments.vote_load_failed'))
+    if (sequence !== loadSequence) return
+    if (response?.code !== 0) throw new Error(response?.message || t('moments.vote_load_failed'))
     const normalized = normalizeVoteInfo(response)
-    if (!normalized || !normalized.options.length)
-      throw new Error(t('moments.vote_load_failed'))
+    if (!normalized || !normalized.options.length) throw new Error(t('moments.vote_load_failed'))
     voteInfo.value = normalized
-    if (!submittedVotes.value.length)
-      selectedVotes.value = [...normalized.selectedVotes]
-  }
-  catch (error) {
+    if (!submittedVotes.value.length) selectedVotes.value = [...normalized.selectedVotes]
+  } catch (error) {
     if (sequence === loadSequence)
       loadError.value = error instanceof Error ? error.message : t('moments.vote_load_failed')
-  }
-  finally {
-    if (sequence === loadSequence)
-      isLoading.value = false
+  } finally {
+    if (sequence === loadSequence) isLoading.value = false
   }
 }
 
 function isOptionSelected(index: number) {
-  return selectedVotes.value.includes(index)
-    || submittedVotes.value.includes(index)
-    || Boolean(voteInfo.value?.selectedVotes.includes(index))
+  return (
+    selectedVotes.value.includes(index) ||
+    submittedVotes.value.includes(index) ||
+    Boolean(voteInfo.value?.selectedVotes.includes(index))
+  )
 }
 
 function toggleOption(index: number) {
-  if (isEnded.value || isVoted.value || isSubmitting.value)
-    return
+  if (isEnded.value || isVoted.value || isSubmitting.value) return
 
   if (choiceCount.value === 1) {
     selectedVotes.value = [index]
@@ -181,7 +177,7 @@ function toggleOption(index: number) {
   }
 
   if (selectedVotes.value.includes(index)) {
-    selectedVotes.value = selectedVotes.value.filter(item => item !== index)
+    selectedVotes.value = selectedVotes.value.filter((item) => item !== index)
     return
   }
   if (selectedVotes.value.length < choiceCount.value)
@@ -189,9 +185,8 @@ function toggleOption(index: number) {
 }
 
 function getOptionPercentage(option: VoteOption) {
-  if (!resultTotal.value)
-    return 0
-  return Math.min(100, Math.max(0, option.count / resultTotal.value * 100))
+  if (!resultTotal.value) return 0
+  return Math.min(100, Math.max(0, (option.count / resultTotal.value) * 100))
 }
 
 function formatOptionPercentage(option: VoteOption) {
@@ -204,20 +199,17 @@ function isMaxOption(option: VoteOption) {
 
 function toggleOptionsExpanded() {
   optionsExpanded.value = !optionsExpanded.value
-  if (optionsExpanded.value)
-    return
+  if (optionsExpanded.value) return
 
   // 收起长列表后，投票卡顶部可能已滚出视口，拉回可见区域避免读者迷失位置
   void nextTick(() => {
     const root = rootRef.value
-    if (root && root.getBoundingClientRect().top < 0)
-      root.scrollIntoView({ block: 'nearest' })
+    if (root && root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'nearest' })
   })
 }
 
 async function submitVote() {
-  if (!selectedVotes.value.length || isSubmitting.value || isEnded.value || isVoted.value)
-    return
+  if (!selectedVotes.value.length || isSubmitting.value || isEnded.value || isVoted.value) return
 
   const csrf = getCSRF()
   const userId = Number(getUserID())
@@ -238,27 +230,28 @@ async function submitVote() {
       csrf,
       csrf_token: csrf,
     })
-    if (response?.code !== 0)
-      throw new Error(response?.message || t('moments.vote_submit_failed'))
+    if (response?.code !== 0) throw new Error(response?.message || t('moments.vote_submit_failed'))
     submittedVotes.value = [...selectedVotes.value]
     toast.success(t('moments.vote_submit_succeeded'))
     await loadVote()
-  }
-  catch (error) {
+  } catch (error) {
     toast.error(error instanceof Error ? error.message : t('moments.vote_submit_failed'))
-  }
-  finally {
+  } finally {
     isSubmitting.value = false
   }
 }
 
-watch(() => props.voteId, () => {
-  voteInfo.value = null
-  selectedVotes.value = []
-  submittedVotes.value = []
-  optionsExpanded.value = false
-  void loadVote()
-}, { immediate: true })
+watch(
+  () => props.voteId,
+  () => {
+    voteInfo.value = null
+    selectedVotes.value = []
+    submittedVotes.value = []
+    optionsExpanded.value = false
+    void loadVote()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -268,7 +261,11 @@ watch(() => props.voteId, () => {
       <small v-if="!voteInfo && fallbackDesc">{{ fallbackDesc }}</small>
     </header>
 
-    <div v-if="isLoading && !voteInfo" class="moment-vote__loading" :aria-label="t('moments.vote_loading')">
+    <div
+      v-if="isLoading && !voteInfo"
+      class="moment-vote__loading"
+      :aria-label="t('moments.vote_loading')"
+    >
       <span v-for="index in 2" :key="index" />
     </div>
     <div v-else-if="loadError && !voteInfo" class="moment-vote__error">
@@ -306,17 +303,14 @@ watch(() => props.voteId, () => {
             class="moment-vote__option-fill"
             :style="{ width: `${getOptionPercentage(option)}%` }"
           />
-          <span
-            v-if="isImageVote"
-            class="moment-vote__option-image"
-          >
+          <span v-if="isImageVote" class="moment-vote__option-image">
             <img
               v-if="option.imageUrl"
               :src="getMomentThumbnailUrl(option.imageUrl, 320)"
               alt=""
               loading="lazy"
               decoding="async"
-            >
+            />
             <span v-else i-tabler-photo-off aria-hidden="true" />
           </span>
           <span class="moment-vote__option-body">
@@ -346,7 +340,11 @@ watch(() => props.voteId, () => {
         :aria-expanded="optionsExpanded"
         @click="toggleOptionsExpanded"
       >
-        <span>{{ optionsExpanded ? t('moments.vote_collapse_options') : t('moments.vote_expand_options', { count: hiddenOptionCount }) }}</span>
+        <span>{{
+          optionsExpanded
+            ? t('moments.vote_collapse_options')
+            : t('moments.vote_expand_options', { count: hiddenOptionCount })
+        }}</span>
         <span
           :class="optionsExpanded ? 'i-mingcute:up-line' : 'i-mingcute:down-line'"
           aria-hidden="true"
@@ -357,7 +355,13 @@ watch(() => props.voteId, () => {
           {{ t('moments.vote_participants', { count: voteInfo.total }) }}
           <template v-if="deadlineText"> · {{ deadlineText }}</template>
         </span>
-        <span>{{ isEnded ? t('moments.vote_ended') : isVoted ? t('moments.vote_submitted') : t('moments.vote_ongoing') }}</span>
+        <span>{{
+          isEnded
+            ? t('moments.vote_ended')
+            : isVoted
+              ? t('moments.vote_submitted')
+              : t('moments.vote_ongoing')
+        }}</span>
       </footer>
       <button
         v-if="!showResults"
@@ -610,7 +614,7 @@ watch(() => props.voteId, () => {
   background: var(--bew-fill-2);
 }
 
-.moment-vote__toggle [class*="i-mingcute"] {
+.moment-vote__toggle [class*='i-mingcute'] {
   font-size: var(--bew-icon-size-sm);
 }
 

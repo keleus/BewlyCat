@@ -9,10 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <header
-    class="settings-section-heading"
-    :data-settings-title="title"
-  >
+  <header class="settings-section-heading" :data-settings-title="title">
     <span v-if="icon" class="settings-section-heading__icon" :class="icon" />
     <span class="settings-section-heading__content">
       <h2>

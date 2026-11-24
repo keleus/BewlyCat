@@ -25,7 +25,9 @@ const currentPageNum = ref(0)
 const resourcesMediaId = ref<number>()
 const failedResourcesPage = ref<number>()
 const isReplacingResources = ref(false)
-const resourceListBlocked = computed(() => isReplacingResources.value || resourcesMediaId.value !== activatedMediaId.value)
+const resourceListBlocked = computed(
+  () => isReplacingResources.value || resourcesMediaId.value !== activatedMediaId.value,
+)
 
 const isLoading = ref<boolean>(false)
 // when noMoreContent is true, the user can't scroll down to load more content
@@ -40,9 +42,7 @@ let favoriteResourcesRequestVersion = 0
 let categoryLabelResizeObserver: ResizeObserver | undefined
 
 const viewAllUrl = computed((): string => {
-  return `//space.bilibili.com/${getUserID()}/favlist?fid=${
-    activatedMediaId.value
-  }&ftype=create`
+  return `//space.bilibili.com/${getUserID()}/favlist?fid=${activatedMediaId.value}&ftype=create`
 })
 
 const playAllUrl = computed((): string => {
@@ -50,16 +50,13 @@ const playAllUrl = computed((): string => {
 })
 
 watch(activatedMediaId, (newId, oldId) => {
-  if (newId === oldId)
-    return
+  if (newId === oldId) return
 
-  if (favoriteVideosWrap.value)
-    scrollToTop(favoriteVideosWrap.value)
+  if (favoriteVideosWrap.value) scrollToTop(favoriteVideosWrap.value)
 
   currentPageNum.value = 0
   noMoreContent.value = false
-  if (!newId)
-    return
+  if (!newId) return
   void getFavoriteResources(true, true)
 })
 
@@ -75,7 +72,7 @@ onMounted(() => {
       updateCategoryMarquee(categoryId, element)
     }
   })
-  categoryLabelElements.forEach(element => categoryLabelResizeObserver?.observe(element))
+  categoryLabelElements.forEach((element) => categoryLabelResizeObserver?.observe(element))
   initData()
 })
 
@@ -83,8 +80,7 @@ onBeforeUnmount(() => categoryLabelResizeObserver?.disconnect())
 
 function updateCategoryMarquee(categoryId: number, element: HTMLElement) {
   const textElement = element.querySelector<HTMLElement>('.favorite-category-label__text')
-  if (!textElement)
-    return
+  if (!textElement) return
 
   const overflowDistance = Math.ceil(textElement.scrollWidth - element.clientWidth)
   if (overflowDistance <= 1) {
@@ -99,7 +95,10 @@ function updateCategoryMarquee(categoryId: number, element: HTMLElement) {
   }
 }
 
-function setCategoryLabelRef(element: Element | ComponentPublicInstance | null, categoryId: number) {
+function setCategoryLabelRef(
+  element: Element | ComponentPublicInstance | null,
+  categoryId: number,
+) {
   const previousElement = categoryLabelElements.get(categoryId)
   if (previousElement && previousElement !== element)
     categoryLabelResizeObserver?.unobserve(previousElement)
@@ -116,8 +115,13 @@ function setCategoryLabelRef(element: Element | ComponentPublicInstance | null, 
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
-  if (isLoading.value || failedResourcesPage.value || resourceListBlocked.value
-    || noMoreContent.value || favoriteResources.length === 0) {
+  if (
+    isLoading.value ||
+    failedResourcesPage.value ||
+    resourceListBlocked.value ||
+    noMoreContent.value ||
+    favoriteResources.length === 0
+  ) {
     return
   }
 
@@ -139,11 +143,11 @@ async function initData() {
 async function refreshFavoriteData() {
   const requestVersion = ++favoriteDataRequestVersion
   await getFavoriteCategories(requestVersion)
-  if (requestVersion !== favoriteDataRequestVersion)
-    return
+  if (requestVersion !== favoriteDataRequestVersion) return
 
   // 等待分类请求期间用户可能切换，始终保留此刻的选择。
-  const category = favoriteCategories.find(item => item.id === activatedMediaId.value) || favoriteCategories[0]
+  const category =
+    favoriteCategories.find((item) => item.id === activatedMediaId.value) || favoriteCategories[0]
   if (!category) {
     activatedMediaId.value = 0
     activatedFavoriteTitle.value = undefined
@@ -160,19 +164,18 @@ async function refreshFavoriteData() {
   if (activatedMediaId.value === category.id) {
     activatedFavoriteTitle.value = category.title
     refreshFavoriteResources()
-  }
-  else {
+  } else {
     changeCategory(category)
   }
 }
 
 async function getFavoriteCategories(requestVersion?: number) {
-  await api.favorite.getFavoriteCategories({
-    up_mid: getUserID(),
-  })
+  await api.favorite
+    .getFavoriteCategories({
+      up_mid: getUserID(),
+    })
     .then((res) => {
-      if (requestVersion !== undefined && requestVersion !== favoriteDataRequestVersion)
-        return
+      if (requestVersion !== undefined && requestVersion !== favoriteDataRequestVersion) return
 
       if (res.code === 0) {
         favoriteCategories.length = 0
@@ -185,11 +188,9 @@ async function getFavoriteCategories(requestVersion?: number) {
  * Get favorite video resources
  */
 async function getFavoriteResources(force = false, replace = false) {
-  if (!activatedMediaId.value || (isLoading.value && !force))
-    return
+  if (!activatedMediaId.value || (isLoading.value && !force)) return
   // 只有当前收藏夹首屏成功后，才允许向其追加分页数据。
-  if (!replace && resourcesMediaId.value !== activatedMediaId.value)
-    return
+  if (!replace && resourcesMediaId.value !== activatedMediaId.value) return
 
   const requestVersion = ++favoriteResourcesRequestVersion
   const mediaId = activatedMediaId.value
@@ -209,26 +210,24 @@ async function getFavoriteResources(force = false, replace = false) {
       return
 
     const { code, data } = res
-    if (code !== 0)
-      throw new Error(`加载收藏夹失败（code: ${code}）`)
+    if (code !== 0) throw new Error(`加载收藏夹失败（code: ${code}）`)
     // 检查是否还有更多内容
     if (data && 'has_more' in data && !data.has_more) {
       noMoreContent.value = true
-    }
-    else {
+    } else {
       noMoreContent.value = false
     }
 
-    const medias = data && 'medias' in data && Array.isArray(data.medias)
-      ? data.medias.filter((m: any) => m != null)
-      : []
+    const medias =
+      data && 'medias' in data && Array.isArray(data.medias)
+        ? data.medias.filter((m: any) => m != null)
+        : []
 
     // 刷新时保留旧卡片，等新数据到达后再原子替换，避免 Pop 闪烁。
     if (replace) {
       favoriteResources.splice(0, favoriteResources.length, ...medias)
       resourcesMediaId.value = mediaId
-    }
-    else if (medias.length > 0) {
+    } else if (medias.length > 0) {
       favoriteResources.push(...medias)
     }
 
@@ -237,8 +236,7 @@ async function getFavoriteResources(force = false, replace = false) {
       // 如果没有数据返回，也标记为没有更多内容
       noMoreContent.value = true
     }
-  }
-  catch (error) {
+  } catch (error) {
     if (requestVersion !== favoriteResourcesRequestVersion || mediaId !== activatedMediaId.value)
       return
     failedResourcesPage.value = pageNum
@@ -248,8 +246,7 @@ async function getFavoriteResources(force = false, replace = false) {
       resourcesMediaId.value = undefined
     }
     console.error('Failed to load favorite resources:', error)
-  }
-  finally {
+  } finally {
     if (requestVersion === favoriteResourcesRequestVersion) {
       isLoading.value = false
       isReplacingResources.value = false
@@ -282,7 +279,9 @@ defineExpose({
 
 <template>
   <div
-    h="[calc(100vh-100px)]" max-h-500px overflow="hidden"
+    h="[calc(100vh-100px)]"
+    max-h-500px
+    overflow="hidden"
     bg="$bew-elevated"
     w="450px"
     pos="relative"
@@ -292,11 +291,7 @@ defineExpose({
     flex="~ col"
   >
     <!-- top bar -->
-    <header
-      flex="~" items-center justify-between
-      p="x-6 y-5"
-      w="full"
-    >
+    <header flex="~" items-center justify-between p="x-6 y-5" w="full">
       <h3 cursor="pointer" font-600 @click="scrollToTop(favoriteVideosWrap)">
         {{ activatedFavoriteTitle }}
       </h3>
@@ -306,7 +301,8 @@ defineExpose({
           :href="playAllUrl"
           type="topBar"
           class="bew-top-bar-pop-action"
-          flex="~" items="center"
+          flex="~"
+          items="center"
         >
           <span text="sm">{{ $t('common.play_all') }}</span>
         </ALink>
@@ -314,7 +310,8 @@ defineExpose({
           :href="viewAllUrl"
           type="topBar"
           class="bew-top-bar-pop-action"
-          flex="~" items="center"
+          flex="~"
+          items="center"
         >
           <span text="sm">{{ $t('common.view_all') }}</span>
         </ALink>
@@ -322,11 +319,7 @@ defineExpose({
     </header>
 
     <main flex="~" flex-1 min-h-0>
-      <aside
-        w="140px" h-full overflow="y-auto"
-        flex="shrink-0"
-        p="2"
-      >
+      <aside w="140px" h-full overflow="y-auto" flex="shrink-0" p="2">
         <ul grid="~ cols-1">
           <li
             v-for="item in favoriteCategories"
@@ -341,7 +334,7 @@ defineExpose({
             @click="changeCategory(item)"
           >
             <span
-              :ref="element => setCategoryLabelRef(element, item.id)"
+              :ref="(element) => setCategoryLabelRef(element, item.id)"
               class="favorite-category-label"
               :data-category-id="item.id"
               :title="item.title"
@@ -386,7 +379,8 @@ defineExpose({
         <!-- empty -->
         <Empty
           v-if="!isLoading && !failedResourcesPage && favoriteResources.length === 0"
-          w="full" h="full"
+          w="full"
+          h="full"
         />
 
         <!-- favorites -->
@@ -401,11 +395,16 @@ defineExpose({
           <ALink
             v-for="item in favoriteResources"
             :key="item.id"
-            :href="isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : localizeBilibiliUrl(`//www.bilibili.com/video/${item.bvid}`)"
+            :href="
+              isMusic(item)
+                ? `https://www.bilibili.com/audio/au${item.id}`
+                : localizeBilibiliUrl(`//www.bilibili.com/video/${item.bvid}`)
+            "
             type="topBar"
             block
             hover:bg="$bew-fill-2"
-            m="last:b-4" p="2"
+            m="last:b-4"
+            p="2"
             class="group bew-content-card"
             transition="colors"
             duration-200
@@ -442,7 +441,12 @@ defineExpose({
           </ALink>
         </TransitionGroup>
 
-        <div v-if="!isLoading && failedResourcesPage" role="status" flex="~ col items-center gap-2" p="y-4">
+        <div
+          v-if="!isLoading && failedResourcesPage"
+          role="status"
+          flex="~ col items-center gap-2"
+          p="y-4"
+        >
           <span>{{ $t('common.load_failed') }}</span>
           <Button type="secondary" size="small" @click="retryFavoriteResources">
             {{ $t('common.operation.refresh') }}
@@ -451,7 +455,10 @@ defineExpose({
 
         <!-- loading -->
         <Transition name="fade">
-          <Loading v-if="isLoading && favoriteResources.length !== 0 && !isReplacingResources" m="b-4" />
+          <Loading
+            v-if="isLoading && favoriteResources.length !== 0 && !isReplacingResources"
+            m="b-4"
+          />
         </Transition>
       </div>
     </main>
@@ -464,7 +471,7 @@ defineExpose({
 }
 
 .activated-category {
-  --uno: "bg-$bew-theme-color text-white";
+  --uno: 'bg-$bew-theme-color text-white';
 }
 
 .favorite-category-label {
@@ -486,7 +493,8 @@ defineExpose({
     max-width: none;
     overflow: visible;
     text-overflow: clip;
-    animation: favorite-category-marquee var(--favorite-category-marquee-duration) linear infinite alternate;
+    animation: favorite-category-marquee var(--favorite-category-marquee-duration) linear infinite
+      alternate;
     will-change: transform;
   }
 }

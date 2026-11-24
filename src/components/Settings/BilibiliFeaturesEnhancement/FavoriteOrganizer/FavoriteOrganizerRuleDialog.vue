@@ -14,7 +14,7 @@ import { formatRuleSummary } from './ruleSummary'
 const props = defineProps<{
   mode: 'create' | 'edit' | 'copy'
   initial?: FavoriteOrganizerRuleDraft
-  folderOptions: { value: number, label: string }[]
+  folderOptions: { value: number; label: string }[]
   /** 已保存的规则，用于检查重复与包含 */
   folders: FavoriteOrganizerFolder[]
 }>()
@@ -30,28 +30,33 @@ const mediaId = ref(props.initial?.mediaId ?? 0)
 const rule = reactive<FavoriteOrganizerRule>({
   // 复制时生成新 id，编辑时保留原 id 以便原位替换
   id: props.mode === 'edit' && props.initial ? props.initial.rule.id : createRuleId(),
-  ups: props.initial?.rule.ups.map(up => ({ ...up })) ?? [],
-  zones: [...props.initial?.rule.zones ?? []],
-  titleKeywords: [...props.initial?.rule.titleKeywords ?? []],
+  ups: props.initial?.rule.ups.map((up) => ({ ...up })) ?? [],
+  zones: [...(props.initial?.rule.zones ?? [])],
+  titleKeywords: [...(props.initial?.rule.titleKeywords ?? [])],
 })
 const keywordInput = ref('')
 const submitted = ref(false)
 
-const title = computed(() => ({
-  create: t('settings.favorite_organizer.new_rule'),
-  edit: t('settings.favorite_organizer.edit_rule'),
-  copy: t('settings.favorite_organizer.copy_rule'),
-})[props.mode])
+const title = computed(
+  () =>
+    ({
+      create: t('settings.favorite_organizer.new_rule'),
+      edit: t('settings.favorite_organizer.edit_rule'),
+      copy: t('settings.favorite_organizer.copy_rule'),
+    })[props.mode],
+)
 
 const siblingRules = computed(() => {
-  const folder = props.folders.find(item => item.mediaId === mediaId.value)
-  return folder?.rules.filter(item => item.id !== rule.id && hasRuleConditions(item)) ?? []
+  const folder = props.folders.find((item) => item.mediaId === mediaId.value)
+  return folder?.rules.filter((item) => item.id !== rule.id && hasRuleConditions(item)) ?? []
 })
-const coveringRule = computed(() => siblingRules.value.find(item => ruleCovers(item, rule)))
-const isDuplicate = computed(() => Boolean(coveringRule.value && ruleCovers(rule, coveringRule.value)))
-const coveredRules = computed(() => coveringRule.value
-  ? []
-  : siblingRules.value.filter(item => ruleCovers(rule, item)))
+const coveringRule = computed(() => siblingRules.value.find((item) => ruleCovers(item, rule)))
+const isDuplicate = computed(() =>
+  Boolean(coveringRule.value && ruleCovers(rule, coveringRule.value)),
+)
+const coveredRules = computed(() =>
+  coveringRule.value ? [] : siblingRules.value.filter((item) => ruleCovers(rule, item)),
+)
 
 const error = computed(() => {
   if (coveringRule.value) {
@@ -60,12 +65,9 @@ const error = computed(() => {
       ? t('settings.favorite_organizer.rule_duplicate', { rule: summary })
       : t('settings.favorite_organizer.rule_covered', { rule: summary })
   }
-  if (!submitted.value)
-    return ''
-  if (!mediaId.value)
-    return t('settings.favorite_organizer.folder_required')
-  if (!hasRuleConditions(rule))
-    return t('settings.favorite_organizer.conditions_required')
+  if (!submitted.value) return ''
+  if (!mediaId.value) return t('settings.favorite_organizer.folder_required')
+  if (!hasRuleConditions(rule)) return t('settings.favorite_organizer.conditions_required')
   return ''
 })
 
@@ -74,22 +76,23 @@ function createRuleId() {
 }
 
 function addUp(user: UserSearchCandidate) {
-  if (rule.ups.some(item => item.mid === user.mid))
+  if (rule.ups.some((item) => item.mid === user.mid))
     return t('settings.favorite_organizer.up_already_added')
   rule.ups.push({ mid: user.mid, name: user.name })
 }
 
 function addZone(tid: number) {
-  if (!tid || rule.zones.includes(tid))
-    return
+  if (!tid || rule.zones.includes(tid)) return
   // 主分区已包含其全部子分区，移除重复的子分区
-  const childTids = new Set(VIDEO_ZONES.find(zone => zone.tid === tid)?.children.map(child => child.tid))
-  rule.zones = [...rule.zones.filter(zoneTid => !childTids.has(zoneTid)), tid]
+  const childTids = new Set(
+    VIDEO_ZONES.find((zone) => zone.tid === tid)?.children.map((child) => child.tid),
+  )
+  rule.zones = [...rule.zones.filter((zoneTid) => !childTids.has(zoneTid)), tid]
 }
 
 function addKeyword() {
   const keyword = keywordInput.value.trim()
-  if (keyword && !rule.titleKeywords.some(item => item.toLowerCase() === keyword.toLowerCase()))
+  if (keyword && !rule.titleKeywords.some((item) => item.toLowerCase() === keyword.toLowerCase()))
     rule.titleKeywords.push(keyword)
   keywordInput.value = ''
 }
@@ -98,12 +101,20 @@ function save() {
   // 输入框里尚未回车的关键词一并保存
   addKeyword()
   submitted.value = true
-  if (error.value)
-    return
-  emit('save', {
-    mediaId: mediaId.value,
-    rule: { id: rule.id, ups: [...rule.ups], zones: [...rule.zones], titleKeywords: [...rule.titleKeywords] },
-  }, coveredRules.value.map(item => item.id))
+  if (error.value) return
+  emit(
+    'save',
+    {
+      mediaId: mediaId.value,
+      rule: {
+        id: rule.id,
+        ups: [...rule.ups],
+        zones: [...rule.zones],
+        titleKeywords: [...rule.titleKeywords],
+      },
+    },
+    coveredRules.value.map((item) => item.id),
+  )
   dialogRef.value?.close()
 }
 </script>
@@ -135,9 +146,18 @@ function save() {
         <span class="rule-editor__label">{{ t('settings.favorite_organizer.up') }}</span>
         <div class="rule-editor__values">
           <div v-if="rule.ups.length" class="rule-editor__chips">
-            <span v-for="(up, upIndex) in rule.ups" :key="up.mid" class="rule-editor__chip" :title="`UID ${up.mid}`">
+            <span
+              v-for="(up, upIndex) in rule.ups"
+              :key="up.mid"
+              class="rule-editor__chip"
+              :title="`UID ${up.mid}`"
+            >
               {{ up.name || up.mid }}
-              <button type="button" :aria-label="t('common.operation.delete')" @click="rule.ups.splice(upIndex, 1)">
+              <button
+                type="button"
+                :aria-label="t('common.operation.delete')"
+                @click="rule.ups.splice(upIndex, 1)"
+              >
                 <i i-mingcute:close-line />
               </button>
             </span>
@@ -145,7 +165,7 @@ function save() {
           <UserSearchPicker
             size="small"
             :select="addUp"
-            :exclude="rule.ups.map(up => up.mid)"
+            :exclude="rule.ups.map((up) => up.mid)"
             :placeholder="t('settings.favorite_organizer.up_placeholder')"
           />
         </div>
@@ -157,7 +177,11 @@ function save() {
           <div v-if="rule.zones.length" class="rule-editor__chips">
             <span v-for="(tid, zoneIndex) in rule.zones" :key="tid" class="rule-editor__chip">
               {{ getZoneName(tid) }}
-              <button type="button" :aria-label="t('common.operation.delete')" @click="rule.zones.splice(zoneIndex, 1)">
+              <button
+                type="button"
+                :aria-label="t('common.operation.delete')"
+                @click="rule.zones.splice(zoneIndex, 1)"
+              >
                 <i i-mingcute:close-line />
               </button>
             </span>
@@ -170,9 +194,17 @@ function save() {
         <span class="rule-editor__label">{{ t('settings.favorite_organizer.title_keyword') }}</span>
         <div class="rule-editor__values">
           <div v-if="rule.titleKeywords.length" class="rule-editor__chips">
-            <span v-for="(keyword, keywordIndex) in rule.titleKeywords" :key="keyword" class="rule-editor__chip">
+            <span
+              v-for="(keyword, keywordIndex) in rule.titleKeywords"
+              :key="keyword"
+              class="rule-editor__chip"
+            >
               {{ keyword }}
-              <button type="button" :aria-label="t('common.operation.delete')" @click="rule.titleKeywords.splice(keywordIndex, 1)">
+              <button
+                type="button"
+                :aria-label="t('common.operation.delete')"
+                @click="rule.titleKeywords.splice(keywordIndex, 1)"
+              >
                 <i i-mingcute:close-line />
               </button>
             </span>
@@ -190,7 +222,11 @@ function save() {
       <p v-if="error" class="rule-editor__message rule-editor__message--error" role="alert">
         <i i-mingcute:warning-line />{{ error }}
       </p>
-      <div v-else-if="coveredRules.length" class="rule-editor__message rule-editor__message--warning" role="status">
+      <div
+        v-else-if="coveredRules.length"
+        class="rule-editor__message rule-editor__message--warning"
+        role="status"
+      >
         <i i-mingcute:information-line />
         <div>
           <p>{{ t('settings.favorite_organizer.rule_covers', { count: coveredRules.length }) }}</p>

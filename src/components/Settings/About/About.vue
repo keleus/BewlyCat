@@ -47,8 +47,9 @@ const isDev = computed((): boolean => import.meta.env.DEV)
 onMounted(async () => {
   checkGitHubRelease()
   // 页面上下文的 UA 可能被防移动端跳转改写，由 background 读取真实浏览器信息
-  browserInfo.value = await sendMessage<undefined, BrowserInfo>(GET_BROWSER_INFO_MESSAGE)
-    .catch(() => getBrowserInfo())
+  browserInfo.value = await sendMessage<undefined, BrowserInfo>(GET_BROWSER_INFO_MESSAGE).catch(
+    () => getBrowserInfo(),
+  )
 })
 
 async function checkGitHubRelease() {
@@ -56,8 +57,7 @@ async function checkGitHubRelease() {
 
   try {
     const response = await fetch(apiUrl)
-    if (!response.ok)
-      throw new Error('Network response was not ok')
+    if (!response.ok) throw new Error('Network response was not ok')
 
     const data = await response.json()
     const latestVersion = data.tag_name
@@ -65,11 +65,8 @@ async function checkGitHubRelease() {
     // Here you can compare `latestVersion` with your current version
     const currentVersion = `v${version}` // Replace with your actual current version
 
-    if (latestVersion !== currentVersion)
-      hasNewVersion.value = true
-  }
-  catch {
-  }
+    if (latestVersion !== currentVersion) hasNewVersion.value = true
+  } catch {}
 }
 
 function handleContributorImageError() {
@@ -83,19 +80,20 @@ function handleContributorImageError() {
 }
 
 async function loadThirdPartyLicenses() {
-  const results = await Promise.allSettled(THIRD_PARTY_LICENSE_BUILDS.map(async (build) => {
-    const response = await fetch(browser.runtime.getURL(`/assets/third-party-licenses.${build}.json`))
-    if (!response.ok)
-      throw new Error(`Failed to load third-party licenses: ${build}`)
-    return (await response.json()).packages as ThirdPartyLicense[]
-  }))
+  const results = await Promise.allSettled(
+    THIRD_PARTY_LICENSE_BUILDS.map(async (build) => {
+      const response = await fetch(
+        browser.runtime.getURL(`/assets/third-party-licenses.${build}.json`),
+      )
+      if (!response.ok) throw new Error(`Failed to load third-party licenses: ${build}`)
+      return (await response.json()).packages as ThirdPartyLicense[]
+    }),
+  )
 
   const licenses = new Map<string, ThirdPartyLicense>()
   for (const result of results) {
-    if (result.status !== 'fulfilled')
-      continue
-    for (const item of result.value)
-      licenses.set(`${item.name}@${item.version}`, item)
+    if (result.status !== 'fulfilled') continue
+    for (const item of result.value) licenses.set(`${item.name}@${item.version}`, item)
   }
 
   thirdPartyLicensesFailed.value = licenses.size === 0
@@ -104,13 +102,11 @@ async function loadThirdPartyLicenses() {
 
 function openThirdPartyLicenseDialog() {
   showThirdPartyLicenseDialog.value = true
-  if (!thirdPartyLicenses.value)
-    void loadThirdPartyLicenses()
+  if (!thirdPartyLicenses.value) void loadThirdPartyLicenses()
 }
 
 async function handleCopyEnvironmentInfo() {
-  if (isCopyingEnvironmentInfo.value)
-    return
+  if (isCopyingEnvironmentInfo.value) return
 
   const unknownValue = t('settings.environment_info_unknown')
   const text = [
@@ -123,11 +119,9 @@ async function handleCopyEnvironmentInfo() {
   try {
     await navigator.clipboard.writeText(text)
     toast.success(t('settings.environment_info_copied'))
-  }
-  catch {
+  } catch {
     toast.error(t('settings.environment_info_copy_failed'))
-  }
-  finally {
+  } finally {
     isCopyingEnvironmentInfo.value = false
   }
 }
@@ -137,14 +131,17 @@ async function handleCopyEnvironmentInfo() {
   <div :data-settings-title="$t('settings.menu_about')">
     <div class="about-content">
       <div relative w-200px m-auto>
-        <img
-          :src="`${browser.runtime.getURL('/assets/icon-512.png')}`" alt="" width="200"
-        >
+        <img :src="`${browser.runtime.getURL('/assets/icon-512.png')}`" alt="" width="200" />
 
         <a
           v-if="hasNewVersion"
-          href="https://github.com/keleus/BewlyCat/releases" target="_blank"
-          pos="absolute bottom-0 right-0" transform="translate-x-50%" un-text="xs $bew-text-1" p="y-1 x-2" bg="$bew-fill-1"
+          href="https://github.com/keleus/BewlyCat/releases"
+          target="_blank"
+          pos="absolute bottom-0 right-0"
+          transform="translate-x-50%"
+          un-text="xs $bew-text-1"
+          p="y-1 x-2"
+          bg="$bew-fill-1"
           rounded="$bew-radius"
         >
           NEW
@@ -153,17 +150,12 @@ async function handleCopyEnvironmentInfo() {
       <section class="about-brand" text-center mt-2>
         <p flex="inline gap-2">
           <span>BewlyCat</span>
-          <span
-            v-if="isDev"
-            class="bew-warning-text"
-            inline-block
-          >
-            Dev
-          </span>
+          <span v-if="isDev" class="bew-warning-text" inline-block> Dev </span>
         </p>
         <p text-center>
           <a
-            href="https://github.com/keleus/BewlyCat/releases" target="_blank"
+            href="https://github.com/keleus/BewlyCat/releases"
+            target="_blank"
             un-text="sm color-$bew-text-2 hover:color-$bew-text-3"
           >
             v{{ version }}
@@ -203,37 +195,41 @@ async function handleCopyEnvironmentInfo() {
         </SettingsItemGroup>
       </section>
 
-      <section
-        class="about-info-card"
-      >
+      <section class="about-info-card">
         <section w-full>
           <h3 class="title">
             {{ $t('settings.links') }}
           </h3>
           <div grid="~ xl:cols-6 lg:cols-5 md:cols-4 cols-3 gap-2">
             <a
-              href="https://github.com/keleus/BewlyCat" target="_blank"
+              href="https://github.com/keleus/BewlyCat"
+              target="_blank"
               class="link-card"
               bg="black dark:white !opacity-10 !hover:opacity-20"
               un-text="black dark:white"
             >
-              <div i-tabler:brand-github /> GitHub
+              <div i-tabler:brand-github />
+              GitHub
             </a>
             <a
-              href="https://space.bilibili.com/32487218/dynamic" target="_blank"
+              href="https://space.bilibili.com/32487218/dynamic"
+              target="_blank"
               class="link-card"
               bg="#fb7299 dark:#ffa7c0 !opacity-10 !hover:opacity-20"
               un-text="#fb7299 dark:#ffa7c0"
             >
-              <div i-tabler:brand-bilibili /> Bilibili
+              <div i-tabler:brand-bilibili />
+              Bilibili
             </a>
             <a
-              href="https://www.xiaohongshu.com/user/profile/5fb77085000000000100060d" target="_blank"
+              href="https://www.xiaohongshu.com/user/profile/5fb77085000000000100060d"
+              target="_blank"
               class="link-card"
               bg="#FF2442 dark:#D7223A !opacity-10 !hover:opacity-20"
               un-text="#FF2442 dark:#D7223A"
             >
-              <div i-tabler:book-2 /> {{ t('settings.xiaohongshu') }}
+              <div i-tabler:book-2 />
+              {{ t('settings.xiaohongshu') }}
             </a>
           </div>
         </section>
@@ -255,7 +251,7 @@ async function handleCopyEnvironmentInfo() {
               :alt="$t('settings.current_contributors')"
               loading="lazy"
               @error="handleContributorImageError"
-            >
+            />
           </a>
         </section>
         <section
@@ -338,7 +334,12 @@ async function handleCopyEnvironmentInfo() {
             <span class="third-party-license-name">{{ item.name }}</span>
             <span class="third-party-license-meta">{{ item.version }} · {{ item.license }}</span>
           </summary>
-          <a v-if="item.homepage" :href="item.homepage" target="_blank" class="third-party-license-link">
+          <a
+            v-if="item.homepage"
+            :href="item.homepage"
+            target="_blank"
+            class="third-party-license-link"
+          >
             {{ item.homepage }}
           </a>
           <pre v-if="item.licenseText" class="license-text">{{ item.licenseText }}</pre>
@@ -350,7 +351,7 @@ async function handleCopyEnvironmentInfo() {
 
 <style lang="scss" scoped>
 .title {
-  --uno: "mb-2";
+  --uno: 'mb-2';
   font-weight: var(--bew-font-weight-bold);
 }
 
@@ -476,11 +477,11 @@ async function handleCopyEnvironmentInfo() {
 }
 
 .link-card {
-  --uno: "w-full h-48px px-4 py-2 flex items-center rounded-$bew-radius";
-  --uno: "duration-300";
+  --uno: 'w-full h-48px px-4 py-2 flex items-center rounded-$bew-radius';
+  --uno: 'duration-300';
 
   > div {
-    --uno: "mr-2 shrink-0";
+    --uno: 'mr-2 shrink-0';
   }
 }
 </style>

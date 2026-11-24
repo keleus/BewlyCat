@@ -14,7 +14,11 @@ export function openApiErrorDetails(source: ApiErrorReportSource) {
 }
 
 /** 提示框自动消失后仍可从页面的失败状态打开详情；提示框运行在独立 Vue 应用中，文案需提前翻译。 */
-export function createApiErrorToastContent(message: string, actionLabel: string, source: ApiErrorReportSource) {
+export function createApiErrorToastContent(
+  message: string,
+  actionLabel: string,
+  source: ApiErrorReportSource,
+) {
   return {
     component: markRaw(ApiErrorToastContent),
     props: { message, actionLabel },

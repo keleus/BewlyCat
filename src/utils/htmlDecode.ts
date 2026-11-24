@@ -3,9 +3,9 @@ const entities: Record<string, string> = {
   '&lt;': '<',
   '&gt;': '>',
   '&quot;': '"',
-  '&#39;': '\'',
-  '&#x27;': '\'',
-  '&apos;': '\'',
+  '&#39;': "'",
+  '&#x27;': "'",
+  '&apos;': "'",
   '&nbsp;': ' ',
   '&copy;': '©',
   '&reg;': '®',
@@ -34,8 +34,7 @@ const entities: Record<string, string> = {
  * - 十六进制数字实体：&#x27; &#x3C; 等
  */
 export function decodeHtmlEntities(text: string | undefined): string {
-  if (!text || typeof text !== 'string')
-    return text || ''
+  if (!text || typeof text !== 'string') return text || ''
 
   return text.replace(/&(?:#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match) => {
     // 数字实体 &#123; 或 &#xAB;
@@ -43,8 +42,7 @@ export function decodeHtmlEntities(text: string | undefined): string {
       const isHex = match[2] === 'x' || match[2] === 'X'
       const code = Number.parseInt(match.slice(isHex ? 3 : 2, -1), isHex ? 16 : 10)
       // HTML 数字实体中的空字符、代理项和超范围码点都替换为 U+FFFD。
-      if (code === 0 || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF))
-        return '\uFFFD'
+      if (code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return '\uFFFD'
       return String.fromCodePoint(code)
     }
     // 命名实体

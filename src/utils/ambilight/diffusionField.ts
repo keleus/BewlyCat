@@ -78,7 +78,12 @@ export class AmbilightDiffusionField {
       const cy = y + 0.5
       for (let x = 0; x < this.width; x++) {
         const cx = x + 0.5
-        if (cx >= this.innerLeft && cx < this.innerRight && cy >= this.innerTop && cy < this.innerBottom) {
+        if (
+          cx >= this.innerLeft &&
+          cx < this.innerRight &&
+          cy >= this.innerTop &&
+          cy < this.innerBottom
+        ) {
           this.fixed[y * this.width + x] = 1
           this.fixedCount++
         }
@@ -139,10 +144,8 @@ export class AmbilightDiffusionField {
       throw new Error('Invalid diffusion source data')
 
     this.sourcePixel = source
-    if (!this.initialized)
-      this.reset(source)
-    else
-      this.updateFixedPixels(source)
+    if (!this.initialized) this.reset(source)
+    else this.updateFixedPixels(source)
 
     this.solve(decayLengthPx, iterations)
     // 方程解在外边界只保证 ghost 为 0，最外一圈仍可能残留少量 alpha；按设置羽化避免矩形边。
@@ -153,8 +156,7 @@ export class AmbilightDiffusionField {
     const blendAmount = force || !this.solutionReady ? 1 : clamp(blend, 0, 1)
     if (blendAmount >= 1) {
       this.display.set(this.state)
-    }
-    else {
+    } else {
       for (let i = 0; i < this.display.length; i++)
         this.display[i] += (this.state[i] - this.display[i]) * blendAmount
     }
@@ -168,7 +170,7 @@ export class AmbilightDiffusionField {
    * 按光晕矩形内的归一化坐标双线性采样当前显示的场，用于估算文字背景。
    * 在预乘空间插值后再除回 alpha，返回非预乘颜色的 sRGB 编码亮度与 alpha。
    */
-  public sample(u: number, v: number): { luma: number, alpha: number } {
+  public sample(u: number, v: number): { luma: number; alpha: number } {
     const fx = clamp(u * this.width - 0.5, 0, this.width - 1)
     const fy = clamp(v * this.height - 0.5, 0, this.height - 1)
     const x0 = Math.floor(fx)
@@ -182,7 +184,11 @@ export class AmbilightDiffusionField {
     let alpha = 0
     const accumulate = (x: number, y: number, weight: number) => {
       const base = (y * this.width + x) * 4
-      luma += weight * (0.2126 * this.display[base] + 0.7152 * this.display[base + 1] + 0.0722 * this.display[base + 2])
+      luma +=
+        weight *
+        (0.2126 * this.display[base] +
+          0.7152 * this.display[base + 1] +
+          0.0722 * this.display[base + 2])
       alpha += weight * this.display[base + 3]
     }
     accumulate(x0, y0, (1 - tx) * (1 - ty))
@@ -200,8 +206,7 @@ export class AmbilightDiffusionField {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const index = y * this.width + x
-        if (this.fixed[index])
-          this.copyFixedPixel(index, source)
+        if (this.fixed[index]) this.copyFixedPixel(index, source)
       }
     }
   }
@@ -214,15 +219,10 @@ export class AmbilightDiffusionField {
     this.state[offset + 3] = 1
   }
 
-  private solve(
-    decayLengthPx: number,
-    iterations: number,
-  ): void {
+  private solve(decayLengthPx: number, iterations: number): void {
     const wx = 1 / (this.cellWidth * this.cellWidth)
     const wy = 1 / (this.cellHeight * this.cellHeight)
-    const lambda2 = decayLengthPx > 0
-      ? 1 / (decayLengthPx * decayLengthPx)
-      : 0
+    const lambda2 = decayLengthPx > 0 ? 1 / (decayLengthPx * decayLengthPx) : 0
     const denominator = 2 * wx + 2 * wy + lambda2
     const rowStride = this.width * 4
     const totalIterations = Math.max(1, Math.min(64, Math.round(iterations)))
@@ -235,8 +235,7 @@ export class AmbilightDiffusionField {
         for (let y = 0; y < this.height; y++) {
           for (let x = (y + parity) & 1; x < this.width; x += 2) {
             const index = y * this.width + x
-            if (this.fixed[index])
-              continue
+            if (this.fixed[index]) continue
 
             const base = index * 4
             for (let channel = 0; channel < 4; channel++) {
@@ -249,15 +248,13 @@ export class AmbilightDiffusionField {
               const next = previous + SOR_OMEGA * (target - previous)
               this.state[base + channel] = next
               const delta = Math.abs(next - previous)
-              if (delta > maxDelta)
-                maxDelta = delta
+              if (delta > maxDelta) maxDelta = delta
             }
           }
         }
       }
 
-      if (maxDelta < CONVERGENCE_EPSILON)
-        break
+      if (maxDelta < CONVERGENCE_EPSILON) break
     }
   }
 
@@ -279,8 +276,7 @@ export class AmbilightDiffusionField {
       Math.max(0, cy - 0.5),
       Math.max(0, this.height - cy - 0.5),
     )
-    if (dOut <= 0 || distance <= 0)
-      return distance <= 0 ? 1 : 0
+    if (dOut <= 0 || distance <= 0) return distance <= 0 ? 1 : 0
 
     const t = distance / (distance + dOut)
     return 1 - smoothstep(t)
@@ -309,7 +305,8 @@ export class AmbilightDiffusionField {
     const tx = clamp(fx - x0, 0, 1)
     const ty = clamp(fy - y0, 0, 1)
 
-    const sample = (sx: number, sy: number, channel: number) => this.sourcePixel[((sy * this.width) + sx) * 4 + channel]
+    const sample = (sx: number, sy: number, channel: number) =>
+      this.sourcePixel[(sy * this.width + sx) * 4 + channel]
     const color: Rgb = [0, 0, 0]
     for (let channel = 0; channel < 3; channel++) {
       const topValue = sample(x0, y0, channel) * (1 - tx) + sample(x1, y0, channel) * tx
@@ -321,15 +318,13 @@ export class AmbilightDiffusionField {
 
   private applyEdgeFeather(featherCells: number): void {
     const cells = Math.max(0, Math.min(4, featherCells))
-    if (cells <= 0)
-      return
+    if (cells <= 0) return
 
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const edge = Math.min(x, this.width - 1 - x, y, this.height - 1 - y)
         const factor = smoothstep(Math.min(1, edge / cells))
-        if (factor >= 1)
-          continue
+        if (factor >= 1) continue
         const base = (y * this.width + x) * 4
         this.state[base] *= factor
         this.state[base + 1] *= factor

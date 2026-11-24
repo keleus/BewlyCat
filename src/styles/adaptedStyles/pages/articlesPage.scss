@@ -20,7 +20,13 @@
   // Increase the priority of the style inside by writing a non-existent selector in :not()
   :not(foobar) {
     .page-content .right-side .rank-module .rank-list .item a:hover,
-    .page-content .left-side .article-list .article-list-holder .article-item:hover .item-holder .article-title,
+    .page-content
+      .left-side
+      .article-list
+      .article-list-holder
+      .article-item:hover
+      .item-holder
+      .article-title,
     .page-content .right-side .rank-module .rank-tabs-bar .rank-tabs-list li.on,
     .page-content .right-side .up-list .up-item .info-holder .head .follow,
     .page-content .right-side .up-list .up-item .info-holder .head .nick-name:hover,
@@ -47,7 +53,13 @@
     .article-tags .tag-item:hover,
     #App .rank-module .tab-bar .tab-item.on,
     #App .rank-module .tab-bar .tab-item:hover,
-    #App .rank-module .article-list .article-item .item-holder .article-content:hover .article-title,
+    #App
+      .rank-module
+      .article-list
+      .article-item
+      .item-holder
+      .article-content:hover
+      .article-title,
     #App
       .rank-module
       .article-list
@@ -58,7 +70,12 @@
       .article-info-bar
       .reply:hover,
     #App .rank-module .article-list .article-item .item-holder .score-module .score,
-    .list-container .article-list-block .article-item .item-holder .article-content:hover .article-title,
+    .list-container
+      .article-list-block
+      .article-item
+      .item-holder
+      .article-content:hover
+      .article-title,
     .list-container
       .article-list-block
       .article-item
@@ -139,7 +156,13 @@
     .nav-tab-bar .tab-item,
     .page-content .left-side .partitio-name,
     .page-content .right-side .rank-module .rank-tabs-bar label,
-    .page-content .left-side .article-list .article-list-holder .article-item .item-holder .article-title-holder,
+    .page-content
+      .left-side
+      .article-list
+      .article-list-holder
+      .article-item
+      .item-holder
+      .article-title-holder,
     .page-content .right-side .rank-module .rank-list .item a,
     .page-content .right-side .up-list .title,
     .page-content .right-side .up-list .up-item .info-holder .head .nick-name,
@@ -180,11 +203,17 @@
       color: var(--bew-text-1);
     }
 
-    span[style*="color:#000000"] {
+    span[style*='color:#000000'] {
       color: var(--bew-text-1) !important;
     }
 
-    .page-content .left-side .article-list .article-list-holder .article-item .item-holder .article-desc,
+    .page-content
+      .left-side
+      .article-list
+      .article-list-holder
+      .article-item
+      .item-holder
+      .article-desc,
     .page-content .right-side .up-list .up-item .info-holder .dynamic,
     .page-content .right-side .more .help .info,
     .page-content .right-side .more .link .info,
@@ -218,7 +247,14 @@
       color: var(--bew-text-2) !important;
     }
 
-    .page-content .left-side .article-list .article-list-holder .article-item .item-holder .article-info-bar *,
+    .page-content
+      .left-side
+      .article-list
+      .article-list-holder
+      .article-item
+      .item-holder
+      .article-info-bar
+      *,
     .page-content .right-side .up-list .up-item .info-holder .dynamic .arc-title,
     .page-content
       .left-side
@@ -383,7 +419,13 @@
     .modal-box-holder .modal-box .modal-footer .modal-btn-default,
     .modal-box-holder .modal-box .modal-footer .modal-btn-primary,
     .page-content .right-side .up-list .fresh-btn,
-    .page-content .right-side .search-module .search-block .search-word-panel .panel-title .split-line,
+    .page-content
+      .right-side
+      .search-module
+      .search-block
+      .search-word-panel
+      .panel-title
+      .split-line,
     .bili-dialog-bomb .appeal-box .header,
     .bili-dialog-bomb .appeal-box .wrap .container .textarea .textarea-wrap textarea,
     .bili-dialog-bomb .appeal-box .submit .cancel,
@@ -397,7 +439,12 @@
     #App .rank-module .article-list .article-item .item-holder .article-content,
     .list-container .list-info-block .right-side .col .split-line,
     .list-container .list-info-block .right-side .up-info-block .follow-btn.on,
-    .list-container .article-list-block .article-item .item-holder .article-content .article-left-block,
+    .list-container
+      .article-list-block
+      .article-item
+      .item-holder
+      .article-content
+      .article-left-block,
     .modalBox .cancel,
     .article-up-info .nameplate-ctnr,
     .article-up-info .nameplate-ctnr .info,

@@ -34,20 +34,25 @@ function isRecord(value: unknown): value is Record<string, any> {
 
 /** code=0 也可能是风控：网页接口用 v_voucher 或 is_risk 标记校验响应。 */
 export function isApiResponseFailure(response: unknown): boolean {
-  if (!isRecord(response))
-    return false
-  if (typeof response.code === 'number' && response.code !== 0)
-    return true
-  return isBilibiliRiskControl(response) || Boolean(response.data?.is_risk || response.data?.gaia_res_type)
+  if (!isRecord(response)) return false
+  if (typeof response.code === 'number' && response.code !== 0) return true
+  return (
+    isBilibiliRiskControl(response) ||
+    Boolean(response.data?.is_risk || response.data?.gaia_res_type)
+  )
 }
 
 /** 记录请求的状态和响应类型，并为无法解析成 JSON 的响应保留正文开头。 */
 export function captureApiResponse(attempt: ApiRequestAttempt, response: Response) {
   attempt.status = response.status
   attempt.contentType = response.headers.get('content-type') ?? undefined
-  attempt.preview = !response.ok || !attempt.contentType?.includes('json')
-    ? response.clone().text().catch(() => '')
-    : undefined
+  attempt.preview =
+    !response.ok || !attempt.contentType?.includes('json')
+      ? response
+          .clone()
+          .text()
+          .catch(() => '')
+      : undefined
 }
 
 /**
@@ -60,11 +65,10 @@ export async function reportApiFailure(
   query: string,
   attempt: ApiRequestAttempt,
   startedAt: number,
-  failure: { response?: unknown, error?: unknown },
+  failure: { response?: unknown; error?: unknown },
 ) {
   const tabId = sender?.tab?.id
-  if (tabId === undefined)
-    return
+  if (tabId === undefined) return
 
   try {
     const { response, error } = failure
@@ -78,7 +82,10 @@ export async function reportApiFailure(
     ])
     const missingHostPermission = attempt.missingHostPermission ?? Boolean(detectedMissingOrigin)
     const missingHostOrigin = attempt.missingHostOrigin ?? detectedMissingOrigin
-    const message = responseRecord?.message ?? errorRecord?.message ?? (error === undefined ? undefined : String(error))
+    const message =
+      responseRecord?.message ??
+      errorRecord?.message ??
+      (error === undefined ? undefined : String(error))
     const record: ApiFailureRecord = {
       time: Date.now(),
       source,
@@ -94,7 +101,9 @@ export async function reportApiFailure(
       code: responseRecord?.code ?? errorRecord?.code,
       message: typeof message === 'string' ? sanitizeDiagnosticText(message) : undefined,
       errorName: errorRecord?.name,
-      likelyRiskControl: !missingHostPermission && (attempt.status === 412 || isBilibiliRiskControl(response) || isBilibiliRiskControl(error)),
+      likelyRiskControl:
+        !missingHostPermission &&
+        (attempt.status === 412 || isBilibiliRiskControl(response) || isBilibiliRiskControl(error)),
       missingHostPermission: missingHostPermission || undefined,
       missingHostOrigin,
       response: sanitizeDiagnosticValue(response),
@@ -105,8 +114,7 @@ export async function reportApiFailure(
       { type: API_FAILURE_DIAGNOSTIC_MESSAGE, data: record },
       sender?.frameId === undefined ? undefined : { frameId: sender.frameId },
     )
-  }
-  catch {
+  } catch {
     // 页面可能已关闭或没有内容脚本。
   }
 }

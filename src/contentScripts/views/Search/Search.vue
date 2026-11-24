@@ -4,7 +4,10 @@ import { onUnmounted, ref } from 'vue'
 
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { navigateToPluginSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
+import {
+  navigateToPluginSearchResults,
+  shouldUsePluginSearchResultsPage,
+} from '~/utils/searchNavigation'
 
 // 搜索关键词
 const searchInput = ref<string>('')
@@ -18,8 +21,7 @@ onUnmounted(() => {
 
 function handleSearch(keyword: string) {
   const normalized = keyword.trim()
-  if (!normalized)
-    return
+  if (!normalized) return
 
   searchInput.value = normalized
   topBarSearchKeyword.value = normalized
@@ -29,18 +31,14 @@ function handleSearch(keyword: string) {
 
 <template>
   <!-- 显示搜索页面 -->
-  <div
-    flex="~ col"
-    justify-center
-    items-center
-    w-full z-10
-    pos="relative"
-    m="t-20vh"
-  >
+  <div flex="~ col" justify-center items-center w-full z-10 pos="relative" m="t-20vh">
     <Logo
-      v-if="settings.searchPageShowLogo" :size="180" :color="settings.searchPageLogoColor === 'white' ? 'white' : 'var(--bew-theme-color)'"
+      v-if="settings.searchPageShowLogo"
+      :size="180"
+      :color="settings.searchPageLogoColor === 'white' ? 'white' : 'var(--bew-theme-color)'"
       :glow="settings.searchPageLogoGlow"
-      mb-12 z-1
+      mb-12
+      z-1
     />
     <SearchBar
       v-model="searchInput"

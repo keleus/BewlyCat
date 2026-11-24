@@ -9,21 +9,26 @@ import { isVideoOrBangumiPage } from '~/utils/main'
 
 import TopBarItemEditor from './TopBarItemEditor.vue'
 
-const props = withDefaults(defineProps<{
-  forceWhiteIcon?: boolean
-  native?: boolean
-}>(), {
-  forceWhiteIcon: false,
-  native: false,
-})
+const props = withDefaults(
+  defineProps<{
+    forceWhiteIcon?: boolean
+    native?: boolean
+  }>(),
+  {
+    forceWhiteIcon: false,
+    native: false,
+  },
+)
 
 const { t } = useI18n()
 const { isLayoutEditing } = useLayoutEditMode()
 const nativeTargetStableDelay = 2000
 const replacedNativeTargetStableDelay = 400
 const nativeTarget = shallowRef<Element | null>(null)
-const nativeBar = computed(() => nativeTarget.value?.closest<HTMLElement>('.bili-header__bar') ?? null)
-const nativeObserverTarget = computed(() => props.native ? document.body : null)
+const nativeBar = computed(
+  () => nativeTarget.value?.closest<HTMLElement>('.bili-header__bar') ?? null,
+)
+const nativeObserverTarget = computed(() => (props.native ? document.body : null))
 // Only the bar's right edge is used, which scrolling never changes; skip the
 // default capturing scroll listener that re-read the rect on every scroll.
 const { right: nativeBarRight } = useElementBounding(nativeBar, { windowScroll: false })
@@ -34,9 +39,11 @@ let nativeTargetObserved = false
 let nativeTargetReplacementObserved = false
 let nativeTargetRetryTimer: number | undefined
 
-const actionLabel = computed(() => settings.value.useOriginalBilibiliTopBar
-  ? t('topbar.switch_to_bewly_top_bar')
-  : t('topbar.switch_to_bilibili_top_bar'))
+const actionLabel = computed(() =>
+  settings.value.useOriginalBilibiliTopBar
+    ? t('topbar.switch_to_bewly_top_bar')
+    : t('topbar.switch_to_bilibili_top_bar'),
+)
 
 function updateNativeTarget() {
   if (!props.native) {
@@ -50,8 +57,7 @@ function updateNativeTarget() {
     return
   }
 
-  if (nativeTarget.value?.isConnected)
-    return
+  if (nativeTarget.value?.isConnected) return
 
   nativeTarget.value = null
 
@@ -59,10 +65,8 @@ function updateNativeTarget() {
     '.bili-header .bili-header__bar .right-entry, .bili-header__bar .right-entry',
   )
   if (nextTarget !== nativeTargetCandidate) {
-    if (nativeTargetObserved)
-      nativeTargetReplacementObserved = true
-    if (nextTarget)
-      nativeTargetObserved = true
+    if (nativeTargetObserved) nativeTargetReplacementObserved = true
+    if (nextTarget) nativeTargetObserved = true
     nativeTargetCandidate = nextTarget
     nativeTargetCandidateSince = Date.now()
   }
@@ -70,8 +74,7 @@ function updateNativeTarget() {
   clearTimeout(nativeTargetRetryTimer)
   nativeTargetRetryTimer = undefined
 
-  if (!nextTarget)
-    return
+  if (!nextTarget) return
 
   if (!isVideoOrBangumiPage()) {
     nativeTarget.value = nextTarget
@@ -91,8 +94,7 @@ function updateNativeTarget() {
 }
 
 function toggleTopBar() {
-  if (isLayoutEditing.value)
-    return
+  if (isLayoutEditing.value) return
 
   settings.value.useOriginalBilibiliTopBar = !settings.value.useOriginalBilibiliTopBar
 }
@@ -101,35 +103,26 @@ watch(() => props.native, updateNativeTarget, { immediate: true })
 
 watchEffect((onCleanup) => {
   const bar = nativeBar.value
-  if (!bar)
-    return
+  if (!bar) return
 
   // 原生栏体可能有最小宽度；将按钮及其预留空间一起收回可见视口内。
   const property = '--bew-native-top-bar-overflow'
   const previousValue = bar.style.getPropertyValue(property)
   bar.style.setProperty(property, `${Math.max(0, nativeBarRight.value - viewportWidth.value)}px`)
   onCleanup(() => {
-    if (previousValue)
-      bar.style.setProperty(property, previousValue)
-    else
-      bar.style.removeProperty(property)
+    if (previousValue) bar.style.setProperty(property, previousValue)
+    else bar.style.removeProperty(property)
   })
 })
 
 onBeforeUnmount(() => clearTimeout(nativeTargetRetryTimer))
 
-useMutationObserver(
-  nativeObserverTarget,
-  updateNativeTarget,
-  { childList: true, subtree: true },
-)
+useMutationObserver(nativeObserverTarget, updateNativeTarget, { childList: true, subtree: true })
 </script>
 
 <template>
   <Teleport v-if="props.native && nativeBar" :to="nativeBar">
-    <div
-      class="top-bar-mode-switcher top-bar-mode-switcher--native"
-    >
+    <div class="top-bar-mode-switcher top-bar-mode-switcher--native">
       <Tooltip :content="actionLabel" placement="bottom-right">
         <button
           type="button"
@@ -143,13 +136,8 @@ useMutationObserver(
     </div>
   </Teleport>
 
-  <div
-    v-else-if="!props.native"
-    class="top-bar-mode-switcher"
-  >
-    <TopBarItemEditor
-      component-key="topBarSwitcher"
-    >
+  <div v-else-if="!props.native" class="top-bar-mode-switcher">
+    <TopBarItemEditor component-key="topBarSwitcher">
       <Tooltip :content="actionLabel" placement="bottom-right">
         <button
           type="button"

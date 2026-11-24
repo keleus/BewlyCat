@@ -21,7 +21,7 @@ export interface LoadMoreState {
  * 管理分页、加载状态、防抖和自动填充
  */
 export function useLoadMore(
-  loadFn: () => Promise<{ success: boolean, itemsCount: number }>,
+  loadFn: () => Promise<{ success: boolean; itemsCount: number }>,
   options: LoadMoreOptions = {},
 ) {
   const {
@@ -80,8 +80,7 @@ export function useLoadMore(
 
     loadMoreTimer = window.setTimeout(() => {
       loadMoreTimer = undefined
-      if (version === generation)
-        void attemptLoadMore()
+      if (version === generation) void attemptLoadMore()
     }, effectiveDelay)
   }
 
@@ -89,8 +88,7 @@ export function useLoadMore(
    * 尝试加载更多
    */
   async function attemptLoadMore() {
-    if (disposed || state.value.running)
-      return
+    if (disposed || state.value.running) return
 
     if (isLoading()) {
       state.value.pending = false
@@ -110,22 +108,17 @@ export function useLoadMore(
 
     try {
       const result = await loadFn()
-      if (version !== generation)
-        return
+      if (version !== generation) return
 
       if (result.success) {
         page.value += 1
         state.value.lastAppended = result.itemsCount
 
-        if (result.itemsCount === 0)
-          exhausted.value = true
+        if (result.itemsCount === 0) exhausted.value = true
       }
-    }
-    catch (error) {
-      if (version === generation)
-        console.error('加载更多搜索结果失败:', error)
-    }
-    finally {
+    } catch (error) {
+      if (version === generation) console.error('加载更多搜索结果失败:', error)
+    } finally {
       if (version === generation) {
         state.value.lastCompleted = Date.now()
         state.value.running = false
@@ -137,8 +130,7 @@ export function useLoadMore(
    * 请求加载更多（带防抖）
    */
   function requestLoadMore() {
-    if (disposed || !hasMore.value || exhausted.value || isLoading() || state.value.running)
-      return
+    if (disposed || !hasMore.value || exhausted.value || isLoading() || state.value.running) return
 
     const now = Date.now()
     const lastRequestBoundary = Math.max(state.value.lastTriggered, state.value.lastCompleted)
@@ -163,8 +155,7 @@ export function useLoadMore(
   async function handleLoadMoreCompletion(haveScrollbar: () => Promise<boolean>) {
     const version = generation
     await waitForRender()
-    if (disposed || version !== generation)
-      return
+    if (disposed || version !== generation) return
 
     if (isLoading()) {
       state.value.pending = false
@@ -200,8 +191,7 @@ export function useLoadMore(
     }
 
     const hasScrollBar = await haveScrollbar()
-    if (disposed || version !== generation)
-      return
+    if (disposed || version !== generation) return
     if (hasScrollBar) {
       state.value.autoFillAttempts = 0
       return
@@ -262,6 +252,6 @@ export function useLoadMore(
 async function waitForRender() {
   await nextTick()
   if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-    await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()))
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
   }
 }

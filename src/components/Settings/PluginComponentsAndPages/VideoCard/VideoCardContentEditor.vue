@@ -8,20 +8,20 @@ import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
 
-type ContentSettingKey
-  = | 'showVideoCardAuthorAvatar'
-    | 'showVideoCardAuthorName'
-    | 'showVideoCardCategory'
-    | 'showVideoCardVideoTag'
-    | 'showVideoCardRecommendTag'
-    | 'showVideoCardPublishTime'
-    | 'showVideoCardViewCount'
-    | 'showVideoCardDanmakuCount'
-    | 'showVideoCardLikeCount'
-    | 'showVideoCardDuration'
-    | 'showVideoCardWatchLater'
-    | 'showVideoCardMoreButton'
-    | 'showVideoWatchedBadge'
+type ContentSettingKey =
+  | 'showVideoCardAuthorAvatar'
+  | 'showVideoCardAuthorName'
+  | 'showVideoCardCategory'
+  | 'showVideoCardVideoTag'
+  | 'showVideoCardRecommendTag'
+  | 'showVideoCardPublishTime'
+  | 'showVideoCardViewCount'
+  | 'showVideoCardDanmakuCount'
+  | 'showVideoCardLikeCount'
+  | 'showVideoCardDuration'
+  | 'showVideoCardWatchLater'
+  | 'showVideoCardMoreButton'
+  | 'showVideoWatchedBadge'
 
 interface ContentElement {
   setting: ContentSettingKey
@@ -40,31 +40,83 @@ const groups = computed<ContentGroup[]>(() => [
     id: 'stats',
     label: t('settings.video_card_content_region_stats'),
     elements: [
-      { setting: 'showVideoCardViewCount', label: t('settings.show_video_card_view_count'), icon: 'i-mingcute:play-circle-line' },
-      { setting: 'showVideoCardDanmakuCount', label: t('settings.show_video_card_danmaku_count'), icon: 'i-mingcute:danmaku-line' },
-      { setting: 'showVideoCardLikeCount', label: t('settings.show_video_card_like_count'), icon: 'i-mingcute:thumb-up-2-line' },
-      { setting: 'showVideoCardDuration', label: t('settings.show_video_card_duration'), icon: 'i-mingcute:time-line' },
+      {
+        setting: 'showVideoCardViewCount',
+        label: t('settings.show_video_card_view_count'),
+        icon: 'i-mingcute:play-circle-line',
+      },
+      {
+        setting: 'showVideoCardDanmakuCount',
+        label: t('settings.show_video_card_danmaku_count'),
+        icon: 'i-mingcute:danmaku-line',
+      },
+      {
+        setting: 'showVideoCardLikeCount',
+        label: t('settings.show_video_card_like_count'),
+        icon: 'i-mingcute:thumb-up-2-line',
+      },
+      {
+        setting: 'showVideoCardDuration',
+        label: t('settings.show_video_card_duration'),
+        icon: 'i-mingcute:time-line',
+      },
     ],
   },
   {
     id: 'tags',
     label: t('settings.video_card_content_region_tags'),
     elements: [
-      { setting: 'showVideoCardPublishTime', label: t('settings.show_video_card_publish_time'), icon: 'i-mingcute:calendar-time-add-line' },
-      { setting: 'showVideoCardCategory', label: t('settings.show_video_card_category'), icon: 'i-mingcute:classify-2-line' },
-      { setting: 'showVideoCardVideoTag', label: t('settings.show_video_card_video_tag'), icon: 'i-mingcute:tag-line' },
-      { setting: 'showVideoCardRecommendTag', label: t('settings.show_video_card_recommend_tag'), icon: 'i-mingcute:sparkles-line' },
+      {
+        setting: 'showVideoCardPublishTime',
+        label: t('settings.show_video_card_publish_time'),
+        icon: 'i-mingcute:calendar-time-add-line',
+      },
+      {
+        setting: 'showVideoCardCategory',
+        label: t('settings.show_video_card_category'),
+        icon: 'i-mingcute:classify-2-line',
+      },
+      {
+        setting: 'showVideoCardVideoTag',
+        label: t('settings.show_video_card_video_tag'),
+        icon: 'i-mingcute:tag-line',
+      },
+      {
+        setting: 'showVideoCardRecommendTag',
+        label: t('settings.show_video_card_recommend_tag'),
+        icon: 'i-mingcute:sparkles-line',
+      },
     ],
   },
   {
     id: 'other',
     label: t('settings.video_card_content_region_other'),
     elements: [
-      { setting: 'showVideoCardAuthorAvatar', label: t('settings.show_video_card_author_avatar'), icon: 'i-mingcute:user-4-line' },
-      { setting: 'showVideoCardAuthorName', label: t('settings.show_video_card_author_name'), icon: 'i-mingcute:edit-3-line' },
-      { setting: 'showVideoWatchedBadge', label: t('settings.show_video_watched_badge'), icon: 'i-mingcute:eye-2-line' },
-      { setting: 'showVideoCardWatchLater', label: t('settings.show_video_card_watch_later'), icon: 'i-mingcute:carplay-line' },
-      { setting: 'showVideoCardMoreButton', label: t('settings.show_video_card_more_button'), icon: 'i-mingcute:more-2-line' },
+      {
+        setting: 'showVideoCardAuthorAvatar',
+        label: t('settings.show_video_card_author_avatar'),
+        icon: 'i-mingcute:user-4-line',
+      },
+      {
+        setting: 'showVideoCardAuthorName',
+        label: t('settings.show_video_card_author_name'),
+        icon: 'i-mingcute:edit-3-line',
+      },
+      {
+        setting: 'showVideoWatchedBadge',
+        label: t('settings.show_video_watched_badge'),
+        icon: 'i-mingcute:eye-2-line',
+      },
+      {
+        setting: 'showVideoCardWatchLater',
+        label: t('settings.show_video_card_watch_later'),
+        icon: 'i-mingcute:carplay-line',
+      },
+      {
+        setting: 'showVideoCardMoreButton',
+        label: t('settings.show_video_card_more_button'),
+        icon: 'i-mingcute:more-2-line',
+      },
     ],
   },
 ])

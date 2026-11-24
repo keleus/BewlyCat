@@ -8,24 +8,22 @@ import { getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils
 
 import type { CommentRow, CommentTreeComment } from './commentPreview'
 
-const props = defineProps<{ rows: CommentRow[], enabled: boolean }>()
+const props = defineProps<{ rows: CommentRow[]; enabled: boolean }>()
 const emit = defineEmits<{ toggle: [comment: CommentTreeComment] }>()
 const { t } = useI18n()
 const container = ref<HTMLElement>()
 const indentStep = ref(24)
-const guides = ref<Array<{ row: CommentRow, path: string, x: number, y: number }>>([])
+const guides = ref<Array<{ row: CommentRow; path: string; x: number; y: number }>>([])
 const size = ref({ width: 1, height: 1 })
 let frame = 0
 
 function updateGuides() {
   frame = 0
   const element = container.value
-  if (!element)
-    return
+  if (!element) return
   const rect = element.getBoundingClientRect()
-  if (!rect.width || !rect.height)
-    return
-  const depth = Math.max(1, ...props.rows.map(row => Math.min(row.depth, 10)))
+  if (!rect.width || !rect.height) return
+  const depth = Math.max(1, ...props.rows.map((row) => Math.min(row.depth, 10)))
   // 与原生评论相同：优先保留正文宽度，同时给父子头像之间的圆弧留出空间。
   const step = Math.max(16, Math.min(24, Math.floor((rect.width - 150 - 36) / depth)))
   if (indentStep.value !== step) {
@@ -35,19 +33,17 @@ function updateGuides() {
   if (size.value.width !== rect.width || size.value.height !== rect.height)
     size.value = { width: rect.width, height: rect.height }
   if (!props.enabled) {
-    if (guides.value.length)
-      guides.value = []
+    if (guides.value.length) guides.value = []
     return
   }
 
   const anchors = new Map<string, CommentReplyAvatarAnchor>()
   for (const rowElement of Array.from(element.querySelectorAll<HTMLElement>('[data-comment-id]'))) {
     const avatar = rowElement.querySelector<HTMLElement>('[data-comment-avatar]')
-    if (!avatar)
-      continue
+    if (!avatar) continue
     const avatarRect = avatar.getBoundingClientRect()
     const footer = rowElement.querySelector('footer')?.getBoundingClientRect()
-    const row = props.rows.find(row => row.comment.id === rowElement.dataset.commentId)
+    const row = props.rows.find((row) => row.comment.id === rowElement.dataset.commentId)
     const centerY = avatarRect.top + avatarRect.height / 2 - rect.top
     anchors.set(rowElement.dataset.commentId!, {
       bottom: row?.hideBody ? centerY : avatarRect.bottom - rect.top,
@@ -60,12 +56,13 @@ function updateGuides() {
   const nextGuides: typeof guides.value = []
   for (const row of props.rows) {
     const parentAnchor = anchors.get(row.comment.id)
-    if (!row.hasChildren || !parentAnchor)
-      continue
+    if (!row.hasChildren || !parentAnchor) continue
     const childAnchors = props.rows
-      .filter(child => child.parentId === row.comment.id)
-      .map(child => anchors.get(child.comment.id))
-      .filter((anchor): anchor is CommentReplyAvatarAnchor => Boolean(anchor && anchor.left > parentAnchor.centerX))
+      .filter((child) => child.parentId === row.comment.id)
+      .map((child) => anchors.get(child.comment.id))
+      .filter((anchor): anchor is CommentReplyAvatarAnchor =>
+        Boolean(anchor && anchor.left > parentAnchor.centerX),
+      )
     const branch: CommentReplyTreeBranch = {
       key: row.comment.id,
       parentAuthorName: row.comment.author,
@@ -76,20 +73,29 @@ function updateGuides() {
     }
     const path = getCommentReplyBranchPath(branch, 12, 12)
     if (path)
-      nextGuides.push({ row, path, x: parentAnchor.centerX, y: getCommentReplyBranchToggleY(branch, 12) })
+      nextGuides.push({
+        row,
+        path,
+        x: parentAnchor.centerX,
+        y: getCommentReplyBranchToggleY(branch, 12),
+      })
   }
   // onUpdated 同时覆盖插槽内的属地/性别、图片、换行变化；几何不变时不触发下一轮更新。
-  const geometry = (items: typeof guides.value) => items.map(guide => [guide.row.comment.id, guide.row.collapsed, guide.path, guide.x, guide.y])
+  const geometry = (items: typeof guides.value) =>
+    items.map((guide) => [guide.row.comment.id, guide.row.collapsed, guide.path, guide.x, guide.y])
   // 原评论替换同 ID 占位时，即使坐标未变，折叠按钮也必须指向新对象。
-  if (nextGuides.some((guide, index) => toRaw(guide.row.comment) !== toRaw(guides.value[index]?.row.comment))
-    || JSON.stringify(geometry(nextGuides)) !== JSON.stringify(geometry(guides.value))) {
+  if (
+    nextGuides.some(
+      (guide, index) => toRaw(guide.row.comment) !== toRaw(guides.value[index]?.row.comment),
+    ) ||
+    JSON.stringify(geometry(nextGuides)) !== JSON.stringify(geometry(guides.value))
+  ) {
     guides.value = nextGuides
   }
 }
 
 function scheduleGuides() {
-  if (!frame)
-    frame = requestAnimationFrame(updateGuides)
+  if (!frame) frame = requestAnimationFrame(updateGuides)
 }
 
 useResizeObserver(container, scheduleGuides)
@@ -121,7 +127,13 @@ onBeforeUnmount(() => cancelAnimationFrame(frame))
         role="button"
         tabindex="0"
         :aria-expanded="!guide.row.collapsed"
-        :aria-label="t(guide.row.collapsed ? 'moment_card.expand_comment_thread' : 'moment_card.collapse_comment_thread')"
+        :aria-label="
+          t(
+            guide.row.collapsed
+              ? 'moment_card.expand_comment_thread'
+              : 'moment_card.collapse_comment_thread',
+          )
+        "
         @click.stop.prevent="emit('toggle', guide.row.comment)"
         @keydown.enter.stop.prevent="emit('toggle', guide.row.comment)"
         @keydown.space.stop.prevent="emit('toggle', guide.row.comment)"

@@ -24,7 +24,10 @@ export const defaultAppAuthTokens: AppAuthTokens = {
   lastUpdatedAt: null,
 }
 
-export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, { mergeDefaults: true, writeDefaults: false })
+export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, {
+  mergeDefaults: true,
+  writeDefaults: false,
+})
 
 const legacyAccessKey = useStorageLocal('accessKey', '')
 
@@ -32,8 +35,7 @@ const legacyAccessKey = useStorageLocal('accessKey', '')
 watch(
   () => legacyAccessKey.value,
   (value) => {
-    if (value)
-      legacyAccessKey.value = ''
+    if (value) legacyAccessKey.value = ''
   },
   { immediate: true },
 )
@@ -43,8 +45,7 @@ watch(
 watch(
   () => appAuthTokens.value,
   (tokens) => {
-    if (tokens.accessToken && tokens.appKey !== HDAppKey.appkey)
-      resetAppAuthTokens()
+    if (tokens.accessToken && tokens.appKey !== HDAppKey.appkey) resetAppAuthTokens()
   },
   { immediate: true },
 )

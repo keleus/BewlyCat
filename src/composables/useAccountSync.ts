@@ -7,8 +7,7 @@ import { isInIframe } from '~/utils/main'
  */
 export function useAccountSync() {
   // iframe 内的页面共用外层已同步的状态。
-  if (isInIframe())
-    return
+  if (isInIframe()) return
 
   const topBarStore = useTopBarStore()
   let disposed = false
@@ -18,8 +17,7 @@ export function useAccountSync() {
   async function initData() {
     try {
       await topBarStore.initData()
-    }
-    catch (error) {
+    } catch (error) {
       console.error('初始化账号数据失败:', error)
     }
   }
@@ -35,8 +33,7 @@ export function useAccountSync() {
     if (initDataDeferred) {
       initDataDeferred = false
       void initData().then(() => {
-        if (!disposed && !document.hidden)
-          topBarStore.startUpdateTimer()
+        if (!disposed && !document.hidden) topBarStore.startUpdateTimer()
       })
       return
     }
@@ -49,24 +46,22 @@ export function useAccountSync() {
   }
 
   // 在设置页开启相关模块后，已打开的页面无需刷新即可拿到账号数据。
-  watch(() => topBarStore.needsAccountSync, (needed) => {
-    if (!needed || document.hidden)
-      return
+  watch(
+    () => topBarStore.needsAccountSync,
+    (needed) => {
+      if (!needed || document.hidden) return
 
-    void initData().then(() => {
-      if (!disposed)
-        topBarStore.startUpdateTimer()
-    })
-  })
+      void initData().then(() => {
+        if (!disposed) topBarStore.startUpdateTimer()
+      })
+    },
+  )
 
   onMounted(() => {
     nextTick(async () => {
-      if (document.hidden)
-        initDataDeferred = true
-      else
-        await initData()
-      if (disposed)
-        return
+      if (document.hidden) initDataDeferred = true
+      else await initData()
+      if (disposed) return
 
       // 启动定时器：已登录时同步角标/补填 userInfo；未登录时不启动轮询，
       // 登录态由本地 Cookie 事实与事件驱动维护（见 issue #921）

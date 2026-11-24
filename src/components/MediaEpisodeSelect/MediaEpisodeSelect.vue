@@ -45,8 +45,7 @@ onUnmounted(() => {
 
 /** 计算下拉菜单绝对位置 */
 function calculatePosition() {
-  if (!containerRef.value)
-    return
+  if (!containerRef.value) return
 
   const rect = containerRef.value.getBoundingClientRect()
   dropdownPosition.value = {
@@ -81,11 +80,14 @@ function onMouseEnter() {
 }
 
 // 显示选项时计算位置
-watchEffect(() => {
-  if (isOpen.value) {
-    calculatePosition()
-  }
-}, { flush: 'pre' })
+watchEffect(
+  () => {
+    if (isOpen.value) {
+      calculatePosition()
+    }
+  },
+  { flush: 'pre' },
+)
 </script>
 
 <template>
@@ -170,14 +172,7 @@ watchEffect(() => {
       </Transition>
 
       <!-- 遮罩 外部滚动时关闭下拉菜单 -->
-      <div
-        v-if="isOpen"
-        pos="fixed top-0 left-0"
-        w-full
-        h-full
-        z="10003"
-        @wheel="closeDropdown"
-      />
+      <div v-if="isOpen" pos="fixed top-0 left-0" w-full h-full z="10003" @wheel="closeDropdown" />
     </Teleport>
   </div>
 </template>

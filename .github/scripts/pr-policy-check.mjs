@@ -21,14 +21,13 @@ function changedFiles(diffFilter) {
     '-z',
     `--diff-filter=${diffFilter}`,
     `${baseSha}...${headSha}`,
-  ]).split('\0').filter(Boolean)
+  ])
+    .split('\0')
+    .filter(Boolean)
 }
 
 function escapeAnnotation(value) {
-  return value
-    .replaceAll('%', '%25')
-    .replaceAll('\r', '%0D')
-    .replaceAll('\n', '%0A')
+  return value.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
 }
 
 function warning(message, file) {
@@ -37,7 +36,9 @@ function warning(message, file) {
 }
 
 function error(message, file) {
-  console.error(`::error file=${escapeAnnotation(file)},title=PR 文件策略::${escapeAnnotation(message)}`)
+  console.error(
+    `::error file=${escapeAnnotation(file)},title=PR 文件策略::${escapeAnnotation(message)}`,
+  )
 }
 
 function isAgentsFile(file) {
@@ -45,15 +46,17 @@ function isAgentsFile(file) {
 }
 
 function isLocalTestFile(file) {
-  return /(?:^|\/)(?:__tests__|tests?|e2e|cypress|test-results|playwright-report|coverage)(?:\/|$)/i.test(file)
-    || /(?:^|\/)[^/]+\.(?:test|spec|e2e)\.[^/]+$/i.test(file)
+  return (
+    /(?:^|\/)(?:__tests__|tests?|e2e|cypress|test-results|playwright-report|coverage)(?:\/|$)/i.test(
+      file,
+    ) || /(?:^|\/)[^/]+\.(?:test|spec|e2e)\.[^/]+$/i.test(file)
+  )
 }
 
 function readPackageJson(revision) {
   try {
     return JSON.parse(git(['show', `${revision}:package.json`]))
-  }
-  catch {
+  } catch {
     return {}
   }
 }
@@ -78,15 +81,13 @@ function compareDependencies() {
   const removed = []
 
   for (const [key, dependency] of after) {
-    if (!before.has(key))
-      added.push(dependency)
+    if (!before.has(key)) added.push(dependency)
     else if (before.get(key).version !== dependency.version)
       updated.push({ ...dependency, before: before.get(key).version })
   }
 
   for (const [key, dependency] of before) {
-    if (!after.has(key))
-      removed.push(dependency)
+    if (!after.has(key)) removed.push(dependency)
   }
 
   return { added, removed, updated }
@@ -100,17 +101,13 @@ const allChangedFiles = changedFiles('ACDMRTUXB')
 const introducedOrModifiedFiles = changedFiles('AMCR')
 const agentsFiles = allChangedFiles.filter(isAgentsFile)
 const localTestFiles = introducedOrModifiedFiles.filter(isLocalTestFile)
-const dependencyFiles = allChangedFiles.filter(file =>
-  file === 'package.json'
-  || file === 'pnpm-lock.yaml'
-  || file === 'pnpm-workspace.yaml',
+const dependencyFiles = allChangedFiles.filter(
+  (file) => file === 'package.json' || file === 'pnpm-lock.yaml' || file === 'pnpm-workspace.yaml',
 )
 
-for (const file of agentsFiles)
-  error('PR 不允许新增、修改、移动或删除 AGENTS.md。', file)
+for (const file of agentsFiles) error('PR 不允许新增、修改、移动或删除 AGENTS.md。', file)
 
-for (const file of localTestFiles)
-  error('PR 不允许提交本地测试文件或测试产物。', file)
+for (const file of localTestFiles) error('PR 不允许提交本地测试文件或测试产物。', file)
 
 const dependencyChanges = compareDependencies()
 const summary = ['## PR 文件策略检查', '']
@@ -118,15 +115,12 @@ const summary = ['## PR 文件策略检查', '']
 if (agentsFiles.length || localTestFiles.length) {
   summary.push('### ❌ 发现禁止提交的文件', '')
 
-  for (const file of agentsFiles)
-    summary.push(`- \`${file}\`：AGENTS.md 不允许通过 PR 改动`)
+  for (const file of agentsFiles) summary.push(`- \`${file}\`：AGENTS.md 不允许通过 PR 改动`)
 
-  for (const file of localTestFiles)
-    summary.push(`- \`${file}\`：本地测试文件或测试产物不允许提交`)
+  for (const file of localTestFiles) summary.push(`- \`${file}\`：本地测试文件或测试产物不允许提交`)
 
   summary.push('')
-}
-else {
+} else {
   summary.push('✅ 未发现 AGENTS.md 或本地测试文件变更。', '')
 }
 
@@ -145,7 +139,9 @@ if (dependencyFiles.length) {
   if (dependencyChanges.updated.length) {
     summary.push('版本变更：', '')
     for (const dependency of dependencyChanges.updated)
-      summary.push(`- \`${dependency.name}\` (${dependency.section}: \`${dependency.before}\` → \`${dependency.version}\`)`)
+      summary.push(
+        `- \`${dependency.name}\` (${dependency.section}: \`${dependency.before}\` → \`${dependency.version}\`)`,
+      )
     summary.push('')
   }
 
@@ -155,17 +151,13 @@ if (dependencyFiles.length) {
       summary.push(`- ${dependencyLine(dependency)}`)
     summary.push('')
   }
-}
-else {
+} else {
   summary.push('✅ 未发现第三方依赖相关文件变更。', '')
 }
 
 const summaryText = `${summary.join('\n')}\n`
 
-if (process.env.GITHUB_STEP_SUMMARY)
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryText)
-else
-  console.log(summaryText)
+if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryText)
+else console.log(summaryText)
 
-if (agentsFiles.length || localTestFiles.length)
-  process.exitCode = 1
+if (agentsFiles.length || localTestFiles.length) process.exitCode = 1

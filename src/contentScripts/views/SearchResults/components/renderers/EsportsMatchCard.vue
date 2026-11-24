@@ -52,8 +52,7 @@ const isNotStarted = computed(() => {
 
 // 格式化比赛时间
 const matchTime = computed(() => {
-  if (!props.contest.stime)
-    return ''
+  if (!props.contest.stime) return ''
   const date = new Date(props.contest.stime * 1000)
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -96,11 +95,22 @@ const awayScore = computed(() => {
     <div class="card-content">
       <!-- 赛事标题和状态 -->
       <div class="header-container">
-        <div class="season-title keep-one-line bew-body-text" :style="{ fontWeight: 'var(--bew-font-weight-bold)' }">
+        <div
+          class="season-title keep-one-line bew-body-text"
+          :style="{ fontWeight: 'var(--bew-font-weight-bold)' }"
+        >
           {{ contest.season.title }}
         </div>
         <!-- 状态标签 -->
-        <div text="sm" class="status-badge" :class="{ finished: isFinished, live: !isNotStarted && !isFinished, upcoming: isNotStarted }">
+        <div
+          text="sm"
+          class="status-badge"
+          :class="{
+            finished: isFinished,
+            live: !isNotStarted && !isFinished,
+            upcoming: isNotStarted,
+          }"
+        >
           <template v-if="isFinished">{{ $t('search.match_finished') }}</template>
           <template v-else-if="isNotStarted">{{ $t('search.match_upcoming') }}</template>
           <template v-else>{{ $t('search.match_live') }}</template>
@@ -117,11 +127,7 @@ const awayScore = computed(() => {
       <div class="teams-container">
         <!-- 主队 -->
         <div class="team">
-          <img
-            :src="contest.homeTeam.logoFull"
-            :alt="contest.homeTeam.title"
-            class="team-logo"
-          >
+          <img :src="contest.homeTeam.logoFull" :alt="contest.homeTeam.title" class="team-logo" />
           <div text="sm" class="team-name keep-one-line">
             {{ contest.homeTeam.title }}
           </div>
@@ -141,17 +147,12 @@ const awayScore = computed(() => {
 
         <!-- 客队 -->
         <div class="team">
-          <img
-            :src="contest.awayTeam.logoFull"
-            :alt="contest.awayTeam.title"
-            class="team-logo"
-          >
+          <img :src="contest.awayTeam.logoFull" :alt="contest.awayTeam.title" class="team-logo" />
           <div text="sm" class="team-name keep-one-line">
             {{ contest.awayTeam.title }}
           </div>
         </div>
       </div>
-
     </div>
   </a>
 </template>

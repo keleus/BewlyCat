@@ -22,7 +22,9 @@ const emit = defineEmits<{
       {{ message }}
     </p>
     <Button
-      color="rgba(255,255,255,.35)" text-color="white" size="small"
+      color="rgba(255,255,255,.35)"
+      text-color="white"
+      size="small"
       :disabled="pending"
       @click.prevent.stop="emit('undo')"
     >

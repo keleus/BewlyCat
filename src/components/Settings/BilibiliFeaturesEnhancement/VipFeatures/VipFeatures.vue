@@ -19,15 +19,11 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
       >
         <Radio v-model="settings.autoReceiveBCoinCoupon" />
       </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.auto_receive_vip_exp')"
-        right-width="auto"
-      >
+      <SettingsItem :title="$t('settings.auto_receive_vip_exp')" right-width="auto">
         <Radio v-model="settings.autoReceiveVipExp" />
       </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>
 
-<style lang="scss" scoped>
-</style>
+<style lang="scss" scoped></style>

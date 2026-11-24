@@ -6,7 +6,13 @@ import { useI18n } from 'vue-i18n'
 import MomentRichText from './MomentRichText.vue'
 import type { DisplayRichTextSegment } from './types'
 
-const { id, segments, text = '', href = '', resetKey } = defineProps<{
+const {
+  id,
+  segments,
+  text = '',
+  href = '',
+  resetKey,
+} = defineProps<{
   /** 正文元素 id，供展开按钮 aria-controls 关联 */
   id: string
   segments: DisplayRichTextSegment[]
@@ -37,8 +43,7 @@ function updateOverflow() {
 
   // 展开后 clientHeight 等于完整高度，保留既有可收起状态；折叠时再按
   // 实际滚动高度判断，避免短正文也出现展开按钮。
-  canToggle.value = expanded.value
-    || description.scrollHeight > description.clientHeight + 1
+  canToggle.value = expanded.value || description.scrollHeight > description.clientHeight + 1
 }
 
 function toggle() {
@@ -48,10 +53,13 @@ function toggle() {
 
 useResizeObserver(descriptionRef, updateOverflow)
 onMounted(() => void nextTick(updateOverflow))
-watch(() => resetKey, () => {
-  expanded.value = false
-  void nextTick(updateOverflow)
-})
+watch(
+  () => resetKey,
+  () => {
+    expanded.value = false
+    void nextTick(updateOverflow)
+  },
+)
 </script>
 
 <template>
@@ -66,7 +74,7 @@ watch(() => resetKey, () => {
       :segments="segments"
       :href="href"
       @link-click="(event, url) => emit('linkClick', event, url)"
-      @text-click="event => emit('textClick', event)"
+      @text-click="(event) => emit('textClick', event)"
     />
     <a
       v-else
@@ -88,15 +96,12 @@ watch(() => resetKey, () => {
     @click.stop="toggle"
   >
     {{ t(expanded ? 'moment_card.collapse_text' : 'moment_card.expand_text') }}
-    <span
-      :class="expanded ? 'i-mingcute:up-line' : 'i-mingcute:down-line'"
-      aria-hidden="true"
-    />
+    <span :class="expanded ? 'i-mingcute:up-line' : 'i-mingcute:down-line'" aria-hidden="true" />
   </button>
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__desc {
   display: -webkit-box;

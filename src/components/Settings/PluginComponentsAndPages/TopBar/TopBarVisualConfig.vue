@@ -19,13 +19,19 @@ const { t } = useI18n()
 type BadgeType = 'number' | 'dot' | 'none'
 type NotificationBadgeType = keyof NotificationBadgeSettings
 
-const notificationTypes: { key: NotificationBadgeType, title: string }[] = [
+const notificationTypes: { key: NotificationBadgeType; title: string }[] = [
   { key: 'showReplyNotificationReminder', title: 'topbar.noti_dropdown.replys' },
   { key: 'showAtNotificationReminder', title: 'topbar.noti_dropdown.mentions' },
   { key: 'showLikeNotificationReminder', title: 'topbar.noti_dropdown.likes' },
   { key: 'showSystemNotificationReminder', title: 'topbar.noti_dropdown.messages' },
-  { key: 'showFollowedPrivateMessageUnreadCount', title: 'settings.notification_followed_private_messages' },
-  { key: 'showUnfollowedPrivateMessageUnreadCount', title: 'settings.notification_unfollowed_private_messages' },
+  {
+    key: 'showFollowedPrivateMessageUnreadCount',
+    title: 'settings.notification_followed_private_messages',
+  },
+  {
+    key: 'showUnfollowedPrivateMessageUnreadCount',
+    title: 'settings.notification_unfollowed_private_messages',
+  },
 ]
 
 interface TopBarComponent {
@@ -93,16 +99,31 @@ const badgeOptions = computed(() => [
 ])
 
 const videoPageTopBarConfigOptions = computed(() => [
-  { label: t('settings.video_page_top_bar_config_opt.alwaysShow'), value: VideoPageTopBarConfig.AlwaysShow },
-  { label: t('settings.video_page_top_bar_config_opt.alwaysHide'), value: VideoPageTopBarConfig.AlwaysHide },
-  { label: t('settings.video_page_top_bar_config_opt.showOnMouse'), value: VideoPageTopBarConfig.ShowOnMouse },
-  { label: t('settings.video_page_top_bar_config_opt.showOnScroll'), value: VideoPageTopBarConfig.ShowOnScroll },
+  {
+    label: t('settings.video_page_top_bar_config_opt.alwaysShow'),
+    value: VideoPageTopBarConfig.AlwaysShow,
+  },
+  {
+    label: t('settings.video_page_top_bar_config_opt.alwaysHide'),
+    value: VideoPageTopBarConfig.AlwaysHide,
+  },
+  {
+    label: t('settings.video_page_top_bar_config_opt.showOnMouse'),
+    value: VideoPageTopBarConfig.ShowOnMouse,
+  },
+  {
+    label: t('settings.video_page_top_bar_config_opt.showOnScroll'),
+    value: VideoPageTopBarConfig.ShowOnScroll,
+  },
 ])
 
-const otherPageTopBarConfigOptions = computed(() => videoPageTopBarConfigOptions.value
-  .filter(option => option.value !== VideoPageTopBarConfig.AlwaysHide))
+const otherPageTopBarConfigOptions = computed(() =>
+  videoPageTopBarConfigOptions.value.filter(
+    (option) => option.value !== VideoPageTopBarConfig.AlwaysHide,
+  ),
+)
 
-const topBarStyleOptions = computed<{ label: string, value: TopBarStyle }[]>(() => [
+const topBarStyleOptions = computed<{ label: string; value: TopBarStyle }[]>(() => [
   { label: t('settings.top_bar_style_opt.default'), value: 'default' },
   { label: t('settings.top_bar_style_opt.frosted_glass'), value: 'frostedGlass' },
   { label: t('settings.top_bar_style_opt.transparent'), value: 'transparent' },
@@ -125,7 +146,7 @@ function createDefaultComponentConfig(component: TopBarComponent) {
 }
 
 function getComponentConfig(componentKey: string) {
-  return settings.value.topBarComponentsConfig?.find(component => component.key === componentKey)
+  return settings.value.topBarComponentsConfig?.find((component) => component.key === componentKey)
 }
 
 function resetTopBarComponents() {
@@ -140,7 +161,7 @@ function ensureTopBarComponentsConfig() {
   }
 
   const missingConfig = topBarComponents.value
-    .filter(component => !currentConfig.some(config => config.key === component.key))
+    .filter((component) => !currentConfig.some((config) => config.key === component.key))
     .map(createDefaultComponentConfig)
 
   if (missingConfig.length)
@@ -149,14 +170,12 @@ function ensureTopBarComponentsConfig() {
 
 function setComponentVisibility(componentKey: string, visible: boolean) {
   const config = getComponentConfig(componentKey)
-  if (config)
-    config.visible = visible
+  if (config) config.visible = visible
 }
 
 function setComponentBadgeType(componentKey: string, badgeValue: BadgeType) {
   const config = getComponentConfig(componentKey)
-  if (config)
-    config.badgeType = badgeValue
+  if (config) config.badgeType = badgeValue
 }
 
 ensureTopBarComponentsConfig()
@@ -169,10 +188,7 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
       :title="$t('settings.topbar_style_settings')"
       :desc="$t('settings.topbar_style_settings_desc')"
     >
-      <SettingsItem
-        :title="$t('settings.top_bar_style')"
-        right-width="auto"
-      >
+      <SettingsItem :title="$t('settings.top_bar_style')" right-width="auto">
         <Select v-model="settings.topBarStyle" :options="topBarStyleOptions" w="220px" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
@@ -184,8 +200,17 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
       :title="$t('settings.topbar_display_settings')"
       :desc="$t('settings.topbar_display_settings_desc')"
     >
-      <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
-        <Radio v-model="settings.enableTopBar" :label="settings.enableTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
+      <SettingsItem
+        :title="$t('settings.topbar_visibility')"
+        :desc="$t('settings.topbar_visibility_desc')"
+        right-width="auto"
+      >
+        <Radio
+          v-model="settings.enableTopBar"
+          :label="
+            settings.enableTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')
+          "
+        />
       </SettingsItem>
       <SettingsItem
         v-if="!settings.touchScreenOptimization"
@@ -200,14 +225,22 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
         :desc="$t('settings.other_page_top_bar_config_desc')"
         right-width="auto"
       >
-        <Select v-model="settings.otherPageTopBarConfig" :options="otherPageTopBarConfigOptions" w="160px" />
+        <Select
+          v-model="settings.otherPageTopBarConfig"
+          :options="otherPageTopBarConfigOptions"
+          w="160px"
+        />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.video_page_top_bar_config')"
         :desc="$t('settings.video_page_top_bar_config_desc')"
         right-width="auto"
       >
-        <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="160px" />
+        <Select
+          v-model="settings.videoPageTopBarConfig"
+          :options="videoPageTopBarConfigOptions"
+          w="160px"
+        />
       </SettingsItem>
       <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')" right-width="auto">
         <Radio v-model="settings.openNotificationsPageAsDrawer" />
@@ -225,10 +258,7 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
       :title="$t('settings.topbar_logo_and_channels')"
       :desc="$t('settings.topbar_logo_and_channels_desc')"
     >
-      <SettingsItem
-        :title="$t('settings.top_bar_logo_style')"
-        right-width="auto"
-      >
+      <SettingsItem :title="$t('settings.top_bar_logo_style')" right-width="auto">
         <div
           class="logo-style-picker bew-segment-control bew-segment-control--surface bew-segment-control--static"
           role="radiogroup"
@@ -279,9 +309,7 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup
-      :title="$t('settings.topbar_switchers')"
-    >
+    <SettingsItemGroup :title="$t('settings.topbar_switchers')">
       <SettingsItem
         :title="$t('settings.show_bewly_or_bili_page_switcher')"
         :desc="$t('settings.show_bewly_or_bili_page_switcher_desc')"
@@ -339,7 +367,10 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
           </span>
         </template>
         <div class="topbar-component-controls">
-          <div v-if="component.key === 'topBarSwitcher'" class="topbar-component-control topbar-component-control--mode">
+          <div
+            v-if="component.key === 'topBarSwitcher'"
+            class="topbar-component-control topbar-component-control--mode"
+          >
             <span class="topbar-component-control__label">{{ $t('settings.top_bar_mode') }}</span>
             <Select
               v-model="settings.useOriginalBilibiliTopBar"
@@ -348,7 +379,10 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
               w="160px"
             />
           </div>
-          <div v-else-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
+          <div
+            v-else-if="component.supportsBadge"
+            class="topbar-component-control topbar-component-control--badge"
+          >
             <span class="topbar-component-control__label">{{ $t('settings.badge_type') }}</span>
             <Select
               :model-value="getComponentConfig(component.key)?.badgeType ?? 'number'"

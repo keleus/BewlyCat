@@ -4,7 +4,11 @@ import { storeToRefs } from 'pinia'
 import ALink from '~/components/ALink.vue'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { buildKeywordSearchUrl, navigateToPluginSearchResultsInPlace, openSearchResults } from '~/utils/searchNavigation'
+import {
+  buildKeywordSearchUrl,
+  navigateToPluginSearchResultsInPlace,
+  openSearchResults,
+} from '~/utils/searchNavigation'
 
 interface HotSearchItem {
   keyword: string
@@ -19,30 +23,24 @@ const { searchKeyword } = storeToRefs(topBarStore)
 
 function handleHotSearchClick(keyword: string) {
   const normalized = keyword.trim()
-  if (!normalized)
-    return
+  if (!normalized) return
 
   searchKeyword.value = normalized
-  if (navigateToPluginSearchResultsInPlace(normalized))
-    return
+  if (navigateToPluginSearchResultsInPlace(normalized)) return
 
   openSearchResults(normalized)
 }
 
 async function loadHotSearch() {
-  if (isLoading.value)
-    return
+  if (isLoading.value) return
 
   isLoading.value = true
   try {
     const res = await api.search.getHotSearchList({ limit: 10 })
-    if (res?.code === 0)
-      list.value = (res.data?.trending?.list || []).slice(0, 10)
-  }
-  catch (error) {
+    if (res?.code === 0) list.value = (res.data?.trending?.list || []).slice(0, 10)
+  } catch (error) {
     console.error('Failed to load moments hot search:', error)
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
@@ -58,11 +56,7 @@ onMounted(loadHotSearch)
     </header>
 
     <div v-if="isLoading && !list.length" class="moments-hot-search__list" aria-hidden="true">
-      <span
-        v-for="index in 8"
-        :key="index"
-        class="moments-hot-search__skeleton"
-      />
+      <span v-for="index in 8" :key="index" class="moments-hot-search__skeleton" />
     </div>
     <div v-else class="moments-hot-search__list">
       <ALink
@@ -86,7 +80,7 @@ onMounted(loadHotSearch)
           :src="item.icon"
           class="moments-hot-search__icon"
           alt=""
-        >
+        />
       </ALink>
     </div>
   </section>
@@ -116,7 +110,7 @@ onMounted(loadHotSearch)
   line-height: var(--bew-line-height-title);
 }
 
-.moments-hot-search__header [class^="i-"] {
+.moments-hot-search__header [class^='i-'] {
   font-size: var(--bew-icon-size-sm);
   color: var(--bew-theme-color);
 }

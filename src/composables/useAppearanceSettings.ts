@@ -1,7 +1,12 @@
 import { useI18n } from 'vue-i18n'
 
 import { LanguageType } from '~/enums/appEnums'
-import { FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, originalSettings, settings } from '~/logic'
+import {
+  FROSTED_GLASS_BLUR_MAX_PX,
+  FROSTED_GLASS_BLUR_MIN_PX,
+  originalSettings,
+  settings,
+} from '~/logic'
 import { syncActionAnimationFilter } from '~/utils/actionAnimationTheme'
 import { injectCSS } from '~/utils/main'
 
@@ -13,8 +18,7 @@ export function useAppearanceSettings() {
   const FROSTED_GLASS_DIALOG_OFFSET_PX = 10
 
   const clampFrostedGlassBlur = (value: number) => {
-    if (!Number.isFinite(value))
-      return DEFAULT_FROSTED_GLASS_BLUR_PX
+    if (!Number.isFinite(value)) return DEFAULT_FROSTED_GLASS_BLUR_PX
 
     return Math.min(FROSTED_GLASS_BLUR_MAX_PX, Math.max(FROSTED_GLASS_BLUR_MIN_PX, value))
   }
@@ -24,8 +28,7 @@ export function useAppearanceSettings() {
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
     const targets: HTMLElement[] = [document.documentElement]
 
-    if (bewlyElement)
-      targets.push(bewlyElement)
+    if (bewlyElement) targets.push(bewlyElement)
 
     if (!settings.value.enableFrostedGlass) {
       targets.forEach((element) => {
@@ -49,8 +52,7 @@ export function useAppearanceSettings() {
         element.style.removeProperty('--bew-filter-glass-2')
         element.style.removeProperty('--bew-filter-glass-blur-1')
         element.style.removeProperty('--bew-filter-glass-blur-2')
-      }
-      else {
+      } else {
         element.style.setProperty('--bew-filter-glass-1', blur1Value)
         element.style.setProperty('--bew-filter-glass-2', blur2Value)
         element.style.setProperty('--bew-filter-glass-blur-1', blurOnly1Value)
@@ -75,19 +77,16 @@ export function useAppearanceSettings() {
       if (!settings.value.language) {
         if (browser.i18n.getUILanguage() === 'zh-CN') {
           settings.value.language = LanguageType.Mandarin_CN
-        }
-        else if (browser.i18n.getUILanguage() === 'zh-TW') {
+        } else if (browser.i18n.getUILanguage() === 'zh-TW') {
           // Since getUILanguage() cannot get the zh-HK language code
           // use getAcceptLanguages() to get the language code
           const languages: string[] = await browser.i18n.getAcceptLanguages()
           if (languages.includes('zh-HK')) {
             settings.value.language = LanguageType.Cantonese
-          }
-          else {
+          } else {
             settings.value.language = LanguageType.Mandarin_TW
           }
-        }
-        else {
+        } else {
           settings.value.language = LanguageType.English
         }
       }
@@ -96,14 +95,11 @@ export function useAppearanceSettings() {
 
       if (locale.value === LanguageType.Mandarin_CN) {
         document.documentElement.lang = 'zh-CN'
-      }
-      else if (locale.value === LanguageType.Mandarin_TW) {
+      } else if (locale.value === LanguageType.Mandarin_TW) {
         document.documentElement.lang = 'zh-TW'
-      }
-      else if (locale.value === LanguageType.Cantonese) {
+      } else if (locale.value === LanguageType.Cantonese) {
         document.documentElement.lang = 'zh-HK'
-      }
-      else {
+      } else {
         document.documentElement.lang = 'en'
       }
     },
@@ -131,12 +127,10 @@ export function useAppearanceSettings() {
       if (settings.value.customizeFont === 'default') {
         document.documentElement.classList.remove('modify-fonts')
         bewlyHost?.classList.remove('modify-fonts')
-      }
-      else if (settings.value.customizeFont === 'recommend') {
+      } else if (settings.value.customizeFont === 'recommend') {
         document.documentElement.classList.add('modify-fonts')
         bewlyHost?.classList.add('modify-fonts')
-      }
-      else {
+      } else {
         document.documentElement.classList.add('modify-fonts')
         bewlyHost?.classList.add('modify-fonts')
         document.documentElement.style.setProperty('--bew-custom-fonts', settings.value.fontFamily)
@@ -157,8 +151,7 @@ export function useAppearanceSettings() {
             text-autospace: normal !important;
           }
         `)
-      }
-      else {
+      } else {
         cjkLatinAutospaceStyleEl?.remove()
         cjkLatinAutospaceStyleEl = null
       }
@@ -166,11 +159,7 @@ export function useAppearanceSettings() {
     { immediate: true },
   )
 
-  watch(
-    () => settings.value.enableFrostedGlass,
-    applyFrostedGlassState,
-    { immediate: true },
-  )
+  watch(() => settings.value.enableFrostedGlass, applyFrostedGlassState, { immediate: true })
 
   watch(
     () => settings.value.frostedGlassBlurIntensity,
@@ -187,21 +176,22 @@ export function useAppearanceSettings() {
     { immediate: true },
   )
 
-  watch(() => settings.value.enableShadow, (newValue) => {
-    const bewlyElement = document.querySelector('#bewly') as HTMLElement
-    if (!newValue) {
-      if (bewlyElement)
-        bewlyElement.classList.add('disable-shadow')
+  watch(
+    () => settings.value.enableShadow,
+    (newValue) => {
+      const bewlyElement = document.querySelector('#bewly') as HTMLElement
+      if (!newValue) {
+        if (bewlyElement) bewlyElement.classList.add('disable-shadow')
 
-      document.documentElement.classList.add('disable-shadow')
-    }
-    else {
-      if (bewlyElement)
-        bewlyElement.classList.remove('disable-shadow')
+        document.documentElement.classList.add('disable-shadow')
+      } else {
+        if (bewlyElement) bewlyElement.classList.remove('disable-shadow')
 
-      document.documentElement.classList.remove('disable-shadow')
-    }
-  }, { immediate: true })
+        document.documentElement.classList.remove('disable-shadow')
+      }
+    },
+    { immediate: true },
+  )
 
   watch(
     () => settings.value.themeColor,

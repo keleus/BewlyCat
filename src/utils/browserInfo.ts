@@ -41,21 +41,16 @@ const browserMatchers: Array<{
 function normalizeBrandName(brand: string): string | null {
   const normalizedBrand = brand.toLowerCase()
 
-  if (normalizedBrand.includes('microsoft edge'))
-    return 'Microsoft Edge'
-  if (normalizedBrand.includes('google chrome'))
-    return 'Google Chrome'
-  if (normalizedBrand.includes('opera'))
-    return 'Opera'
-  if (normalizedBrand === 'chromium')
-    return 'Chromium'
+  if (normalizedBrand.includes('microsoft edge')) return 'Microsoft Edge'
+  if (normalizedBrand.includes('google chrome')) return 'Google Chrome'
+  if (normalizedBrand.includes('opera')) return 'Opera'
+  if (normalizedBrand === 'chromium') return 'Chromium'
 
   return null
 }
 
 function selectMoreSpecificVersion(currentVersion: string | null, candidateVersion: string) {
-  if (!currentVersion)
-    return candidateVersion
+  if (!currentVersion) return candidateVersion
 
   const currentParts = currentVersion.split('.').length
   const candidateParts = candidateVersion.split('.').length
@@ -65,8 +60,7 @@ function selectMoreSpecificVersion(currentVersion: string | null, candidateVersi
 export function parseBrowserInfo(userAgent = navigator.userAgent): BrowserInfo {
   for (const { name, pattern } of browserMatchers) {
     const match = userAgent.match(pattern)
-    if (match)
-      return { name, version: match[1] }
+    if (match) return { name, version: match[1] }
   }
 
   return { name: null, version: null }
@@ -76,8 +70,7 @@ export async function getBrowserInfo(): Promise<BrowserInfo> {
   const fallbackInfo = parseBrowserInfo()
   const userAgentData = (navigator as NavigatorWithUserAgentData).userAgentData
 
-  if (!userAgentData)
-    return fallbackInfo
+  if (!userAgentData) return fallbackInfo
 
   let brands = userAgentData.brands
   let hasFullVersionList = false
@@ -88,8 +81,7 @@ export async function getBrowserInfo(): Promise<BrowserInfo> {
       brands = highEntropyValues.fullVersionList
       hasFullVersionList = true
     }
-  }
-  catch {
+  } catch {
     // The regular user agent and low-entropy brands remain usable as fallbacks.
   }
 
@@ -103,8 +95,7 @@ export async function getBrowserInfo(): Promise<BrowserInfo> {
     }
   }
 
-  if (fallbackInfo.name)
-    return fallbackInfo
+  if (fallbackInfo.name) return fallbackInfo
 
   const recognizedBrand = brands.find(({ brand }) => normalizeBrandName(brand))
   return recognizedBrand
@@ -120,10 +111,8 @@ export async function getBrowserInfo(): Promise<BrowserInfo> {
 export async function getExtensionBrowserInfo(): Promise<BrowserInfo> {
   try {
     const runtimeInfo = await browser.runtime.getBrowserInfo?.()
-    if (runtimeInfo?.name)
-      return { name: runtimeInfo.name, version: runtimeInfo.version || null }
-  }
-  catch {
+    if (runtimeInfo?.name) return { name: runtimeInfo.name, version: runtimeInfo.version || null }
+  } catch {
     // Chromium 不提供该 API，回退到 UA 与 Client Hints。
   }
 

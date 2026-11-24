@@ -8,7 +8,15 @@ import UserAvatarLink from '~/components/UserCard/UserAvatarLink.vue'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
-import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
+import {
+  LV0_ICON,
+  LV1_ICON,
+  LV2_ICON,
+  LV3_ICON,
+  LV4_ICON,
+  LV5_ICON,
+  LV6_ICON,
+} from '~/utils/lvIcons'
 import { getCSRF } from '~/utils/main'
 
 interface UserCardProps {
@@ -60,29 +68,25 @@ const sampleList = computed(() => {
 })
 
 const localFollowing = ref(props.isFollowed === 1)
-const isFollowing = computed(() => userRelationStore.getFollowing(props.mid) ?? localFollowing.value)
+const isFollowing = computed(
+  () => userRelationStore.getFollowing(props.mid) ?? localFollowing.value,
+)
 const isFollowLoading = ref(false)
 
 // 监听 isFollowed prop 的变化
-watch(() => props.isFollowed, (newVal) => {
-  localFollowing.value = newVal === 1
-})
+watch(
+  () => props.isFollowed,
+  (newVal) => {
+    localFollowing.value = newVal === 1
+  },
+)
 
 const followButtonText = computed(() => {
-  if (isFollowLoading.value)
-    return '...'
+  if (isFollowLoading.value) return '...'
   return isFollowing.value ? t('user_card.followed') : `+ ${t('user_card.follow')}`
 })
 
-const levelIcons: string[] = [
-  LV0_ICON,
-  LV1_ICON,
-  LV2_ICON,
-  LV3_ICON,
-  LV4_ICON,
-  LV5_ICON,
-  LV6_ICON,
-]
+const levelIcons: string[] = [LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON]
 
 function getLvIcon(level: number): string {
   return levelIcons[level] || LV0_ICON
@@ -103,8 +107,7 @@ function openUserSpace() {
 async function handleFollowClick(e: Event) {
   e.stopPropagation()
 
-  if (isFollowLoading.value)
-    return
+  if (isFollowLoading.value) return
 
   const nextFollowing = !isFollowing.value
   const accountMid = userRelationStore.accountMid
@@ -123,20 +126,16 @@ async function handleFollowClick(e: Event) {
     })
 
     if (response.code === 0) {
-      if (!userRelationStore.setFollowing(props.mid, nextFollowing, accountMid))
-        return
+      if (!userRelationStore.setFollowing(props.mid, nextFollowing, accountMid)) return
       localFollowing.value = nextFollowing
       // 通知父组件关注状态已改变
       emit('followStateChanged', props.mid, nextFollowing)
-    }
-    else {
+    } else {
       console.error('关注操作失败:', response.message)
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('关注操作出错:', error)
-  }
-  finally {
+  } finally {
     isFollowLoading.value = false
   }
 }
@@ -161,21 +160,19 @@ async function handleFollowClick(e: Event) {
         :title="name"
         :aria-label="name"
         type="videoCard"
-        absolute inset-0
+        absolute
+        inset-0
       />
-      <div
-        relative flex items-center gap-5 w-full
-        pointer-events-none
-      >
+      <div relative flex items-center gap-5 w-full pointer-events-none>
         <!-- 左侧：头像（带角标） -->
-        <UserAvatarLink :mid="mid" :name="name" :live-status="liveStatus" :roomid="roomid" class="avatar-wrapper-compact">
-          <img
-            :src="face"
-            :alt="name"
-            class="avatar"
-            w-24 h-24
-            rounded-full object-cover
-          >
+        <UserAvatarLink
+          :mid="mid"
+          :name="name"
+          :live-status="liveStatus"
+          :roomid="roomid"
+          class="avatar-wrapper-compact"
+        >
+          <img :src="face" :alt="name" class="avatar" w-24 h-24 rounded-full object-cover />
           <!-- 官方认证角标 -->
           <span
             v-if="isVerified && verifyInfo && verifyInfo.includes('官方')"
@@ -192,9 +189,7 @@ async function handleFollowClick(e: Event) {
         <div flex="~ col gap-2" flex-1 min-w-0>
           <!-- 用户名 + 等级 + 性别 -->
           <div flex items-center gap-2>
-            <div
-              class="username" text="base $bew-text-1" font-medium truncate
-            >
+            <div class="username" text="base $bew-text-1" font-medium truncate>
               {{ name }}
             </div>
             <div
@@ -211,20 +206,12 @@ async function handleFollowClick(e: Event) {
           </div>
 
           <!-- 简介（单行） -->
-          <div
-            class="sign-compact-single"
-            text="sm $bew-text-2"
-            truncate
-          >
+          <div class="sign-compact-single" text="sm $bew-text-2" truncate>
             {{ sign || t('user_card.empty_bio') }}
           </div>
 
           <!-- 统计信息行 -->
-          <div
-            v-if="fans || videos"
-            flex items-center gap-3
-            text="xs $bew-text-3"
-          >
+          <div v-if="fans || videos" flex items-center gap-3 text="xs $bew-text-3">
             <div v-if="videos" flex items-center gap-1>
               <div i-tabler:video w-3.5 h-3.5 />
               <span>{{ t('user_card.submissions', { count: formatNumber(videos) }) }}</span>
@@ -236,10 +223,7 @@ async function handleFollowClick(e: Event) {
           </div>
 
           <!-- 关注按钮 -->
-          <div
-            v-if="showFollowButton"
-            flex items-center
-          >
+          <div v-if="showFollowButton" flex items-center>
             <button
               class="follow-button-compact"
               pointer-events-auto
@@ -271,14 +255,21 @@ async function handleFollowClick(e: Event) {
       @click="openUserSpace()"
     >
       <!-- 头像 -->
-      <UserAvatarLink :mid="mid" :name="name" :live-status="liveStatus" :roomid="roomid" class="avatar-wrapper">
+      <UserAvatarLink
+        :mid="mid"
+        :name="name"
+        :live-status="liveStatus"
+        :roomid="roomid"
+        class="avatar-wrapper"
+      >
         <img
           :src="face"
           :alt="name"
           class="avatar"
           :class="horizontal ? 'w-12 h-12' : 'w-16 h-16'"
-          rounded-full object-cover
-        >
+          rounded-full
+          object-cover
+        />
       </UserAvatarLink>
 
       <!-- 用户信息 -->
@@ -291,10 +282,14 @@ async function handleFollowClick(e: Event) {
           <div
             v-if="isVerified && verifyInfo"
             class="verify-badge"
-            flex items-center gap-1
+            flex
+            items-center
+            gap-1
             text="xs $bew-theme-color"
             bg="$bew-theme-color-20"
-            px-2 py-0.5 rounded-full
+            px-2
+            py-0.5
+            rounded-full
           >
             <div i-tabler:rosette-discount-check />
             <span>{{ verifyInfo }}</span>
@@ -302,29 +297,21 @@ async function handleFollowClick(e: Event) {
         </div>
 
         <!-- 签名 -->
-        <div
-          v-if="sign"
-          class="sign"
-          text="sm $bew-text-2"
-          line-clamp-1
-        >
+        <div v-if="sign" class="sign" text="sm $bew-text-2" line-clamp-1>
           {{ sign }}
         </div>
 
         <!-- 统计信息 -->
-        <div
-          class="stats"
-          flex items-center gap-3 text="xs $bew-text-3"
-          mt-1
-        >
-          <span v-if="fans !== undefined">{{ t('user_card.followers', { count: formatNumber(fans) }) }}</span>
-          <span v-if="videos !== undefined">{{ t('user_card.submissions', { count: formatNumber(videos) }) }}</span>
+        <div class="stats" flex items-center gap-3 text="xs $bew-text-3" mt-1>
+          <span v-if="fans !== undefined">{{
+            t('user_card.followers', { count: formatNumber(fans) })
+          }}</span>
+          <span v-if="videos !== undefined">{{
+            t('user_card.submissions', { count: formatNumber(videos) })
+          }}</span>
         </div>
 
-        <div
-          v-if="sampleList.length"
-          class="sample-list"
-        >
+        <div v-if="sampleList.length" class="sample-list">
           <a
             v-for="sample in sampleList"
             :key="sample.id"
@@ -335,11 +322,7 @@ async function handleFollowClick(e: Event) {
             @click.stop
           >
             <div class="sample-cover">
-              <img
-                v-if="sample.cover"
-                :src="sample.cover"
-                :alt="sample.title"
-              >
+              <img v-if="sample.cover" :src="sample.cover" :alt="sample.title" />
               <div v-if="sample.duration" class="sample-duration">
                 {{ sample.duration }}
               </div>
@@ -581,7 +564,7 @@ async function handleFollowClick(e: Event) {
   background: linear-gradient(135deg, #ff6699 0%, #ff8cb6 100%);
 
   &::before {
-    content: "";
+    content: '';
     display: block;
     width: 100%;
     height: 100%;
@@ -594,7 +577,7 @@ async function handleFollowClick(e: Event) {
   background: linear-gradient(135deg, #23ade5 0%, #3db8f5 100%);
 
   &::before {
-    content: "";
+    content: '';
     display: block;
     width: 100%;
     height: 100%;

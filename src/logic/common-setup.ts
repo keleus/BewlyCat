@@ -17,30 +17,29 @@ export async function setupApp(app: App) {
   // example: app.use(i18n)
   // example excluding content-script context: if (context !== 'content-script') app.use(i18n)
   app.use(i18n)
-  app
-    .use(Toast, {
-      transition: {
-        enter: 'bewly-toast-enter-active',
-        leave: 'bewly-toast-leave-active',
-        move: 'bewly-toast-move',
-      },
-      containerClassName: 'bewly-toast-container',
-      toastClassName: ['bewly-toast', 'bew-popover-surface'],
-      bodyClassName: 'bewly-toast__body',
-      closeButtonClassName: 'bewly-toast__close',
-      maxToasts: 4,
-      newestOnTop: true,
-      position: POSITION.TOP_RIGHT,
-      timeout: 4000,
-      hideProgressBar: false,
-      closeOnClick: false,
-      showCloseButtonOnHover: false,
-      toastDefaults: {
-        [TYPE.SUCCESS]: { timeout: 3000 },
-        [TYPE.INFO]: { timeout: 4000 },
-        [TYPE.WARNING]: { timeout: 5000 },
-        [TYPE.ERROR]: { timeout: 6500 },
-      },
-    })
+  app.use(Toast, {
+    transition: {
+      enter: 'bewly-toast-enter-active',
+      leave: 'bewly-toast-leave-active',
+      move: 'bewly-toast-move',
+    },
+    containerClassName: 'bewly-toast-container',
+    toastClassName: ['bewly-toast', 'bew-popover-surface'],
+    bodyClassName: 'bewly-toast__body',
+    closeButtonClassName: 'bewly-toast__close',
+    maxToasts: 4,
+    newestOnTop: true,
+    position: POSITION.TOP_RIGHT,
+    timeout: 4000,
+    hideProgressBar: false,
+    closeOnClick: false,
+    showCloseButtonOnHover: false,
+    toastDefaults: {
+      [TYPE.SUCCESS]: { timeout: 3000 },
+      [TYPE.INFO]: { timeout: 4000 },
+      [TYPE.WARNING]: { timeout: 5000 },
+      [TYPE.ERROR]: { timeout: 6500 },
+    },
+  })
   app.use(pinia)
 }

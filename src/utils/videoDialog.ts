@@ -13,27 +13,33 @@ export const PLAYER_DIALOG_MAX_WIDTH = `min(92vw, calc(${PLAYER_DIALOG_WIDTH_SCA
 
 /** 弹窗可承载的视频地址：主站视频、番剧与列表播放页；直播等跨站页面回退为新标签页。 */
 export function canOpenInVideoDialog(url: string) {
-  if (window.innerWidth <= VIDEO_DIALOG_MIN_VIEWPORT_WIDTH)
-    return false
+  if (window.innerWidth <= VIDEO_DIALOG_MIN_VIEWPORT_WIDTH) return false
 
   try {
     const { protocol, hostname, pathname } = new URL(url, location.href)
-    return /^https?:$/.test(protocol)
-      && (hostname === 'www.bilibili.com' || hostname === 'bilibili.com')
-      && /^\/(?:video|bangumi\/play|cheese\/play|list|festival)\//.test(stripBilibiliLocalePathname(pathname))
-  }
-  catch {
+    return (
+      /^https?:$/.test(protocol) &&
+      (hostname === 'www.bilibili.com' || hostname === 'bilibili.com') &&
+      /^\/(?:video|bangumi\/play|cheese\/play|list|festival)\//.test(
+        stripBilibiliLocalePathname(pathname),
+      )
+    )
+  } catch {
     return false
   }
 }
 
-const WEB_FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
-const FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen'
+const WEB_FULLSCREEN_BTN_SELECTOR =
+  '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
+const FULLSCREEN_BTN_SELECTOR =
+  '.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen'
 
 function getDocumentFullscreenElement(doc: Document) {
-  return doc.fullscreenElement
-    || (doc as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
-    || null
+  return (
+    doc.fullscreenElement ||
+    (doc as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement ||
+    null
+  )
 }
 
 function isEnteredControl(el: Element | null) {
@@ -45,21 +51,18 @@ function isEnteredControl(el: Element | null) {
  * 跨域页面无法读取时返回 null，由调用方保留当前状态。
  */
 export function readIframePlayerImmersive(iframe: HTMLIFrameElement): boolean | null {
-  if (getDocumentFullscreenElement(document) === iframe)
-    return true
+  if (getDocumentFullscreenElement(document) === iframe) return true
 
   try {
     const doc = iframe.contentDocument
-    if (!doc)
-      return false
-    if (getDocumentFullscreenElement(doc))
-      return true
-    if (doc.querySelector('[data-screen="web"], [data-screen="full"]'))
-      return true
-    return isEnteredControl(doc.querySelector(WEB_FULLSCREEN_BTN_SELECTOR))
-      || isEnteredControl(doc.querySelector(FULLSCREEN_BTN_SELECTOR))
-  }
-  catch {
+    if (!doc) return false
+    if (getDocumentFullscreenElement(doc)) return true
+    if (doc.querySelector('[data-screen="web"], [data-screen="full"]')) return true
+    return (
+      isEnteredControl(doc.querySelector(WEB_FULLSCREEN_BTN_SELECTOR)) ||
+      isEnteredControl(doc.querySelector(FULLSCREEN_BTN_SELECTOR))
+    )
+  } catch {
     return null
   }
 }
@@ -71,14 +74,12 @@ export function watchIframePlayerImmersive(iframe: HTMLIFrameElement, onChange: 
   let retryTimer: ReturnType<typeof setInterval> | null = null
   const observedTargets = new WeakSet<Element>()
   const notify = () => {
-    if (!disposed)
-      onChange()
+    if (!disposed) onChange()
   }
   const observer = new MutationObserver(notify)
 
   const observeTarget = (el: Element | null) => {
-    if (!el || observedTargets.has(el))
-      return
+    if (!el || observedTargets.has(el)) return
     observedTargets.add(el)
     observer.observe(el, {
       attributes: true,
@@ -87,14 +88,12 @@ export function watchIframePlayerImmersive(iframe: HTMLIFrameElement, onChange: 
   }
 
   const attach = () => {
-    if (disposed)
-      return true
+    if (disposed) return true
 
     try {
       const win = iframe.contentWindow
       const doc = iframe.contentDocument
-      if (!win || !doc)
-        return false
+      if (!win || !doc) return false
 
       if (!listenersAttached) {
         win.addEventListener('fullscreenchange', notify)
@@ -105,14 +104,17 @@ export function watchIframePlayerImmersive(iframe: HTMLIFrameElement, onChange: 
 
       observeTarget(doc.querySelector(WEB_FULLSCREEN_BTN_SELECTOR))
       observeTarget(doc.querySelector(FULLSCREEN_BTN_SELECTOR))
-      observeTarget(doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player, [data-screen]'))
+      observeTarget(
+        doc.querySelector(
+          '.bpx-player-container, #bilibili-player, .bilibili-player, [data-screen]',
+        ),
+      )
       notify()
       return Boolean(
-        doc.querySelector(WEB_FULLSCREEN_BTN_SELECTOR)
-        || doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player'),
+        doc.querySelector(WEB_FULLSCREEN_BTN_SELECTOR) ||
+        doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player'),
       )
-    }
-    catch {
+    } catch {
       return true
     }
   }
@@ -146,8 +148,7 @@ export function watchIframePlayerImmersive(iframe: HTMLIFrameElement, onChange: 
       win?.removeEventListener('fullscreenchange', notify)
       doc?.removeEventListener('fullscreenchange', notify)
       win?.removeEventListener('webkitfullscreenchange', notify)
-    }
-    catch {
+    } catch {
       // iframe 已卸载或跨域时忽略
     }
   }
@@ -157,8 +158,7 @@ export function watchIframePlayerImmersive(iframe: HTMLIFrameElement, onChange: 
 export function prepareDialogIframeDocument(iframe: HTMLIFrameElement) {
   try {
     const doc = iframe.contentWindow?.document
-    if (!doc)
-      return
+    if (!doc) return
     doc.documentElement.classList.add('remove-top-bar-without-placeholder')
     doc.documentElement.style.setProperty('overflow-x', 'hidden', 'important')
     doc.documentElement.style.setProperty('overflow-y', 'auto', 'important')
@@ -168,8 +168,7 @@ export function prepareDialogIframeDocument(iframe: HTMLIFrameElement) {
       doc.body.style.setProperty('overflow-y', 'auto', 'important')
       doc.body.style.setProperty('height', 'auto', 'important')
     }
-  }
-  catch {
+  } catch {
     // 跨域（如 live.bilibili.com）无法注入，依赖 iframe 默认滚动
   }
 }
@@ -179,8 +178,7 @@ export function disposeDialogIframe(iframe: HTMLIFrameElement) {
   // 通知同域 iframe 内部主动释放观察器/媒体
   try {
     iframe.contentWindow?.postMessage({ type: 'BEWLY_OPUS_DISPOSE' }, '*')
-  }
-  catch {
+  } catch {
     // ignore
   }
 
@@ -200,8 +198,7 @@ export function disposeDialogIframe(iframe: HTMLIFrameElement) {
             source.removeAttribute('srcset')
           })
           media.load()
-        }
-        catch {
+        } catch {
           // ignore
         }
       })
@@ -211,26 +208,22 @@ export function disposeDialogIframe(iframe: HTMLIFrameElement) {
         doc.open()
         doc.write('<!doctype html><title></title>')
         doc.close()
-      }
-      catch {
+      } catch {
         // ignore
       }
     }
-  }
-  catch {
+  } catch {
     // 跨域（直播等）无法访问 contentDocument
   }
 
   try {
     iframe.src = 'about:blank'
-  }
-  catch {
+  } catch {
     // ignore
   }
   try {
     iframe.removeAttribute('src')
-  }
-  catch {
+  } catch {
     // ignore
   }
 }

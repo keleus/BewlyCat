@@ -12,13 +12,14 @@ export function getSafeImageRatio(width: number, height: number) {
 }
 
 /** 视频跳转地址：优先接口给出的 jump_url，其次按 bvid / aid 拼接 */
-export function getMomentVideoUrl(video: { videoUrl?: string, bvid?: string, aid?: number | string }) {
-  if (video.videoUrl)
-    return localizeBilibiliUrl(video.videoUrl)
-  if (video.bvid)
-    return localizeBilibiliUrl(`https://www.bilibili.com/video/${video.bvid}`)
-  if (video.aid)
-    return localizeBilibiliUrl(`https://www.bilibili.com/video/av${video.aid}`)
+export function getMomentVideoUrl(video: {
+  videoUrl?: string
+  bvid?: string
+  aid?: number | string
+}) {
+  if (video.videoUrl) return localizeBilibiliUrl(video.videoUrl)
+  if (video.bvid) return localizeBilibiliUrl(`https://www.bilibili.com/video/${video.bvid}`)
+  if (video.aid) return localizeBilibiliUrl(`https://www.bilibili.com/video/av${video.aid}`)
   return ''
 }
 
@@ -34,20 +35,17 @@ export function getMomentOriginalImageUrl(url = '') {
   const normalized = httpsUrl(url)
   const queryStart = normalized.search(/[?#]/)
   const path = queryStart === -1 ? normalized : normalized.slice(0, queryStart)
-  if (!path || !/hdslb\.com|biliimg\.com|bilivideo\.com|bilibili\.com/.test(path))
-    return normalized
+  if (!path || !/hdslb\.com|biliimg\.com|bilivideo\.com|bilibili\.com/.test(path)) return normalized
 
   const suffix = path.match(/@\d+w(?:_\d+h)?(?:_\d+c)?(?:\.(?:avif|webp|jpe?g|png))?$/i)?.[0]
-  if (!suffix)
-    return normalized
+  if (!suffix) return normalized
 
   return `${path.slice(0, -suffix.length)}${queryStart === -1 ? '' : normalized.slice(queryStart)}`
 }
 
 export function getAvatarThumbnailUrl(url = '') {
   const normalized = httpsUrl(url).replace(/@[^/]*$/, '')
-  if (!normalized || !/hdslb\.com|biliimg\.com|bilibili\.com/.test(normalized))
-    return normalized
+  if (!normalized || !/hdslb\.com|biliimg\.com|bilibili\.com/.test(normalized)) return normalized
   return `${normalized}@48w_48h_1c.webp`
 }
 
@@ -58,20 +56,17 @@ export function formatCount(value: number) {
 /** 卡片文字预览：展示正文开头，不出现“点击查看详情”类占位 */
 export function getCardPreviewText(moment: DisplayMoment) {
   const text = (moment.text || '').trim()
-  if (text)
-    return text
+  if (text) return text
 
   if (moment.isChargeExclusive) {
     const chargeText = (moment.chargeHint || moment.chargeBadge || '充电专属动态').trim()
-    if (chargeText)
-      return chargeText
+    if (chargeText) return chargeText
   }
 
   // 纯文字/无封面时，尽量用转发原文顶上预览
   if (!moment.images.length && !moment.isVideo && !moment.isLive) {
     const forwardText = (moment.forward?.text || moment.forward?.title || '').trim()
-    if (forwardText)
-      return forwardText
+    if (forwardText) return forwardText
   }
 
   return ''
@@ -79,17 +74,18 @@ export function getCardPreviewText(moment: DisplayMoment) {
 
 export function isCompactPlainTextMoment(moment: DisplayMoment) {
   const isReservation = Boolean(
-    moment.additional?.isVideoReservation
-    || moment.additional?.isLiveReservation,
+    moment.additional?.isVideoReservation || moment.additional?.isLiveReservation,
   )
 
-  return !moment.images.length
-    && !moment.isVideo
-    && !moment.isLive
-    && !moment.isChargeExclusive
-    && !moment.title
-    && !moment.forward
-    && (!moment.additional || isReservation)
+  return (
+    !moment.images.length &&
+    !moment.isVideo &&
+    !moment.isLive &&
+    !moment.isChargeExclusive &&
+    !moment.title &&
+    !moment.forward &&
+    (!moment.additional || isReservation)
+  )
 }
 
 export type MomentLinkKind = 'video' | 'moment' | 'other'
@@ -99,17 +95,14 @@ export function getAuthorSpaceUrl(mid?: string | number) {
   return value ? `https://space.bilibili.com/${value}` : ''
 }
 
-export function getMomentAuthorUrl(author?: { mid?: string | number, url?: string }) {
-  if (!author)
-    return ''
-  if (author.url !== undefined)
-    return author.url
+export function getMomentAuthorUrl(author?: { mid?: string | number; url?: string }) {
+  if (!author) return ''
+  if (author.url !== undefined) return author.url
   return getAuthorSpaceUrl(author.mid)
 }
 
 export function classifyMomentLink(url = ''): MomentLinkKind {
-  if (!url)
-    return 'other'
+  if (!url) return 'other'
 
   try {
     const parsed = new URL(url.startsWith('//') ? `https:${url}` : url, 'https://www.bilibili.com')
@@ -117,23 +110,18 @@ export function classifyMomentLink(url = ''): MomentLinkKind {
     const path = parsed.pathname
 
     if (
-      /\/video\//.test(path)
-      || /\/bangumi\/play\//.test(path)
-      || /\/cheese\/play\//.test(path)
-      || /\/festival\//.test(path)
+      /\/video\//.test(path) ||
+      /\/bangumi\/play\//.test(path) ||
+      /\/cheese\/play\//.test(path) ||
+      /\/festival\//.test(path)
     ) {
       return 'video'
     }
 
-    if (
-      host === 't.bilibili.com'
-      || /\/opus\//.test(path)
-      || /\/dynamic\//.test(path)
-    ) {
+    if (host === 't.bilibili.com' || /\/opus\//.test(path) || /\/dynamic\//.test(path)) {
       return 'moment'
     }
-  }
-  catch {
+  } catch {
     return 'other'
   }
 
@@ -165,7 +153,10 @@ export function isUsableImageRatio(ratio?: number): ratio is number {
 
 function getMultiImageGalleryPeekWidth(containerWidth: number) {
   return Math.min(
-    Math.max(MULTI_IMAGE_GALLERY_PEEK_MIN, Math.round(containerWidth * MULTI_IMAGE_GALLERY_PEEK_RATIO)),
+    Math.max(
+      MULTI_IMAGE_GALLERY_PEEK_MIN,
+      Math.round(containerWidth * MULTI_IMAGE_GALLERY_PEEK_RATIO),
+    ),
     Math.round(containerWidth * 0.32),
   )
 }
@@ -174,8 +165,7 @@ function getMultiImageGalleryPeekWidth(containerWidth: number) {
  * 缩略图显示宽高比：超过 1:2 的长图按 1:2 裁切，其余保持原比例。
  */
 export function getClampedThumbnailRatio(ratio?: number) {
-  if (!isUsableImageRatio(ratio))
-    return undefined
+  if (!isUsableImageRatio(ratio)) return undefined
   return Math.max(ratio, PORTRAIT_THUMBNAIL_MIN_RATIO)
 }
 
@@ -189,8 +179,7 @@ export function computeMultiImageGalleryHeight(
   ratios?: Array<number | undefined>,
 ) {
   const maxHeight = MULTI_IMAGE_GALLERY_MAX_HEIGHT
-  if (!(containerWidth > 0))
-    return maxHeight
+  if (!(containerWidth > 0)) return maxHeight
 
   const firstRatio = getClampedThumbnailRatio(ratios?.[0]) ?? 1
   const usableCount = Math.max(1, ratios?.length || 1)
@@ -217,8 +206,7 @@ export function getMomentImageGridColumns(imageCount: number) {
 
 /** 单元格尺寸统一按三列计算，两列宫格只占约 2/3 宽度 */
 export function computeMomentImageGridHeight(containerWidth: number, imageCount: number) {
-  if (!(containerWidth > 0) || imageCount <= 0)
-    return 0
+  if (!(containerWidth > 0) || imageCount <= 0) return 0
 
   const rows = Math.ceil(imageCount / getMomentImageGridColumns(imageCount))
   const cellSize = Math.max(
@@ -237,10 +225,8 @@ export function shouldUseMomentImageGallery(
     imageRatios?: Array<number | undefined>
   },
 ) {
-  if (options?.isVideo || options?.isLive || !images?.length)
-    return false
-  if (images.length > 1)
-    return true
+  if (options?.isVideo || options?.isLive || !images?.length) return false
+  if (images.length > 1) return true
   return isPortraitImageRatio(options?.imageRatios?.[0] ?? options?.imageRatio)
 }
 
@@ -254,8 +240,7 @@ export function isPortraitImageRatio(ratio?: number): ratio is number {
 }
 
 export function getPortraitThumbnailRatio(ratio?: number) {
-  if (!isPortraitImageRatio(ratio))
-    return PORTRAIT_THUMBNAIL_MIN_RATIO
+  if (!isPortraitImageRatio(ratio)) return PORTRAIT_THUMBNAIL_MIN_RATIO
   return Math.max(PORTRAIT_THUMBNAIL_MIN_RATIO, ratio)
 }
 
@@ -266,8 +251,7 @@ export function getOwnPortraitThumbnailImages(moment: DisplayMoment) {
 }
 
 export function getForwardPortraitThumbnailImages(moment: DisplayMoment) {
-  if (moment.isVideo || moment.isLive)
-    return []
+  if (moment.isVideo || moment.isLive) return []
   return moment.forward?.images?.length === 1 ? moment.forward.images : []
 }
 

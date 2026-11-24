@@ -71,7 +71,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
         loading="lazy"
         decoding="async"
         @load="emit('coverLoad', $event)"
-      >
+      />
       <span v-else class="moment-card__text-cover moment-card__text-cover--video">
         <span i-tabler-player-play-filled class="moment-card__text-cover-icon" aria-hidden="true" />
         <span>{{ textCoverText }}</span>
@@ -83,10 +83,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
         @canplay="emit('previewCanplay', $event)"
         @leave="emit('previewLeave')"
       />
-      <span
-        v-if="showStats"
-        class="moment-card__video-stats"
-      >
+      <span v-if="showStats" class="moment-card__video-stats">
         <span class="moment-card__video-stat-group">
           <span v-if="showPlay && !statsInInfo">
             <span i-mingcute:play-circle-line aria-hidden="true" />
@@ -126,7 +123,8 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
           class="moment-card__forward-author"
           rel="noopener noreferrer"
           @click="emit('authorClick', $event)"
-        >{{ author }}</a>
+          >{{ author }}</a
+        >
         <template v-else>{{ author }}</template>
       </small>
     </span>
@@ -134,7 +132,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__video-card {
   @include mixins.interactive-layer;
@@ -193,7 +191,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
 .moment-card__video-card--forward .moment-card__video-card-cover::before {
   display: block;
   padding-top: 56.25%;
-  content: "";
+  content: '';
 }
 
 @include mixins.text-cover;

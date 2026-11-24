@@ -4,7 +4,12 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
-import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
+import type {
+  PopularSeriesItem,
+  PopularSeriesListResult,
+  PopularSeriesOneResult,
+  PopularSeriesVideoItem,
+} from '~/models/video/popularSeries'
 import api from '~/utils/api'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -31,11 +36,17 @@ const tabState = useHomeTabState({ retainedFields: ['activatedSeriesNumber', 'se
 const seriesList = tabState.ref<PopularSeriesItem[]>('seriesList', [])
 const activatedSeries = ref<PopularSeriesItem | null>(null)
 const restoredSeriesNumber = tabState.take<number | undefined>('activatedSeriesNumber', undefined)
-tabState.capture('activatedSeriesNumber', () => activatedSeries.value?.number ?? restoredSeriesNumber)
+tabState.capture(
+  'activatedSeriesNumber',
+  () => activatedSeries.value?.number ?? restoredSeriesNumber,
+)
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 每周必看没有分页
 const requestFailed = tabState.ref<boolean>('requestFailed', false)
-const errorReportSource: ApiErrorReportSource = { scene: '每周必看', queries: ['getPopularSeriesList', 'getPopularSeriesOne'] }
+const errorReportSource: ApiErrorReportSource = {
+  scene: '每周必看',
+  queries: ['getPopularSeriesList', 'getPopularSeriesOne'],
+}
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const isLoading = ref<boolean>(!tabState.restored || !hasLoaded.value)
 
@@ -51,15 +62,15 @@ const filteredSeriesList = computed(() => {
     return seriesList.value
   }
   const query = searchQuery.value.toLowerCase()
-  return seriesList.value.filter(item =>
-    (item.name || `第${item.number}期`).toLowerCase().includes(query)
-    || String(item.number).includes(query),
+  return seriesList.value.filter(
+    (item) =>
+      (item.name || `第${item.number}期`).toLowerCase().includes(query) ||
+      String(item.number).includes(query),
   )
 })
 
 function calculatePosition() {
-  if (!containerRef.value)
-    return
+  if (!containerRef.value) return
   const rect = containerRef.value.getBoundingClientRect()
   dropdownPosition.value = {
     top: rect.bottom,
@@ -68,10 +79,12 @@ function calculatePosition() {
   }
 }
 
-watchEffect(() => {
-  if (showDropdown.value)
-    calculatePosition()
-}, { flush: 'pre' })
+watchEffect(
+  () => {
+    if (showDropdown.value) calculatePosition()
+  },
+  { flush: 'pre' },
+)
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
 function transformWeeklyVideo(item: PopularSeriesVideoItem, rank: number): Video {
@@ -113,8 +126,7 @@ onUnmounted(() => {
 
 onBeforeUnmount(() => {
   requestVersion++
-  if (handlePageRefresh.value === refreshHandler)
-    handlePageRefresh.value = undefined
+  if (handlePageRefresh.value === refreshHandler) handlePageRefresh.value = undefined
 })
 
 function initPageAction() {
@@ -123,15 +135,13 @@ function initPageAction() {
 }
 
 async function refreshHandler() {
-  if (!tabState.isCurrent() || isLoading.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value) return
 
   await initData(activatedSeries.value?.number)
 }
 
 async function initData(preferredSeriesNumber?: number) {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
 
   emit('beforeLoading')
   isLoading.value = true
@@ -148,8 +158,7 @@ async function initData(preferredSeriesNumber?: number) {
 async function loadInitialData(version: number, preferredSeriesNumber?: number) {
   try {
     const res: PopularSeriesListResult = await api.ranking.getPopularSeriesList()
-    if (!isRequestCurrent(version))
-      return
+    if (!isRequestCurrent(version)) return
     if (res.code !== 0 || !res.data || !Array.isArray(res.data.list)) {
       requestFailed.value = true
       return
@@ -164,9 +173,9 @@ async function loadInitialData(version: number, preferredSeriesNumber?: number) 
 
     // Restore only the issue number against fresh metadata; fall back to latest
     // if that issue is no longer returned by the API.
-    activatedSeries.value = seriesList.value.find(item => item.number === preferredSeriesNumber) ?? seriesList.value[0]
-    if (!isRequestCurrent(version) || !activatedSeries.value)
-      return
+    activatedSeries.value =
+      seriesList.value.find((item) => item.number === preferredSeriesNumber) ?? seriesList.value[0]
+    if (!isRequestCurrent(version) || !activatedSeries.value) return
 
     const selectedNumber = activatedSeries.value.number
     const loaded = await fetchSeriesOne(version, selectedNumber)
@@ -174,12 +183,9 @@ async function loadInitialData(version: number, preferredSeriesNumber?: number) 
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  catch {
-    if (isRequestCurrent(version))
-      requestFailed.value = true
-  }
-  finally {
+  } catch {
+    if (isRequestCurrent(version)) requestFailed.value = true
+  } finally {
     if (isRequestCurrent(version)) {
       isLoading.value = false
       emit('afterLoading')
@@ -188,21 +194,27 @@ async function loadInitialData(version: number, preferredSeriesNumber?: number) 
 }
 
 function isRequestCurrent(version: number, selectedNumber?: number) {
-  return tabState.isCurrent()
-    && version === requestVersion
-    && (selectedNumber === undefined || activatedSeries.value?.number === selectedNumber)
+  return (
+    tabState.isCurrent() &&
+    version === requestVersion &&
+    (selectedNumber === undefined || activatedSeries.value?.number === selectedNumber)
+  )
 }
 
 async function fetchSeriesOne(version: number, selectedNumber: number): Promise<boolean> {
-  if (!isRequestCurrent(version, selectedNumber))
-    return false
+  if (!isRequestCurrent(version, selectedNumber)) return false
 
   try {
     const res: PopularSeriesOneResult = await api.ranking.getPopularSeriesOne({
       number: selectedNumber,
     })
 
-    if (!isRequestCurrent(version, selectedNumber) || res.code !== 0 || !res.data || !Array.isArray(res.data.list))
+    if (
+      !isRequestCurrent(version, selectedNumber) ||
+      res.code !== 0 ||
+      !res.data ||
+      !Array.isArray(res.data.list)
+    )
       return false
 
     videoList.value = res.data.list.map((item, index) => ({
@@ -210,15 +222,13 @@ async function fetchSeriesOne(version: number, selectedNumber: number): Promise<
       displayData: transformWeeklyVideo(item, index + 1),
     }))
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
 
 async function getSeriesOne() {
-  if (!tabState.isCurrent() || !activatedSeries.value)
-    return
+  if (!tabState.isCurrent() || !activatedSeries.value) return
 
   const version = ++requestVersion
   const selectedNumber = activatedSeries.value.number
@@ -233,8 +243,7 @@ async function getSeriesOne() {
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  finally {
+  } finally {
     if (isRequestCurrent(version, selectedNumber)) {
       isLoading.value = false
       emit('afterLoading')
@@ -243,8 +252,7 @@ async function getSeriesOne() {
 }
 
 function selectSeries(item: PopularSeriesItem) {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
 
   activatedSeries.value = item
   showDropdown.value = false
@@ -282,7 +290,9 @@ function getItemKey(item: VideoElement) {
     <!-- 期号选择器 -->
     <div
       ref="containerRef"
-      pos="relative" mb-20px w-280px
+      pos="relative"
+      mb-20px
+      w-280px
       @mouseleave="onMouseLeave"
       @mouseenter="onMouseEnter"
     >
@@ -325,9 +335,14 @@ function getItemKey(item: VideoElement) {
               width: `${dropdownPosition.width}px`,
               backdropFilter: 'var(--bew-filter-glass-1)',
             }"
-            pos="fixed" bg="$bew-elevated" shadow="$bew-shadow-2"
-            mt-2 rounded="$bew-radius" z="10004"
-            max-h-400px of-hidden
+            pos="fixed"
+            bg="$bew-elevated"
+            shadow="$bew-shadow-2"
+            mt-2
+            rounded="$bew-radius"
+            z="10004"
+            max-h-400px
+            of-hidden
             @mouseenter="onMouseEnter"
             @mouseleave="onMouseLeave"
           >
@@ -337,12 +352,17 @@ function getItemKey(item: VideoElement) {
                 v-model="searchQuery"
                 type="text"
                 :placeholder="$t('home.search_issue')"
-                w-full px-3 py-2 rounded="$bew-radius"
-                bg="$bew-fill-2" border="1px solid transparent"
-                text="$bew-text-1" outline-none
+                w-full
+                px-3
+                py-2
+                rounded="$bew-radius"
+                bg="$bew-fill-2"
+                border="1px solid transparent"
+                text="$bew-text-1"
+                outline-none
                 transition="background-color duration-200, color duration-200, border-color duration-200, box-shadow duration-200"
                 focus:border="$bew-theme-color"
-              >
+              />
             </div>
 
             <!-- 列表 -->
@@ -361,10 +381,7 @@ function getItemKey(item: VideoElement) {
               >
                 {{ item.name || $t('home.weekly_issue', { number: item.number }) }}
               </div>
-              <div
-                v-if="filteredSeriesList.length === 0"
-                p="x-2 y-4" text="center $bew-text-3"
-              >
+              <div v-if="filteredSeriesList.length === 0" p="x-2 y-4" text="center $bew-text-3">
                 {{ $t('home.issue_not_found') }}
               </div>
             </div>
@@ -374,7 +391,9 @@ function getItemKey(item: VideoElement) {
         <!-- 遮罩 外部滚动时关闭下拉菜单 -->
         <div
           v-if="showDropdown"
-          pos="fixed top-0 left-0" w-full h-full
+          pos="fixed top-0 left-0"
+          w-full
+          h-full
           z="10003"
           @wheel="closeDropdown"
         />
@@ -402,7 +421,7 @@ function getItemKey(item: VideoElement) {
 
 <style lang="scss" scoped>
 .series-item.active {
-  --uno: "bg-$bew-theme-color-auto text-$bew-text-auto font-600";
+  --uno: 'bg-$bew-theme-color-auto text-$bew-text-auto font-600';
 }
 
 // 下拉动画

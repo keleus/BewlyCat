@@ -29,21 +29,19 @@ interface ArticleCardProps {
 const props = defineProps<ArticleCardProps>()
 
 // 与视频卡片共用同一套字号设置（标题/作者/元信息随用户设置联动）
-const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } = useVideoCardSharedStyles()
+const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } =
+  useVideoCardSharedStyles()
 
 const articleUrl = computed(() => {
-  if (props.url)
-    return props.url
+  if (props.url) return props.url
 
   const id = String(props.id)
-  if (/^\d{15,}$/.test(id))
-    return `https://www.bilibili.com/opus/${id}`
+  if (/^\d{15,}$/.test(id)) return `https://www.bilibili.com/opus/${id}`
   return `https://www.bilibili.com/read/cv${id.replace(/^cv/, '')}`
 })
 
 const authorObject = computed<Author | undefined>(() => {
-  if (!props.author)
-    return undefined
+  if (!props.author) return undefined
   return {
     name: props.author,
     mid: props.authorMid,
@@ -53,17 +51,14 @@ const authorObject = computed<Author | undefined>(() => {
 
 // 数字走共享格式化（与视频卡片一致，支持 i18n 单位）；接口文案原样展示
 function formatDisplayNumber(value: number | string | undefined) {
-  if (value === undefined || value === null || value === '')
-    return '0'
+  if (value === undefined || value === null || value === '') return '0'
   return typeof value === 'string' ? value : numFormatter(value)
 }
 
 // 搜索接口给 Unix 秒，calcTimeSince 需要毫秒；收藏接口给的是展示文案
 function formatDisplayTime(value: number | string | undefined) {
-  if (value === undefined || value === null || value === '')
-    return ''
-  if (typeof value === 'string')
-    return value
+  if (value === undefined || value === null || value === '') return ''
+  if (typeof value === 'string') return value
   return calcTimeSince(value < 1e12 ? value * 1000 : value)
 }
 
@@ -75,7 +70,8 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
   <div
     class="article-card"
     relative
-    flex="~ gap-4 items-start" p-4
+    flex="~ gap-4 items-start"
+    p-4
     rounded="$bew-card-radius"
     cursor-pointer
   >
@@ -85,14 +81,11 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
       :aria-label="title"
       type="videoCard"
       class="article-card__link"
-      absolute inset-0
+      absolute
+      inset-0
       rounded="inherit"
     />
-    <div
-      class="article-content"
-      relative pointer-events-none
-      flex="~ col gap-2" flex-1 min-w-0
-    >
+    <div class="article-content" relative pointer-events-none flex="~ col gap-2" flex-1 min-w-0>
       <!-- 标题：与视频卡片同款字号档位与两行截断 -->
       <h3
         class="keep-two-lines"
@@ -111,7 +104,10 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
       <!-- 作者行：复用视频卡片头像与昵称组件（昵称悬停变主题色） -->
       <div
         v-if="authorObject"
-        flex="~ items-center" self-start max-w-full min-w-0
+        flex="~ items-center"
+        self-start
+        max-w-full
+        min-w-0
         pointer-events-auto
         :class="authorFontSizeClass"
       >
@@ -123,13 +119,21 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
       <div class="article-meta" flex="~ items-center gap-2 wrap" :class="metaFontSizeClass">
         <span
           v-if="categoryName"
-          bg="$bew-fill-1" p="x-2" lh-6 rounded="$bew-radius" text="$bew-text-3"
+          bg="$bew-fill-1"
+          p="x-2"
+          lh-6
+          rounded="$bew-radius"
+          text="$bew-text-3"
         >
           {{ categoryName }}
         </span>
         <span
           v-if="publishTimeText"
-          bg="$bew-fill-1" p="x-2" lh-6 rounded="$bew-radius" text="$bew-text-3"
+          bg="$bew-fill-1"
+          p="x-2"
+          lh-6
+          rounded="$bew-radius"
+          text="$bew-text-3"
         >
           {{ publishTimeText }}
         </span>
@@ -165,13 +169,16 @@ const publishTimeText = computed(() => formatDisplayTime(props.publishTime))
     <div
       v-if="cover"
       class="article-cover"
-      relative pointer-events-none
-      w-32 h-24 flex-shrink-0
+      relative
+      pointer-events-none
+      w-32
+      h-24
+      flex-shrink-0
       rounded="$bew-media-radius"
       overflow-hidden
       bg="$bew-skeleton"
     >
-      <img :src="cover" :alt="title" w-full h-full object-cover>
+      <img :src="cover" :alt="title" w-full h-full object-cover />
     </div>
   </div>
 </template>

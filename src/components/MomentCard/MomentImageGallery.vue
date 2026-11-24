@@ -21,12 +21,7 @@ interface Props {
   containerWidth?: number
 }
 
-const {
-  images,
-  imageRatios,
-  altPrefix,
-  containerWidth = 0,
-} = defineProps<Props>()
+const { images, imageRatios, altPrefix, containerWidth = 0 } = defineProps<Props>()
 
 const emit = defineEmits<{
   coverLoad: [event: Event]
@@ -42,13 +37,12 @@ const loadedRatios = ref<Array<number | undefined>>([])
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 
-const previewUrls = computed(() => images.map(url => getMomentOriginalImageUrl(url)))
+const previewUrls = computed(() => images.map((url) => getMomentOriginalImageUrl(url)))
 
 const resolvedRatios = computed(() =>
   images.map((_, index) => {
     const fromProp = imageRatios?.[index]
-    if (isUsableImageRatio(fromProp))
-      return fromProp
+    if (isUsableImageRatio(fromProp)) return fromProp
     const loaded = loadedRatios.value[index]
     return isUsableImageRatio(loaded) ? loaded : undefined
   }),
@@ -91,8 +85,7 @@ function isLongThumbnail(index: number) {
 
 function getImageStyle(index: number): CSSProperties | undefined {
   const displayRatio = getClampedThumbnailRatio(getImageRatio(index))
-  if (!displayRatio)
-    return undefined
+  if (!displayRatio) return undefined
   return {
     aspectRatio: String(displayRatio),
     width: `calc(var(--moment-gallery-height, ${MULTI_IMAGE_GALLERY_MAX_HEIGHT}px) * ${displayRatio})`,
@@ -100,7 +93,10 @@ function getImageStyle(index: number): CSSProperties | undefined {
 }
 
 function getImageSrc(url: string, index: number) {
-  return getMomentThumbnailUrl(url, getMultiImageThumbnailWidth(getImageRatio(index), galleryHeight.value))
+  return getMomentThumbnailUrl(
+    url,
+    getMultiImageThumbnailWidth(getImageRatio(index), galleryHeight.value),
+  )
 }
 
 function updateScrollState() {
@@ -123,8 +119,7 @@ function updateScrollState() {
 }
 
 function scheduleScrollState() {
-  if (scrollStateFrame)
-    return
+  if (scrollStateFrame) return
   scrollStateFrame = window.requestAnimationFrame(() => {
     scrollStateFrame = 0
     updateScrollState()
@@ -133,17 +128,16 @@ function scheduleScrollState() {
 
 function scrollToImage(direction: -1 | 1) {
   const track = trackRef.value
-  if (!track)
-    return
+  if (!track) return
 
   const items = Array.from(track.querySelectorAll<HTMLElement>('[data-gallery-item]'))
-  if (!items.length)
-    return
+  if (!items.length) return
 
   const current = track.scrollLeft
-  const target = direction > 0
-    ? items.find(item => item.offsetLeft > current + 8)
-    : [...items].reverse().find(item => item.offsetLeft < current - 8)
+  const target =
+    direction > 0
+      ? items.find((item) => item.offsetLeft > current + 8)
+      : [...items].reverse().find((item) => item.offsetLeft < current - 8)
 
   track.scrollTo({
     left: target ? target.offsetLeft : current + direction * Math.max(track.clientWidth * 0.8, 1),
@@ -154,8 +148,7 @@ function scrollToImage(direction: -1 | 1) {
 function handleNavClick(event: MouseEvent, direction: -1 | 1) {
   event.preventDefault()
   event.stopPropagation()
-  if ((direction < 0 && !canScrollLeft.value) || (direction > 0 && !canScrollRight.value))
-    return
+  if ((direction < 0 && !canScrollLeft.value) || (direction > 0 && !canScrollRight.value)) return
   scrollToImage(direction)
 }
 
@@ -186,17 +179,14 @@ function handleCoverLoad(event: Event, index: number) {
       loadedRatios.value = next
     }
   }
-  if (index === 0)
-    emit('coverLoad', event)
+  if (index === 0) emit('coverLoad', event)
   scheduleScrollState()
 }
 
 function handlePointerDown(event: PointerEvent) {
-  if (isSingleImage.value || event.pointerType !== 'mouse' || event.button !== 0)
-    return
+  if (isSingleImage.value || event.pointerType !== 'mouse' || event.button !== 0) return
   const track = trackRef.value
-  if (!track)
-    return
+  if (!track) return
 
   pointerDrag.id = event.pointerId
   pointerDrag.startX = pointerDrag.lastX = event.clientX
@@ -207,18 +197,15 @@ function handlePointerDown(event: PointerEvent) {
 }
 
 function handlePointerMove(event: PointerEvent) {
-  if (event.pointerId !== pointerDrag.id)
-    return
+  if (event.pointerId !== pointerDrag.id) return
   const track = trackRef.value
-  if (!track)
-    return
+  if (!track) return
 
   pointerDrag.lastX = event.clientX
   pointerDrag.lastY = event.clientY
   const dx = event.clientX - pointerDrag.startX
   if (!pointerDrag.active) {
-    if (Math.abs(dx) < DRAG_THRESHOLD_PX)
-      return
+    if (Math.abs(dx) < DRAG_THRESHOLD_PX) return
     pointerDrag.active = true
     suppressImageClick = true
     rootRef.value?.classList.add('moment-image-gallery--dragging')
@@ -229,8 +216,7 @@ function handlePointerMove(event: PointerEvent) {
 }
 
 function endPointerDrag(event: PointerEvent) {
-  if (event.pointerId !== pointerDrag.id)
-    return
+  if (event.pointerId !== pointerDrag.id) return
   const track = trackRef.value
   if (pointerDrag.active && track?.hasPointerCapture(event.pointerId))
     track.releasePointerCapture(event.pointerId)
@@ -248,9 +234,10 @@ function endPointerDrag(event: PointerEvent) {
 // 原生拖拽一旦开始就会取消指针事件：列表可滚动时横向手势留给翻页，其余方向才拖出图片。
 function handleImageDragStart(event: DragEvent) {
   // 鼠标一步移出列表时收不到 pointermove，位移为 0，此时不算横向
-  const isHorizontal = Math.abs(pointerDrag.lastX - pointerDrag.startX) > Math.abs(pointerDrag.lastY - pointerDrag.startY)
-  if (isHorizontal && (canScrollLeft.value || canScrollRight.value))
-    event.preventDefault()
+  const isHorizontal =
+    Math.abs(pointerDrag.lastX - pointerDrag.startX) >
+    Math.abs(pointerDrag.lastY - pointerDrag.startY)
+  if (isHorizontal && (canScrollLeft.value || canScrollRight.value)) event.preventDefault()
 }
 
 function handleTrackKeydown(event: KeyboardEvent) {
@@ -258,8 +245,7 @@ function handleTrackKeydown(event: KeyboardEvent) {
     event.preventDefault()
     event.stopPropagation()
     scrollToImage(1)
-  }
-  else if (event.key === 'ArrowLeft' && canScrollLeft.value) {
+  } else if (event.key === 'ArrowLeft' && canScrollLeft.value) {
     event.preventDefault()
     event.stopPropagation()
     scrollToImage(-1)
@@ -268,8 +254,7 @@ function handleTrackKeydown(event: KeyboardEvent) {
 
 useResizeObserver(rootRef, (entries) => {
   const width = entries[0]?.contentRect.width || 0
-  if (width > 0 && Math.abs(width - measuredWidth.value) > 0.5)
-    measuredWidth.value = width
+  if (width > 0 && Math.abs(width - measuredWidth.value) > 0.5) measuredWidth.value = width
   scheduleScrollState()
 })
 
@@ -288,8 +273,7 @@ watch(
 
 onMounted(updateScrollState)
 onBeforeUnmount(() => {
-  if (scrollStateFrame)
-    window.cancelAnimationFrame(scrollStateFrame)
+  if (scrollStateFrame) window.cancelAnimationFrame(scrollStateFrame)
 })
 </script>
 
@@ -331,7 +315,7 @@ onBeforeUnmount(() => {
           decoding="async"
           @load="handleCoverLoad($event, imageIndex)"
           @dragstart="handleImageDragStart"
-        >
+        />
       </button>
     </div>
 

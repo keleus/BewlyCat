@@ -26,31 +26,42 @@ export interface PageScriptIdentityMessage {
 }
 
 export function isPageScriptIdentity(value: unknown): value is PageScriptIdentity {
-  if (typeof value !== 'object' || value === null)
-    return false
+  if (typeof value !== 'object' || value === null) return false
   const identity = value as Record<string, unknown>
-  return typeof identity.version === 'string' && identity.version.length > 0
-    && (identity.commit === undefined || typeof identity.commit === 'string')
+  return (
+    typeof identity.version === 'string' &&
+    identity.version.length > 0 &&
+    (identity.commit === undefined || typeof identity.commit === 'string')
+  )
 }
 
-export function createPageScriptIdentityMessage(identity: RunningPageScriptIdentity): PageScriptIdentityMessage {
+export function createPageScriptIdentityMessage(
+  identity: RunningPageScriptIdentity,
+): PageScriptIdentityMessage {
   return identity === 'legacy'
     ? { type: PAGE_SCRIPT_IDENTITY, legacy: true }
-    : { type: PAGE_SCRIPT_IDENTITY, legacy: false, version: identity.version, commit: identity.commit }
+    : {
+        type: PAGE_SCRIPT_IDENTITY,
+        legacy: false,
+        version: identity.version,
+        commit: identity.commit,
+      }
 }
 
 export function readPageScriptIdentityMessage(value: unknown): RunningPageScriptIdentity | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value))
-    return null
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
   const message = value as Record<string, unknown>
-  if (message.type !== PAGE_SCRIPT_IDENTITY)
-    return null
-  if (message.legacy === true)
-    return 'legacy'
-  if (message.legacy !== false || typeof message.version !== 'string' || message.version.length === 0)
+  if (message.type !== PAGE_SCRIPT_IDENTITY) return null
+  if (message.legacy === true) return 'legacy'
+  if (
+    message.legacy !== false ||
+    typeof message.version !== 'string' ||
+    message.version.length === 0
+  )
     return null
   return {
     version: message.version,
-    commit: typeof message.commit === 'string' && message.commit.length > 0 ? message.commit : undefined,
+    commit:
+      typeof message.commit === 'string' && message.commit.length > 0 ? message.commit : undefined,
   }
 }

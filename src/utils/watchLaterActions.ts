@@ -21,13 +21,10 @@ const bvidAidCache = new Map<string, number>()
 const loadingKeys = reactive(new Set<string>())
 
 export function getWatchLaterTargetKey(target: WatchLaterTarget | null | undefined): string {
-  if (!target)
-    return ''
+  if (!target) return ''
   const aid = Number(target.aid || 0)
-  if (aid)
-    return `aid:${aid}`
-  if (target.bvid)
-    return `bvid:${target.bvid}`
+  if (aid) return `aid:${aid}`
+  if (target.bvid) return `bvid:${target.bvid}`
   return target.epid ? `epid:${target.epid}` : ''
 }
 
@@ -36,15 +33,19 @@ export function getWatchLaterTargetKey(target: WatchLaterTarget | null | undefin
  * 仅在 aid/bvid/epid 都缺失时才把 id 当作 aid，调用方需通过 target 门控排除直播等
  * id 语义不同的卡片。
  */
-export function normalizeWatchLaterTarget(input: {
-  aid?: number | string
-  // 卡片数据常用 `id` 作为兜底字段
-  id?: number | string
-  bvid?: string
-  epid?: number
-} | null | undefined): WatchLaterTarget | undefined {
-  if (!input)
-    return undefined
+export function normalizeWatchLaterTarget(
+  input:
+    | {
+        aid?: number | string
+        // 卡片数据常用 `id` 作为兜底字段
+        id?: number | string
+        bvid?: string
+        epid?: number
+      }
+    | null
+    | undefined,
+): WatchLaterTarget | undefined {
+  if (!input) return undefined
   // 追番卡片的 id 来自 module_author.mid（剧集 SeasonId），不能覆盖分集 epid。
   const fallbackAid = !input.bvid && !input.epid ? input.id : undefined
   const aid = Number(input.aid || fallbackAid || 0)
@@ -64,20 +65,19 @@ function translate(key: string): string {
 
 /** 普通入口弹 toast；silent 入口（视频页工具栏按钮）只打控制台告警。 */
 function reportError(message: string, silent: boolean) {
-  if (silent)
-    console.warn(message)
-  else
-    useToast().error(message)
+  if (silent) console.warn(message)
+  else useToast().error(message)
 }
 
 function notifyTopBarChanged() {
   const refresh = () => {
     try {
-      void useTopBarStore().syncWatchLaterState(true).catch((error) => {
-        console.error('刷新顶栏稍后再看状态失败:', error)
-      })
-    }
-    catch (error) {
+      void useTopBarStore()
+        .syncWatchLaterState(true)
+        .catch((error) => {
+          console.error('刷新顶栏稍后再看状态失败:', error)
+        })
+    } catch (error) {
       console.error('刷新顶栏稍后再看状态失败:', error)
     }
   }
@@ -89,15 +89,12 @@ function notifyTopBarChanged() {
 
 async function resolveAidByBvid(bvid: string): Promise<number | undefined> {
   const cached = bvidAidCache.get(bvid)
-  if (cached)
-    return cached
+  if (cached) return cached
 
   const result: any = await api.video.getVideoInfo({ bvid })
-  const aid = result?.code === 0 && Number.isFinite(result.data?.aid)
-    ? Number(result.data.aid)
-    : undefined
-  if (aid)
-    bvidAidCache.set(bvid, aid)
+  const aid =
+    result?.code === 0 && Number.isFinite(result.data?.aid) ? Number(result.data.aid) : undefined
+  if (aid) bvidAidCache.set(bvid, aid)
   return aid
 }
 
@@ -116,15 +113,12 @@ export async function toggleWatchLaterTarget(
 ): Promise<boolean> {
   const { silent = false } = options
   const key = getWatchLaterTargetKey(target)
-  if (!target || !key || loadingKeys.has(key))
-    return false
+  if (!target || !key || loadingKeys.has(key)) return false
 
   const csrf = getCSRF()
   if (!csrf) {
-    if (silent)
-      console.warn('未登录或缺少 CSRF，不能更新稍后再看')
-    else
-      useToast().warning(translate('common.please_log_in_first'))
+    if (silent) console.warn('未登录或缺少 CSRF，不能更新稍后再看')
+    else useToast().warning(translate('common.please_log_in_first'))
     return false
   }
 
@@ -151,11 +145,9 @@ export async function toggleWatchLaterTarget(
         return false
       }
       markWatchLater({ aid: aid || undefined, bvid, epid: target.epid }, true)
-    }
-    else {
+    } else {
       if (!aid) {
-        if (bvid)
-          aid = await resolveAidByBvid(bvid) ?? 0
+        if (bvid) aid = (await resolveAidByBvid(bvid)) ?? 0
         if (!aid) {
           reportError(translate('moments.watch_later_info_failed'), silent)
           return false
@@ -172,16 +164,14 @@ export async function toggleWatchLaterTarget(
 
     notifyTopBarChanged()
     return true
-  }
-  catch (error) {
+  } catch (error) {
     console.error('更新稍后再看状态失败:', error)
     reportError(
       error instanceof Error ? error.message : translate('moments.watch_later_operation_failed'),
       silent,
     )
     return false
-  }
-  finally {
+  } finally {
     loadingKeys.delete(key)
   }
 }

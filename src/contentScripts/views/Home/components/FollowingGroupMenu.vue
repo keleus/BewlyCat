@@ -15,7 +15,7 @@ const emit = defineEmits<{
   (event: 'deleted', id: number): void
 }>()
 const { t } = useI18n()
-const target = ref<{ id: number, name: string }>()
+const target = ref<{ id: number; name: string }>()
 const menuVisible = ref(false)
 const cursorPosition = ref({ x: 0, y: 0 })
 const action = ref<GroupAction>()
@@ -31,41 +31,41 @@ const options = computed<ContextMenuOption[]>(() => [
   ...(target.value && target.value.id > 0
     ? [
         { value: 'rename', label: t('home.following_rename_group'), icon: 'i-mingcute:edit-line' },
-        { value: 'delete', label: t('home.following_delete_group'), icon: 'i-mingcute:delete-line', danger: true },
+        {
+          value: 'delete',
+          label: t('home.following_delete_group'),
+          icon: 'i-mingcute:delete-line',
+          danger: true,
+        },
       ]
     : []),
 ])
 
 function open(event: MouseEvent, id: number, name: string) {
-  if (busy.value || action.value)
-    return
+  if (busy.value || action.value) return
   target.value = { id, name }
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  cursorPosition.value = event.clientX || event.clientY
-    ? { x: event.clientX, y: event.clientY }
-    : { x: rect.left, y: rect.bottom }
+  cursorPosition.value =
+    event.clientX || event.clientY
+      ? { x: event.clientX, y: event.clientY }
+      : { x: rect.left, y: rect.bottom }
   menuVisible.value = true
 }
 
 function selectAction(value: string | number) {
-  if (busy.value || action.value || !['create', 'rename', 'delete'].includes(String(value)))
-    return
-  if (value !== 'create' && (!target.value || target.value.id <= 0))
-    return
+  if (busy.value || action.value || !['create', 'rename', 'delete'].includes(String(value))) return
+  if (value !== 'create' && (!target.value || target.value.id <= 0)) return
   errorMessage.value = ''
   groupName.value = value === 'rename' ? target.value!.name : ''
   action.value = value as GroupAction
-  if (value !== 'delete')
-    void nextTick(() => nameInputRef.value?.focus({ preventScroll: true }))
+  if (value !== 'delete') void nextTick(() => nameInputRef.value?.focus({ preventScroll: true }))
 }
 
 async function confirmAction() {
   const operation = action.value
   const group = target.value
-  if (!operation || busy.value || disposed)
-    return
-  if (operation !== 'create' && (!group || group.id <= 0))
-    return
+  if (!operation || busy.value || disposed) return
+  if (operation !== 'create' && (!group || group.id <= 0)) return
   const name = groupName.value.trim()
   if (operation !== 'delete' && (!name || Array.from(name).length > 16)) {
     errorMessage.value = t('home.following_group_name_invalid')
@@ -75,39 +75,34 @@ async function confirmAction() {
   errorMessage.value = ''
   try {
     const csrf = getCSRF()
-    if (!csrf)
-      throw new Error(t('common.please_log_in_first'))
-    const response = operation === 'create'
-      ? await api.user.createFollowingGroup({ tag: name, csrf })
-      : operation === 'rename'
-        ? await api.user.renameFollowingGroup({ tagid: String(group!.id), name, csrf })
-        : await api.user.deleteFollowingGroup({ tagid: String(group!.id), csrf })
-    if (response.code !== 0)
-      throw new Error(response.message || String(response.code))
-    if (disposed)
-      return
+    if (!csrf) throw new Error(t('common.please_log_in_first'))
+    const response =
+      operation === 'create'
+        ? await api.user.createFollowingGroup({ tag: name, csrf })
+        : operation === 'rename'
+          ? await api.user.renameFollowingGroup({ tagid: String(group!.id), name, csrf })
+          : await api.user.deleteFollowingGroup({ tagid: String(group!.id), csrf })
+    if (response.code !== 0) throw new Error(response.message || String(response.code))
+    if (disposed) return
     if (operation === 'create') {
       const id = Number(response.data?.tagid)
-      if (!Number.isSafeInteger(id) || id <= 0)
-        throw new Error(t('common.load_failed'))
+      if (!Number.isSafeInteger(id) || id <= 0) throw new Error(t('common.load_failed'))
       emit('created', { tagid: id, name, count: 0, tip: '' })
-    }
-    else if (operation === 'rename') {
+    } else if (operation === 'rename') {
       emit('renamed', group!.id, name)
-    }
-    else {
+    } else {
       emit('deleted', group!.id)
     }
     busy.value = false
     // 等 loading prop 更新后，交给 Dialog 的退出动画完成卸载。
     await nextTick()
     dialogRef.value?.close()
-  }
-  catch (error) {
+  } catch (error) {
     if (!disposed)
-      errorMessage.value = t('home.following_action_failed', { message: error instanceof Error ? error.message : t('common.load_failed') })
-  }
-  finally {
+      errorMessage.value = t('home.following_action_failed', {
+        message: error instanceof Error ? error.message : t('common.load_failed'),
+      })
+  } finally {
     busy.value = false
   }
 }
@@ -152,7 +147,7 @@ defineExpose({ open, create: () => selectAction('create') })
           :aria-invalid="Boolean(errorMessage)"
           @input="errorMessage = ''"
           @keydown.enter.stop="!$event.isComposing && confirmAction()"
-        >
+        />
       </label>
       <p v-if="errorMessage" role="alert">
         {{ errorMessage }}

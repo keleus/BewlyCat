@@ -1,5 +1,8 @@
 // portal 保留在 body 时，停用适配也不能露出原站 Banner 或其他首页内容。
-.homePage.bewly-custom-homepage > body > .bili-header > :not(.bili-header__bar):not(.bewly-bili-channel-panel) {
+.homePage.bewly-custom-homepage
+  > body
+  > .bili-header
+  > :not(.bili-header__bar):not(.bewly-bili-channel-panel) {
   display: none !important;
 }
 
@@ -73,7 +76,10 @@
     color: var(--bew-text-1) !important;
   }
 
-  > .right-entry > .right-entry-item > .right-entry__outside > :is(.right-entry-icon, .right-entry-text) {
+  > .right-entry
+    > .right-entry-item
+    > .right-entry__outside
+    > :is(.right-entry-icon, .right-entry-text) {
     color: var(--bew-text-1) !important;
   }
 }
@@ -189,7 +195,10 @@
 }
 
 .homePage.bewly-custom-homepage:not(.remove-top-bar)
-  .bili-header.bewly-original-top-bar-scrolled:is(.bewly-original-channel-open, .bewly-original-channel-closing) {
+  .bili-header.bewly-original-top-bar-scrolled:is(
+    .bewly-original-channel-open,
+    .bewly-original-channel-closing
+  ) {
   > .bewly-bili-channel-panel {
     display: flex !important;
     position: fixed !important;

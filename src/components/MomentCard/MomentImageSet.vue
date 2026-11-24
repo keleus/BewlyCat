@@ -44,22 +44,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const classPrefix = computed(() => forward ? 'moment-card__forward-' : 'moment-card__')
+const classPrefix = computed(() => (forward ? 'moment-card__forward-' : 'moment-card__'))
 const useGrid = computed(() => shouldUseMomentImageGrid(images, isNineGrid))
-const useGallery = computed(() =>
-  !useGrid.value && shouldUseMomentImageGallery(images, { imageRatio, imageRatios }),
+const useGallery = computed(
+  () => !useGrid.value && shouldUseMomentImageGallery(images, { imageRatio, imageRatios }),
 )
 const altText = computed(() => t('moment_card.author_images', { name: authorName }))
 
 // 竖图沿用正方形容器裁切；横图按原始比例展示，限制最大宽度。
 const singleImageStyle = computed<CSSProperties | undefined>(() => {
   const ratio = imageRatios?.[0] ?? imageRatio
-  if (
-    ratio === undefined
-    || !Number.isFinite(ratio)
-    || ratio <= 0
-    || isPortraitImageRatio(ratio)
-  ) {
+  if (ratio === undefined || !Number.isFinite(ratio) || ratio <= 0 || isPortraitImageRatio(ratio)) {
     return undefined
   }
 
@@ -73,12 +68,16 @@ function emitSinglePreview(event: Event) {
   event.preventDefault()
   event.stopPropagation()
   const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  emit('preview', images.map(url => getMomentOriginalImageUrl(url)), 0, trigger)
+  emit(
+    'preview',
+    images.map((url) => getMomentOriginalImageUrl(url)),
+    0,
+    trigger,
+  )
 }
 
 function handleSingleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Enter' || event.key === ' ')
-    emitSinglePreview(event)
+  if (event.key === 'Enter' || event.key === ' ') emitSinglePreview(event)
 }
 </script>
 
@@ -121,13 +120,13 @@ function handleSingleKeydown(event: KeyboardEvent) {
       loading="lazy"
       decoding="async"
       @load="emit('coverLoad', $event)"
-    >
+    />
     <slot />
   </div>
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__grid-host,
 .moment-card__gallery-host,

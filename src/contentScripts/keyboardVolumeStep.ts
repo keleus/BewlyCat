@@ -20,46 +20,45 @@ function getEventTarget(event: KeyboardEvent): Element | null {
 }
 
 function isEditableTarget(target: Element | null): boolean {
-  if (!target)
-    return false
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)
+  if (!target) return false
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  )
     return true
   if (target.closest('.bewly-native-select-trigger, .bewly-native-select-menu') !== null)
     return true
-  return target instanceof HTMLElement
-    && (target.isContentEditable || target.closest('[contenteditable="true"], [role="textbox"]') !== null)
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target.closest('[contenteditable="true"], [role="textbox"]') !== null)
+  )
 }
 
 function handleKeydown(event: KeyboardEvent) {
   interceptedCode = undefined
 
-  if (!settings.value.customKeyboardVolume)
-    return
-  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')
-    return
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing)
-    return
+  if (!settings.value.customKeyboardVolume) return
+  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return
 
   // B 站自己是在文档级别接管方向键的（焦点在 body 也照常调音量），
   // 所以这里只按“页面上有播放器”判断，而不是要求焦点在播放器内。
   const target = getEventTarget(event)
-  if (isEditableTarget(target))
-    return
-  if (!getVideoElement())
-    return
+  if (isEditableTarget(target)) return
+  if (!getVideoElement()) return
 
   event.preventDefault()
   event.stopImmediatePropagation()
-  if (event.code)
-    interceptedCode = event.code
+  if (event.code) interceptedCode = event.code
 
   const step = normalizeKeyboardVolumeStep(settings.value.keyboardVolumeStep)
   adjustVolume(event.key === 'ArrowUp' ? step : -step)
 }
 
 function handleKeyup(event: KeyboardEvent) {
-  if (!event.code || event.code !== interceptedCode)
-    return
+  if (!event.code || event.code !== interceptedCode) return
   interceptedCode = undefined
   event.preventDefault()
   event.stopImmediatePropagation()
@@ -67,8 +66,7 @@ function handleKeyup(event: KeyboardEvent) {
 
 export function initKeyboardVolumeStep() {
   // 首页沉浸式模式里方向键用于切换视频，交给 immersiveFeedFrame 处理
-  if (listenerInstalled || isImmersiveFeedFrame())
-    return
+  if (listenerInstalled || isImmersiveFeedFrame()) return
 
   listenerInstalled = true
   // 常驻监听：同一阶段按注册顺序执行，早于播放器注册才能拦下它自己的幅度

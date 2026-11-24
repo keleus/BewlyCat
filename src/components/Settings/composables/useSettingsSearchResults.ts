@@ -39,15 +39,13 @@ export function useSettingsSearchResults(options: UseSettingsSearchResultsOption
     for (const entry of options.searchResults.value) {
       const secondaryPage = options.getSearchEntrySecondaryPage(entry)
       const key = secondaryPage ? `${entry.menu}:${secondaryPage}` : entry.menu
-      if (!order.has(key))
-        order.set(key, order.size)
+      if (!order.has(key)) order.set(key, order.size)
     }
     return order
   })
 
   const searchResultSections = computed<SearchResultSection[]>(() => {
-    if (!options.isSearching.value)
-      return []
+    if (!options.isSearching.value) return []
 
     const sections: SearchResultSection[] = []
     for (const menu of options.visibleMenus.value) {
@@ -64,9 +62,10 @@ export function useSettingsSearchResults(options: UseSettingsSearchResultsOption
       }
     }
 
-    return sections.sort((a, b) =>
-      (searchResultSectionOrder.value.get(a.key) ?? Number.MAX_SAFE_INTEGER)
-      - (searchResultSectionOrder.value.get(b.key) ?? Number.MAX_SAFE_INTEGER),
+    return sections.sort(
+      (a, b) =>
+        (searchResultSectionOrder.value.get(a.key) ?? Number.MAX_SAFE_INTEGER) -
+        (searchResultSectionOrder.value.get(b.key) ?? Number.MAX_SAFE_INTEGER),
     )
   })
 

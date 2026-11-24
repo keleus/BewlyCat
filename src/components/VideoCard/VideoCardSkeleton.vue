@@ -11,10 +11,12 @@ defineProps<{
   <!-- Modern Video Card Skeleton -->
   <div
     v-if="settings.videoCardLayout !== 'old' && !horizontal"
-    mb-3 pointer-events-none select-none
-    style="aspect-ratio: 11 / 10;"
+    mb-3
+    pointer-events-none
+    select-none
+    style="aspect-ratio: 11 / 10"
   >
-    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9;" />
+    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9" />
     <div flex="~ col gap-2" mt-2>
       <div flex="~ gap-1 justify-between items-start" w="full">
         <div flex="~ col gap-2" w="[calc(100%-40px)]">
@@ -38,15 +40,20 @@ defineProps<{
   <div
     v-else-if="settings.videoCardLayout !== 'old' && horizontal"
     flex="~ gap-6"
-    mb-3 pointer-events-none select-none
-    style="contain: layout; min-height: 180px;"
+    mb-3
+    pointer-events-none
+    select-none
+    style="contain: layout; min-height: 180px"
   >
     <!-- Cover -->
     <div
       :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
-      shrink-0 aspect-video h-fit bg="$bew-skeleton"
+      shrink-0
+      aspect-video
+      h-fit
+      bg="$bew-skeleton"
       rounded="$bew-radius"
-      style="aspect-ratio: 16 / 9;"
+      style="aspect-ratio: 16 / 9"
     />
     <!-- Other Information -->
     <div w-full mt-0 flex="~ col gap-2">
@@ -68,15 +75,14 @@ defineProps<{
   <!-- Old Video Card Skeleton (Vertical) -->
   <div
     v-else-if="settings.videoCardLayout === 'old' && !horizontal"
-    mb-4 pointer-events-none select-none
-    style="aspect-ratio: 10 / 11;"
+    mb-4
+    pointer-events-none
+    select-none
+    style="aspect-ratio: 10 / 11"
   >
-    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9;" />
+    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9" />
     <div flex mt-5>
-      <div
-        m="r-4" w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
-        shrink-0
-      />
+      <div m="r-4" w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0 />
       <div w="[calc(100%-34px)]">
         <div flex="~ col gap-2" mb-4 w-inherit>
           <div w-full h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
@@ -87,8 +93,12 @@ defineProps<{
           <div w="60%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
         <div
-          text="transparent sm" inline-block p="x-2" lh-22px
-          bg="$bew-skeleton" rounded="$bew-radius-sm"
+          text="transparent sm"
+          inline-block
+          p="x-2"
+          lh-22px
+          bg="$bew-skeleton"
+          rounded="$bew-radius-sm"
         >
           hello world
         </div>
@@ -100,20 +110,22 @@ defineProps<{
   <div
     v-else-if="settings.videoCardLayout === 'old' && horizontal"
     flex="~ gap-6"
-    mb-4 pointer-events-none select-none
-    style="contain: layout; min-height: 180px;"
+    mb-4
+    pointer-events-none
+    select-none
+    style="contain: layout; min-height: 180px"
   >
     <!-- Cover -->
     <div
       :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
-      shrink-0 aspect-video h-fit bg="$bew-skeleton"
+      shrink-0
+      aspect-video
+      h-fit
+      bg="$bew-skeleton"
       rounded="$bew-radius"
     />
     <!-- Other Information -->
-    <div
-      w-full mt-0
-      flex="~ gap-4"
-    >
+    <div w-full mt-0 flex="~ gap-4">
       <div w="[calc(100%-30px)]">
         <div grid gap-2>
           <div w-full h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
@@ -121,18 +133,20 @@ defineProps<{
 
         <div mt-4 flex="~ col gap-2">
           <div flex="~ items-center justify-start" w-inherit>
-            <div
-              m="r-2" w="30px" h="30px" rounded="1/2" bg="$bew-skeleton"
-              shrink-0
-            />
+            <div m="r-2" w="30px" h="30px" rounded="1/2" bg="$bew-skeleton" shrink-0 />
 
             <div w="40%" h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
           </div>
           <div w="60%" h-4 bg="$bew-skeleton" rounded="$bew-radius-sm" />
           <div
-            text="transparent sm" inline-block w-fit
-            lh-6 p="x-2" mt-1
-            bg="$bew-skeleton" rounded="$bew-radius-sm"
+            text="transparent sm"
+            inline-block
+            w-fit
+            lh-6
+            p="x-2"
+            mt-1
+            bg="$bew-skeleton"
+            rounded="$bew-radius-sm"
           >
             hello world
           </div>
@@ -144,10 +158,10 @@ defineProps<{
 
 <style lang="scss" scoped>
 .horizontal-card-cover {
-  --uno: "xl:w-280px lg:w-250px md:w-200px w-200px";
+  --uno: 'xl:w-280px lg:w-250px md:w-200px w-200px';
 }
 
 .vertical-card-cover {
-  --uno: "w-full";
+  --uno: 'w-full';
 }
 </style>

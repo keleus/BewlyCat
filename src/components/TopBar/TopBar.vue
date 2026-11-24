@@ -5,7 +5,13 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { BEWLY_IFRAME_DRAWER_HOST_CLASS, OVERLAY_SCROLL_BAR_REBASE, OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import {
+  BEWLY_IFRAME_DRAWER_HOST_CLASS,
+  OVERLAY_SCROLL_BAR_REBASE,
+  OVERLAY_SCROLL_BAR_SCROLL,
+  TOP_BAR_SCROLL_VISIBILITY_CHANGE,
+  TOP_BAR_VISIBILITY_CHANGE,
+} from '~/constants/globalEvents'
 import { AppPage, VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -47,12 +53,10 @@ const isOutsideTopBar = ref(true)
 const isOutsideTopArea = ref(true)
 // v-if removes these elements without a pointerleave.
 watch(headerTarget, (element) => {
-  if (!element)
-    isOutsideTopBar.value = true
+  if (!element) isOutsideTopBar.value = true
 })
 watch(topAreaTarget, (element) => {
-  if (!element)
-    isOutsideTopArea.value = true
+  if (!element) isOutsideTopArea.value = true
 })
 
 // 当前URL
@@ -89,8 +93,7 @@ function clearHideTimer() {
 }
 
 function scheduleUrlChangeCheck() {
-  if (urlChangeCheckQueued || topBarUnmounted)
-    return
+  if (urlChangeCheckQueued || topBarUnmounted) return
 
   urlChangeCheckQueued = true
   queueMicrotask(() => {
@@ -101,7 +104,7 @@ function scheduleUrlChangeCheck() {
 
 // 检测是否有弹窗激活
 const hasActivePopup = computed(() => {
-  return Object.values(topBarStore.popupVisible).some(visible => visible)
+  return Object.values(topBarStore.popupVisible).some((visible) => visible)
 })
 
 const ORIGINAL_VIDEO_TOP_BAR_CONTROLLED_CLASS = 'bewly-original-video-top-bar-controlled'
@@ -112,12 +115,10 @@ function isIframeDrawerHost() {
 }
 
 function applyTopBarVisibility() {
-  const shouldShow = !bewlyWidescreenActive.value
-    && desiredTopBarVisible.value
-    && (
-      !forceHideTopBar.value
-      || hasActivePopup.value
-    )
+  const shouldShow =
+    !bewlyWidescreenActive.value &&
+    desiredTopBarVisible.value &&
+    (!forceHideTopBar.value || hasActivePopup.value)
 
   hideTopBar.value = !shouldShow
   topBarStore.setTopBarVisible(shouldShow)
@@ -126,24 +127,32 @@ function applyTopBarVisibility() {
 }
 
 function syncOriginalVideoTopBarVisibility(visible: boolean) {
-  const shouldControl = !isIframeDrawerHost()
-    && isVideoOrBangumiPage()
-    && shouldShowOriginalBilibiliTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
-    && settings.value.videoPageTopBarConfig !== VideoPageTopBarConfig.ShowOnMouse
+  const shouldControl =
+    !isIframeDrawerHost() &&
+    isVideoOrBangumiPage() &&
+    shouldShowOriginalBilibiliTopBar(
+      settings.value.enableTopBarModule,
+      settings.value.enableTopBar,
+      settings.value.useOriginalBilibiliTopBar,
+    ) &&
+    settings.value.videoPageTopBarConfig !== VideoPageTopBarConfig.ShowOnMouse
 
   document.documentElement.classList.toggle(ORIGINAL_VIDEO_TOP_BAR_CONTROLLED_CLASS, shouldControl)
-  document.documentElement.classList.toggle(ORIGINAL_VIDEO_TOP_BAR_HIDDEN_CLASS, shouldControl && !visible)
+  document.documentElement.classList.toggle(
+    ORIGINAL_VIDEO_TOP_BAR_HIDDEN_CLASS,
+    shouldControl && !visible,
+  )
 }
 
 // 鼠标显示只控制插件顶栏；iframe 抽屉宿主的顶栏属于原页面，沿用其他页面配置。
 const isShowOnMouseActive = computed(() => {
   void currentUrl.value
-  if (settings.value.useOriginalBilibiliTopBar)
-    return false
+  if (settings.value.useOriginalBilibiliTopBar) return false
 
-  const config = isVideoOrBangumiPage() && !isIframeDrawerHost()
-    ? settings.value.videoPageTopBarConfig
-    : settings.value.otherPageTopBarConfig
+  const config =
+    isVideoOrBangumiPage() && !isIframeDrawerHost()
+      ? settings.value.videoPageTopBarConfig
+      : settings.value.otherPageTopBarConfig
   return config === VideoPageTopBarConfig.ShowOnMouse
 })
 
@@ -151,16 +160,17 @@ const isShowOnMouseActive = computed(() => {
 // 此时缩小顶部鼠标感应区高度并增加短暂停留确认，避免遮挡标签栏点击或在滑向标签栏时误触顶栏。
 const isCompactTopAreaListener = computed(() => {
   void currentUrl.value
-  return isHomePage()
-    && !settings.value.useOriginalBilibiliHomepage
-    && activatedPage.value === AppPage.Home
-    && settings.value.fixedHomeTabsOnHomePage
+  return (
+    isHomePage() &&
+    !settings.value.useOriginalBilibiliHomepage &&
+    activatedPage.value === AppPage.Home &&
+    settings.value.fixedHomeTabsOnHomePage
+  )
 })
 
 // 处理顶栏显示/隐藏逻辑的函数
 function handleTopBarVisibility() {
-  if (bewlyWidescreenActive.value)
-    return
+  if (bewlyWidescreenActive.value) return
 
   if (isShowOnMouseActive.value) {
     // 清除之前的隐藏计时器
@@ -178,8 +188,7 @@ function handleTopBarVisibility() {
       if (!hideTopBar.value || !isCompactTopAreaListener.value) {
         clearShowTimer()
         toggleTopBarVisible(true)
-      }
-      else if (!showTimer) {
+      } else if (!showTimer) {
         showTimer = window.setTimeout(() => {
           showTimer = null
           if (!bewlyWidescreenActive.value && isShowOnMouseActive.value && !isOutsideTopArea.value)
@@ -241,8 +250,7 @@ let overlayScrollHandler: ((scrollTop: number) => void) | null = null
 let overlayScrollRebaseHandler: ((delta: number) => void) | null = null
 
 function rebaseScrollTracking(delta: number) {
-  if (!Number.isFinite(delta) || delta === 0)
-    return
+  if (!Number.isFinite(delta) || delta === 0) return
   scrollTop.value = Math.max(0, scrollTop.value + delta)
   oldScrollTop.value = Math.max(0, oldScrollTop.value + delta)
   topBarVisibilityAnchorScrollTop.value = Math.max(0, topBarVisibilityAnchorScrollTop.value + delta)
@@ -252,23 +260,22 @@ function handleScroll(arg?: number | Event): void {
   // ✅ 性能优化：优先使用传入的 scrollTop 值，避免重复 DOM 读取
   if (typeof arg === 'number') {
     scrollTop.value = arg
-  }
-  else {
+  } else {
     // ✅ 只在非首页或使用原始页面时才需要读取 DOM
     // 首页场景下必须通过 OVERLAY_SCROLL_BAR_SCROLL 事件接收 scrollTop
     if (!isHomePage() || settings.value.useOriginalBilibiliHomepage) {
       scrollTop.value = document.documentElement.scrollTop
-    }
-    else {
+    } else {
       // 首页且使用 Bewly 页面时，必须通过事件传递 scrollTop
       // 如果执行到这里说明事件没有正确传递参数，警告并返回
-      console.warn('[TopBar Performance] Missing scrollTop parameter from OVERLAY_SCROLL_BAR_SCROLL event')
+      console.warn(
+        '[TopBar Performance] Missing scrollTop parameter from OVERLAY_SCROLL_BAR_SCROLL event',
+      )
       return
     }
   }
 
-  if (isUserSpacePage())
-    scheduleConflictingHeaderVisibilityUpdate()
+  if (isUserSpacePage()) scheduleConflictingHeaderVisibilityUpdate()
 
   // 计算滚动距离，只有超过阈值才处理
   const scrollDelta = scrollTop.value - oldScrollTop.value
@@ -304,18 +311,22 @@ function handleScroll(arg?: number | Event): void {
     if (config === VideoPageTopBarConfig.ShowOnScroll) {
       if (scrollTop.value === 0) {
         setTopBarVisibleFromScroll(true, scrollDelta)
-      }
-      else if (!hideTopBar.value && scrollDelta < 0) {
+      } else if (!hideTopBar.value && scrollDelta < 0) {
         topBarVisibilityAnchorScrollTop.value = scrollTop.value
-      }
-      else if (hideTopBar.value && scrollDelta > 0) {
+      } else if (hideTopBar.value && scrollDelta > 0) {
         topBarVisibilityAnchorScrollTop.value = scrollTop.value
-      }
-      else if (!hideTopBar.value && scrollDelta > 0 && scrollTop.value - topBarVisibilityAnchorScrollTop.value > TOP_BAR_HIDE_SCROLL_THRESHOLD) {
+      } else if (
+        !hideTopBar.value &&
+        scrollDelta > 0 &&
+        scrollTop.value - topBarVisibilityAnchorScrollTop.value > TOP_BAR_HIDE_SCROLL_THRESHOLD
+      ) {
         // 只有滚动超过阈值才更新状态
         setTopBarVisibleFromScroll(false, scrollDelta)
-      }
-      else if (hideTopBar.value && scrollDelta < 0 && topBarVisibilityAnchorScrollTop.value - scrollTop.value > TOP_BAR_SHOW_SCROLL_THRESHOLD) {
+      } else if (
+        hideTopBar.value &&
+        scrollDelta < 0 &&
+        topBarVisibilityAnchorScrollTop.value - scrollTop.value > TOP_BAR_SHOW_SCROLL_THRESHOLD
+      ) {
         setTopBarVisibleFromScroll(true, scrollDelta)
       }
     }
@@ -336,17 +347,25 @@ function handleScroll(arg?: number | Event): void {
     }
 
     // 在用户首页强制开启滚动隐藏，无论设置如何
-    if (isUserSpacePage() || settings.value.otherPageTopBarConfig === VideoPageTopBarConfig.ShowOnScroll) {
+    if (
+      isUserSpacePage() ||
+      settings.value.otherPageTopBarConfig === VideoPageTopBarConfig.ShowOnScroll
+    ) {
       if (!hideTopBar.value && scrollDelta < 0) {
         topBarVisibilityAnchorScrollTop.value = scrollTop.value
-      }
-      else if (hideTopBar.value && scrollDelta > 0) {
+      } else if (hideTopBar.value && scrollDelta > 0) {
         topBarVisibilityAnchorScrollTop.value = scrollTop.value
-      }
-      else if (!hideTopBar.value && scrollDelta > 0 && scrollTop.value - topBarVisibilityAnchorScrollTop.value > TOP_BAR_HIDE_SCROLL_THRESHOLD) {
+      } else if (
+        !hideTopBar.value &&
+        scrollDelta > 0 &&
+        scrollTop.value - topBarVisibilityAnchorScrollTop.value > TOP_BAR_HIDE_SCROLL_THRESHOLD
+      ) {
         setTopBarVisibleFromScroll(false, scrollDelta)
-      }
-      else if (hideTopBar.value && scrollDelta < 0 && topBarVisibilityAnchorScrollTop.value - scrollTop.value > TOP_BAR_SHOW_SCROLL_THRESHOLD) {
+      } else if (
+        hideTopBar.value &&
+        scrollDelta < 0 &&
+        topBarVisibilityAnchorScrollTop.value - scrollTop.value > TOP_BAR_SHOW_SCROLL_THRESHOLD
+      ) {
         setTopBarVisibleFromScroll(true, scrollDelta)
       }
     }
@@ -387,8 +406,13 @@ function setupScrollListeners() {
   clearHideTimer()
 
   // 根据页面配置设置初始显示状态
-  toggleTopBarVisible(!isShowOnMouseActive.value
-    && !(isVideoOrBangumiPage() && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.AlwaysHide))
+  toggleTopBarVisible(
+    !isShowOnMouseActive.value &&
+      !(
+        isVideoOrBangumiPage() &&
+        settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.AlwaysHide
+      ),
+  )
 
   // 清理之前的监听器
   cleanupScrollListeners()
@@ -414,8 +438,7 @@ function setupScrollListeners() {
     overlayScrollRebaseHandler = rebaseScrollTracking
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, overlayScrollHandler)
     emitter.on(OVERLAY_SCROLL_BAR_REBASE, overlayScrollRebaseHandler)
-  }
-  else {
+  } else {
     window.addEventListener('scroll', handleScroll)
   }
 }
@@ -435,24 +458,23 @@ function cleanupScrollListeners() {
 
 function isVisibleElement(el: HTMLElement) {
   const style = window.getComputedStyle(el)
-  return style.display !== 'none'
-    && style.visibility !== 'hidden'
-    && Number.parseFloat(style.opacity) !== 0
-    && el.offsetWidth > 0
-    && el.offsetHeight > 0
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    Number.parseFloat(style.opacity) !== 0 &&
+    el.offsetWidth > 0 &&
+    el.offsetHeight > 0
+  )
 }
 
 function isStickySpaceNavbarVisible() {
-  if (!isUserSpacePage())
-    return false
+  if (!isUserSpacePage()) return false
 
   const navbar = document.querySelector<HTMLElement>(spaceNavbarSelector)
-  if (!navbar || !isVisibleElement(navbar))
-    return false
+  if (!navbar || !isVisibleElement(navbar)) return false
 
   const style = window.getComputedStyle(navbar)
-  if (style.position !== 'sticky')
-    return false
+  if (style.position !== 'sticky') return false
 
   const rect = navbar.getBoundingClientRect()
   return rect.top <= 1 && rect.bottom > 0
@@ -461,10 +483,12 @@ function isStickySpaceNavbarVisible() {
 function updateConflictingHeaderVisibility() {
   bewlyWidescreenActive.value = isBewlyWidescreenActive()
 
-  const hasVisibleHeader = !isUserSpacePage() && conflictingHeaderSelectors.some((selector) => {
-    const el = document.querySelector(selector) as HTMLElement | null
-    return el ? isVisibleElement(el) : false
-  })
+  const hasVisibleHeader =
+    !isUserSpacePage() &&
+    conflictingHeaderSelectors.some((selector) => {
+      const el = document.querySelector(selector) as HTMLElement | null
+      return el ? isVisibleElement(el) : false
+    })
 
   forceHideTopBar.value = hasVisibleHeader || isStickySpaceNavbarVisible()
   applyTopBarVisibility()
@@ -472,8 +496,7 @@ function updateConflictingHeaderVisibility() {
 
 function updateWidescreenState() {
   const nextWidescreenActive = isBewlyWidescreenActive()
-  if (bewlyWidescreenActive.value === nextWidescreenActive)
-    return
+  if (bewlyWidescreenActive.value === nextWidescreenActive) return
 
   bewlyWidescreenActive.value = nextWidescreenActive
   applyTopBarVisibility()
@@ -488,15 +511,16 @@ let conflictingHeaderDiscoveryDeadline = 0
 const CONFLICTING_HEADER_DISCOVERY_TIMEOUT = 15_000
 
 function isConflictingHeaderPage() {
-  return isUserSpacePage()
-    || (location.hostname === 't.bilibili.com' && /^\/\d+/.test(location.pathname))
-    || (location.hostname === 'www.bilibili.com'
-      && (/^\/read\/cv\d+/.test(location.pathname) || /^\/opus\/\d+/.test(location.pathname)))
+  return (
+    isUserSpacePage() ||
+    (location.hostname === 't.bilibili.com' && /^\/\d+/.test(location.pathname)) ||
+    (location.hostname === 'www.bilibili.com' &&
+      (/^\/read\/cv\d+/.test(location.pathname) || /^\/opus\/\d+/.test(location.pathname)))
+  )
 }
 
 function getConflictingHeaderPageRootSelector() {
-  if (isUserSpacePage())
-    return '#app'
+  if (isUserSpacePage()) return '#app'
 
   if (location.hostname === 't.bilibili.com' || location.pathname.startsWith('/opus/'))
     return '#opus-detail-app, #app'
@@ -507,8 +531,9 @@ function getConflictingHeaderPageRootSelector() {
 function findConflictingHeaderPageRoot() {
   const rootSelector = getConflictingHeaderPageRootSelector()
   const header = document.querySelector<HTMLElement>(getConflictingHeaderSelector())
-  return header?.closest<HTMLElement>(rootSelector)
-    ?? document.querySelector<HTMLElement>(rootSelector)
+  return (
+    header?.closest<HTMLElement>(rootSelector) ?? document.querySelector<HTMLElement>(rootSelector)
+  )
 }
 
 function getConflictingHeaderSelector() {
@@ -516,8 +541,7 @@ function getConflictingHeaderSelector() {
 }
 
 function scheduleConflictingHeaderVisibilityUpdate() {
-  if (conflictingHeaderUpdateFrame !== undefined || topBarUnmounted)
-    return
+  if (conflictingHeaderUpdateFrame !== undefined || topBarUnmounted) return
 
   conflictingHeaderUpdateFrame = requestAnimationFrame(() => {
     conflictingHeaderUpdateFrame = undefined
@@ -526,19 +550,20 @@ function scheduleConflictingHeaderVisibilityUpdate() {
 }
 
 function containsConflictingHeader(node: Node) {
-  return node instanceof Element
-    && (node.matches(getConflictingHeaderSelector()) || !!node.querySelector(getConflictingHeaderSelector()))
+  return (
+    node instanceof Element &&
+    (node.matches(getConflictingHeaderSelector()) ||
+      !!node.querySelector(getConflictingHeaderSelector()))
+  )
 }
 
 function scheduleConflictingHeaderObserverRefresh() {
-  if (conflictingHeaderRebindQueued || topBarUnmounted)
-    return
+  if (conflictingHeaderRebindQueued || topBarUnmounted) return
 
   conflictingHeaderRebindQueued = true
   queueMicrotask(() => {
     conflictingHeaderRebindQueued = false
-    if (!topBarUnmounted)
-      setupConflictingHeaderObserver()
+    if (!topBarUnmounted) setupConflictingHeaderObserver()
   })
 }
 
@@ -551,13 +576,11 @@ function stopConflictingHeaderDiscovery() {
 }
 
 function scheduleConflictingHeaderDiscovery() {
-  if (conflictingHeaderDiscoveryTimer || topBarUnmounted)
-    return
+  if (conflictingHeaderDiscoveryTimer || topBarUnmounted) return
 
   if (!conflictingHeaderDiscoveryDeadline)
     conflictingHeaderDiscoveryDeadline = Date.now() + CONFLICTING_HEADER_DISCOVERY_TIMEOUT
-  if (Date.now() >= conflictingHeaderDiscoveryDeadline)
-    return
+  if (Date.now() >= conflictingHeaderDiscoveryDeadline) return
 
   conflictingHeaderDiscoveryTimer = setTimeout(() => {
     conflictingHeaderDiscoveryTimer = undefined
@@ -566,16 +589,13 @@ function scheduleConflictingHeaderDiscovery() {
       return
     }
 
-    if (document.querySelector(getConflictingHeaderSelector()))
-      setupConflictingHeaderObserver()
-    else
-      scheduleConflictingHeaderDiscovery()
+    if (document.querySelector(getConflictingHeaderSelector())) setupConflictingHeaderObserver()
+    else scheduleConflictingHeaderDiscovery()
   }, 500)
 }
 
 function setupConflictingHeaderObserver() {
-  if (topBarUnmounted)
-    return
+  if (topBarUnmounted) return
 
   conflictingHeaderObserver?.disconnect()
   conflictingHeaderObserver = undefined
@@ -590,12 +610,15 @@ function setupConflictingHeaderObserver() {
 
   const pageRoot = findConflictingHeaderPageRoot()
   conflictingHeaderObserver = new MutationObserver((records) => {
-    const hasObservedAttributeChange = records.some(record => record.type === 'attributes')
-    const hasRelevantStructureChange = !pageRoot?.isConnected || records.some(record =>
-      record.type === 'childList'
-      && (Array.from(record.addedNodes).some(containsConflictingHeader)
-        || Array.from(record.removedNodes).some(containsConflictingHeader)),
-    )
+    const hasObservedAttributeChange = records.some((record) => record.type === 'attributes')
+    const hasRelevantStructureChange =
+      !pageRoot?.isConnected ||
+      records.some(
+        (record) =>
+          record.type === 'childList' &&
+          (Array.from(record.addedNodes).some(containsConflictingHeader) ||
+            Array.from(record.removedNodes).some(containsConflictingHeader)),
+      )
 
     if (hasRelevantStructureChange || hasObservedAttributeChange) {
       scheduleConflictingHeaderObserverRefresh()
@@ -615,8 +638,7 @@ function setupConflictingHeaderObserver() {
     // 目标头部是懒挂载节点；发现阶段限制在当前页面应用根内。
     conflictingHeaderObserver.observe(pageRoot, { childList: true, subtree: true })
     scheduleConflictingHeaderDiscovery()
-  }
-  else {
+  } else {
     stopConflictingHeaderDiscovery()
     for (const header of headers) {
       let current: HTMLElement | null = header
@@ -626,8 +648,7 @@ function setupConflictingHeaderObserver() {
           attributes: true,
           attributeFilter: ['class', 'style'],
         })
-        if (current === pageRoot)
-          break
+        if (current === pageRoot) break
         current = current.parentElement
       }
     }
@@ -640,18 +661,22 @@ function setupConflictingHeaderObserver() {
 
 // 处理点击外部关闭 POP 窗（仅在触屏优化开启时）
 function handleClickOutsidePopup(event: MouseEvent) {
-  if (!settings.value.touchScreenOptimization)
-    return
+  if (!settings.value.touchScreenOptimization) return
 
-  if (!hasActivePopup.value)
-    return
+  if (!hasActivePopup.value) return
 
   // document receives the Shadow Host as event.target. Inspect the original
   // path so opening a panel and interacting inside it never count as outside.
-  const isInside = event.composedPath().some(target => target instanceof Element
-    && target.matches('.logo, .right-side-item, .home-button, .bew-popover, [data-top-bar-panel-anchor]'))
-  if (isInside)
-    return
+  const isInside = event
+    .composedPath()
+    .some(
+      (target) =>
+        target instanceof Element &&
+        target.matches(
+          '.logo, .right-side-item, .home-button, .bew-popover, [data-top-bar-panel-anchor]',
+        ),
+    )
+  if (isInside) return
 
   // 点击在弹窗外部，关闭所有弹窗
   topBarStore.closeAllPopups()
@@ -660,8 +685,7 @@ function handleClickOutsidePopup(event: MouseEvent) {
 // 生命周期钩子
 onMounted(() => {
   nextTick(() => {
-    if (topBarUnmounted)
-      return
+    if (topBarUnmounted) return
 
     setupScrollListeners()
 
@@ -687,8 +711,7 @@ onMounted(() => {
 })
 
 function handleVisibilityChange() {
-  if (document.hidden)
-    return
+  if (document.hidden) return
 
   scheduleUrlChangeCheck()
   scheduleConflictingHeaderVisibilityUpdate()
@@ -729,11 +752,13 @@ onUnmounted(() => {
 // 快捷键
 onKeyStroke('/', (event: KeyboardEvent) => {
   const target = event.target as HTMLElement | null
-  if (target && (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable))
-    return
+  if (target && (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable)) return
 
   const activeElement = findLeafActiveElement(document) as HTMLElement | undefined
-  if (activeElement && (['INPUT', 'TEXTAREA'].includes(activeElement.tagName) || activeElement.isContentEditable))
+  if (
+    activeElement &&
+    (['INPUT', 'TEXTAREA'].includes(activeElement.tagName) || activeElement.isContentEditable)
+  )
     return
 
   event.preventDefault()
@@ -743,8 +768,7 @@ onKeyStroke('/', (event: KeyboardEvent) => {
 })
 
 onKeyStroke('Escape', (event: KeyboardEvent) => {
-  if (!hasActivePopup.value)
-    return
+  if (!hasActivePopup.value) return
 
   event.preventDefault()
   topBarStore.closeAllPopups()
@@ -778,7 +802,7 @@ defineExpose({
         data-layout-settings-page="topbar"
         data-layout-settings-title-key="settings.topbar_visibility"
         :class="{
-          'hide': hideTopBar && !isLayoutEditing,
+          hide: hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
         }"
         @pointerenter="isOutsideTopBar = false"
@@ -802,15 +826,20 @@ defineExpose({
     </Transition>
 
     <TopBarModeSwitcher
-      v-if="shouldShowOriginalBilibiliTopBar(settings.enableTopBarModule, settings.enableTopBar, settings.useOriginalBilibiliTopBar)
-        && isComponentVisible('topBarSwitcher')"
+      v-if="
+        shouldShowOriginalBilibiliTopBar(
+          settings.enableTopBarModule,
+          settings.enableTopBar,
+          settings.useOriginalBilibiliTopBar,
+        ) && isComponentVisible('topBarSwitcher')
+      "
       native
     />
   </div>
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/index.scss";
+@use './styles/index.scss';
 
 .top-bar-container {
   position: relative;

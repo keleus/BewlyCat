@@ -57,7 +57,11 @@ defineExpose({ focusCommentsToggle })
       @keydown.enter.stop
     >
       <span i-tabler-share-3 />
-      <span>{{ moment.forwardCount || repostCount ? formatCount((moment.forwardCount || 0) + repostCount) : t('moment_card.repost') }}</span>
+      <span>{{
+        moment.forwardCount || repostCount
+          ? formatCount((moment.forwardCount || 0) + repostCount)
+          : t('moment_card.repost')
+      }}</span>
     </button>
     <a
       v-else
@@ -76,7 +80,9 @@ defineExpose({ focusCommentsToggle })
       ref="commentsToggleRef"
       type="button"
       :class="{ 'is-expanded': commentsExpanded }"
-      :aria-label="t(commentsExpanded ? 'moment_card.collapse_comments' : 'moment_card.view_comments')"
+      :aria-label="
+        t(commentsExpanded ? 'moment_card.collapse_comments' : 'moment_card.view_comments')
+      "
       :aria-expanded="commentsExpanded"
       :aria-controls="commentsControls"
       :title="t(commentsExpanded ? 'moment_card.collapse_comments' : 'moment_card.view_comments')"
@@ -85,9 +91,21 @@ defineExpose({ focusCommentsToggle })
       <span v-if="commentsLoading" i-svg-spinners:ring-resize aria-hidden="true" />
       <span v-else-if="commentsExpanded" i-tabler-chevron-up aria-hidden="true" />
       <span v-else i-tabler-message-circle aria-hidden="true" />
-      {{ commentsLoading || !commentsExpanded ? formatCount(commentCount ?? moment.commentCount) : t('moment_card.collapse_comments') }}
+      {{
+        commentsLoading || !commentsExpanded
+          ? formatCount(commentCount ?? moment.commentCount)
+          : t('moment_card.collapse_comments')
+      }}
     </button>
-    <span v-else class="moment-card__footer-stat" :aria-label="t('moment_card.live_popularity', { value: moment.livePopularity || t('moment_card.no_data') })">
+    <span
+      v-else
+      class="moment-card__footer-stat"
+      :aria-label="
+        t('moment_card.live_popularity', {
+          value: moment.livePopularity || t('moment_card.no_data'),
+        })
+      "
+    >
       <span i-tabler-users />
       {{ moment.livePopularity || t('moment_card.live_now') }}
     </span>
@@ -95,13 +113,29 @@ defineExpose({ focusCommentsToggle })
     <button
       type="button"
       class="moment-card__likes"
-      :class="{ 'is-liked': moment.isLiked, 'is-unavailable': moment.isLikeDisabled, 'is-loading': likeLoading }"
+      :class="{
+        'is-liked': moment.isLiked,
+        'is-unavailable': moment.isLikeDisabled,
+        'is-loading': likeLoading,
+      }"
       :disabled="moment.isLikeDisabled"
       :aria-busy="likeLoading || undefined"
       :aria-disabled="likeLoading || moment.isLikeDisabled || undefined"
-      :aria-label="moment.isLikeDisabled ? t('moment_card.like_unsupported') : moment.isLiked ? t('moment_card.unlike') : t('moment_card.like')"
+      :aria-label="
+        moment.isLikeDisabled
+          ? t('moment_card.like_unsupported')
+          : moment.isLiked
+            ? t('moment_card.unlike')
+            : t('moment_card.like')
+      "
       :aria-pressed="moment.isLiked"
-      :title="moment.isLikeDisabled ? t('moment_card.like_unsupported') : moment.isLiked ? t('moment_card.unlike') : t('moment_card.like')"
+      :title="
+        moment.isLikeDisabled
+          ? t('moment_card.like_unsupported')
+          : moment.isLiked
+            ? t('moment_card.unlike')
+            : t('moment_card.like')
+      "
       @click.stop="emit('toggleLike')"
       @keydown.enter.stop
     >
@@ -114,7 +148,7 @@ defineExpose({ focusCommentsToggle })
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__footer {
   display: grid;

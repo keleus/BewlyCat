@@ -3,7 +3,7 @@ import { createI18n } from 'vue-i18n'
 
 import { LanguageType } from '~/enums/appEnums'
 
-type SupportedLocale = typeof LanguageType[keyof typeof LanguageType]
+type SupportedLocale = (typeof LanguageType)[keyof typeof LanguageType]
 
 const localeLoaders: Record<SupportedLocale, () => Promise<{ default: Record<string, any> }>> = {
   [LanguageType.English]: () => import('~/_locales/en.yml'),
@@ -16,16 +16,12 @@ const loadedLocales = new Set<SupportedLocale>()
 const pendingLoads = new Map<SupportedLocale, Promise<void>>()
 
 export function resolveOptionsLocale(preferred?: string): SupportedLocale {
-  if (preferred && preferred in localeLoaders)
-    return preferred as SupportedLocale
+  if (preferred && preferred in localeLoaders) return preferred as SupportedLocale
 
   const uiLang = typeof browser !== 'undefined' ? browser.i18n.getUILanguage() : navigator.language
-  if (uiLang === 'zh-CN' || uiLang === 'zh-SG')
-    return LanguageType.Mandarin_CN
-  if (uiLang === 'zh-HK' || uiLang === 'zh-MO')
-    return LanguageType.Cantonese
-  if (uiLang === 'zh-TW')
-    return LanguageType.Mandarin_TW
+  if (uiLang === 'zh-CN' || uiLang === 'zh-SG') return LanguageType.Mandarin_CN
+  if (uiLang === 'zh-HK' || uiLang === 'zh-MO') return LanguageType.Cantonese
+  if (uiLang === 'zh-TW') return LanguageType.Mandarin_TW
   return LanguageType.English
 }
 
@@ -47,12 +43,14 @@ export async function ensureLocaleMessages(preferred?: string): Promise<Supporte
   if (!loadedLocales.has(target)) {
     let task = pendingLoads.get(target)
     if (!task) {
-      task = localeLoaders[target]().then((mod) => {
-        i18n.global.setLocaleMessage(target, mod.default)
-        loadedLocales.add(target)
-      }).finally(() => {
-        pendingLoads.delete(target)
-      })
+      task = localeLoaders[target]()
+        .then((mod) => {
+          i18n.global.setLocaleMessage(target, mod.default)
+          loadedLocales.add(target)
+        })
+        .finally(() => {
+          pendingLoads.delete(target)
+        })
       pendingLoads.set(target, task)
     }
     await task
@@ -61,7 +59,9 @@ export async function ensureLocaleMessages(preferred?: string): Promise<Supporte
 }
 
 // 运行时在设置页切换语言（或跨标签页同步语言设置）时自动拉取目标语言包。
-watch(() => i18n.global.locale.value, (nextLocale) => {
-  if (nextLocale)
-    void ensureLocaleMessages(nextLocale)
-})
+watch(
+  () => i18n.global.locale.value,
+  (nextLocale) => {
+    if (nextLocale) void ensureLocaleMessages(nextLocale)
+  },
+)

@@ -29,8 +29,12 @@ export function setupPlayerSettingSync(options: {
   }
 
   function canRun() {
-    return !lifetime.signal.aborted && !suspended && options.enabled()
-      && (isVideoPlaybackPage() || isVideoOrBangumiPage())
+    return (
+      !lifetime.signal.aborted &&
+      !suspended &&
+      options.enabled() &&
+      (isVideoPlaybackPage() || isVideoOrBangumiPage())
+    )
   }
 
   function sync() {
@@ -63,22 +67,18 @@ export function setupPlayerSettingSync(options: {
       }
     }
 
-    if (target)
-      options.sync()
+    if (target) options.sync()
 
-    if (!canRun())
-      return
+    if (!canRun()) return
     if (target || Date.now() < discoveryDeadline) {
-      const delay = !target || options.pending?.()
-        ? 500
-        : document.visibilityState === 'hidden' ? 15_000 : 5000
+      const delay =
+        !target || options.pending?.() ? 500 : document.visibilityState === 'hidden' ? 15_000 : 5000
       timer = setTimeout(schedule, delay)
     }
   }
 
   function schedule() {
-    if (queued || lifetime.signal.aborted || suspended)
-      return
+    if (queued || lifetime.signal.aborted || suspended) return
     queued = true
     queueMicrotask(() => {
       queued = false
@@ -91,34 +91,45 @@ export function setupPlayerSettingSync(options: {
     schedule()
   }
 
-  const unwatch = watch(() => [options.enabled(), options.preference()], () => {
-    if (!canRun()) {
-      clear()
-      options.reset?.()
-    }
-    else {
-      discover()
-    }
-  }, { immediate: true, flush: 'post' })
+  const unwatch = watch(
+    () => [options.enabled(), options.preference()],
+    () => {
+      if (!canRun()) {
+        clear()
+        options.reset?.()
+      } else {
+        discover()
+      }
+    },
+    { immediate: true, flush: 'post' },
+  )
 
   for (const name of ['pushstate', 'replacestate', 'popstate', 'hashchange'])
     window.addEventListener(name, discover, { signal: lifetime.signal })
   for (const name of ['play', 'loadedmetadata'])
     document.addEventListener(name, discover, { capture: true, signal: lifetime.signal })
   document.addEventListener('visibilitychange', discover, { signal: lifetime.signal })
-  window.addEventListener('pageshow', () => {
-    suspended = false
-    discover()
-  }, { signal: lifetime.signal })
-  window.addEventListener('pagehide', (event) => {
-    suspended = true
-    clear()
-    options.reset?.()
-    if (!event.persisted) {
-      unwatch()
-      lifetime.abort()
-    }
-  }, { signal: lifetime.signal })
+  window.addEventListener(
+    'pageshow',
+    () => {
+      suspended = false
+      discover()
+    },
+    { signal: lifetime.signal },
+  )
+  window.addEventListener(
+    'pagehide',
+    (event) => {
+      suspended = true
+      clear()
+      options.reset?.()
+      if (!event.persisted) {
+        unwatch()
+        lifetime.abort()
+      }
+    },
+    { signal: lifetime.signal },
+  )
 
   return { schedule: discover, signal: lifetime.signal }
 }

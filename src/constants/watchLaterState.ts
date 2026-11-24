@@ -11,9 +11,9 @@ export interface WatchLaterSnapshot {
   count: number
 }
 
-export type WatchLaterChange
-  = | { type: 'add' | 'remove', entry: WatchLaterEntry }
-    | { type: 'clear' }
+export type WatchLaterChange =
+  | { type: 'add' | 'remove'; entry: WatchLaterEntry }
+  | { type: 'clear' }
 
 export interface WatchLaterStateClaim {
   accountId: number

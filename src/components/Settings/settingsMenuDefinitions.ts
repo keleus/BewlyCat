@@ -55,7 +55,12 @@ export interface SettingsMenuComponents {
 
 const isBewlyPagesEnabled = () => !settings.value.useOriginalBilibiliHomepage
 const isTopBarModuleEnabled = () => settings.value.enableTopBarModule
-const isBewlyTopBarEnabled = () => shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
+const isBewlyTopBarEnabled = () =>
+  shouldShowBewlyTopBar(
+    settings.value.enableTopBarModule,
+    settings.value.enableTopBar,
+    settings.value.useOriginalBilibiliTopBar,
+  )
 const isDockModuleEnabled = () => settings.value.enableDock
 const isPlayerEnabled = () => settings.value.enablePlayerEnhancements
 const isCommentsEnabled = () => settings.value.enableCommentEnhancements

@@ -101,7 +101,8 @@
     flex: 0 0 24px;
     align-items: center;
     justify-content: center;
-    margin: calc(var(--bew-space-0-5) * -1) calc(var(--bew-space-0-5) * -1) calc(var(--bew-space-0-5) * -1) 0;
+    margin: calc(var(--bew-space-0-5) * -1) calc(var(--bew-space-0-5) * -1)
+      calc(var(--bew-space-0-5) * -1) 0;
     padding: 0;
     color: var(--bew-text-2);
     background: var(--bew-fill-1);
@@ -135,7 +136,8 @@
 }
 
 .bewly-toast-enter-active {
-  animation: bewly-toast-in var(--bew-duration-moderate, 300ms) var(--bew-ease-emphasized, ease) both;
+  animation: bewly-toast-in var(--bew-duration-moderate, 300ms) var(--bew-ease-emphasized, ease)
+    both;
 }
 
 .bewly-toast-leave-active:not(.disable-transition) {

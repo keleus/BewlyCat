@@ -72,17 +72,22 @@ interface FetchAllSeasonMediasResult {
  * 合集入口 URL（B 站默认「从开头播放」）
  * 优先 collected season 的 bilibili://video/{aid} link，否则封面/入口 bvid
  */
-export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string, bvid?: string, type?: number): string {
-  if (type === 11)
-    return `https://www.bilibili.com/medialist/play/ml${seasonId}`
+export function buildFavoriteSeasonEntryUrl(
+  seasonId: number,
+  link?: string,
+  bvid?: string,
+  type?: number,
+): string {
+  if (type === 11) return `https://www.bilibili.com/medialist/play/ml${seasonId}`
 
   const matchedVideoLink = link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
 
   if (matchedVideoLink)
-    return localizeBilibiliUrl(`https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`)
+    return localizeBilibiliUrl(
+      `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`,
+    )
 
-  if (bvid)
-    return localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
+  if (bvid) return localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
 
   // list/season/{id} 对 UGC 订阅合集常 404，仅作无 link/bvid 时的最后兜底
   return localizeBilibiliUrl(`https://www.bilibili.com/list/season/${seasonId}`)
@@ -109,9 +114,8 @@ export function mergeFavoriteSeasonPage(input: {
   pageSize?: number
 }): FavoriteSeasonPageMergeResult {
   const pageSize = input.pageSize ?? FAVORITE_SEASON_PAGE_SIZE
-  const count = typeof input.mediaCount === 'number' && input.mediaCount >= 0
-    ? input.mediaCount
-    : undefined
+  const count =
+    typeof input.mediaCount === 'number' && input.mediaCount >= 0 ? input.mediaCount : undefined
   const pageMedias = input.pageMedias
 
   if (pageMedias.length === 0) {
@@ -145,9 +149,7 @@ export function mergeFavoriteSeasonPage(input: {
     }
   }
 
-  const medias = input.pn === 1
-    ? [...pageMedias]
-    : [...input.previousMedias, ...pageMedias]
+  const medias = input.pn === 1 ? [...pageMedias] : [...input.previousMedias, ...pageMedias]
 
   if (count !== undefined && medias.length >= count) {
     return {
@@ -177,18 +179,19 @@ export async function fetchFavoriteSeasonPage(
         pn,
         ps: Math.min(pageSize, 20),
       })
-      if (res.code !== 0 || !res.data)
-        return { ok: false, pageMedias: [] }
+      if (res.code !== 0 || !res.data) return { ok: false, pageMedias: [] }
 
       return {
         ok: true,
-        pageMedias: (res.data.medias || []).filter(item => item != null).map(item => ({
-          ...item,
-          bvid: item.bvid || item.bv_id,
-          enable_vt: 0,
-          vt_display: '',
-          is_self_view: false,
-        })),
+        pageMedias: (res.data.medias || [])
+          .filter((item) => item != null)
+          .map((item) => ({
+            ...item,
+            bvid: item.bvid || item.bv_id,
+            enable_vt: 0,
+            vt_display: '',
+            is_self_view: false,
+          })),
         mediaCount: res.data.info?.media_count,
         cover: res.data.info?.cover,
         hasMore: res.data.has_more,
@@ -206,12 +209,16 @@ export async function fetchFavoriteSeasonPage(
     }
 
     const pageMedias = Array.isArray(res.data.medias)
-      ? res.data.medias.filter((item: FavoriteSeasonMedia | null | undefined): item is FavoriteSeasonMedia => item != null)
+      ? res.data.medias.filter(
+          (item: FavoriteSeasonMedia | null | undefined): item is FavoriteSeasonMedia =>
+            item != null,
+        )
       : []
 
-    const mediaCount = typeof res.data.info?.media_count === 'number' && res.data.info.media_count >= 0
-      ? res.data.info.media_count
-      : undefined
+    const mediaCount =
+      typeof res.data.info?.media_count === 'number' && res.data.info.media_count >= 0
+        ? res.data.info.media_count
+        : undefined
 
     return {
       ok: true,
@@ -219,8 +226,7 @@ export async function fetchFavoriteSeasonPage(
       mediaCount,
       cover: res.data.info?.cover,
     }
-  }
-  catch {
+  } catch {
     return { ok: false, pageMedias: [] }
   }
 }
@@ -229,14 +235,16 @@ export async function fetchFavoriteSeasonPage(
  * 拉取订阅合集全部稿件
  * complete=false 表示中途失败或异常截断，不得把末项当「最新」
  */
-export async function fetchAllFavoriteSeasonMedias(seasonId: number, type?: number): Promise<FetchAllSeasonMediasResult> {
+export async function fetchAllFavoriteSeasonMedias(
+  seasonId: number,
+  type?: number,
+): Promise<FetchAllSeasonMediasResult> {
   let medias: FavoriteSeasonMedia[] = []
   let pn = 1
 
   while (pn <= MAX_SEASON_PAGES) {
     const page = await fetchFavoriteSeasonPage(seasonId, pn, FAVORITE_SEASON_PAGE_SIZE, type)
-    if (!page.ok)
-      return { medias, complete: false }
+    if (!page.ok) return { medias, complete: false }
 
     const merged = mergeFavoriteSeasonPage({
       pn,
@@ -247,8 +255,7 @@ export async function fetchAllFavoriteSeasonMedias(seasonId: number, type?: numb
     })
     medias = merged.medias
 
-    if (!merged.hasMore)
-      return { medias, complete: true }
+    if (!merged.hasMore) return { medias, complete: true }
 
     pn += 1
   }
@@ -262,22 +269,19 @@ function matchSeasonMediaFromHistory(
 ): FavoriteSeasonMedia | undefined {
   const byBvid = new Map(
     medias
-      .filter(item => typeof item.bvid === 'string' && item.bvid.length > 0)
-      .map(item => [item.bvid, item]),
+      .filter((item) => typeof item.bvid === 'string' && item.bvid.length > 0)
+      .map((item) => [item.bvid, item]),
   )
-  const byAid = new Map(medias.map(item => [item.id, item]))
+  const byAid = new Map(medias.map((item) => [item.id, item]))
 
   for (const item of historyItems) {
-    if (item.history?.business && item.history.business !== Business.ARCHIVE)
-      continue
+    if (item.history?.business && item.history.business !== Business.ARCHIVE) continue
 
     const byVid = item.history?.bvid ? byBvid.get(item.history.bvid) : undefined
-    if (byVid)
-      return byVid
+    if (byVid) return byVid
 
     const oid = item.history?.oid
-    if (typeof oid === 'number' && byAid.has(oid))
-      return byAid.get(oid)
+    if (typeof oid === 'number' && byAid.has(oid)) return byAid.get(oid)
   }
 
   return undefined
@@ -289,8 +293,7 @@ function matchSeasonMediaFromHistory(
 export async function findLastWatchedSeasonMedia(
   medias: FavoriteSeasonMedia[],
 ): Promise<FavoriteSeasonMedia | undefined> {
-  if (medias.length === 0)
-    return undefined
+  if (medias.length === 0) return undefined
 
   let viewAt = 0
 
@@ -302,25 +305,20 @@ export async function findLastWatchedSeasonMedia(
         view_at: viewAt,
         ps: HISTORY_PAGE_SIZE,
       })
-    }
-    catch {
+    } catch {
       return undefined
     }
 
-    if (res.code !== 0 || !res.data)
-      return undefined
+    if (res.code !== 0 || !res.data) return undefined
 
-    const list = Array.isArray(res.data.list) ? res.data.list as HistoryItem[] : []
-    if (list.length === 0)
-      return undefined
+    const list = Array.isArray(res.data.list) ? (res.data.list as HistoryItem[]) : []
+    if (list.length === 0) return undefined
 
     const matched = matchSeasonMediaFromHistory(medias, list)
-    if (matched)
-      return matched
+    if (matched) return matched
 
     viewAt = list[list.length - 1]?.view_at ?? 0
-    if (!viewAt || list.length < HISTORY_PAGE_SIZE)
-      return undefined
+    if (!viewAt || list.length < HISTORY_PAGE_SIZE) return undefined
   }
 
   return undefined
@@ -337,10 +335,10 @@ async function resolveSeasonMedias(
 
   // 未标 complete，但条数已达已知总数：也视为完整（避免 flag 与 media_count 不同步）
   if (
-    preloaded
-    && typeof preloaded.expectedCount === 'number'
-    && preloaded.expectedCount > 0
-    && preloaded.medias.length >= preloaded.expectedCount
+    preloaded &&
+    typeof preloaded.expectedCount === 'number' &&
+    preloaded.expectedCount > 0 &&
+    preloaded.medias.length >= preloaded.expectedCount
   ) {
     return {
       medias: preloaded.medias.slice(0, preloaded.expectedCount),
@@ -368,21 +366,25 @@ export async function resolveFavoriteSeasonPlayAllUrl(
   }
 
   const { medias, complete } = await resolveSeasonMedias(seasonId, preloaded, type)
-  if (!complete)
-    return { url: entryUrl, usedFallback: true, reason: 'incomplete' }
-  if (medias.length === 0)
-    return { url: entryUrl, usedFallback: true, reason: 'empty' }
+  if (!complete) return { url: entryUrl, usedFallback: true, reason: 'incomplete' }
+  if (medias.length === 0) return { url: entryUrl, usedFallback: true, reason: 'empty' }
 
   if (mode === 'latest') {
     const latest = medias.at(-1)
-    if (!latest?.bvid)
-      return { url: entryUrl, usedFallback: true, reason: 'missing-bvid' }
-    return { url: buildFavoriteSeasonVideoUrl(latest.bvid), usedFallback: false, reason: 'resolved' }
+    if (!latest?.bvid) return { url: entryUrl, usedFallback: true, reason: 'missing-bvid' }
+    return {
+      url: buildFavoriteSeasonVideoUrl(latest.bvid),
+      usedFallback: false,
+      reason: 'resolved',
+    }
   }
 
   const lastWatched = await findLastWatchedSeasonMedia(medias)
-  if (!lastWatched?.bvid)
-    return { url: entryUrl, usedFallback: true, reason: 'no-history' }
+  if (!lastWatched?.bvid) return { url: entryUrl, usedFallback: true, reason: 'no-history' }
 
-  return { url: buildFavoriteSeasonVideoUrl(lastWatched.bvid), usedFallback: false, reason: 'resolved' }
+  return {
+    url: buildFavoriteSeasonVideoUrl(lastWatched.bvid),
+    usedFallback: false,
+    reason: 'resolved',
+  }
 }

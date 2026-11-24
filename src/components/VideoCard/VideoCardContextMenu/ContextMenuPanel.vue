@@ -24,8 +24,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 // styles 带 bottom（无 top）即向上展开，缩放原点随之翻转到锚点下缘
-const opensUpward = computed(() => props.menuStyles.bottom !== undefined && props.menuStyles.top === undefined)
-const visibleGroups = computed(() => props.groups.filter(group => group.length > 0))
+const opensUpward = computed(
+  () => props.menuStyles.bottom !== undefined && props.menuStyles.top === undefined,
+)
+const visibleGroups = computed(() => props.groups.filter((group) => group.length > 0))
 
 const menuListRef = ref<HTMLElement | null>(null)
 const canScrollUp = ref(false)
@@ -34,23 +36,23 @@ const activeMenuIndex = ref(0)
 let shouldRestoreFocus = true
 
 function getMenuItems() {
-  return Array.from(menuListRef.value?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
+  return Array.from(
+    menuListRef.value?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [],
+  )
 }
 
 function focusMenuItem(index: number) {
   const items = getMenuItems()
-  if (!items.length)
-    return
+  if (!items.length) return
 
   activeMenuIndex.value = (index + items.length) % items.length
-  items.forEach((item, itemIndex) => item.tabIndex = itemIndex === activeMenuIndex.value ? 0 : -1)
+  items.forEach((item, itemIndex) => (item.tabIndex = itemIndex === activeMenuIndex.value ? 0 : -1))
   items[activeMenuIndex.value].focus({ preventScroll: true })
 }
 
 function setActiveMenuItem(event: FocusEvent) {
   const index = getMenuItems().indexOf(event.currentTarget as HTMLButtonElement)
-  if (index >= 0)
-    activeMenuIndex.value = index
+  if (index >= 0) activeMenuIndex.value = index
 }
 
 function handleMenuKeydown(event: KeyboardEvent) {
@@ -85,8 +87,7 @@ function handleMenuKeydown(event: KeyboardEvent) {
 
 // 处理滚动事件，更新箭头显示状态
 function handleScroll() {
-  if (!menuListRef.value)
-    return
+  if (!menuListRef.value) return
 
   const { scrollTop, scrollHeight, clientHeight } = menuListRef.value
   canScrollUp.value = scrollTop > 0
@@ -98,35 +99,36 @@ function scrollToTop() {
 }
 
 function scrollToBottom() {
-  if (!menuListRef.value)
-    return
+  if (!menuListRef.value) return
   menuListRef.value.scrollTo({ top: menuListRef.value.scrollHeight, behavior: 'smooth' })
 }
 
 // 监听菜单列表尺寸变化，确保滚动指示器状态正确
 let resizeObserver: ResizeObserver | null = null
 
-watch(() => props.show, (show) => {
-  resizeObserver?.disconnect()
-  resizeObserver = null
-  if (!show)
-    return
+watch(
+  () => props.show,
+  (show) => {
+    resizeObserver?.disconnect()
+    resizeObserver = null
+    if (!show) return
 
-  nextTick(() => {
-    handleScroll()
-    focusMenuItem(0)
-    if (menuListRef.value) {
-      resizeObserver = new ResizeObserver(handleScroll)
-      resizeObserver.observe(menuListRef.value)
-    }
-  })
-}, { immediate: true })
+    nextTick(() => {
+      handleScroll()
+      focusMenuItem(0)
+      if (menuListRef.value) {
+        resizeObserver = new ResizeObserver(handleScroll)
+        resizeObserver.observe(menuListRef.value)
+      }
+    })
+  },
+  { immediate: true },
+)
 
 // Fixed menu coordinates are calculated from the viewport at open time. Close
 // when its dimensions change so an upward menu cannot drift from its trigger.
 function handleViewportResize() {
-  if (props.show)
-    emit('close')
+  if (props.show) emit('close')
 }
 
 onMounted(() => {
@@ -148,7 +150,7 @@ onUnmounted(() => {
   <Transition name="bew-pop" appear>
     <div
       v-if="show"
-      style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1));"
+      style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1))"
       :style="menuStyles"
       class="context-menu-container bew-popover-surface"
       :class="opensUpward && 'context-menu-container--up'"
@@ -173,14 +175,15 @@ onUnmounted(() => {
         @keydown="handleMenuKeydown"
       >
         <template v-for="(group, index) in visibleGroups" :key="index">
-          <li
-            v-for="item in group"
-            :key="item.key"
-            role="none"
-          >
+          <li v-for="item in group" :key="item.key" role="none">
             <button
-              type="button" role="menuitem" tabindex="-1" class="context-menu-item" :class="item.color"
-              @focus="setActiveMenuItem" @click="item.select()"
+              type="button"
+              role="menuitem"
+              tabindex="-1"
+              class="context-menu-item"
+              :class="item.color"
+              @focus="setActiveMenuItem"
+              @click="item.select()"
             >
               <i class="item-icon" :class="[item.icon, item.color]" />
               {{ item.name }}
@@ -207,8 +210,10 @@ onUnmounted(() => {
   <Transition name="fade">
     <div
       v-if="show"
-      pos="fixed top-0 left-0" w-full h-full
-      style="z-index: 9998;"
+      pos="fixed top-0 left-0"
+      w-full
+      h-full
+      style="z-index: 9998"
       @click="emit('close')"
       @click.right.prevent.stop="emit('close')"
     />
@@ -218,8 +223,8 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 // 进出动画由 main.scss 的 .bew-pop-* 共享过渡类提供。
 .context-menu-item {
-  --uno: "hover:bg-$bew-fill-2 rounded-$bew-menu-item-radius cursor-pointer";
-  --uno: "flex items-center transition-colors duration-200 ease-$bew-ease-standard";
+  --uno: 'hover:bg-$bew-fill-2 rounded-$bew-menu-item-radius cursor-pointer';
+  --uno: 'flex items-center transition-colors duration-200 ease-$bew-ease-standard';
 
   width: 100%;
   min-height: 32px;
@@ -234,13 +239,13 @@ onUnmounted(() => {
 }
 
 .item-icon {
-  --uno: "inline-block color-$bew-text-color-2";
+  --uno: 'inline-block color-$bew-text-color-2';
 
   margin-right: var(--bew-space-3);
 }
 
 .divider {
-  --uno: "w-full h-1px bg-$bew-border-color";
+  --uno: 'w-full h-1px bg-$bew-border-color';
 
   // 菜单限高并滚动时仍保留完整的 1px 分割线。
   flex-shrink: 0;

@@ -18,7 +18,15 @@ export enum DrawerType {
   NotificationsDrawer = 'notifications',
 }
 
-export type SettingsMenu = 'General' | 'BewlyPages' | 'BewlyComponents' | 'Bilibili' | 'Appearance' | 'Shortcuts' | 'Data' | 'About'
+export type SettingsMenu =
+  | 'General'
+  | 'BewlyPages'
+  | 'BewlyComponents'
+  | 'Bilibili'
+  | 'Appearance'
+  | 'Shortcuts'
+  | 'Data'
+  | 'About'
 
 export interface SettingsNavigationTarget {
   menu: SettingsMenu
@@ -63,8 +71,7 @@ export interface BewlyAppProvider {
 export function useBewlyApp(): BewlyAppProvider {
   const provider = inject<BewlyAppProvider>('BEWLY_APP')
 
-  if (import.meta.env.DEV && !provider)
-    throw new Error('AppProvider is not injected')
+  if (import.meta.env.DEV && !provider) throw new Error('AppProvider is not injected')
 
   return provider!
 }

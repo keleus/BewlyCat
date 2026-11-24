@@ -1,7 +1,6 @@
 import './common'
 import './shadowDom'
 import './thirdParties'
-
 import { isOriginalMomentsFeed } from '~/contentScripts/features/originalMomentsFeed'
 import { settings, settingsReady } from '~/logic/storage'
 import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
@@ -63,19 +62,16 @@ let pageStyleObserver: MutationObserver | undefined
 
 function syncPageStyleElement(cssText: string): boolean {
   const root = document.documentElement
-  if (!root)
-    return false
+  if (!root) return false
 
   const existing = Array.from(root.querySelectorAll<HTMLStyleElement>(PAGE_STYLE_SELECTOR))
   if (!cssText) {
-    for (const styleEl of existing)
-      styleEl.remove()
+    for (const styleEl of existing) styleEl.remove()
     return true
   }
 
   let styleEl = existing[0]
-  for (let i = 1; i < existing.length; i++)
-    existing[i].remove()
+  for (let i = 1; i < existing.length; i++) existing[i].remove()
 
   if (!styleEl) {
     styleEl = document.createElement('style')
@@ -83,15 +79,12 @@ function syncPageStyleElement(cssText: string): boolean {
   }
 
   // 同类型页面间 SPA 跳转（如视频切 P / 切 BV）内容一致时跳过重写，避免无谓的样式表重解析。
-  if (styleEl.textContent !== cssText)
-    styleEl.textContent = cssText
+  if (styleEl.textContent !== cssText) styleEl.textContent = cssText
 
   const hostStyle = root.querySelector(HOST_STYLE_SELECTOR)
   if (hostStyle) {
-    if (hostStyle.nextElementSibling !== styleEl)
-      hostStyle.after(styleEl)
-  }
-  else if (!styleEl.isConnected) {
+    if (hostStyle.nextElementSibling !== styleEl) hostStyle.after(styleEl)
+  } else if (!styleEl.isConnected) {
     root.prepend(styleEl)
   }
 
@@ -99,8 +92,7 @@ function syncPageStyleElement(cssText: string): boolean {
 }
 
 function applyPageStyle(cssText: string) {
-  if (isElectron() || isInBilibiliLiveContext())
-    return
+  if (isElectron() || isInBilibiliLiveContext()) return
 
   pendingPageStyleText = cssText
   if (syncPageStyleElement(cssText)) {
@@ -109,8 +101,7 @@ function applyPageStyle(cssText: string) {
     return
   }
 
-  if (pageStyleObserver)
-    return
+  if (pageStyleObserver) return
 
   pageStyleObserver = new MutationObserver(() => {
     if (syncPageStyleElement(pendingPageStyleText ?? '')) {
@@ -129,8 +120,7 @@ async function setupStyles() {
   const root = document.documentElement
   const isCurrentSetup = () => revision === styleSetupRevision && document.URL === rawUrl
   const activatePage = (cssText: string, ...classNames: string[]) => {
-    if (!isCurrentSetup())
-      return false
+    if (!isCurrentSetup()) return false
 
     applyPageStyle(cssText)
     root?.classList.add(...classNames)
@@ -146,8 +136,7 @@ async function setupStyles() {
 
   // notifications page 消息页
   else if (/https?:\/\/message\.bilibili\.com\.*/.test(currentUrl)) {
-    if (!activatePage(notificationsPageStyle, 'notificationsPage'))
-      return
+    if (!activatePage(notificationsPageStyle, 'notificationsPage')) return
 
     if (isInIframe() && settings.value.openNotificationsPageAsDrawer) {
       root?.classList.add('drawer')
@@ -157,11 +146,11 @@ async function setupStyles() {
   // moments page, new articles page 动态页, 新版专栏页
   else if (
     // moments
-    /https?:\/\/t\.bilibili\.com\.*/.test(currentUrl)
+    /https?:\/\/t\.bilibili\.com\.*/.test(currentUrl) ||
     // moment detail, new articles page
-    || /https?:\/\/www\.bilibili\.com\/opus\/.*/.test(currentUrl)) {
-    if (!activatePage(momentsPageStyle, 'momentsPage'))
-      return
+    /https?:\/\/www\.bilibili\.com\/opus\/.*/.test(currentUrl)
+  ) {
+    if (!activatePage(momentsPageStyle, 'momentsPage')) return
 
     const isOriginalMomentsFeedPage = isOriginalMomentsFeed(currentUrl)
     let initialVisibilityGuard: HTMLStyleElement | undefined
@@ -194,8 +183,7 @@ async function setupStyles() {
       root.appendChild(initialVisibilityGuard)
     }
 
-    if (isOriginalMomentsFeedPage)
-      await settingsReady
+    if (isOriginalMomentsFeedPage) await settingsReady
 
     if (!isCurrentSetup()) {
       initialVisibilityGuard?.remove()
@@ -203,18 +191,34 @@ async function setupStyles() {
     }
 
     if (isOriginalMomentsFeedPage && root) {
-      root.classList.toggle('moments-hide-original-user-card', !settings.value.originalMomentsShowUserCard)
-      root.classList.toggle('moments-hide-original-live-list', !settings.value.originalMomentsShowLiveList)
-      root.classList.toggle('moments-hide-original-community-center', !settings.value.originalMomentsShowCommunityCenter)
-      root.classList.toggle('moments-hide-original-hot-search', !settings.value.originalMomentsShowHotSearch)
-      root.classList.toggle('moments-hide-original-up-list', !settings.value.originalMomentsShowUpList)
+      root.classList.toggle(
+        'moments-hide-original-user-card',
+        !settings.value.originalMomentsShowUserCard,
+      )
+      root.classList.toggle(
+        'moments-hide-original-live-list',
+        !settings.value.originalMomentsShowLiveList,
+      )
+      root.classList.toggle(
+        'moments-hide-original-community-center',
+        !settings.value.originalMomentsShowCommunityCenter,
+      )
+      root.classList.toggle(
+        'moments-hide-original-hot-search',
+        !settings.value.originalMomentsShowHotSearch,
+      )
+      root.classList.toggle(
+        'moments-hide-original-up-list',
+        !settings.value.originalMomentsShowUpList,
+      )
       root.classList.add('moments-original-components-ready')
       initialVisibilityGuard?.remove()
     }
 
     // 插件动态页通过抽屉 iframe 打开详情时，隐藏原站冗余布局并聚焦正文。
-    const isMomentDetail = /https?:\/\/t\.bilibili\.com\/\d+/.test(currentUrl)
-      || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(currentUrl)
+    const isMomentDetail =
+      /https?:\/\/t\.bilibili\.com\/\d+/.test(currentUrl) ||
+      /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(currentUrl)
     if (isInIframe() && isMomentDetail) {
       root?.classList.add('drawer')
       root?.classList.add('remove-top-bar-without-placeholder')
@@ -223,8 +227,8 @@ async function setupStyles() {
 
   // history page 历史记录页
   else if (
-    /https?:\/\/(?:www\.)?bilibili\.com\/account\/history.*/.test(currentUrl)
-    || /https?:\/\/(?:www\.)?bilibili\.com\/history.*/.test(currentUrl)
+    /https?:\/\/(?:www\.)?bilibili\.com\/account\/history.*/.test(currentUrl) ||
+    /https?:\/\/(?:www\.)?bilibili\.com\/history.*/.test(currentUrl)
   ) {
     activatePage(historyPageStyle, 'historyPage')
   }
@@ -251,20 +255,18 @@ async function setupStyles() {
 
   // video page 视频页
   else if (
-    /https?:\/\/(?:www\.)?bilibili\.com\/video\/.*/.test(currentUrl)
+    /https?:\/\/(?:www\.)?bilibili\.com\/video\/.*/.test(currentUrl) ||
     // watch later playlist 稍候再看播放页
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater.*/.test(currentUrl)
+    /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater.*/.test(currentUrl) ||
     // favorite playlist 收藏播放页
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(currentUrl)
+    /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(currentUrl) ||
     // 旧版收藏播放页
-    || /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/play\/.*/.test(currentUrl)
+    /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/play\/.*/.test(currentUrl) ||
     // 视频合集
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/.*/.test(currentUrl)
+    /https?:\/\/(?:www\.)?bilibili\.com\/list\/.*/.test(currentUrl)
   ) {
     activatePage(videoPageStyle, 'videoPage')
-  }
-
-  else if (
+  } else if (
     // anime playback & movie page 番剧播放页与电影播放页
     /https?:\/\/(?:www\.)?bilibili\.com\/bangumi\/play\/.*/.test(currentUrl)
   ) {
@@ -272,14 +274,14 @@ async function setupStyles() {
   }
 
   // anime page & chinese anime page 番剧页 与 国创动漫
-  else if (
-    /https?:\/\/(?:www\.)?bilibili\.com\/(?:anime|guochuang).*/.test(currentUrl)) {
+  else if (/https?:\/\/(?:www\.)?bilibili\.com\/(?:anime|guochuang).*/.test(currentUrl)) {
     activatePage(animePageStyle, 'animePage')
   }
 
   // channel page e.g. tv shows, movie, variety shows & mooc pages 分区页
   else if (
-    /https?:\/\/(?:www\.)?bilibili\.com\/(?:tv|movie|variety|mooc|documentary).*/.test(currentUrl)) {
+    /https?:\/\/(?:www\.)?bilibili\.com\/(?:tv|movie|variety|mooc|documentary).*/.test(currentUrl)
+  ) {
     activatePage(channelPageStyle, 'channelPage')
   }
 
@@ -316,24 +318,20 @@ async function setupStyles() {
   // login page 登入頁
   else if (/^https?:\/\/passport\.bilibili\.com\/login.*$/.test(currentUrl)) {
     activatePage(loginPageStyle, 'loginPage')
-  }
-
-  else {
+  } else {
     applyPageStyle('')
   }
 }
 
 let styleRefreshQueued = false
 function scheduleStyleRefresh() {
-  if (styleRefreshQueued)
-    return
+  if (styleRefreshQueued) return
 
   styleRefreshQueued = true
   // MAIN-world history hooks fire before the URL is updated.
   queueMicrotask(() => {
     styleRefreshQueued = false
-    if (lastStyledUrl === document.URL)
-      return
+    if (lastStyledUrl === document.URL) return
 
     lastStyledUrl = document.URL
     void setupStyles()

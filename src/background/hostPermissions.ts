@@ -1,6 +1,9 @@
 import browser from 'webextension-polyfill'
 
-import type { HostPermissionsStatus, HostPermissionsStatusRequest } from '~/constants/apiDiagnostics'
+import type {
+  HostPermissionsStatus,
+  HostPermissionsStatusRequest,
+} from '~/constants/apiDiagnostics'
 import { GET_HOST_PERMISSIONS_STATUS_MESSAGE } from '~/constants/apiDiagnostics'
 import { onMessage } from '~/utils/messaging'
 
@@ -33,16 +36,13 @@ export class ApiHostPermissionError extends Error {
 }
 
 function normalizeHttpOrigin(value: unknown): string | undefined {
-  if (typeof value !== 'string' || !value.trim())
-    return undefined
+  if (typeof value !== 'string' || !value.trim()) return undefined
 
   try {
     const parsed = new URL(value)
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
-      return undefined
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
     return parsed.origin
-  }
-  catch {
+  } catch {
     return undefined
   }
 }
@@ -50,24 +50,23 @@ function normalizeHttpOrigin(value: unknown): string | undefined {
 function isExtensionHostDomain(origin: string): boolean {
   try {
     const { hostname } = new URL(origin)
-    return hostname === 'bilibili.com'
-      || hostname.endsWith('.bilibili.com')
-      || hostname === 'hdslb.com'
-      || hostname.endsWith('.hdslb.com')
-  }
-  catch {
+    return (
+      hostname === 'bilibili.com' ||
+      hostname.endsWith('.bilibili.com') ||
+      hostname === 'hdslb.com' ||
+      hostname.endsWith('.hdslb.com')
+    )
+  } catch {
     return false
   }
 }
 
 async function hasOriginHostPermission(pattern: string): Promise<boolean | undefined> {
-  if (typeof browser.permissions?.contains !== 'function')
-    return undefined
+  if (typeof browser.permissions?.contains !== 'function') return undefined
 
   try {
     return Boolean(await browser.permissions.contains({ origins: [pattern] }))
-  }
-  catch {
+  } catch {
     return undefined
   }
 }
@@ -78,8 +77,7 @@ async function hasOriginHostPermission(pattern: string): Promise<boolean | undef
  */
 export async function getMissingHostPermissionOrigin(url: string): Promise<string | undefined> {
   const origin = normalizeHttpOrigin(url)
-  if (!origin)
-    return undefined
+  if (!origin) return undefined
 
   const granted = await hasOriginHostPermission(`${origin}/*`)
   return granted === false ? origin : undefined
@@ -101,11 +99,9 @@ async function getHostPermissionsStatus(
   if (Array.isArray(request?.origins)) {
     let added = 0
     for (const rawOrigin of request.origins) {
-      if (added >= MAX_EXTRA_ORIGINS)
-        break
+      if (added >= MAX_EXTRA_ORIGINS) break
       const normalized = normalizeHttpOrigin(rawOrigin)
-      if (!normalized || !isExtensionHostDomain(normalized) || originSet.has(normalized))
-        continue
+      if (!normalized || !isExtensionHostDomain(normalized) || originSet.has(normalized)) continue
       originSet.add(normalized)
       added++
     }
@@ -115,11 +111,11 @@ async function getHostPermissionsStatus(
   const [bilibiliWildcard, hdslbWildcard, ...originResults] = await Promise.all([
     hasOriginHostPermission(BILIBILI_HOST_WILDCARD),
     hasOriginHostPermission(HDSLB_HOST_WILDCARD),
-    ...origins.map(origin => hasOriginHostPermission(`${origin}/*`)),
+    ...origins.map((origin) => hasOriginHostPermission(`${origin}/*`)),
   ])
 
   const allResults = [bilibiliWildcard, hdslbWildcard, ...originResults]
-  if (allResults.every(result => result === undefined)) {
+  if (allResults.every((result) => result === undefined)) {
     return {
       supported: false,
       bilibiliWildcard: true,
@@ -140,6 +136,6 @@ async function getHostPermissionsStatus(
 export function setupHostPermissionsDiagnostics() {
   onMessage<HostPermissionsStatusRequest | undefined, HostPermissionsStatus>(
     GET_HOST_PERMISSIONS_STATUS_MESSAGE,
-    request => getHostPermissionsStatus(request),
+    (request) => getHostPermissionsStatus(request),
   )
 }

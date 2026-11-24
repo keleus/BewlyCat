@@ -4,7 +4,10 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
-import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
+import type {
+  FollowingLiveResult,
+  List as FollowingLiveItem,
+} from '~/models/live/getFollowingLiveList'
 import api from '~/utils/api'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -31,7 +34,10 @@ const needToLoginFirst = tabState.ref<boolean>('needToLoginFirst', false)
 const page = tabState.ref<number>('page', 1)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
 const requestFailed = tabState.ref<boolean>('requestFailed', false)
-const errorReportSource: ApiErrorReportSource = { scene: '关注直播', queries: ['getFollowingLiveList'] }
+const errorReportSource: ApiErrorReportSource = {
+  scene: '关注直播',
+  queries: ['getFollowingLiveList'],
+}
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 // 刷新会作废仍在进行的加载更多，避免旧页拼进新列表后重复请求同一页、产生重复卡片。
@@ -39,10 +45,8 @@ let requestVersion = 0
 
 onMounted(() => {
   initPageAction()
-  if (!tabState.restored)
-    void initData()
-  else if (!hasLoaded.value)
-    void getData()
+  if (!tabState.restored) void initData()
+  else if (!hasLoaded.value) void getData()
 })
 
 function initPageAction() {
@@ -51,8 +55,7 @@ function initPageAction() {
 }
 
 async function initData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
 
   const version = ++requestVersion
   needToLoginFirst.value = false
@@ -71,8 +74,7 @@ function isRequestCurrent(version: number) {
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
 function transformLiveVideo(item: VideoElement): Video | undefined {
-  if (!item.item)
-    return undefined
+  if (!item.item) return undefined
 
   const liveItem = item.item
   return {
@@ -93,8 +95,7 @@ function transformLiveVideo(item: VideoElement): Video | undefined {
 }
 
 async function getData(version = requestVersion) {
-  if (!isRequestCurrent(version))
-    return
+  if (!isRequestCurrent(version)) return
 
   emit('beforeLoading')
   isLoading.value = true
@@ -103,19 +104,16 @@ async function getData(version = requestVersion) {
   try {
     // 初次加载时多加载几批确保有足够内容
     for (let i = 0; i < 3 && !noMoreContent.value; i++) {
-      if (!isRequestCurrent(version))
-        return
+      if (!isRequestCurrent(version)) return
 
-      loaded = await getLiveVideos(version) || loaded
-      if (!isRequestCurrent(version))
-        return
+      loaded = (await getLiveVideos(version)) || loaded
+      if (!isRequestCurrent(version)) return
     }
     if (isRequestCurrent(version)) {
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  finally {
+  } finally {
     if (isRequestCurrent(version)) {
       isLoading.value = false
       emit('afterLoading')
@@ -124,22 +122,19 @@ async function getData(version = requestVersion) {
 }
 
 async function reachBottomHandler() {
-  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value) return
 
   await handleLoadMore()
 }
 
 async function refreshHandler() {
-  if (!tabState.isCurrent() || isLoading.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value) return
 
   await initData()
 }
 
 async function getLiveVideos(version: number): Promise<boolean> {
-  if (noMoreContent.value)
-    return true
+  if (noMoreContent.value) return true
 
   const requestPage = page.value
 
@@ -149,8 +144,7 @@ async function getLiveVideos(version: number): Promise<boolean> {
       page_size: 9,
     })
 
-    if (!isRequestCurrent(version))
-      return false
+    if (!isRequestCurrent(version)) return false
 
     if (response.code === -101) {
       noMoreContent.value = true
@@ -158,32 +152,30 @@ async function getLiveVideos(version: number): Promise<boolean> {
       return true
     }
 
-    if (response.code !== 0)
-      return false
+    if (response.code !== 0) return false
 
-    if (response.data.list.length < 9)
-      noMoreContent.value = true
+    if (response.data.list.length < 9) noMoreContent.value = true
 
     page.value = requestPage + 1
 
     // 直播列表按页码翻页且排序随开播状态变化，同一直播间可能出现在相邻两页；卡片 key 必须唯一。
-    const seenIds = new Set(videoList.value.map(video => video.uniqueId))
+    const seenIds = new Set(videoList.value.map((video) => video.uniqueId))
     const newItems = response.data.list.flatMap((item: FollowingLiveItem) => {
       const uniqueId = `${item.roomid}`
-      if (seenIds.has(uniqueId))
-        return []
+      if (seenIds.has(uniqueId)) return []
       seenIds.add(uniqueId)
-      return [{
-        uniqueId,
-        item,
-        displayData: transformLiveVideo({ uniqueId, item }),
-      }]
+      return [
+        {
+          uniqueId,
+          item,
+          displayData: transformLiveVideo({ uniqueId, item }),
+        },
+      ]
     })
 
     videoList.value = [...videoList.value, ...newItems]
     return true
-  }
-  catch {
+  } catch {
     // 忽略错误
     return false
   }
@@ -191,8 +183,7 @@ async function getLiveVideos(version: number): Promise<boolean> {
 
 // 供 VideoCardGrid 预加载调用的函数
 async function handleLoadMore() {
-  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value) return
 
   const version = requestVersion
   isLoading.value = true
@@ -202,10 +193,8 @@ async function handleLoadMore() {
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  finally {
-    if (isRequestCurrent(version))
-      isLoading.value = false
+  } finally {
+    if (isRequestCurrent(version)) isLoading.value = false
   }
 }
 
@@ -214,10 +203,8 @@ function jumpToLoginPage() {
 }
 
 onBeforeUnmount(() => {
-  if (handleReachBottom.value === reachBottomHandler)
-    handleReachBottom.value = undefined
-  if (handlePageRefresh.value === refreshHandler)
-    handlePageRefresh.value = undefined
+  if (handleReachBottom.value === reachBottomHandler) handleReachBottom.value = undefined
+  if (handlePageRefresh.value === refreshHandler) handlePageRefresh.value = undefined
 })
 
 defineExpose({ initData })

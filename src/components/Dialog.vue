@@ -5,46 +5,49 @@ import Button from '~/components/Button.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 
-const props = withDefaults(defineProps<{
-  title?: string
-  desc?: string
-  center?: boolean
-  frostedGlass?: boolean
-  appendToBewlyBody?: boolean
-  width?: string | number
-  maxWidth?: string | number
-  /** 对话框整体高度（含 header/footer） */
-  height?: string | number
-  contentHeight?: string | number
-  contentMaxHeight?: string | number
-  /** 顶部偏移；设置后改为顶部对齐（类似小红书 note 详情），不再垂直居中 */
-  topOffset?: string | number
-  /** 去掉内容区内边距（保留顶部 header），用于 iframe 详情等贴边场景 */
-  contentFlush?: boolean
-  /** 是否显示对话框顶栏 */
-  showHeader?: boolean
-  /** Vue Transition 名称；可为需要避免缩放的详情弹窗指定独立过渡 */
-  transitionName?: string
-  /** 是否显示边框和边缘光 */
-  showBorder?: boolean
-  showFooter?: boolean
-  centerFooter?: boolean
-  loading?: boolean
-  /** 执行进度由内容区展示时，可隐藏默认的加载遮罩。 */
-  showLoadingOverlay?: boolean
-  preventCloseWhenLoading?: boolean
-  closeOnConfirm?: boolean
-}>(), {
-  closeOnConfirm: true,
-  preventCloseWhenLoading: true,
-  showLoadingOverlay: true,
-  frostedGlass: true,
-  showHeader: true,
-  showBorder: true,
-  showFooter: true,
-  contentFlush: false,
-  transitionName: 'modal',
-})
+const props = withDefaults(
+  defineProps<{
+    title?: string
+    desc?: string
+    center?: boolean
+    frostedGlass?: boolean
+    appendToBewlyBody?: boolean
+    width?: string | number
+    maxWidth?: string | number
+    /** 对话框整体高度（含 header/footer） */
+    height?: string | number
+    contentHeight?: string | number
+    contentMaxHeight?: string | number
+    /** 顶部偏移；设置后改为顶部对齐（类似小红书 note 详情），不再垂直居中 */
+    topOffset?: string | number
+    /** 去掉内容区内边距（保留顶部 header），用于 iframe 详情等贴边场景 */
+    contentFlush?: boolean
+    /** 是否显示对话框顶栏 */
+    showHeader?: boolean
+    /** Vue Transition 名称；可为需要避免缩放的详情弹窗指定独立过渡 */
+    transitionName?: string
+    /** 是否显示边框和边缘光 */
+    showBorder?: boolean
+    showFooter?: boolean
+    centerFooter?: boolean
+    loading?: boolean
+    /** 执行进度由内容区展示时，可隐藏默认的加载遮罩。 */
+    showLoadingOverlay?: boolean
+    preventCloseWhenLoading?: boolean
+    closeOnConfirm?: boolean
+  }>(),
+  {
+    closeOnConfirm: true,
+    preventCloseWhenLoading: true,
+    showLoadingOverlay: true,
+    frostedGlass: true,
+    showHeader: true,
+    showBorder: true,
+    showFooter: true,
+    contentFlush: false,
+    transitionName: 'modal',
+  },
+)
 
 const emit = defineEmits(['close', 'confirm'])
 
@@ -63,16 +66,13 @@ let closeEmitted = false
 
 onKeyStroke('Enter', (e: KeyboardEvent) => {
   e.preventDefault()
-  if (!props.loading && showDialog.value && !isClosing)
-    handleConfirm()
+  if (!props.loading && showDialog.value && !isClosing) handleConfirm()
 })
 onKeyStroke('Escape', (e: KeyboardEvent) => {
-  if (!showDialog.value || isClosing)
-    return
+  if (!showDialog.value || isClosing) return
 
   e.preventDefault()
-  if (props.loading && props.preventCloseWhenLoading)
-    return
+  if (props.loading && props.preventCloseWhenLoading) return
   handleClose()
 })
 
@@ -83,8 +83,7 @@ const dialogMaxWidth = computed(() => {
   return typeof props.maxWidth === 'number' ? `${props.maxWidth}px` : props.maxWidth || 'unset'
 })
 const dialogHeight = computed(() => {
-  if (props.height === undefined || props.height === null || props.height === '')
-    return undefined
+  if (props.height === undefined || props.height === null || props.height === '') return undefined
   return typeof props.height === 'number' ? `${props.height}px` : props.height
 })
 const dialogTopOffset = computed(() => {
@@ -93,12 +92,18 @@ const dialogTopOffset = computed(() => {
   return typeof props.topOffset === 'number' ? `${props.topOffset}px` : props.topOffset
 })
 const dialogContentHeight = computed(() => {
-  return typeof props.contentHeight === 'number' ? `${props.contentHeight}px` : props.contentHeight || 'auto'
+  return typeof props.contentHeight === 'number'
+    ? `${props.contentHeight}px`
+    : props.contentHeight || 'auto'
 })
 const dialogContentMaxHeight = computed(() => {
-  return typeof props.contentMaxHeight === 'number' ? `${props.contentMaxHeight}px` : props.contentMaxHeight || 'auto'
+  return typeof props.contentMaxHeight === 'number'
+    ? `${props.contentMaxHeight}px`
+    : props.contentMaxHeight || 'auto'
 })
-const frostedGlassEnabled = computed(() => settings.value.enableFrostedGlass && props.frostedGlass !== false)
+const frostedGlassEnabled = computed(
+  () => settings.value.enableFrostedGlass && props.frostedGlass !== false,
+)
 const dialogPanelStyle = computed(() => {
   const topAligned = dialogTopOffset.value !== undefined
   return {
@@ -113,19 +118,31 @@ const dialogPanelStyle = computed(() => {
     border: props.showBorder ? undefined : '0',
     backdropFilter: frostedGlassEnabled.value ? 'var(--bew-filter-glass-2)' : 'none',
     WebkitBackdropFilter: frostedGlassEnabled.value ? 'var(--bew-filter-glass-2)' : 'none',
-    backgroundColor: frostedGlassEnabled.value ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-    boxShadow: props.showBorder ? 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)' : 'var(--bew-shadow-4)',
+    backgroundColor: frostedGlassEnabled.value
+      ? 'var(--bew-elevated-alt)'
+      : 'var(--bew-elevated-alt-solid)',
+    boxShadow: props.showBorder
+      ? 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)'
+      : 'var(--bew-shadow-4)',
   }
 })
 
-onKeyStroke('Alt', (e: KeyboardEvent) => {
-  e.preventDefault()
-  showShortcut.value = true
-}, { eventName: 'keydown' })
-onKeyStroke('Alt', (e: KeyboardEvent) => {
-  e.preventDefault()
-  showShortcut.value = false
-}, { eventName: 'keyup' })
+onKeyStroke(
+  'Alt',
+  (e: KeyboardEvent) => {
+    e.preventDefault()
+    showShortcut.value = true
+  },
+  { eventName: 'keydown' },
+)
+onKeyStroke(
+  'Alt',
+  (e: KeyboardEvent) => {
+    e.preventDefault()
+    showShortcut.value = false
+  },
+  { eventName: 'keyup' },
+)
 
 onMounted(() => {
   showDialog.value = true
@@ -137,8 +154,7 @@ onBeforeUnmount(() => {
 })
 
 function emitCloseOnce() {
-  if (closeEmitted)
-    return
+  if (closeEmitted) return
   closeEmitted = true
   isClosing = true
   emit('close')
@@ -150,10 +166,8 @@ function onAfterLeave() {
 }
 
 function handleClose() {
-  if (isClosing || closeEmitted)
-    return
-  if (props.loading && props.preventCloseWhenLoading)
-    return
+  if (isClosing || closeEmitted) return
+  if (props.loading && props.preventCloseWhenLoading) return
 
   isClosing = true
   // Already hidden (e.g. closed before enter finished) — no leave hook will run.
@@ -166,12 +180,10 @@ function handleClose() {
 }
 
 function handleConfirm() {
-  if (isClosing || closeEmitted || props.loading)
-    return
+  if (isClosing || closeEmitted || props.loading) return
 
   emit('confirm')
-  if (props.closeOnConfirm && !props.loading)
-    handleClose()
+  if (props.closeOnConfirm && !props.loading) handleClose()
 }
 
 defineExpose({ close: handleClose })
@@ -183,19 +195,26 @@ defineExpose({ close: handleClose })
       <div
         v-if="showDialog"
         class="dialog"
-        style="z-index: var(--bew-z-dialog);"
-        pos="fixed top-0 left-0" w-full h-full
+        style="z-index: var(--bew-z-dialog)"
+        pos="fixed top-0 left-0"
+        w-full
+        h-full
         pointer-events-auto
       >
         <div
           bg="black opacity-40 dark:opacity-40"
-          pos="absolute top-0 left-0" w-full h-full z-0
+          pos="absolute top-0 left-0"
+          w-full
+          h-full
+          z-0
           @click="handleClose"
         />
         <slot name="floating-actions" />
         <div
           :style="dialogPanelStyle"
-          pos="absolute" rounded="$bew-modal-radius" border="1 $bew-border-color"
+          pos="absolute"
+          rounded="$bew-modal-radius"
+          border="1 $bew-border-color"
           z-2
           antialiased
           class="dialog__panel"
@@ -204,7 +223,11 @@ defineExpose({ close: handleClose })
           <Transition name="fade">
             <div
               v-if="loading && showLoadingOverlay"
-              pos="absolute top-0 left-0" w-full h-full bg="white dark:black opacity-60 dark:opacity-60" flex="~ justify-center items-center"
+              pos="absolute top-0 left-0"
+              w-full
+              h-full
+              bg="white dark:black opacity-60 dark:opacity-60"
+              flex="~ justify-center items-center"
               rounded="$bew-modal-radius"
               z-2
             >
@@ -215,26 +238,36 @@ defineExpose({ close: handleClose })
           <header
             v-if="showHeader"
             style="
-              text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
+              text-shadow:
+                0 0 10px var(--bew-elevated-solid),
+                0 0 15px var(--bew-elevated-solid);
             "
-            pos="sticky top-0 left-0" w-full h-70px px-8 flex
-            items-center justify-between
-            rounded="t-$bew-modal-radius" z-1
+            pos="sticky top-0 left-0"
+            w-full
+            h-70px
+            px-8
+            flex
+            items-center
+            justify-between
+            rounded="t-$bew-modal-radius"
+            z-1
           >
             <div
-              pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
+              pos="absolute top-0 left-0"
+              w-inherit
+              h-inherit
+              pointer-events-none
               :style="{
                 maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
                 backdropFilter: frostedGlassEnabled ? 'blur(3px) saturate(180%)' : 'none',
                 WebkitBackdropFilter: frostedGlassEnabled ? 'blur(3px) saturate(180%)' : 'none',
               }"
-              z--1 rounded-inherit
+              z--1
+              rounded-inherit
             />
-            <div
-              :style="{ textAlign: center ? 'center' : 'left' }"
-              w-full
-            >
+            <div :style="{ textAlign: center ? 'center' : 'left' }" w-full>
               <slot name="title">
                 <p class="dialog__title">
                   {{ title }}
@@ -256,10 +289,15 @@ defineExpose({ close: handleClose })
                 backdrop-filter: var(--bew-filter-glass-1);
                 box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
               "
-              text="!16px hover:$bew-theme-color" w="32px" h="32px"
+              text="!16px hover:$bew-theme-color"
+              w="32px"
+              h="32px"
               flex="~ items-center justify-center shrink-0"
               bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-              ml-8 rounded="$bew-interactive-radius" cursor="pointer" border="1 $bew-border-color"
+              ml-8
+              rounded="$bew-interactive-radius"
+              cursor="pointer"
+              border="1 $bew-border-color"
               box-border
               duration-300
               @click="handleClose"
@@ -288,14 +326,18 @@ defineExpose({ close: handleClose })
           <footer
             v-if="showFooter"
             :style="{ justifyContent: centerFooter || center ? 'center' : 'flex-end' }"
-            flex="~ gap-2" p="x-8 t-2 b-6"
+            flex="~ gap-2"
+            p="x-8 t-2 b-6"
           >
             <Button type="tertiary" @click="handleClose">
               <div>
                 {{ $t('common.operation.cancel') }}
                 <span
                   v-show="showShortcut"
-                  text="xs $bew-text-2 lh-0" p="x-1" rounded="$bew-radius-sm" bg="$bew-fill-1"
+                  text="xs $bew-text-2 lh-0"
+                  p="x-1"
+                  rounded="$bew-radius-sm"
+                  bg="$bew-fill-1"
                   border="1 $bew-border-color"
                   mix-blend-color-dodge
                 >
@@ -308,7 +350,10 @@ defineExpose({ close: handleClose })
                 {{ $t('common.operation.confirm') }}
                 <span
                   v-show="showShortcut"
-                  text="xs $bew-text-2 lh-0" p="x-1" rounded="$bew-radius-sm" bg="$bew-fill-1"
+                  text="xs $bew-text-2 lh-0"
+                  p="x-1"
+                  rounded="$bew-radius-sm"
+                  bg="$bew-fill-1"
                   border="1 $bew-border-color"
                   mix-blend-color-dodge
                 >

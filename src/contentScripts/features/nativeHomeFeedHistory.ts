@@ -11,8 +11,10 @@ interface Snapshot {
 }
 
 const cardSelector = '.recommended-container_floor-aside .feed-card'
-const sameNodes = (a: Cards, b: Cards) => a.length === b.length && a.every((node, index) => node === b[index])
-const signature = (cards: Cards) => cards.map(card => card.querySelector<HTMLAnchorElement>('a[href]')?.href || '').join('\n')
+const sameNodes = (a: Cards, b: Cards) =>
+  a.length === b.length && a.every((node, index) => node === b[index])
+const signature = (cards: Cards) =>
+  cards.map((card) => card.querySelector<HTMLAnchorElement>('a[href]')?.href || '').join('\n')
 const takeSnapshot = (cards: Cards): Snapshot => ({ cards, signature: signature(cards) })
 
 /**
@@ -22,8 +24,7 @@ const takeSnapshot = (cards: Cards): Snapshot => ({ cards, signature: signature(
  * Reference: https://github.com/0xlau/biliplus/blob/main/scripts/feed-roll-history-btn.js
  */
 export function setupNativeHomeFeedHistory() {
-  if (!isHomePage())
-    return
+  if (!isHomePage()) return
 
   let snapshots: Snapshot[] = []
   let index = -1
@@ -41,23 +42,20 @@ export function setupNativeHomeFeedHistory() {
   function restore(snapshot: Cards) {
     const current = capture()
     const parent = current[0]?.parentElement
-    if (!parent || !snapshot.length || current.some(card => card.parentElement !== parent))
+    if (!parent || !snapshot.length || current.some((card) => card.parentElement !== parent))
       return false
 
     // 两组推荐可能复用或重排节点，逐项 replaceWith 会移走后续仍要替换的节点。
     const insertionPoint = current[current.length - 1].nextSibling
-    for (const card of snapshot)
-      parent.insertBefore(card, insertionPoint)
+    for (const card of snapshot) parent.insertBefore(card, insertionPoint)
     for (const card of current) {
-      if (!snapshot.includes(card))
-        card.remove()
+      if (!snapshot.includes(card)) card.remove()
     }
     return true
   }
 
   function updateButtons() {
-    if (!back || !forward)
-      return
+    if (!back || !forward) return
     back.disabled = loading || index <= 0
     forward.disabled = loading || index >= snapshots.length - 1
     back.title = back.ariaLabel = String(i18n.global.t('settings.native_home_feed_back'))
@@ -65,11 +63,9 @@ export function setupNativeHomeFeedHistory() {
   }
 
   function navigate(direction: number) {
-    if (loading)
-      return
+    if (loading) return
     const next = index + direction
-    if (snapshots[next] && restore(snapshots[next].cards))
-      index = next
+    if (snapshots[next] && restore(snapshots[next].cards)) index = next
     updateButtons()
   }
 
@@ -85,9 +81,12 @@ export function setupNativeHomeFeedHistory() {
     svg.setAttribute('focusable', 'false')
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     path.setAttribute('fill', 'currentColor')
-    path.setAttribute('d', direction < 0
-      ? 'M13.5 7a6.5 6.5 0 0 1 6.5 6.5a6.5 6.5 0 0 1-6.5 6.5H10v-2h3.5c2.5 0 4.5-2 4.5-4.5S16 9 13.5 9H7.83l3.08 3.09L9.5 13.5L4 8l5.5-5.5l1.42 1.41L7.83 7zM6 18h2v2H6z'
-      : 'M10.5 7A6.5 6.5 0 0 0 4 13.5a6.5 6.5 0 0 0 6.5 6.5H14v-2h-3.5C8 18 6 16 6 13.5S8 9 10.5 9h5.67l-3.08 3.09l1.41 1.41L20 8l-5.5-5.5l-1.42 1.41L16.17 7zM18 18h-2v2h2z')
+    path.setAttribute(
+      'd',
+      direction < 0
+        ? 'M13.5 7a6.5 6.5 0 0 1 6.5 6.5a6.5 6.5 0 0 1-6.5 6.5H10v-2h3.5c2.5 0 4.5-2 4.5-4.5S16 9 13.5 9H7.83l3.08 3.09L9.5 13.5L4 8l5.5-5.5l1.42 1.41L7.83 7zM6 18h2v2H6z'
+        : 'M10.5 7A6.5 6.5 0 0 0 4 13.5a6.5 6.5 0 0 0 6.5 6.5H14v-2h-3.5C8 18 6 16 6 13.5S8 9 10.5 9h5.67l-3.08 3.09l1.41 1.41L20 8l-5.5-5.5l-1.42 1.41L16.17 7zM18 18h-2v2h2z',
+    )
     svg.append(path)
     button.append(svg)
     button.addEventListener('click', () => navigate(direction))
@@ -95,8 +94,7 @@ export function setupNativeHomeFeedHistory() {
   }
 
   function mount() {
-    if (!enabled)
-      return
+    if (!enabled) return
     const roll = document.querySelector<HTMLButtonElement>('.roll-btn')
     const parent = roll?.parentElement
     const nextContainer = document.querySelector('.recommended-container_floor-aside')
@@ -108,8 +106,7 @@ export function setupNativeHomeFeedHistory() {
       loading = false
     }
     container = nextContainer
-    if (!roll || !parent || !container)
-      return
+    if (!roll || !parent || !container) return
     if (!back?.isConnected || back.parentElement !== parent) {
       back?.remove()
       forward?.remove()
@@ -119,7 +116,7 @@ export function setupNativeHomeFeedHistory() {
     }
     if (!loading && index < 0) {
       const initial = capture()
-      if (initial.length && initial.some(card => card.querySelector('a[href]'))) {
+      if (initial.length && initial.some((card) => card.querySelector('a[href]'))) {
         nativeSnapshot = initial
         snapshots = [takeSnapshot(initial)]
         index = 0
@@ -131,11 +128,9 @@ export function setupNativeHomeFeedHistory() {
   const observer = new MutationObserver(mount)
 
   function onRoll(event: MouseEvent) {
-    if (!(event.target instanceof Element))
-      return
+    if (!(event.target instanceof Element)) return
     const roll = event.target.closest<HTMLButtonElement>('.roll-btn')
-    if (!roll || roll.disabled || roll.getAttribute('aria-disabled') === 'true')
-      return
+    if (!roll || roll.disabled || roll.getAttribute('aria-disabled') === 'true') return
     // Do not interrupt native loading or enqueue another history transition.
     if (loading) {
       event.preventDefault()
@@ -143,13 +138,11 @@ export function setupNativeHomeFeedHistory() {
       return
     }
     const visible = capture()
-    if (!visible.length)
-      return
+    if (!visible.length) return
     if (index < 0) {
       snapshots = [takeSnapshot(visible)]
       index = 0
-    }
-    else {
+    } else {
       snapshots[index] = takeSnapshot(visible)
     }
     if (nativeSnapshot.length && !sameNodes(visible, nativeSnapshot) && !restore(nativeSnapshot))
@@ -165,28 +158,29 @@ export function setupNativeHomeFeedHistory() {
       const current = capture()
       const currentSignature = signature(current)
       // 原站也会原地更新卡片，链接变化即可说明换了一组，不能要求节点必须被替换。
-      const changed = current.length > 0 && !!currentSignature.trim() && currentSignature !== previousSignature
+      const changed =
+        current.length > 0 && !!currentSignature.trim() && currentSignature !== previousSignature
       // Wait for consecutive stable samples instead of retaining a partially
       // replaced recommendation grid.
       if (changed && sameNodes(candidate, current) && candidateSignature === currentSignature) {
         snapshots.splice(index + 1)
         // 被原站复用并改写的节点已无法代表旧推荐，移除失效记录，保留其它可恢复组。
-        snapshots = snapshots.filter(snapshot => snapshot.signature === signature(snapshot.cards)
-          && snapshot.signature !== currentSignature)
+        snapshots = snapshots.filter(
+          (snapshot) =>
+            snapshot.signature === signature(snapshot.cards) &&
+            snapshot.signature !== currentSignature,
+        )
         snapshots.push(takeSnapshot(current))
-        if (snapshots.length > 5)
-          snapshots.shift()
+        if (snapshots.length > 5) snapshots.shift()
         index = snapshots.length - 1
         nativeSnapshot = current
         loading = false
         updateButtons()
-      }
-      else if (++attempts < 100) {
+      } else if (++attempts < 100) {
         candidate = changed ? current : []
         candidateSignature = currentSignature
         timer = setTimeout(settle, 100)
-      }
-      else {
+      } else {
         // Failed/unchanged rolls must not create duplicate entries or lose the
         // forward branch. Return to what was visible before the attempted roll.
         nativeSnapshot = current
@@ -202,8 +196,10 @@ export function setupNativeHomeFeedHistory() {
     // The homepage's BiliBili switch opens the native feed in an iframe while
     // useOriginalBilibiliHomepage stays false on the outer BewlyCat page.
     // 原版首页的前进后退按钮作为独立的 Bilibili 原站功能，不与 Dock 或 Bewly 页面绑定。
-    const nextEnabled = settings.value.enableNativeHomeFeedHistory
-      && (isInIframe() || settings.value.useOriginalBilibiliHomepage) && isHomePage()
+    const nextEnabled =
+      settings.value.enableNativeHomeFeedHistory &&
+      (isInIframe() || settings.value.useOriginalBilibiliHomepage) &&
+      isHomePage()
     if (nextEnabled === enabled) {
       updateButtons()
       return
@@ -237,14 +233,12 @@ export function setupNativeHomeFeedHistory() {
       document.addEventListener('click', onRoll, true)
       observer.observe(document.documentElement, { childList: true, subtree: true })
       mount()
-    }
-    else {
+    } else {
       observer.disconnect()
       document.removeEventListener('click', onRoll, true)
       clearTimeout(timer)
       // While loading the native renderer already owns the visible cards.
-      if (!loading && nativeSnapshot.length)
-        restore(nativeSnapshot)
+      if (!loading && nativeSnapshot.length) restore(nativeSnapshot)
       back?.remove()
       forward?.remove()
       style?.remove()
@@ -258,7 +252,15 @@ export function setupNativeHomeFeedHistory() {
   }
 
   void settingsReady.then(() => {
-    watch(() => [settings.value.enableNativeHomeFeedHistory, settings.value.useOriginalBilibiliHomepage, settings.value.language], sync, { immediate: true })
+    watch(
+      () => [
+        settings.value.enableNativeHomeFeedHistory,
+        settings.value.useOriginalBilibiliHomepage,
+        settings.value.language,
+      ],
+      sync,
+      { immediate: true },
+    )
     window.addEventListener('popstate', sync)
     window.addEventListener('pageshow', sync)
   })

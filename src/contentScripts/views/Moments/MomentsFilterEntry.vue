@@ -31,24 +31,30 @@ function readDraft(): MomentFilterDraft {
 // 动态页在任一过滤设置变化时立即重新加载；面板内先改草稿，关闭时一次写回，只触发一次重新加载。
 const draft = reactive<MomentFilterDraft>(readDraft())
 
-const activeCount = computed(() => [
-  ...MOMENT_TYPE_FILTER_OPTIONS.map(option => settings.value[option.setting]),
-  settings.value.momentsEnableKeywordFilter && settings.value.momentsBlockedKeywords.trim() !== '',
-].filter(Boolean).length)
+const activeCount = computed(
+  () =>
+    [
+      ...MOMENT_TYPE_FILTER_OPTIONS.map((option) => settings.value[option.setting]),
+      settings.value.momentsEnableKeywordFilter &&
+        settings.value.momentsBlockedKeywords.trim() !== '',
+    ].filter(Boolean).length,
+)
 
-const triggerLabel = computed(() => activeCount.value
-  ? t('moments.filter_panel.entry_active', { count: activeCount.value })
-  : t('moments.filter_panel.entry'))
+const triggerLabel = computed(() =>
+  activeCount.value
+    ? t('moments.filter_panel.entry_active', { count: activeCount.value })
+    : t('moments.filter_panel.entry'),
+)
 
 function handleOpen() {
   Object.assign(draft, readDraft())
 }
 
 function handleClose() {
-  const changed = (Object.keys(draft) as (keyof MomentFilterDraft)[])
-    .some(key => draft[key] !== settings.value[key])
-  if (changed)
-    settings.value = { ...settings.value, ...draft }
+  const changed = (Object.keys(draft) as (keyof MomentFilterDraft)[]).some(
+    (key) => draft[key] !== settings.value[key],
+  )
+  if (changed) settings.value = { ...settings.value, ...draft }
 }
 
 function openFilterSettings(close: () => void) {
@@ -78,7 +84,11 @@ function openFilterSettings(close: () => void) {
     <div class="header-filter-section">
       <div class="header-filter-item">
         <span class="header-filter-caption">{{ t('moments.filter_panel.shown_types') }}</span>
-        <div class="moments-filter-tags" role="group" :aria-label="t('settings.moments_filtered_types')">
+        <div
+          class="moments-filter-tags"
+          role="group"
+          :aria-label="t('settings.moments_filtered_types')"
+        >
           <SettingsToggleTag
             v-for="option in MOMENT_TYPE_FILTER_OPTIONS"
             :key="option.setting"

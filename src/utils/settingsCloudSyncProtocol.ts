@@ -13,9 +13,9 @@ export interface SettingsCloudSyncStatus {
   state: 'empty' | 'compatible' | 'incompatible'
 }
 
-export type SettingsCloudSyncEnableResponse
-  = | { ok: true }
-    | { ok: false, reason: 'incompatible' | 'initialization-failed' }
+export type SettingsCloudSyncEnableResponse =
+  | { ok: true }
+  | { ok: false; reason: 'incompatible' | 'initialization-failed' }
 
 // Leave headroom below the browser storage.sync quotas (8 KiB per item and
 // about 100 KiB in total) for differences in quota accounting across browsers.
@@ -117,18 +117,21 @@ export function isKnownLocalOnlySettingsCloudSyncField(field: string) {
  * Unknown shapes or future schema versions must be preserved.
  */
 export function isCorruptCurrentSchemaSettingsCloudSyncEntry(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return false
-  return (value as { schemaVersion?: unknown }).schemaVersion === SETTINGS_CLOUD_SYNC_SCHEMA_VERSION
-    && normalizeSettingsCloudSyncEntry(value) == null
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  return (
+    (value as { schemaVersion?: unknown }).schemaVersion === SETTINGS_CLOUD_SYNC_SCHEMA_VERSION &&
+    normalizeSettingsCloudSyncEntry(value) == null
+  )
 }
 
 export function isSettingsCloudSyncField(field: string) {
-  return field.length > 0
-    && field.length <= 200
-    && !BLOCKED_FIELDS.has(field)
-    && !LOCAL_ONLY_WALLPAPER_FIELDS.has(field)
-    && !LOCAL_ONLY_RUNTIME_FIELDS.has(field)
+  return (
+    field.length > 0 &&
+    field.length <= 200 &&
+    !BLOCKED_FIELDS.has(field) &&
+    !LOCAL_ONLY_WALLPAPER_FIELDS.has(field) &&
+    !LOCAL_ONLY_RUNTIME_FIELDS.has(field)
+  )
 }
 
 export function createSettingsCloudSyncKey(field: string) {
@@ -136,8 +139,7 @@ export function createSettingsCloudSyncKey(field: string) {
 }
 
 export function parseSettingsCloudSyncKey(key: string) {
-  if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX))
-    return null
+  if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX)) return null
 
   try {
     const encodedField = key.slice(SETTINGS_CLOUD_SYNC_KEY_PREFIX.length)
@@ -145,8 +147,7 @@ export function parseSettingsCloudSyncKey(key: string) {
     return createSettingsCloudSyncKey(field) === key && isSettingsCloudSyncField(field)
       ? field
       : null
-  }
-  catch {
+  } catch {
     return null
   }
 }
@@ -155,28 +156,25 @@ export function compareSettingsCloudSyncVersions(
   left: SettingsCloudSyncVersion | undefined,
   right: SettingsCloudSyncVersion | undefined,
 ) {
-  if (!left)
-    return right ? -1 : 0
-  if (!right)
-    return 1
-  if (left.counter !== right.counter)
-    return left.counter < right.counter ? -1 : 1
-  if (left.deviceId === right.deviceId)
-    return 0
+  if (!left) return right ? -1 : 0
+  if (!right) return 1
+  if (left.counter !== right.counter) return left.counter < right.counter ? -1 : 1
+  if (left.deviceId === right.deviceId) return 0
   return left.deviceId < right.deviceId ? -1 : 1
 }
 
-export function normalizeSettingsCloudSyncVersion(value: unknown): SettingsCloudSyncVersion | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return undefined
+export function normalizeSettingsCloudSyncVersion(
+  value: unknown,
+): SettingsCloudSyncVersion | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
 
   const candidate = value as Partial<SettingsCloudSyncVersion>
   if (
-    !Number.isSafeInteger(candidate.counter)
-    || candidate.counter! < 1
-    || typeof candidate.deviceId !== 'string'
-    || candidate.deviceId.length === 0
-    || candidate.deviceId.length > 100
+    !Number.isSafeInteger(candidate.counter) ||
+    candidate.counter! < 1 ||
+    typeof candidate.deviceId !== 'string' ||
+    candidate.deviceId.length === 0 ||
+    candidate.deviceId.length > 100
   ) {
     return undefined
   }
@@ -188,16 +186,15 @@ export function normalizeSettingsCloudSyncVersion(value: unknown): SettingsCloud
 }
 
 export function normalizeSettingsCloudSyncEntry(value: unknown): SettingsCloudSyncEntry | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    return null
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const candidate = value as Partial<SettingsCloudSyncEntry>
   const version = normalizeSettingsCloudSyncVersion(candidate.version)
   if (
-    candidate.schemaVersion !== SETTINGS_CLOUD_SYNC_SCHEMA_VERSION
-    || typeof candidate.deleted !== 'boolean'
-    || !version
-    || (!candidate.deleted && !hasOwn(candidate as Record<string, unknown>, 'value'))
+    candidate.schemaVersion !== SETTINGS_CLOUD_SYNC_SCHEMA_VERSION ||
+    typeof candidate.deleted !== 'boolean' ||
+    !version ||
+    (!candidate.deleted && !hasOwn(candidate as Record<string, unknown>, 'value'))
   ) {
     return null
   }
@@ -237,9 +234,9 @@ export function createSettingsCloudSyncEntry(
 
 export function estimateSettingsCloudSyncItemBytes(key: string, value: unknown) {
   const serializedValue = JSON.stringify(value)
-  if (serializedValue === undefined)
-    return Number.POSITIVE_INFINITY
+  if (serializedValue === undefined) return Number.POSITIVE_INFINITY
 
-  return new TextEncoder().encode(key).byteLength
-    + new TextEncoder().encode(serializedValue).byteLength
+  return (
+    new TextEncoder().encode(key).byteLength + new TextEncoder().encode(serializedValue).byteLength
+  )
 }

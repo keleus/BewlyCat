@@ -5,7 +5,11 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
-import type { PlayerDefaultState, VideoPlayerModeContext, VideoPlayerScrollMode } from '~/logic/storage'
+import type {
+  PlayerDefaultState,
+  VideoPlayerModeContext,
+  VideoPlayerScrollMode,
+} from '~/logic/storage'
 import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
@@ -51,7 +55,9 @@ const bewlyWidescreenAutoCollapseSidebar = computed({
     settings.value = {
       ...settings.value,
       bewlyWidescreenSidebarPriority: enabled ? 'video' : 'sidebar',
-      enableBewlyWidescreenSidebarResize: enabled ? false : settings.value.enableBewlyWidescreenSidebarResize,
+      enableBewlyWidescreenSidebarResize: enabled
+        ? false
+        : settings.value.enableBewlyWidescreenSidebarResize,
     }
   },
 })
@@ -62,15 +68,17 @@ const bewlyWidescreenSidebarResize = computed({
     settings.value = {
       ...settings.value,
       enableBewlyWidescreenSidebarResize: enabled,
-      bewlyWidescreenSidebarPriority: enabled ? 'sidebar' : settings.value.bewlyWidescreenSidebarPriority,
+      bewlyWidescreenSidebarPriority: enabled
+        ? 'sidebar'
+        : settings.value.bewlyWidescreenSidebarPriority,
     }
   },
 })
 
 // 沿用原布尔值：false 为侧栏外区域，true 为整个浏览器窗口。
 const bewlyWidescreenVideoAlignment = computed({
-  get: () => settings.value.bewlyWidescreenCenterVerticalVideo ? 'viewport' : 'sidebar',
-  set: value => settings.value.bewlyWidescreenCenterVerticalVideo = value === 'viewport',
+  get: () => (settings.value.bewlyWidescreenCenterVerticalVideo ? 'viewport' : 'sidebar'),
+  set: (value) => (settings.value.bewlyWidescreenCenterVerticalVideo = value === 'viewport'),
 })
 
 // 视频播放器模式选项
@@ -103,24 +111,29 @@ const videoPlayerModeOverrideOptions = computed(() => [
   ...videoPlayerModeOptions.value,
 ])
 
-const videoPlayerModeContextOptions = computed<{ label: string, value: VideoPlayerModeContext, desc?: string }[]>(() => [
+const videoPlayerModeContextOptions = computed<
+  { label: string; value: VideoPlayerModeContext; desc?: string }[]
+>(() => [
   { label: t('settings.video_player_mode.context_multipart'), value: 'multipart' },
   { label: t('settings.video_player_mode.context_collection'), value: 'collection' },
   { label: t('settings.video_player_mode.context_bangumi'), value: 'bangumi' },
   { label: t('settings.video_player_mode.context_watch_later'), value: 'watchLater' },
   { label: t('settings.video_player_mode.context_playlist'), value: 'playlist' },
-  { label: t('settings.video_player_mode.context_moments_dialog'), value: 'momentsDialog', desc: t('settings.video_player_mode.context_moments_dialog_desc') },
+  {
+    label: t('settings.video_player_mode.context_moments_dialog'),
+    value: 'momentsDialog',
+    desc: t('settings.video_player_mode.context_moments_dialog_desc'),
+  },
 ])
 
-const videoPlayerScrollModeOptions = computed<{ label: string, value: VideoPlayerScrollMode }[]>(() => [
-  { label: t('settings.video_player_scroll_mode.sending_bar'), value: 'sendingBar' },
-  { label: t('settings.video_player_scroll_mode.player_center'), value: 'playerCenter' },
-])
+const videoPlayerScrollModeOptions = computed<{ label: string; value: VideoPlayerScrollMode }[]>(
+  () => [
+    { label: t('settings.video_player_scroll_mode.sending_bar'), value: 'sendingBar' },
+    { label: t('settings.video_player_scroll_mode.player_center'), value: 'playerCenter' },
+  ],
+)
 
-type ToggleSetting
-  = | 'rememberPlaybackRate'
-    | 'rememberVideoAspectRatio'
-    | 'rememberVideoQuality'
+type ToggleSetting = 'rememberPlaybackRate' | 'rememberVideoAspectRatio' | 'rememberVideoQuality'
 
 interface ToggleTagOption {
   setting: ToggleSetting
@@ -129,9 +142,21 @@ interface ToggleTagOption {
 }
 
 const playbackMemoryOptions = computed<ToggleTagOption[]>(() => [
-  { setting: 'rememberPlaybackRate', label: t('settings.remember_playback_rate'), icon: 'i-tabler-gauge' },
-  { setting: 'rememberVideoQuality', label: t('settings.remember_video_quality'), icon: 'i-tabler-badge-hd' },
-  { setting: 'rememberVideoAspectRatio', label: t('settings.remember_video_aspect_ratio'), icon: 'i-tabler-aspect-ratio' },
+  {
+    setting: 'rememberPlaybackRate',
+    label: t('settings.remember_playback_rate'),
+    icon: 'i-tabler-gauge',
+  },
+  {
+    setting: 'rememberVideoQuality',
+    label: t('settings.remember_video_quality'),
+    icon: 'i-tabler-badge-hd',
+  },
+  {
+    setting: 'rememberVideoAspectRatio',
+    label: t('settings.remember_video_aspect_ratio'),
+    icon: 'i-tabler-aspect-ratio',
+  },
 ])
 
 // B 站自身会记住清晰度，开启插件记忆前先说明适用场景。
@@ -146,7 +171,10 @@ function updatePlaybackMemory(setting: ToggleSetting, enabled: boolean) {
 }
 
 const wheelVolumeStep = ref<string | number>(settings.value.fullscreenWheelVolumeStep)
-watch(() => settings.value.fullscreenWheelVolumeStep, value => wheelVolumeStep.value = value)
+watch(
+  () => settings.value.fullscreenWheelVolumeStep,
+  (value) => (wheelVolumeStep.value = value),
+)
 
 function saveWheelVolumeStep() {
   const value = wheelVolumeStep.value === '' ? Number.NaN : Number(wheelVolumeStep.value)
@@ -155,7 +183,10 @@ function saveWheelVolumeStep() {
 }
 
 const keyboardVolumeStep = ref<string | number>(settings.value.keyboardVolumeStep)
-watch(() => settings.value.keyboardVolumeStep, value => keyboardVolumeStep.value = value)
+watch(
+  () => settings.value.keyboardVolumeStep,
+  (value) => (keyboardVolumeStep.value = value),
+)
 
 function saveKeyboardVolumeStep() {
   const value = keyboardVolumeStep.value === '' ? Number.NaN : Number(keyboardVolumeStep.value)
@@ -163,7 +194,7 @@ function saveKeyboardVolumeStep() {
   keyboardVolumeStep.value = settings.value.keyboardVolumeStep
 }
 
-const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefaultState }[]>(() => [
+const playerDefaultStateOptions = computed<{ label: string; value: PlayerDefaultState }[]>(() => [
   { label: t('settings.video_default_state_opt.system'), value: 'system' },
   { label: t('settings.video_default_state_opt.remember'), value: 'remember' },
   { label: t('settings.video_default_state_opt.on'), value: 'on' },
@@ -178,13 +209,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       :desc="t('settings.group_player_display_mode_desc')"
     >
       <SettingsItem :title="$t('settings.video_default_player_mode')" right-width="auto">
-        <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="160px" />
+        <Select
+          v-model="settings.defaultVideoPlayerMode"
+          :options="videoPlayerModeOptions"
+          w="160px"
+        />
       </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.video_player_scroll')"
-        right-width="auto"
-      >
+      <SettingsItem :title="t('settings.video_player_scroll')" right-width="auto">
         <Radio v-model="settings.videoPlayerScroll" />
       </SettingsItem>
 
@@ -193,7 +225,11 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         :title="t('settings.video_player_scroll_mode.title')"
         right-width="auto"
       >
-        <Select v-model="settings.videoPlayerScrollMode" :options="videoPlayerScrollModeOptions" w="160px" />
+        <Select
+          v-model="settings.videoPlayerScrollMode"
+          :options="videoPlayerScrollModeOptions"
+          w="160px"
+        />
       </SettingsItem>
 
       <SettingsItem
@@ -229,10 +265,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       :title="t('settings.group_bewly_widescreen')"
       :desc="t('settings.group_bewly_widescreen_desc')"
     >
-      <SettingsItem
-        :title="t('settings.show_bewly_widescreen_button')"
-        right-width="auto"
-      >
+      <SettingsItem :title="t('settings.show_bewly_widescreen_button')" right-width="auto">
         <Radio v-model="settings.showBewlyWidescreenButton" />
       </SettingsItem>
 
@@ -240,7 +273,11 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         :title="t('settings.video_player_mode.bewly_widescreen_sidebar_position')"
         right-width="auto"
       >
-        <Select v-model="settings.bewlyWidescreenSidebarPosition" :options="bewlyWidescreenSidebarPositionOptions" w="160px" />
+        <Select
+          v-model="settings.bewlyWidescreenSidebarPosition"
+          :options="bewlyWidescreenSidebarPositionOptions"
+          w="160px"
+        />
       </SettingsItem>
 
       <SettingsItem
@@ -256,7 +293,11 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         :desc="t('settings.video_player_mode.bewly_widescreen_video_alignment_desc')"
         right-width="auto"
       >
-        <Select v-model="bewlyWidescreenVideoAlignment" :options="bewlyWidescreenVideoAlignmentOptions" w="200px" />
+        <Select
+          v-model="bewlyWidescreenVideoAlignment"
+          :options="bewlyWidescreenVideoAlignmentOptions"
+          w="200px"
+        />
       </SettingsItem>
 
       <SettingsItem
@@ -269,10 +310,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="t('settings.group_danmaku_and_captions')">
-      <SettingsItem
-        :title="t('settings.video_danmaku_default_state')"
-        right-width="auto"
-      >
+      <SettingsItem :title="t('settings.video_danmaku_default_state')" right-width="auto">
         <Select
           v-model="settings.defaultDanmakuState"
           :options="playerDefaultStateOptions"
@@ -288,10 +326,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         <Radio v-model="settings.skipConciseDanmaku" />
       </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.video_caption_default_state')"
-        right-width="auto"
-      >
+      <SettingsItem :title="t('settings.video_caption_default_state')" right-width="auto">
         <Select
           v-model="settings.defaultCaptionState"
           :options="playerDefaultStateOptions"
@@ -317,9 +352,15 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         right-width="auto"
       >
         <Input
-          v-model="wheelVolumeStep" type="number" :min="1" :max="50" :step="1"
+          v-model="wheelVolumeStep"
+          type="number"
+          :min="1"
+          :max="50"
+          :step="1"
           w="100px"
-          :aria-label="t('settings.fullscreen_wheel_volume_step')" @blur="saveWheelVolumeStep" @enter="saveWheelVolumeStep"
+          :aria-label="t('settings.fullscreen_wheel_volume_step')"
+          @blur="saveWheelVolumeStep"
+          @enter="saveWheelVolumeStep"
         />
       </SettingsItem>
 
@@ -337,9 +378,15 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         right-width="auto"
       >
         <Input
-          v-model="keyboardVolumeStep" type="number" :min="1" :max="50" :step="1"
+          v-model="keyboardVolumeStep"
+          type="number"
+          :min="1"
+          :max="50"
+          :step="1"
           w="100px"
-          :aria-label="t('settings.keyboard_volume_step')" @blur="saveKeyboardVolumeStep" @enter="saveKeyboardVolumeStep"
+          :aria-label="t('settings.keyboard_volume_step')"
+          @blur="saveKeyboardVolumeStep"
+          @enter="saveKeyboardVolumeStep"
         />
       </SettingsItem>
     </SettingsItemGroup>
@@ -348,7 +395,11 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       :title="t('settings.group_playback_memory')"
       :desc="t('settings.group_playback_memory_desc')"
     >
-      <SettingsSearchContainer class="video-setting-tags" role="group" :aria-label="t('settings.group_playback_memory')">
+      <SettingsSearchContainer
+        class="video-setting-tags"
+        role="group"
+        :aria-label="t('settings.group_playback_memory')"
+      >
         <SettingsToggleTag
           v-for="option in playbackMemoryOptions"
           :key="option.setting"

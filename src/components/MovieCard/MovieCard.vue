@@ -23,12 +23,10 @@ const props = defineProps<{
 
 const posterUrl = computed(() => {
   const cover = props.media.cover
-  if (!cover)
-    return ''
+  if (!cover) return ''
 
   const sanitized = removeHttpFromUrl(cover)
-  if (sanitized.includes('@'))
-    return sanitized
+  if (sanitized.includes('@')) return sanitized
   return `${sanitized}@320w_452h_1c.webp`
 })
 
@@ -39,17 +37,9 @@ const metaText = computed(() => {
 </script>
 
 <template>
-  <ALink
-    :href="media.url"
-    type="videoCard"
-    class="movie-card"
-  >
+  <ALink :href="media.url" type="videoCard" class="movie-card">
     <div class="poster">
-      <img
-        v-if="posterUrl"
-        :src="posterUrl"
-        :alt="media.title"
-      >
+      <img v-if="posterUrl" :src="posterUrl" :alt="media.title" />
       <div v-else class="poster-fallback" />
 
       <div v-if="media.score" class="score-chip">

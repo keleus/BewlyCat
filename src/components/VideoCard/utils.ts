@@ -4,19 +4,17 @@ import { buildKeywordSearchUrl } from '~/utils/searchNavigation'
 import type { Author, Video } from './types'
 
 export function getAuthorJumpUrl(author?: Author) {
-  if (!author)
-    return ''
+  if (!author) return ''
 
   return author.authorUrl || (author.mid ? `//space.bilibili.com/${author.mid}` : '')
 }
 
 /** 接口未返回头像（如 APP HD 推荐）时，卡片不显示头像占位 */
 export function hasAuthorAvatar(author?: Author | Author[]) {
-  if (!author)
-    return false
+  if (!author) return false
 
   return Array.isArray(author)
-    ? author.some(item => Boolean(item.authorFace))
+    ? author.some((item) => Boolean(item.authorFace))
     : Boolean(author.authorFace)
 }
 
@@ -37,11 +35,13 @@ export function getCurrentVideoUrl(video: Video, currentTime: number | null) {
 
   try {
     const url = new URL(baseUrl)
-    if (url.hostname === 'www.bilibili.com' && /^\/(?:video\/|bangumi\/play\/)/.test(stripBilibiliLocalePathname(url.pathname)))
+    if (
+      url.hostname === 'www.bilibili.com' &&
+      /^\/(?:video\/|bangumi\/play\/)/.test(stripBilibiliLocalePathname(url.pathname))
+    )
       url.searchParams.set('t', String(Math.floor(currentTime)))
     return url.toString()
-  }
-  catch {
+  } catch {
     return baseUrl
   }
 }

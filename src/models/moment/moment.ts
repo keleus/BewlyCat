@@ -119,8 +119,7 @@ export interface Tags {
   PENDENT_LAYER?: Layer
 }
 
-export interface Layer {
-}
+export interface Layer {}
 
 export interface GeneralCFG {
   config_type: number
@@ -361,7 +360,7 @@ export interface Major {
   live_rcmd?: { content?: string }
   opus?: MomentMajorContent & {
     pics?: MomentImage[]
-    summary?: string | { rich_text_nodes?: PurpleRichTextNode[], text?: string }
+    summary?: string | { rich_text_nodes?: PurpleRichTextNode[]; text?: string }
   }
   type: MajorType
   pgc?: Pgc
@@ -371,7 +370,7 @@ export interface Major {
 
 export interface MomentImage {
   height?: number
-  size?: { height?: number, width?: number }
+  size?: { height?: number; width?: number }
   src?: string
   url?: string
   width?: number

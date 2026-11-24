@@ -18,23 +18,27 @@ const { isDark } = useDark()
 const { activeConfirmDialog, finishConfirmDialog } = useConfirmDialogHost()
 
 const mainAppRef = ref<HTMLElement>() as Ref<HTMLElement>
-const pendingNavigation = ref<SettingsNavigationTarget | undefined>(parseSettingsPageHash(location.hash))
+const pendingNavigation = ref<SettingsNavigationTarget | undefined>(
+  parseSettingsPageHash(location.hash),
+)
 const isMounted = ref(false)
 
 // 设置页及其子组件只使用这部分能力，其余是 B 站页面内布局相关的状态。
 const appProvider: Pick<BewlyAppProvider, 'mainAppRef' | 'openSettings'> = {
   mainAppRef,
-  openSettings: target => pendingNavigation.value = target,
+  openSettings: (target) => (pendingNavigation.value = target),
 }
 provide('BEWLY_APP', appProvider as BewlyAppProvider)
 
-onMessage<SettingsNavigationTarget | undefined, SettingsPageTabLocation>(NAVIGATE_SETTINGS_PAGE_MESSAGE, async (target) => {
-  if (target)
-    pendingNavigation.value = target
+onMessage<SettingsNavigationTarget | undefined, SettingsPageTabLocation>(
+  NAVIGATE_SETTINGS_PAGE_MESSAGE,
+  async (target) => {
+    if (target) pendingNavigation.value = target
 
-  const tab = await browser.tabs.getCurrent()
-  return { tabId: tab?.id, windowId: tab?.windowId }
-})
+    const tab = await browser.tabs.getCurrent()
+    return { tabId: tab?.id, windowId: tab?.windowId }
+  },
+)
 
 onMounted(() => {
   // Teleport 的目标 mainAppRef 在根节点挂载后才可用。

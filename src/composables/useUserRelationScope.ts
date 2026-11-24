@@ -12,19 +12,22 @@ export function useUserRelationScope(
   const active = ref(true)
   let release: (() => void) | undefined
   const stop = watch(
-    [() => active.value ? toValue(mids) : [], () => active.value ? toValue(queryMids) : [], () => store.accountMid],
+    [
+      () => (active.value ? toValue(mids) : []),
+      () => (active.value ? toValue(queryMids) : []),
+      () => store.accountMid,
+    ],
     ([retained, queried]) => {
       // 先登记新范围，避免重叠的 mid 被短暂释放而丢失状态或重复请求。
       const nextRelease = store.retainRelations(retained)
       release?.()
       release = nextRelease
-      if (queried.length)
-        void store.queryRelations(queried)
+      if (queried.length) void store.queryRelations(queried)
     },
     { immediate: true, flush: 'sync' },
   )
-  onActivated(() => active.value = true)
-  onDeactivated(() => active.value = false)
+  onActivated(() => (active.value = true))
+  onDeactivated(() => (active.value = false))
   onScopeDispose(() => {
     stop()
     active.value = false

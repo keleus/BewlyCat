@@ -31,8 +31,7 @@ const rangeRef = ref<HTMLInputElement | null>(null)
 // 会把它当非法值重置回默认（毛玻璃强度即因此失效）。这里统一转成数字。
 function handleInput(event: Event) {
   const value = (event.target as HTMLInputElement).valueAsNumber
-  if (Number.isFinite(value))
-    modelValue.value = value
+  if (Number.isFinite(value)) modelValue.value = value
 }
 
 function countDecimals(value: number) {
@@ -59,14 +58,19 @@ function parseDraft() {
 // 改写输入框，导致无法继续键入（例如从 480 输入 560 时先输入的 5）。
 watch(draft, () => {
   const value = parseDraft()
-  if (Number.isFinite(value) && value >= props.min && value <= props.max && normalizeValue(value) === value && value !== modelValue.value)
+  if (
+    Number.isFinite(value) &&
+    value >= props.min &&
+    value <= props.max &&
+    normalizeValue(value) === value &&
+    value !== modelValue.value
+  )
     modelValue.value = value
 })
 
 // 拖动滑块等外部变化同步回数字框；数值相同时保留用户正在键入的文字（如 "0.5" 前的 "0."）。
 watch(modelValue, (value) => {
-  if (parseDraft() !== value)
-    draft.value = String(value)
+  if (parseDraft() !== value) draft.value = String(value)
 })
 
 // 回车/失焦时最终提交：对齐步长、钳制范围；非法输入恢复当前值。
@@ -80,8 +84,7 @@ function commitDraft() {
 
 function updateBackground() {
   const range = rangeRef.value
-  if (!range)
-    return
+  if (!range) return
 
   const span = props.max - props.min
   const progress = span === 0 ? 0 : ((modelValue.value - props.min) / span) * 100
@@ -97,16 +100,26 @@ onMounted(updateBackground)
     :is="editable ? 'div' : 'label'"
     class="b-slider"
     :class="{ 'cursor-pointer': !editable }"
-    flex items-center gap-3 w="$b-slider-width"
+    flex
+    items-center
+    gap-3
+    w="$b-slider-width"
   >
     <input
       ref="rangeRef"
-      type="range" :value="modelValue" :min="min" :max="max" :step="step"
+      type="range"
+      :value="modelValue"
+      :min="min"
+      :max="max"
+      :step="step"
       class="slider"
-      appearance-none outline-none w="$b-slider-width" h="$b-slider-height"
+      appearance-none
+      outline-none
+      w="$b-slider-width"
+      h="$b-slider-height"
       :aria-label="ariaLabel"
       @input="handleInput"
-    >
+    />
     <Input
       v-if="editable"
       v-model="draft"
@@ -173,7 +186,7 @@ onMounted(updateBackground)
   font-size: var(--bew-font-size-control);
 }
 
-input[type="range"] {
+input[type='range'] {
   background: transparent;
   border: 0;
 
@@ -190,13 +203,13 @@ input[type="range"] {
   }
 
   &::-webkit-slider-thumb {
-    --uno: "appearance-none w-$b-thumb-height h-$b-thumb-height bg-white rounded-$b-thumb-height";
-    --uno: "ring-$bew-border-color ring-2 cursor-pointer duration-300";
+    --uno: 'appearance-none w-$b-thumb-height h-$b-thumb-height bg-white rounded-$b-thumb-height';
+    --uno: 'ring-$bew-border-color ring-2 cursor-pointer duration-300';
     margin-top: calc((var(--b-slider-height) - var(--b-thumb-height)) / 2);
   }
 
   &::-webkit-slider-thumb:hover {
-    --uno: "ring-$bew-theme-color";
+    --uno: 'ring-$bew-theme-color';
   }
 
   &::-moz-range-track {
@@ -218,12 +231,12 @@ input[type="range"] {
   }
 
   &::-moz-range-thumb {
-    --uno: "appearance-none w-$b-thumb-height h-$b-thumb-height bg-white rounded-$b-thumb-height";
-    --uno: "ring-$bew-border-color ring-2 cursor-pointer duration-300";
+    --uno: 'appearance-none w-$b-thumb-height h-$b-thumb-height bg-white rounded-$b-thumb-height';
+    --uno: 'ring-$bew-border-color ring-2 cursor-pointer duration-300';
   }
 
   &::-moz-range-thumb:hover {
-    --uno: "ring-$bew-theme-color";
+    --uno: 'ring-$bew-theme-color';
   }
 }
 </style>

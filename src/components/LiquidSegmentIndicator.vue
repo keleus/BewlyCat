@@ -3,12 +3,15 @@ import { onMounted, ref } from 'vue'
 
 import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 
-const props = withDefaults(defineProps<{
-  activeKey: unknown
-  white?: boolean
-}>(), {
-  white: false,
-})
+const props = withDefaults(
+  defineProps<{
+    activeKey: unknown
+    white?: boolean
+  }>(),
+  {
+    white: false,
+  },
+)
 
 const indicatorRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
@@ -19,17 +22,11 @@ onMounted(() => {
   containerRef.value = indicatorRef.value?.parentElement ?? null
 })
 
-const {
-  indicatorStyle,
-  isMoving,
-  updateIndicator,
-  setPreview,
-  clearPreview,
-  moveDurationMs,
-} = useLiquidSegmentIndicator({
-  containerRef,
-  activeKey: () => props.activeKey,
-})
+const { indicatorStyle, isMoving, updateIndicator, setPreview, clearPreview, moveDurationMs } =
+  useLiquidSegmentIndicator({
+    containerRef,
+    activeKey: () => props.activeKey,
+  })
 
 defineExpose({
   updateIndicator,

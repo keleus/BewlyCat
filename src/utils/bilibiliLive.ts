@@ -4,8 +4,7 @@ const BILIBILI_LIVE_HOSTNAME = 'live.bilibili.com'
 function isBilibiliLiveOrigin(value: string): boolean {
   try {
     return new URL(value).hostname === BILIBILI_LIVE_HOSTNAME
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -16,18 +15,14 @@ function isBilibiliLiveOrigin(value: string): boolean {
  */
 export function isInBilibiliLiveContext(): boolean {
   try {
-    if (location.hostname === BILIBILI_LIVE_HOSTNAME)
-      return true
-    if (window === window.top)
-      return false
+    if (location.hostname === BILIBILI_LIVE_HOSTNAME) return true
+    if (window === window.top) return false
 
     // Chromium / Safari 提供完整的上层来源链；Firefox 退回直接父页面的 referrer。
     const ancestorOrigins = location.ancestorOrigins
-    if (ancestorOrigins)
-      return Array.from(ancestorOrigins).some(isBilibiliLiveOrigin)
+    if (ancestorOrigins) return Array.from(ancestorOrigins).some(isBilibiliLiveOrigin)
     return isBilibiliLiveOrigin(document.referrer)
-  }
-  catch {
+  } catch {
     return false
   }
 }

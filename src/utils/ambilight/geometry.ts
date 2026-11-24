@@ -14,8 +14,7 @@ export interface GlowGeometry extends Rect {
 }
 
 export function contentRect(rect: Rect, vw: number, vh: number, fit: string = 'contain'): Rect {
-  if (!vw || !vh || fit === 'fill' || fit === 'cover')
-    return { ...rect }
+  if (!vw || !vh || fit === 'fill' || fit === 'cover') return { ...rect }
   const scale = Math.min(rect.width / vw, rect.height / vh)
   const width = vw * scale
   const height = vh * scale
@@ -29,7 +28,7 @@ export function contentRect(rect: Rect, vw: number, vh: number, fit: string = 'c
 
 export function glowGeometry(
   rect: Rect,
-  viewport: { width: number, height: number },
+  viewport: { width: number; height: number },
   spread: number,
   blur: number,
   mode: AmbilightDisplayMode = 'normal',

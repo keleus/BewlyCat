@@ -68,32 +68,32 @@
   place-items: center;
 }
 
-.bew-segment-control__item:hover:not([data-active="true"]):not(:disabled) {
+.bew-segment-control__item:hover:not([data-active='true']):not(:disabled) {
   color: var(--bew-segment-item-hover-current-color, var(--bew-segment-item-hover-color));
   background: var(--bew-segment-item-hover-current-bg, var(--bew-segment-item-hover-bg));
 }
 
-.bew-segment-control__item:focus-visible:not([data-active="true"]):not(:disabled) {
+.bew-segment-control__item:focus-visible:not([data-active='true']):not(:disabled) {
   outline: none;
   color: var(--bew-segment-item-focus-color, var(--bew-segment-item-active-color));
   background: var(--bew-segment-item-focus-bg, var(--bew-segment-item-active-bg));
   box-shadow: var(--bew-segment-item-focus-shadow, var(--bew-segment-item-active-shadow));
 }
 
-.bew-segment-control__item[data-active="true"] {
+.bew-segment-control__item[data-active='true'] {
   color: var(--bew-segment-item-current-color, var(--bew-segment-item-active-color));
   background: transparent;
   box-shadow: none;
 }
 
-.bew-segment-control__item[data-active="true"]:focus-visible {
+.bew-segment-control__item[data-active='true']:focus-visible {
   outline: 2px solid var(--bew-segment-item-focus-ring-color, var(--bew-theme-color-40));
   outline-offset: -2px;
 }
 
 // Static groups have no liquid indicator, so the selected item paints itself.
 // Support nested item hosts (e.g. Home tabs scroll wrapper) as well as direct children.
-.bew-segment-control--static .bew-segment-control__item[data-active="true"] {
+.bew-segment-control--static .bew-segment-control__item[data-active='true'] {
   background: var(--bew-segment-item-active-bg);
   box-shadow: var(--bew-segment-item-active-shadow);
 }

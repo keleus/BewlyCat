@@ -41,7 +41,7 @@ function clearDarkModeSyncTimers() {
 }
 
 // 计算属性：只有在显示iframe时才设置src，避免隐藏时提前加载
-const src = computed(() => showIframe.value ? currentUrl.value : undefined)
+const src = computed(() => (showIframe.value ? currentUrl.value : undefined))
 
 function clearRevealIframeTimer() {
   if (revealIframeTimer.value) {
@@ -51,27 +51,30 @@ function clearRevealIframeTimer() {
 }
 
 function scheduleRevealIframe() {
-  if (!showIframe.value || !isIframeLoaded.value)
-    return
+  if (!showIframe.value || !isIframeLoaded.value) return
 
   clearRevealIframeTimer()
-  revealIframeTimer.value = setTimeout(() => {
-    if (showIframe.value && isIframeLoaded.value)
-      isIframeDisplayReady.value = true
-    revealIframeTimer.value = null
-  }, isDark.value ? 360 : 120)
+  revealIframeTimer.value = setTimeout(
+    () => {
+      if (showIframe.value && isIframeLoaded.value) isIframeDisplayReady.value = true
+      revealIframeTimer.value = null
+    },
+    isDark.value ? 360 : 120,
+  )
 }
 
 function syncIframeDarkModeState() {
   if (iframeRef.value?.contentWindow) {
     try {
-      iframeRef.value.contentWindow.postMessage({
-        type: IFRAME_DARK_MODE_CHANGE,
-        isDark: isDark.value,
-        darkModeBaseColor: settings.value.darkModeBaseColor,
-      }, '*')
-    }
-    catch (error) {
+      iframeRef.value.contentWindow.postMessage(
+        {
+          type: IFRAME_DARK_MODE_CHANGE,
+          isDark: isDark.value,
+          darkModeBaseColor: settings.value.darkModeBaseColor,
+        },
+        '*',
+      )
+    } catch (error) {
       console.warn('Failed to send dark mode change message to iframe:', error)
     }
   }
@@ -80,49 +83,49 @@ function syncIframeDarkModeState() {
 function handleIframeLoad() {
   // Ignore hidden or empty-src iframe load events (e.g. initial about:blank).
   const iframeSrc = iframeRef.value?.getAttribute('src')
-  if (!showIframe.value || !iframeSrc || iframeSrc === 'about:blank')
-    return
+  if (!showIframe.value || !iframeSrc || iframeSrc === 'about:blank') return
 
   isIframeLoaded.value = true
   // 完整导航后 loaded 仍为 true，每次 load 都需要同步新文档的主题。
   clearDarkModeSyncTimers()
   syncIframeDarkModeState()
-  darkModeSyncTimers = [120, 320].map(delay => setTimeout(syncIframeDarkModeState, delay))
+  darkModeSyncTimers = [120, 320].map((delay) => setTimeout(syncIframeDarkModeState, delay))
   scheduleRevealIframe()
 }
 
 function handleDrawerCloseRequestMessage(event: MessageEvent) {
   const iframe = iframeRef.value
-  if (!show.value || !iframe?.contentWindow || event.source !== iframe.contentWindow)
-    return
+  if (!show.value || !iframe?.contentWindow || event.source !== iframe.contentWindow) return
 
   const iframeSrc = iframe.getAttribute('src')
-  if (!iframeSrc || iframeSrc === 'about:blank')
-    return
+  if (!iframeSrc || iframeSrc === 'about:blank') return
 
   try {
-    if (event.origin !== new URL(iframeSrc, window.location.href).origin)
-      return
-  }
-  catch {
+    if (event.origin !== new URL(iframeSrc, window.location.href).origin) return
+  } catch {
     return
   }
 
-  if (event.data?.type !== 'BEWLY_DRAWER_CLOSE_REQUEST' || event.data?.source !== 'iframe')
-    return
+  if (event.data?.type !== 'BEWLY_DRAWER_CLOSE_REQUEST' || event.data?.source !== 'iframe') return
 
   requestClose()
 }
 
 // 监听黑暗模式变化
-watch(() => isDark.value, () => {
-  syncIframeDarkModeState()
-})
+watch(
+  () => isDark.value,
+  () => {
+    syncIframeDarkModeState()
+  },
+)
 
 // 监听深色模式基准颜色变化
-watch(() => settings.value.darkModeBaseColor, () => {
-  syncIframeDarkModeState()
-})
+watch(
+  () => settings.value.darkModeBaseColor,
+  () => {
+    syncIframeDarkModeState()
+  },
+)
 
 function handleOpen() {
   show.value = true
@@ -135,11 +138,9 @@ function handleOpen() {
     isPageScrollLocked.value = true
   }
 
-  if (currentUrl.value !== props.url)
-    currentUrl.value = props.url
+  if (currentUrl.value !== props.url) currentUrl.value = props.url
   // 延迟加载iframe，确保抽屉动画完成后再开始加载内容
-  if (openTimer.value)
-    clearTimeout(openTimer.value)
+  if (openTimer.value) clearTimeout(openTimer.value)
   openTimer.value = setTimeout(() => {
     openTimer.value = null
     showIframe.value = true
@@ -180,8 +181,7 @@ function requestClose() {
     return
   }
   isEscPressed.value = true
-  if (escPressedTimer.value)
-    clearTimeout(escPressedTimer.value)
+  if (escPressedTimer.value) clearTimeout(escPressedTimer.value)
   escPressedTimer.value = setTimeout(() => {
     isEscPressed.value = false
   }, 1300)
@@ -212,8 +212,7 @@ function handleOpenInNewTab() {
   if (iframeRef.value) {
     try {
       window.open(iframeRef.value.contentWindow?.location.href.replace(/\/$/, ''), '_blank')
-    }
-    catch {
+    } catch {
       window.open('https://message.bilibili.com/', '_blank')
     }
     handleClose()
@@ -224,23 +223,24 @@ function handleOpenInNewTab() {
  * Listen to Escape key using native event listener
  */
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key !== 'Escape' && e.code !== 'Escape')
-    return
-  if (e.repeat || e.isComposing)
-    return
+  if (e.key !== 'Escape' && e.code !== 'Escape') return
+  if (e.repeat || e.isComposing) return
 
   // Only handle when this drawer is the active drawer
-  if (activeDrawer.value !== DrawerType.NotificationsDrawer)
-    return
+  if (activeDrawer.value !== DrawerType.NotificationsDrawer) return
 
-  const hadEscapePriorityState = !!(document.fullscreenElement
-    || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+  const hadEscapePriorityState = !!(
+    document.fullscreenElement ||
+    (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+  )
 
   window.setTimeout(() => {
-    if (hadEscapePriorityState
-      || e.defaultPrevented
-      || e.cancelBubble
-      || activeDrawer.value !== DrawerType.NotificationsDrawer) {
+    if (
+      hadEscapePriorityState ||
+      e.defaultPrevented ||
+      e.cancelBubble ||
+      activeDrawer.value !== DrawerType.NotificationsDrawer
+    ) {
       return
     }
 
@@ -250,8 +250,7 @@ function handleKeydown(e: KeyboardEvent) {
 
 function showEscHintTemporarily() {
   showEscHint.value = true
-  if (escHintTimer.value)
-    clearTimeout(escHintTimer.value)
+  if (escHintTimer.value) clearTimeout(escHintTimer.value)
   escHintTimer.value = setTimeout(() => {
     showEscHint.value = false
     escHintTimer.value = null
@@ -259,18 +258,15 @@ function showEscHintTemporarily() {
 }
 
 function handleIframeFocusin(e: FocusEvent) {
-  if (show.value && iframeRef.value && e.target === iframeRef.value)
-    showEscHintTemporarily()
+  if (show.value && iframeRef.value && e.target === iframeRef.value) showEscHintTemporarily()
 }
 
 function handleDocumentClick(e: MouseEvent) {
-  if (show.value && iframeRef.value?.contains(e.target as Node))
-    showEscHintTemporarily()
+  if (show.value && iframeRef.value?.contains(e.target as Node)) showEscHintTemporarily()
 }
 
 function handleDrawerMousedown(e: MouseEvent) {
-  if (!show.value || !drawerRef.value || !iframeRef.value)
-    return
+  if (!show.value || !drawerRef.value || !iframeRef.value) return
 
   const isClickInDrawer = drawerRef.value.contains(e.target as Node)
   const isClickInIframe = iframeRef.value.contains(e.target as Node)
@@ -286,8 +282,7 @@ let globalListenersRegistered = false
 let drawerActive = false
 
 function registerGlobalListeners() {
-  if (globalListenersRegistered)
-    return
+  if (globalListenersRegistered) return
   globalListenersRegistered = true
   window.addEventListener('keydown', handleKeydown, true) // use capture phase
   window.addEventListener('message', handleDrawerCloseRequestMessage)
@@ -297,8 +292,7 @@ function registerGlobalListeners() {
 }
 
 function removeGlobalListeners() {
-  if (!globalListenersRegistered)
-    return
+  if (!globalListenersRegistered) return
   globalListenersRegistered = false
   window.removeEventListener('keydown', handleKeydown, true)
   window.removeEventListener('message', handleDrawerCloseRequestMessage)
@@ -331,8 +325,7 @@ onMounted(() => {
 })
 
 onActivated(() => {
-  if (drawerActive)
-    return
+  if (drawerActive) return
   drawerActive = true
   registerGlobalListeners()
   handleOpen()
@@ -375,14 +368,20 @@ function handleFocusDrawer(e?: Event) {
   <Teleport :to="mainAppRef">
     <div
       :style="{ pointerEvents: show ? 'auto' : 'none' }"
-      pos="fixed top-0 left-0" of-hidden w-full h-full
+      pos="fixed top-0 left-0"
+      of-hidden
+      w-full
+      h-full
       z-999999
     >
       <!-- Mask -->
       <Transition name="fade">
         <div
           v-if="show"
-          pos="absolute bottom-0 left-0" w-full h-full bg="black opacity-60"
+          pos="absolute bottom-0 left-0"
+          w-full
+          h-full
+          bg="black opacity-60"
           @click="handleClose"
           @mousedown="handleFocusDrawer"
         />
@@ -393,16 +392,25 @@ function handleFocusDrawer(e?: Event) {
           v-show="show"
           ref="drawerRef"
           tabindex="0"
-          pos="absolute top-0 right-0" of-hidden bg="$bew-bg"
-          w="xl:70vw lg:80vw md:100vw 100vw" max-w-1400px h-full
+          pos="absolute top-0 right-0"
+          of-hidden
+          bg="$bew-bg"
+          w="xl:70vw lg:80vw md:100vw 100vw"
+          max-w-1400px
+          h-full
           outline-none
           @keydown="handleKeydown"
           @mousedown.self="handleFocusDrawer"
         >
           <div
-            pos="fixed top-0 right-0" z-10 flex="~ items-center justify-between gap-2"
-            w-inherit max-w-inherit h="$bew-top-bar-height"
-            m-auto px-4
+            pos="fixed top-0 right-0"
+            z-10
+            flex="~ items-center justify-between gap-2"
+            w-inherit
+            max-w-inherit
+            h="$bew-top-bar-height"
+            m-auto
+            px-4
             pointer-events-none
             bg="$bew-bg"
             @mousedown="handleFocusDrawer"
@@ -416,11 +424,17 @@ function handleFocusDrawer(e?: Event) {
                 <div
                   v-if="showEscHint && settings.showDrawerEscHint"
                   pointer-events-auto
-                  bg="$bew-theme-color" text="white sm" px-3 py-2 rounded="$bew-interactive-radius"
+                  bg="$bew-theme-color"
+                  text="white sm"
+                  px-3
+                  py-2
+                  rounded="$bew-interactive-radius"
                   flex="~ items-center gap-2"
                 >
                   <i i-mingcute:information-line />
-                  <span>{{ $t('iframe_drawer.esc_hint', '点击抽屉外部区域，然后按 ESC 关闭') }}</span>
+                  <span>{{
+                    $t('iframe_drawer.esc_hint', '点击抽屉外部区域，然后按 ESC 关闭')
+                  }}</span>
                 </div>
               </Transition>
 
@@ -454,25 +468,32 @@ function handleFocusDrawer(e?: Event) {
                 {{ $t('iframe_drawer.close') }}
                 <kbd
                   v-if="settings.showDrawerEscHint"
-                  ml-1 px-2 py-0.5 rounded="$bew-radius-sm" text-xs
-                  bg="$bew-fill-2" text="$bew-text-2"
-                >Esc</kbd>
+                  ml-1
+                  px-2
+                  py-0.5
+                  rounded="$bew-radius-sm"
+                  text-xs
+                  bg="$bew-fill-2"
+                  text="$bew-text-2"
+                  >Esc</kbd
+                >
               </Button>
-              <Button
-                v-else
-                type="error"
-                shadow="!$bew-shadow-1"
-                @click="handleClose"
-              >
+              <Button v-else type="error" shadow="!$bew-shadow-1" @click="handleClose">
                 <template #left>
                   <i i-mingcute:close-line />
                 </template>
                 {{ $t('iframe_drawer.press_esc_again_to_close') }}
                 <kbd
                   v-if="settings.showDrawerEscHint"
-                  ml-1 px-2 py-0.5 rounded="$bew-radius-sm" text-xs
-                  bg="red-700" text="white"
-                >Esc</kbd>
+                  ml-1
+                  px-2
+                  py-0.5
+                  rounded="$bew-radius-sm"
+                  text-xs
+                  bg="red-700"
+                  text="white"
+                  >Esc</kbd
+                >
               </Button>
             </div>
           </div>
@@ -483,7 +504,8 @@ function handleFocusDrawer(e?: Event) {
               class="notifications-drawer__loading-layer"
               pos="absolute top-0 right-0"
               z-20
-              w-full h-full
+              w-full
+              h-full
               bg="$bew-bg"
             >
               <Loading />
@@ -509,7 +531,8 @@ function handleFocusDrawer(e?: Event) {
               opacity: isIframeDisplayReady ? 1 : 0,
               visibility: isIframeDisplayReady ? 'visible' : 'hidden',
               pointerEvents: isIframeDisplayReady ? 'auto' : 'none',
-              transition: 'opacity var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease)',
+              transition:
+                'opacity var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease)',
               backgroundColor: 'var(--bew-bg)',
             }"
             @load="handleIframeLoad"

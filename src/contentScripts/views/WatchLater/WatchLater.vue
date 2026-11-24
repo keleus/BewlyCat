@@ -15,7 +15,11 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import type { WatchLaterLayout } from '~/logic'
 import { hasVisibleVideoCardMenuAction, settings, watchLaterLayout } from '~/logic'
-import { ensureWatchLaterState, markWatchLater, markWatchLaterCleared } from '~/logic/watchLaterState'
+import {
+  ensureWatchLaterState,
+  markWatchLater,
+  markWatchLaterCleared,
+} from '~/logic/watchLaterState'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -37,12 +41,19 @@ provide('getVideoType', () => 'common')
 const moreMenuItem = ref<VideoItem | null>(null)
 const moreMenuTrigger = ref<HTMLButtonElement | null>(null)
 const moreMenuStyles = ref<CSSProperties>({})
-const showMoreButton = computed(() => settings.value.showVideoCardMoreButton
-  && hasVisibleVideoCardMenuAction(settings.value.videoCardContextMenuConfig))
+const showMoreButton = computed(
+  () =>
+    settings.value.showVideoCardMoreButton &&
+    hasVisibleVideoCardMenuAction(settings.value.videoCardContextMenuConfig),
+)
 
 function openMoreMenu(item: VideoItem, event: MouseEvent) {
   const trigger = event.currentTarget as HTMLButtonElement
-  const position = computeFloatingMenuPosition(trigger.getBoundingClientRect(), window.innerWidth, window.innerHeight)
+  const position = computeFloatingMenuPosition(
+    trigger.getBoundingClientRect(),
+    window.innerWidth,
+    window.innerHeight,
+  )
   moreMenuTrigger.value = trigger
   moreMenuStyles.value = {
     position: 'fixed',
@@ -72,8 +83,14 @@ let consumedCount = 0
 let requestVersion = 0
 let disposed = false
 
-const layoutIcons = computed<Array<{ icon: string, iconActivated: string, value: WatchLaterLayout }>>(() => [
-  { icon: 'mingcute:list-check-3-line', iconActivated: 'mingcute:list-check-3-fill', value: 'list' },
+const layoutIcons = computed<
+  Array<{ icon: string; iconActivated: string; value: WatchLaterLayout }>
+>(() => [
+  {
+    icon: 'mingcute:list-check-3-line',
+    iconActivated: 'mingcute:list-check-3-fill',
+    value: 'list',
+  },
   { icon: 'mingcute:table-3-line', iconActivated: 'mingcute:table-3-fill', value: 'grid' },
 ])
 
@@ -115,16 +132,14 @@ function getData() {
 
 function initPageAction() {
   handlePageRefresh.value = async () => {
-    if (isLoading.value)
-      return
+    if (isLoading.value) return
 
     initData()
   }
 }
 
 function handleListReachBottom() {
-  if (isLoading.value || noMoreContent.value)
-    return
+  if (isLoading.value || noMoreContent.value) return
 
   // 优化：添加延迟执行提高触发成功率
   setTimeout(() => {
@@ -135,10 +150,14 @@ function handleListReachBottom() {
 }
 
 // 列表模式使用全局滚动触底加载；grid 模式由 VideoCardGrid 内部哨兵触发
-watch(watchLaterLayout, (layout) => {
-  moreMenuItem.value = null
-  handleReachBottom.value = layout === 'list' ? handleListReachBottom : undefined
-}, { immediate: true })
+watch(
+  watchLaterLayout,
+  (layout) => {
+    moreMenuItem.value = null
+    handleReachBottom.value = layout === 'list' ? handleListReachBottom : undefined
+  },
+  { immediate: true },
+)
 
 /**
  * Get watch later list by page
@@ -154,8 +173,7 @@ async function getWatchLaterListByPage() {
 
   try {
     while (true) {
-      if (version !== requestVersion || getUserID() !== accountId)
-        return
+      if (version !== requestVersion || getUserID() !== accountId) return
 
       // 删除会让服务器页边界前移，重新请求重叠页，再按 aid 去重。
       const page = Math.floor(consumedCount / pageSize.value) + 1
@@ -163,34 +181,29 @@ async function getWatchLaterListByPage() {
         pn: page,
         ps: pageSize.value,
       })
-      if (version !== requestVersion || getUserID() !== accountId || res.code !== 0)
-        return
+      if (version !== requestVersion || getUserID() !== accountId || res.code !== 0) return
 
       watchLaterCount.value = res.data.count
       noMoreContent.value = res.data.list.length < pageSize.value
       consumedCount = Math.max(consumedCount, (page - 1) * pageSize.value + res.data.list.length)
-      const existingIds = new Set(currentWatchLaterList.value.map(video => video.aid))
-      currentWatchLaterList.value.push(...res.data.list.filter(video => !existingIds.has(video.aid)))
+      const existingIds = new Set(currentWatchLaterList.value.map((video) => video.aid))
+      currentWatchLaterList.value.push(
+        ...res.data.list.filter((video) => !existingIds.has(video.aid)),
+      )
 
       // 保持加载锁直到填满视口，避免递归被 isLoading 拦截或重入。
-      if (noMoreContent.value || await haveScrollbar())
-        return
+      if (noMoreContent.value || (await haveScrollbar())) return
     }
-  }
-  catch (error) {
-    if (version === requestVersion)
-      console.error('加载稍后再看失败:', error)
-  }
-  finally {
-    if (version === requestVersion)
-      isLoading.value = false
+  } catch (error) {
+    if (version === requestVersion) console.error('加载稍后再看失败:', error)
+  } finally {
+    if (version === requestVersion) isLoading.value = false
   }
 }
 
 // keepCard：删除后卡片保留在原位并显示还原遮罩；返回是否删除成功
 async function deleteWatchLaterItem(aid: number, keepCard = false): Promise<boolean> {
-  if (pendingRemovals.has(aid))
-    return false
+  if (pendingRemovals.has(aid)) return false
 
   pendingRemovals.add(aid)
   const accountId = getUserID()
@@ -201,26 +214,21 @@ async function deleteWatchLaterItem(aid: number, keepCard = false): Promise<bool
       requestVersion++
       isLoading.value = false
       // 请求期间其他删除或刷新可能改变下标，按视频标识查找当前条目。
-      const index = currentWatchLaterList.value.findIndex(video => video.aid === aid)
+      const index = currentWatchLaterList.value.findIndex((video) => video.aid === aid)
       if (index !== -1) {
-        if (keepCard)
-          removeStatuses.set(aid, 'removed')
-        else
-          currentWatchLaterList.value.splice(index, 1)
+        if (keepCard) removeStatuses.set(aid, 'removed')
+        else currentWatchLaterList.value.splice(index, 1)
         watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
         consumedCount = Math.max(0, consumedCount - 1)
       }
       markWatchLater({ aid }, false)
       syncTopBarWatchLaterState()
-      if (wasLoading)
-        void getWatchLaterListByPage()
+      if (wasLoading) void getWatchLaterListByPage()
       return true
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('移除稍后再看失败:', error)
-  }
-  finally {
+  } finally {
     pendingRemovals.delete(aid)
   }
   return false
@@ -228,18 +236,15 @@ async function deleteWatchLaterItem(aid: number, keepCard = false): Promise<bool
 
 // 点击即删除，卡片保留在原位并显示可撤销遮罩
 async function handleRemoveWatchLater(item: VideoItem) {
-  if (removeStatuses.has(item.aid))
-    return
+  if (removeStatuses.has(item.aid)) return
 
   removeStatuses.set(item.aid, 'removing')
   const success = await deleteWatchLaterItem(item.aid, true)
-  if (!success && removeStatuses.get(item.aid) === 'removing')
-    removeStatuses.delete(item.aid)
+  if (!success && removeStatuses.get(item.aid) === 'removing') removeStatuses.delete(item.aid)
 }
 
 async function restoreWatchLater(item: VideoItem) {
-  if (removeStatuses.get(item.aid) !== 'removed')
-    return
+  if (removeStatuses.get(item.aid) !== 'removed') return
 
   removeStatuses.set(item.aid, 'restoring')
   const accountId = getUserID()
@@ -258,30 +263,25 @@ async function restoreWatchLater(item: VideoItem) {
     watchLaterCount.value++
     markWatchLater({ aid: item.aid, bvid: item.bvid }, true)
     syncTopBarWatchLaterState()
-  }
-  catch (error) {
+  } catch (error) {
     console.error('重新加入稍后再看失败:', error)
-    if (removeStatuses.get(item.aid) === 'restoring')
-      removeStatuses.set(item.aid, 'removed')
+    if (removeStatuses.get(item.aid) === 'restoring') removeStatuses.set(item.aid, 'removed')
   }
 }
 
 // 收起已移除的占位卡片：条目已从服务器删除，这里移出列表并清除状态，触发 removable-list 离场动画
 // 仅在删除已完成（removed）时可收起：请求进行中收起会让计数与游标漏更新，或在还原后丢失同步
 function dismissRemovedItem(item: VideoItem) {
-  if (removeStatuses.get(item.aid) !== 'removed')
-    return
+  if (removeStatuses.get(item.aid) !== 'removed') return
 
-  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
-  if (index !== -1)
-    currentWatchLaterList.value.splice(index, 1)
+  const index = currentWatchLaterList.value.findIndex((video) => video.aid === item.aid)
+  if (index !== -1) currentWatchLaterList.value.splice(index, 1)
   removeStatuses.delete(item.aid)
 }
 
 function getWatchLaterRemovedState(item: VideoItem): VideoCardRemovedState | undefined {
   const status = removeStatuses.get(item.aid)
-  if (!status)
-    return undefined
+  if (!status) return undefined
 
   return {
     message: t('watch_later.removed'),
@@ -318,9 +318,7 @@ function transformWatchLaterItem(item: VideoItem): Video {
 }
 
 async function handleClearAllWatchLater() {
-  const result = await showConfirmDialog(
-    t('watch_later.clear_all_confirm'),
-  )
+  const result = await showConfirmDialog(t('watch_later.clear_all_confirm'))
   if (result) {
     const version = requestVersion
     isLoading.value = true
@@ -331,23 +329,20 @@ async function handleClearAllWatchLater() {
         await initData()
         syncTopBarWatchLaterState()
       }
-    }
-    finally {
-      if (version === requestVersion)
-        isLoading.value = false
+    } finally {
+      if (version === requestVersion) isLoading.value = false
     }
   }
 }
 
 async function handleRemoveWatchedVideos() {
-  const result = await showConfirmDialog(
-    t('watch_later.remove_watched_videos_confirm'),
-  )
+  const result = await showConfirmDialog(t('watch_later.remove_watched_videos_confirm'))
   if (result) {
-    api.watchlater.removeFromWatchLater({
-      viewed: true,
-      csrf: getCSRF(),
-    })
+    api.watchlater
+      .removeFromWatchLater({
+        viewed: true,
+        csrf: getCSRF(),
+      })
       .then((res) => {
         if (res.code === 0) {
           initData()
@@ -366,17 +361,13 @@ function handlePlayAll() {
 function handleLinkClick(url: string) {
   if (settings.value.videoCardLinkOpenMode === 'drawer') {
     openIframeDrawer(url) // 在抽屉打开
-  }
-  else if (settings.value.videoCardLinkOpenMode === 'dialog') {
+  } else if (settings.value.videoCardLinkOpenMode === 'dialog') {
     openVideoDialog(url) // 在弹窗打开
-  }
-  else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
+  } else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
     window.open(url, '_self') // 在当前标签页打开
-  }
-  else if (settings.value.videoCardLinkOpenMode === 'background') {
+  } else if (settings.value.videoCardLinkOpenMode === 'background') {
     openLinkInBackground(url)
-  }
-  else {
+  } else {
     openLinkToNewTab(url) // 在新标签页打开
   }
 }
@@ -389,17 +380,13 @@ function handleVideoLinkClick(bvid: string) {
   const videoUrl = localizeBilibiliUrl(`https://www.bilibili.com/video/${bvid}/`)
   if (settings.value.videoCardLinkOpenMode === 'drawer') {
     openIframeDrawer(videoUrl) // 在抽屉打开
-  }
-  else if (settings.value.videoCardLinkOpenMode === 'dialog') {
+  } else if (settings.value.videoCardLinkOpenMode === 'dialog') {
     openVideoDialog(videoUrl) // 在弹窗打开
-  }
-  else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
+  } else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
     window.open(videoUrl, '_self') // 在当前标签页打开
-  }
-  else if (settings.value.videoCardLinkOpenMode === 'background') {
+  } else if (settings.value.videoCardLinkOpenMode === 'background') {
     openLinkInBackground(videoUrl)
-  }
-  else {
+  } else {
     openLinkToNewTab(videoUrl) // 在新标签页打开
   }
 }
@@ -435,13 +422,16 @@ function getItemKey(item: VideoItem) {
             :active-key="watchLaterLayout"
           />
           <button
-            v-for="icon in layoutIcons" :key="icon.value"
+            v-for="icon in layoutIcons"
+            :key="icon.value"
             type="button"
             class="watch-later-layout-item bew-segment-control__item bew-segment-control__item--icon"
             data-segment-item
             :data-active="watchLaterLayout === icon.value ? 'true' : undefined"
             :aria-pressed="watchLaterLayout === icon.value"
-            :title="icon.value === 'list' ? t('watch_later.layout_list') : t('watch_later.layout_grid')"
+            :title="
+              icon.value === 'list' ? t('watch_later.layout_list') : t('watch_later.layout_grid')
+            "
             @click="watchLaterLayout = icon.value"
           >
             <Icon
@@ -475,7 +465,11 @@ function getItemKey(item: VideoItem) {
               :aria-label="t('watch_later.remove_from_watch_later')"
               @click.prevent.stop="handleRemoveWatchLater(item)"
             >
-              <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="bottom-left" type="dark">
+              <Tooltip
+                :content="t('watch_later.remove_from_watch_later')"
+                placement="bottom-left"
+                type="dark"
+              >
                 <div i-tabler:trash />
               </Tooltip>
             </button>
@@ -497,7 +491,12 @@ function getItemKey(item: VideoItem) {
         <!-- list layout -->
         <template v-else>
           <!-- watcher later list -->
-          <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col">
+          <TransitionGroup
+            name="removable-list"
+            tag="div"
+            class="removable-list-group"
+            flex="~ col"
+          >
             <div
               v-for="item in currentWatchLaterList"
               :key="item.aid"
@@ -511,13 +510,15 @@ function getItemKey(item: VideoItem) {
                 :inert="removeStatuses.has(item.aid) || undefined"
                 type="videoCard"
                 class="group watch-later-list-item"
-                flex cursor-pointer
+                flex
+                cursor-pointer
               >
                 <section
                   rounded="$bew-radius"
                   flex="~ gap-6 col md:col lg:row items-start"
                   group-hover:bg="$bew-fill-2"
-                  duration-300 w-full
+                  duration-300
+                  w-full
                   p-2
                   content-visibility-auto
                 >
@@ -537,7 +538,7 @@ function getItemKey(item: VideoItem) {
                       :src="removeHttpFromUrl(`${item.pic}@480w_270h_1c`)"
                       :alt="item.title"
                       object-cover
-                    >
+                    />
 
                     <!-- <div
                   pos="absolute bottom-0 right-0"
@@ -550,7 +551,6 @@ function getItemKey(item: VideoItem) {
                   {{ calcCurrentTime(item.duration) }}
                 </div> -->
                     <div
-
                       pos="absolute bottom-0 right-0"
                       bg="black opacity-60"
                       m="2"
@@ -569,11 +569,7 @@ function getItemKey(item: VideoItem) {
                       }}
                     </div>
                     <div w-full pos="absolute bottom-0" bg="white opacity-60">
-                      <Progress
-                        :percentage="
-                          (item.progress / item.duration) * 100
-                        "
-                      />
+                      <Progress :percentage="(item.progress / item.duration) * 100" />
                     </div>
                   </div>
 
@@ -600,25 +596,25 @@ function getItemKey(item: VideoItem) {
                         hover:bg="$bew-theme-color-10"
                         duration-300
                         pr-2
-                        :href="getAuthorJumpUrl(getWatchLaterAuthor(item))" target="_blank"
+                        :href="getAuthorJumpUrl(getWatchLaterAuthor(item))"
+                        target="_blank"
                         @click.stop
                       >
                         <img
-                          :src="removeHttpFromUrl(`${getWatchLaterAuthor(item).authorFace}@40w_40h_1c`)"
+                          :src="
+                            removeHttpFromUrl(`${getWatchLaterAuthor(item).authorFace}@40w_40h_1c`)
+                          "
                           w-30px
                           aspect-square
                           object-cover
                           alt=""
                           rounded="1/2"
                           mr-2
-                        >
+                        />
                         {{ getWatchLaterAuthor(item).name }}
                       </a>
                       <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
-                        {{
-                          useDateFormat(item.pubdate * 1000, 'YYYY-MM-DD HH:mm:ss')
-                            .value
-                        }}
+                        {{ useDateFormat(item.pubdate * 1000, 'YYYY-MM-DD HH:mm:ss').value }}
                       </p>
                     </div>
 
@@ -646,7 +642,13 @@ function getItemKey(item: VideoItem) {
                           type="button"
                           p-2
                           duration-300
-                          @click.prevent.stop="handleLinkClick(localizeBilibiliUrl(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`))"
+                          @click.prevent.stop="
+                            handleLinkClick(
+                              localizeBilibiliUrl(
+                                `https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`,
+                              ),
+                            )
+                          "
                         >
                           <div i-tabler:list-check />
                         </button>
@@ -665,11 +667,17 @@ function getItemKey(item: VideoItem) {
                           <div i-tabler:trash />
                         </button>
                       </Tooltip>
-                      <Tooltip v-if="showMoreButton" :content="t('video_card.operation.more_options')" placement="top">
+                      <Tooltip
+                        v-if="showMoreButton"
+                        :content="t('video_card.operation.more_options')"
+                        placement="top"
+                      >
                         <button
                           type="button"
                           class="watch-later-list-action"
-                          :class="{ 'watch-later-list-action--active': moreMenuItem?.aid === item.aid }"
+                          :class="{
+                            'watch-later-list-action--active': moreMenuItem?.aid === item.aid,
+                          }"
                           :aria-label="t('video_card.operation.more_options')"
                           aria-haspopup="menu"
                           :aria-expanded="moreMenuItem?.aid === item.aid"
@@ -717,45 +725,45 @@ function getItemKey(item: VideoItem) {
         }"
       >
         <!-- Frosted Glass Cover -->
-        <div
-          v-if="settings.enableSidebarCoverBlur"
-          class="watch-later-sidebar-background"
-        >
-          <div
-            absolute inset-0
-            bg="$bew-sidebar-cover-mask"
-          />
+        <div v-if="settings.enableSidebarCoverBlur" class="watch-later-sidebar-background">
+          <div absolute inset-0 bg="$bew-sidebar-cover-mask" />
           <img
             v-if="currentWatchLaterList[0]"
             :src="removeHttpFromUrl(`${currentWatchLaterList[0].pic}@480w_270h_1c`)"
-            w-full h-full object="cover center" blur-40px
-            relative z--1
-          >
+            w-full
+            h-full
+            object="cover center"
+            blur-40px
+            relative
+            z--1
+          />
         </div>
 
         <!-- Content -->
-        <main
-          class="watch-later-sidebar-content"
-          flex="~ col gap-4 justify-start"
-          p-6
-        >
+        <main class="watch-later-sidebar-content" flex="~ col gap-4 justify-start" p-6>
           <picture
             class="hidden md:block"
-            rounded="$bew-radius" style="box-shadow: 0 16px 24px -12px rgba(0, 0, 0, .36)"
-            aspect-video mb-4 bg="$bew-skeleton"
+            rounded="$bew-radius"
+            style="box-shadow: 0 16px 24px -12px rgba(0, 0, 0, 0.36)"
+            aspect-video
+            mb-4
+            bg="$bew-skeleton"
           >
             <img
-              v-if="currentWatchLaterList[0]" :src="removeHttpFromUrl(`${currentWatchLaterList[0].pic}@480w_270h_1c`)"
-              rounded="$bew-radius" aspect-video w-full
-            >
+              v-if="currentWatchLaterList[0]"
+              :src="removeHttpFromUrl(`${currentWatchLaterList[0].pic}@480w_270h_1c`)"
+              rounded="$bew-radius"
+              aspect-video
+              w-full
+            />
           </picture>
 
-          <h3 class="bew-page-heading">
-            {{ t('watch_later.title') }} ({{ watchLaterCount }})
-          </h3>
+          <h3 class="bew-page-heading">{{ t('watch_later.title') }} ({{ watchLaterCount }})</h3>
           <div v-if="watchLaterCount > 0" flex="~ col" gap-2 w-full>
             <Button
-              type="secondary" block strong
+              type="secondary"
+              block
+              strong
               :color="settings.enableSidebarCoverBlur ? 'rgba(255,255,255,.35)' : undefined"
               :text-color="settings.enableSidebarCoverBlur ? 'white' : undefined"
               @click="handlePlayAll"
@@ -766,7 +774,9 @@ function getItemKey(item: VideoItem) {
               {{ t('common.play_all') }}
             </Button>
             <Button
-              type="secondary" block strong
+              type="secondary"
+              block
+              strong
               :color="settings.enableSidebarCoverBlur ? 'rgba(255,255,255,.35)' : undefined"
               :text-color="settings.enableSidebarCoverBlur ? 'white' : undefined"
               @click="handleClearAllWatchLater"
@@ -777,7 +787,9 @@ function getItemKey(item: VideoItem) {
               {{ t('watch_later.clear_all') }}
             </Button>
             <Button
-              type="secondary" block strong
+              type="secondary"
+              block
+              strong
               :color="settings.enableSidebarCoverBlur ? 'rgba(255,255,255,.35)' : undefined"
               :text-color="settings.enableSidebarCoverBlur ? 'white' : undefined"
               @click="handleRemoveWatchedVideos"

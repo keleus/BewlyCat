@@ -23,13 +23,12 @@ function setButtonHidden(hidden: boolean) {
 }
 
 export function initVideoPipButtonControl() {
-  if (hasInitialized)
-    return
+  if (hasInitialized) return
 
   hasInitialized = true
   watch(
     () => settings.value.showVideoPipButton,
-    visible => setButtonHidden(!visible),
+    (visible) => setButtonHidden(!visible),
     { immediate: true },
   )
 }

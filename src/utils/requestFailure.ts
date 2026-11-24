@@ -7,18 +7,18 @@ import { isBackgroundUnavailableError } from './messaging'
  * 经 `runtime.sendMessage` 返回的错误在 Chrome 中只保留 message，
  * 因此网络层的分类依赖后台抛出的错误文案，而不是附加字段。
  */
-export type RequestFailureKind
-  = | 'background'
-    | 'hostPermission'
-    | 'offline'
-    | 'riskControl'
-    | 'http'
-    | 'invalidResponse'
-    | 'api'
-    | 'empty'
-    | 'timeout'
-    | 'network'
-    | 'unknown'
+export type RequestFailureKind =
+  | 'background'
+  | 'hostPermission'
+  | 'offline'
+  | 'riskControl'
+  | 'http'
+  | 'invalidResponse'
+  | 'api'
+  | 'empty'
+  | 'timeout'
+  | 'network'
+  | 'unknown'
 
 export interface RequestFailure {
   kind: RequestFailureKind
@@ -71,9 +71,10 @@ function extractHostPermissionFailure(value: Record<string, unknown>): RequestFa
   const message = typeof value.message === 'string' ? value.message : undefined
   const match = message ? HOST_PERMISSION_PATTERN.exec(message) : null
   if (value.isHostPermissionMissing === true || value.name === 'ApiHostPermissionError' || match) {
-    const origin = typeof value.missingHostOrigin === 'string' && value.missingHostOrigin
-      ? value.missingHostOrigin
-      : match?.[1]
+    const origin =
+      typeof value.missingHostOrigin === 'string' && value.missingHostOrigin
+        ? value.missingHostOrigin
+        : match?.[1]
     return { kind: 'hostPermission', origin, message }
   }
   return undefined
@@ -106,43 +107,48 @@ function classifyError(error: unknown): RequestFailure {
 
   if (isRecord(error)) {
     const hostPermissionFailure = extractHostPermissionFailure(error)
-    if (hostPermissionFailure)
-      return hostPermissionFailure
+    if (hostPermissionFailure) return hostPermissionFailure
   }
 
   if (isBilibiliRiskControl(error))
-    return { kind: 'riskControl', message: isRecord(error) ? String(error.message ?? '') : undefined }
+    return {
+      kind: 'riskControl',
+      message: isRecord(error) ? String(error.message ?? '') : undefined,
+    }
 
   const name = error instanceof Error || isRecord(error) ? String(error.name ?? '') : undefined
-  const message = error instanceof Error
-    ? error.message
-    : isRecord(error) ? String(error.message ?? '') : String(error)
+  const message =
+    error instanceof Error
+      ? error.message
+      : isRecord(error)
+        ? String(error.message ?? '')
+        : String(error)
   return classifyErrorMessage(message, name)
 }
 
 function classifyResponse(response: Record<string, unknown>, listKey: string): RequestFailure {
   const hostPermissionFailure = extractHostPermissionFailure(response)
-  if (hostPermissionFailure)
-    return hostPermissionFailure
+  if (hostPermissionFailure) return hostPermissionFailure
 
   if (isBilibiliRiskControl(response))
-    return { kind: 'riskControl', code: toFiniteNumber(response.code), message: String(response.message ?? '') }
+    return {
+      kind: 'riskControl',
+      code: toFiniteNumber(response.code),
+      message: String(response.message ?? ''),
+    }
 
   const code = toFiniteNumber(response.code)
   const message = typeof response.message === 'string' ? response.message : ''
 
   if (code === 0) {
     const list = isRecord(response.data) ? response.data[listKey] : undefined
-    return Array.isArray(list) && list.length > 0
-      ? { kind: 'unknown' }
-      : { kind: 'empty', code }
+    return Array.isArray(list) && list.length > 0 ? { kind: 'unknown' } : { kind: 'empty', code }
   }
 
   // 后台在网络层失败时返回 { code: -1, message }，HTTP 错误返回 { code: -status, message: 'HTTP xxx' }。
   if (code === -1 || HTTP_STATUS_PATTERN.test(message)) {
     const failure = classifyErrorMessage(message)
-    if (failure.kind !== 'unknown')
-      return failure
+    if (failure.kind !== 'unknown') return failure
   }
 
   return { kind: 'api', code, message }
@@ -153,20 +159,20 @@ function classifyResponse(response: Record<string, unknown>, listKey: string): R
  * `listKey` 为响应 `data` 中列表字段的名称，用于识别 code=0 的空列表。
  */
 export function classifyRequestFailure(
-  { error, response }: { error?: unknown, response?: unknown },
+  { error, response }: { error?: unknown; response?: unknown },
   listKey = 'item',
 ): RequestFailure {
-  if (error !== undefined)
-    return classifyError(error)
-  if (isRecord(response))
-    return classifyResponse(response, listKey)
+  if (error !== undefined) return classifyError(error)
+  if (isRecord(response)) return classifyResponse(response, listKey)
   return { kind: isBrowserOffline() ? 'offline' : 'unknown' }
 }
 
 /** 在多次尝试的失败中保留更能说明问题的一条，同级时以较新的为准。 */
-export function pickRequestFailure(current: RequestFailure | undefined, next: RequestFailure): RequestFailure {
-  if (!current)
-    return next
+export function pickRequestFailure(
+  current: RequestFailure | undefined,
+  next: RequestFailure,
+): RequestFailure {
+  if (!current) return next
   return KIND_PRIORITY[next.kind] >= KIND_PRIORITY[current.kind] ? next : current
 }
 

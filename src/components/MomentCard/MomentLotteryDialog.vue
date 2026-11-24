@@ -12,23 +12,20 @@ const { t } = useI18n()
 const frame = ref<HTMLIFrameElement | null>(null)
 let frameWindow: Window | null = null
 function closeOnEscape(event: KeyboardEvent) {
-  if (event.key === 'Escape')
-    emit('close')
+  if (event.key === 'Escape') emit('close')
 }
 function loaded() {
   try {
     frameWindow?.removeEventListener('keydown', closeOnEscape)
     frameWindow = frame.value?.contentWindow || null
     frameWindow?.addEventListener('keydown', closeOnEscape)
-  }
-  catch {
+  } catch {
     frameWindow = null
   }
 }
 onBeforeUnmount(() => {
   frameWindow?.removeEventListener('keydown', closeOnEscape)
-  if (frame.value)
-    frame.value.src = 'about:blank'
+  if (frame.value) frame.value.src = 'about:blank'
 })
 </script>
 

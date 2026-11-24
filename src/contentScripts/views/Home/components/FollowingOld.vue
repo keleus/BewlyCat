@@ -7,7 +7,10 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
-import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
+import type {
+  FollowingLiveResult,
+  List as FollowingLiveItem,
+} from '~/models/live/getFollowingLiveList'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import { BadgeText } from '~/models/moment/moment'
 import api from '~/utils/api'
@@ -72,20 +75,17 @@ const OFFLINE_LIVE_TEXT = /未开播|休息|离线|下播|轮播|回放/
 
 function isLiveStreamingItem(liveItem: FollowingLiveItem): boolean {
   const liveStatus = Number(liveItem.live_status)
-  if (liveStatus !== 1)
-    return false
+  if (liveStatus !== 1) return false
 
   const statusText = (liveItem.text_small ?? '').trim()
-  if (statusText && OFFLINE_LIVE_TEXT.test(statusText))
-    return false
+  if (statusText && OFFLINE_LIVE_TEXT.test(statusText)) return false
 
   return true
 }
 
 // 页面可见性变化处理函数
 async function handleVisibilityChange() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   const wasVisible = isPageVisible.value
   isPageVisible.value = !document.hidden
 
@@ -102,18 +102,15 @@ async function handleVisibilityChange() {
 }
 
 onMounted(() => {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   canRefreshHomeSubPage.value = true
   isPageVisible.value = !document.hidden
   initPageAction()
   if (!tabState.restored) {
     void initData()
-  }
-  else {
+  } else {
     // Resume an interrupted first load from its last accepted cursor.
-    if (!isInitialized.value && !videoList.value.length)
-      void getData()
+    if (!isInitialized.value && !videoList.value.length) void getData()
     if (settings.value.followingTabShowLivestreamingVideos && livePage.value === 1)
       void getLiveVideoList()
   }
@@ -124,27 +121,23 @@ onBeforeUnmount(() => {
   isPageVisible.value = false
   clearTimeout(visibilityTimer)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
-  if (tabState.isActiveTab())
-    canRefreshHomeSubPage.value = false
+  if (tabState.isActiveTab()) canRefreshHomeSubPage.value = false
 })
 
 function initPageAction() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   // VideoCardGrid owns infinite scrolling. Clear callbacks left by the previous tab.
   handleReachBottom.value = undefined
 
   handlePageRefresh.value = async () => {
-    if (isLoading.value)
-      return
+    if (isLoading.value) return
 
     initData()
   }
 }
 
 async function initData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   isInitialized.value = false
   needToLoginFirst.value = false
   offset.value = ''
@@ -156,23 +149,19 @@ async function initData() {
   liveNoMoreContent.value = false
   recursionDepth.value = 0
 
-  if (settings.value.followingTabShowLivestreamingVideos)
-    getLiveVideoList()
+  if (settings.value.followingTabShowLivestreamingVideos) getLiveVideoList()
   await getData()
-  if (tabState.isCurrent())
-    isInitialized.value = true
+  if (tabState.isCurrent()) isInitialized.value = true
 }
 
 async function getData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   emit('beforeLoading')
   isLoading.value = true
 
   try {
     await getFollowedUsersVideos()
-  }
-  finally {
+  } finally {
     if (tabState.isCurrent()) {
       isInitialized.value = true
       isLoading.value = false
@@ -182,14 +171,11 @@ async function getData() {
 }
 
 async function getLiveVideoList() {
-  if (!tabState.isCurrent())
-    return
-  if (liveNoMoreContent.value)
-    return
+  if (!tabState.isCurrent()) return
+  if (liveNoMoreContent.value) return
 
   // 检查页面是否可见，如果不可见则不进行请求
-  if (!isPageVisible.value)
-    return
+  if (!isPageVisible.value) return
 
   const lastLiveVideoListLength = liveVideoList.value.length
   try {
@@ -198,8 +184,7 @@ async function getLiveVideoList() {
       page_size: 9,
     })
 
-    if (!tabState.isCurrent())
-      return
+    if (!tabState.isCurrent()) return
 
     if (response.code === -101) {
       liveNoMoreContent.value = true
@@ -209,8 +194,7 @@ async function getLiveVideoList() {
 
     if (response.code === 0) {
       // 如果返回的数据少于9条，说明没有更多数据了
-      if (response.data.list.length < 9)
-        liveNoMoreContent.value = true
+      if (response.data.list.length < 9) liveNoMoreContent.value = true
 
       livePage.value++
 
@@ -218,19 +202,17 @@ async function getLiveVideoList() {
 
       response.data.list.forEach((item: FollowingLiveItem) => {
         // 只保留正在直播的
-        if (isLiveStreamingItem(item))
-          resData.push(item)
+        if (isLiveStreamingItem(item)) resData.push(item)
       })
 
       // when videoList has length property, it means it is the first time to load
       if (!liveVideoList.value.length) {
-        liveVideoList.value = resData.map(item => ({
+        liveVideoList.value = resData.map((item) => ({
           uniqueId: `${item.roomid}`,
           item,
           displayData: mapLiveItemToVideo(item),
         }))
-      }
-      else {
+      } else {
         resData.forEach((item, index) => {
           liveVideoList.value[lastLiveVideoListLength + index] = {
             uniqueId: `${item.roomid}`,
@@ -239,21 +221,17 @@ async function getLiveVideoList() {
           }
         })
       }
-    }
-    else if (response.code === -101) {
+    } else if (response.code === -101) {
       needToLoginFirst.value = true
     }
-  }
-  catch {
+  } catch {
     // 忽略错误
   }
 }
 
 async function getFollowedUsersVideos() {
-  if (!tabState.isCurrent())
-    return
-  if (noMoreContent.value)
-    return
+  if (!tabState.isCurrent()) return
+  if (noMoreContent.value) return
 
   if (offset.value === '0') {
     noMoreContent.value = true
@@ -261,8 +239,7 @@ async function getFollowedUsersVideos() {
   }
 
   // 检查页面是否可见，如果不可见则不进行请求
-  if (!isPageVisible.value)
-    return
+  if (!isPageVisible.value) return
 
   // 限制递归深度，防止无限递归
   if (recursionDepth.value >= 10) {
@@ -281,8 +258,7 @@ async function getFollowedUsersVideos() {
       update_baseline: updateBaseline.value,
     })
 
-    if (!tabState.isCurrent())
-      return
+    if (!tabState.isCurrent()) return
 
     if (response.code === -101) {
       noMoreContent.value = true
@@ -298,22 +274,20 @@ async function getFollowedUsersVideos() {
 
       response.data.items.forEach((item: MomentItem) => {
         // 如果应该过滤该视频（充电专属视频/动态视频），则跳过
-        if (shouldFilterVideo(item))
-          return
+        if (shouldFilterVideo(item)) return
 
         const authors: Author[] = []
 
         // 检查是否有联合投稿信息
         if ((item.modules?.module_dynamic?.major?.archive?.stat as any)?.coop_num) {
-          (item.modules.module_dynamic.major.archive as any).coop_info?.forEach((coop: any) => {
+          ;(item.modules.module_dynamic.major.archive as any).coop_info?.forEach((coop: any) => {
             authors.push({
               name: coop.name,
               authorFace: coop.face,
               mid: coop.mid,
             })
           })
-        }
-        else {
+        } else {
           // 单人投稿 / 合集订阅
           const resolvedAuthor = resolveMomentAuthor(item)
           authors.push({
@@ -335,12 +309,11 @@ async function getFollowedUsersVideos() {
 
       // when videoList has length property, it means it is the first time to load
       if (!videoList.value.length) {
-        videoList.value = resData.map(video => ({
+        videoList.value = resData.map((video) => ({
           ...video,
           displayData: mapMomentItemToVideo(video.item, video.authorList),
         }))
-      }
-      else {
+      } else {
         resData.forEach((video, index) => {
           videoList.value[lastVideoListLength + index] = {
             ...video,
@@ -354,12 +327,10 @@ async function getFollowedUsersVideos() {
       if (lastVideoListLength === 0 && videoList.value.length < 30 && !noMoreContent.value) {
         await getFollowedUsersVideos()
       }
-    }
-    else if (response.code === -101) {
+    } else if (response.code === -101) {
       needToLoginFirst.value = true
     }
-  }
-  finally {
+  } finally {
     recursionDepth.value--
   }
 }
@@ -395,18 +366,14 @@ function shouldFilterVideo(item: MomentItem): boolean {
 
 // 供 VideoCardGrid 预加载调用的函数
 async function handleLoadMore() {
-  if (!tabState.isCurrent())
-    return
-  if (isLoading.value || noMoreContent.value)
-    return
+  if (!tabState.isCurrent()) return
+  if (isLoading.value || noMoreContent.value) return
 
   isLoading.value = true
   try {
     await getFollowedUsersVideos()
-  }
-  finally {
-    if (tabState.isCurrent())
-      isLoading.value = false
+  } finally {
+    if (tabState.isCurrent()) isLoading.value = false
   }
 }
 
@@ -415,8 +382,7 @@ function jumpToLoginPage() {
 }
 
 function mapLiveItemToVideo(item?: FollowingLiveItem): Video | undefined {
-  if (!item)
-    return undefined
+  if (!item) return undefined
 
   const tag = item.area_name_v2?.trim() || item.area_name?.trim() || undefined
 
@@ -439,38 +405,40 @@ function mapLiveItemToVideo(item?: FollowingLiveItem): Video | undefined {
 }
 
 function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | undefined {
-  if (!item)
-    return undefined
+  if (!item) return undefined
 
   const major = item.modules?.module_dynamic?.major
   const archive = major?.archive || major?.ugc_season
-  if (!archive)
-    return undefined
+  if (!archive) return undefined
 
   const stat = archive.stat
   const likeCount = item.modules?.module_stat?.like?.count
 
   // Decode author names
-  const decodedAuthors = authors?.map(author => ({
+  const decodedAuthors = authors?.map((author) => ({
     ...author,
     name: decodeHtmlEntities(author.name),
   }))
 
-  const authorValue = decodedAuthors && decodedAuthors.length > 0
-    ? (decodedAuthors.length === 1 ? decodedAuthors[0] : decodedAuthors)
-    : undefined
+  const authorValue =
+    decodedAuthors && decodedAuthors.length > 0
+      ? decodedAuthors.length === 1
+        ? decodedAuthors[0]
+        : decodedAuthors
+      : undefined
 
   // 判断是否为联合投稿（有多个作者）
   const isCollaboration = authors && authors.length > 1
 
-  const badge = archive.badge?.text && archive.badge.text !== '投稿视频'
-    ? {
-        bgColor: archive.badge.bg_color,
-        color: archive.badge.color,
-        iconUrl: archive.badge.icon_url || undefined,
-        text: decodeHtmlEntities(archive.badge.text),
-      }
-    : undefined
+  const badge =
+    archive.badge?.text && archive.badge.text !== '投稿视频'
+      ? {
+          bgColor: archive.badge.bg_color,
+          color: archive.badge.color,
+          iconUrl: archive.badge.icon_url || undefined,
+          text: decodeHtmlEntities(archive.badge.text),
+        }
+      : undefined
 
   const id = Number.parseInt(archive.aid, 10)
 
@@ -498,15 +466,13 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
 
 // 通用转换函数：处理两种类型的项目
 function transformCombinedItem(item: VideoElement | LiveVideoElement): Video | undefined {
-  if (!item.item)
-    return undefined
+  if (!item.item) return undefined
 
   // 判断是直播还是视频
   if ('roomid' in item.item) {
     // 直播项
     return item.displayData
-  }
-  else {
+  } else {
     // 视频项
     return item.displayData
   }

@@ -29,21 +29,21 @@ const isLoading = ref<boolean>(false)
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 入站必刷没有分页
 const requestFailed = tabState.ref<boolean>('requestFailed', false)
-const errorReportSource: ApiErrorReportSource = { scene: '入站必刷', queries: ['getPreciousVideos'] }
+const errorReportSource: ApiErrorReportSource = {
+  scene: '入站必刷',
+  queries: ['getPreciousVideos'],
+}
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
   initPageAction()
-  if (!tabState.restored)
-    void initData()
-  else if (!hasLoaded.value)
-    void getData()
+  if (!tabState.restored) void initData()
+  else if (!hasLoaded.value) void getData()
 })
 
 async function initData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
 
   videoList.value = []
   requestFailed.value = false
@@ -52,8 +52,7 @@ async function initData() {
 }
 
 async function getData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
 
   emit('beforeLoading')
   isLoading.value = true
@@ -64,8 +63,7 @@ async function getData() {
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  finally {
+  } finally {
     if (tabState.isCurrent()) {
       isLoading.value = false
       emit('afterLoading')
@@ -79,8 +77,7 @@ function initPageAction() {
 }
 
 async function refreshHandler() {
-  if (!tabState.isCurrent() || isLoading.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value) return
 
   await initData()
 }
@@ -116,29 +113,26 @@ async function getPreciousVideos(): Promise<boolean> {
   try {
     const response: PreciousResult = await api.ranking.getPreciousVideos()
 
-    if (!tabState.isCurrent() || response.code !== 0)
-      return false
+    if (!tabState.isCurrent() || response.code !== 0) return false
 
-    const list = Array.isArray((response.data as any)?.list) ? (response.data as any).list as PreciousItem[] : []
-    videoList.value = list.map(item => ({
+    const list = Array.isArray((response.data as any)?.list)
+      ? ((response.data as any).list as PreciousItem[])
+      : []
+    videoList.value = list.map((item) => ({
       uniqueId: `${item.aid}`,
       item,
       displayData: transformPreciousVideo(item),
     }))
     return true
-  }
-  catch {
+  } catch {
     return false
-  }
-  finally {
-    if (tabState.isCurrent())
-      videoList.value = videoList.value.filter(video => video.item)
+  } finally {
+    if (tabState.isCurrent()) videoList.value = videoList.value.filter((video) => video.item)
   }
 }
 
 onBeforeUnmount(() => {
-  if (handlePageRefresh.value === refreshHandler)
-    handlePageRefresh.value = undefined
+  if (handlePageRefresh.value === refreshHandler) handlePageRefresh.value = undefined
 })
 
 defineExpose({ initData })

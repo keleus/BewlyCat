@@ -23,10 +23,8 @@ export interface FollowingGroupsResult {
 export function getFollowingGroupIds(tags: number[] | null, special: number): number[] {
   const ids = new Set(tags ?? [])
   // 特别关注独立于普通分组；仅特别关注的用户仍属于默认分组。
-  if (![...ids].some(id => id >= 0))
-    ids.add(0)
-  if (special === 1)
-    ids.add(-10)
+  if (![...ids].some((id) => id >= 0)) ids.add(0)
+  if (special === 1) ids.add(-10)
   return [...ids]
 }
 
@@ -36,7 +34,7 @@ export function groupFollowingUploaders<T extends { groupIds: number[] }>(
   groups: FollowingGroup[],
   fallbackName: (id: number) => string,
 ) {
-  const grouped = new Map(groups.map(group => [group.tagid, { ...group, uploaders: [] as T[] }]))
+  const grouped = new Map(groups.map((group) => [group.tagid, { ...group, uploaders: [] as T[] }]))
   for (const uploader of uploaders) {
     for (const id of uploader.groupIds) {
       let group = grouped.get(id)

@@ -5,7 +5,15 @@ import Select from '~/components/Select.vue'
 import { useDark } from '~/composables/useDark'
 import { WALLPAPERS } from '~/constants/imgs'
 import { localSettings, localSettingsReady, settings } from '~/logic'
-import { extractWallpaperId, hasLocalWallpaper, isLocalWallpaperUrl, localWallpapersLoaded, removeLocalWallpaper, resolveWallpaperUrl, storeLocalWallpaper } from '~/utils/localWallpaper'
+import {
+  extractWallpaperId,
+  hasLocalWallpaper,
+  isLocalWallpaperUrl,
+  localWallpapersLoaded,
+  removeLocalWallpaper,
+  resolveWallpaperUrl,
+  storeLocalWallpaper,
+} from '~/utils/localWallpaper'
 import { compressAndResizeImage } from '~/utils/main'
 import type { LocalWallpaperSlotKey, WallpaperSettingKey } from '~/utils/wallpaper'
 import { LOCAL_WALLPAPER_SLOT_KEYS, WALLPAPER_SETTING_KEYS } from '~/utils/wallpaper'
@@ -30,64 +38,71 @@ const isGlobal = computed(() => props.type === 'global')
 
 function hasAnyActiveGlobalWallpaper() {
   return Boolean(
-    settings.value.wallpaper
-    || (settings.value.individuallySetDarkModeWallpaper && settings.value.darkModeWallpaper),
+    settings.value.wallpaper ||
+    (settings.value.individuallySetDarkModeWallpaper && settings.value.darkModeWallpaper),
   )
 }
 
 const individuallySetDarkModeWallpaper = computed<boolean>({
-  get: () => isGlobal.value
-    ? settings.value.individuallySetDarkModeWallpaper
-    : settings.value.searchPageIndividuallySetDarkModeWallpaper,
+  get: () =>
+    isGlobal.value
+      ? settings.value.individuallySetDarkModeWallpaper
+      : settings.value.searchPageIndividuallySetDarkModeWallpaper,
   set: (enabled) => {
-    if (isGlobal.value)
-      settings.value.individuallySetDarkModeWallpaper = enabled
-    else
-      settings.value.searchPageIndividuallySetDarkModeWallpaper = enabled
+    if (isGlobal.value) settings.value.individuallySetDarkModeWallpaper = enabled
+    else settings.value.searchPageIndividuallySetDarkModeWallpaper = enabled
 
     if (enabled) {
       editingTheme.value = isDark.value ? 'dark' : 'light'
-      const lightUrl = isGlobal.value ? settings.value.wallpaper : settings.value.searchPageWallpaper
-      const lightMode = isGlobal.value ? settings.value.wallpaperMode : settings.value.searchPageWallpaperMode
-      const darkUrl = isGlobal.value ? settings.value.darkModeWallpaper : settings.value.searchPageDarkModeWallpaper
+      const lightUrl = isGlobal.value
+        ? settings.value.wallpaper
+        : settings.value.searchPageWallpaper
+      const lightMode = isGlobal.value
+        ? settings.value.wallpaperMode
+        : settings.value.searchPageWallpaperMode
+      const darkUrl = isGlobal.value
+        ? settings.value.darkModeWallpaper
+        : settings.value.searchPageDarkModeWallpaper
 
       // 首次开启且深色模式尚未设置壁纸时，沿用当前浅色壁纸，避免切开开关后深色模式立即变空。
       if (!darkUrl && lightUrl) {
-        const canCopyLocal = !isLocalWallpaper(lightUrl)
-          || !localSettings.value.locallyUploadedDarkWallpaper
-          || localSettings.value.locallyUploadedDarkWallpaper.url === lightUrl
+        const canCopyLocal =
+          !isLocalWallpaper(lightUrl) ||
+          !localSettings.value.locallyUploadedDarkWallpaper ||
+          localSettings.value.locallyUploadedDarkWallpaper.url === lightUrl
 
         if (canCopyLocal) {
           if (isGlobal.value) {
             settings.value.darkModeWallpaperMode = lightMode
             settings.value.darkModeWallpaper = lightUrl
-          }
-          else {
+          } else {
             settings.value.searchPageDarkModeWallpaperMode = lightMode
             settings.value.searchPageDarkModeWallpaper = lightUrl
           }
 
           if (
-            isLocalWallpaper(lightUrl)
-            && !localSettings.value.locallyUploadedDarkWallpaper
-            && localSettings.value.locallyUploadedWallpaper?.url === lightUrl
+            isLocalWallpaper(lightUrl) &&
+            !localSettings.value.locallyUploadedDarkWallpaper &&
+            localSettings.value.locallyUploadedWallpaper?.url === lightUrl
           ) {
-            localSettings.value.locallyUploadedDarkWallpaper = { ...localSettings.value.locallyUploadedWallpaper }
+            localSettings.value.locallyUploadedDarkWallpaper = {
+              ...localSettings.value.locallyUploadedWallpaper,
+            }
           }
         }
       }
-    }
-    else if (isGlobal.value && !settings.value.wallpaper) {
+    } else if (isGlobal.value && !settings.value.wallpaper) {
       settings.value.enableWallpaperMasking = false
     }
   },
 })
 
-const isEditingDark = computed(() => individuallySetDarkModeWallpaper.value && editingTheme.value === 'dark')
+const isEditingDark = computed(
+  () => individuallySetDarkModeWallpaper.value && editingTheme.value === 'dark',
+)
 
 const activeWallpaperKey = computed<WallpaperSettingKey>(() => {
-  if (isGlobal.value)
-    return isEditingDark.value ? 'darkModeWallpaper' : 'wallpaper'
+  if (isGlobal.value) return isEditingDark.value ? 'darkModeWallpaper' : 'wallpaper'
   return isEditingDark.value ? 'searchPageDarkModeWallpaper' : 'searchPageWallpaper'
 })
 
@@ -100,8 +115,12 @@ const activeLocalWallpaper = computed(() => localSettings.value[activeLocalSlotK
 const wallpaperMode = computed<WallpaperMode>({
   get: () => {
     if (isGlobal.value)
-      return isEditingDark.value ? settings.value.darkModeWallpaperMode : settings.value.wallpaperMode
-    return isEditingDark.value ? settings.value.searchPageDarkModeWallpaperMode : settings.value.searchPageWallpaperMode
+      return isEditingDark.value
+        ? settings.value.darkModeWallpaperMode
+        : settings.value.wallpaperMode
+    return isEditingDark.value
+      ? settings.value.searchPageDarkModeWallpaperMode
+      : settings.value.searchPageWallpaperMode
   },
   set: changeWallpaperType,
 })
@@ -113,7 +132,7 @@ const currentWallpaper = computed<string>({
   set: changeWallpaper,
 })
 
-const wallpaperModeOptions = computed<{ label: string, value: WallpaperMode }[]>(() => [
+const wallpaperModeOptions = computed<{ label: string; value: WallpaperMode }[]>(() => [
   { label: t('settings.wallpaper_mode_opt.build_in'), value: 'buildIn' },
   { label: t('settings.wallpaper_mode_opt.by_url'), value: 'byUrl' },
 ])
@@ -141,13 +160,12 @@ function isLocalWallpaperIdReferencedElsewhere(
 ): boolean {
   const expectedUrl = `local-wallpaper:${id}`
   const usedByOtherSlot = LOCAL_WALLPAPER_SLOT_KEYS.some(
-    slotKey => slotKey !== excludeSlotKey && localSettings.value[slotKey]?.id === id,
+    (slotKey) => slotKey !== excludeSlotKey && localSettings.value[slotKey]?.id === id,
   )
-  if (usedByOtherSlot)
-    return true
+  if (usedByOtherSlot) return true
 
   return WALLPAPER_SETTING_KEYS.some(
-    settingKey => settingKey !== excludeSettingKey && settings.value[settingKey] === expectedUrl,
+    (settingKey) => settingKey !== excludeSettingKey && settings.value[settingKey] === expectedUrl,
   )
 }
 
@@ -160,32 +178,24 @@ function setWallpaperForKey(settingKey: WallpaperSettingKey, url: string) {
   if (affectsGlobal) {
     const hasActiveGlobal = hasAnyActiveGlobalWallpaper()
     // 首次设置全局壁纸时自动开启遮罩，防止文字难以辨认；全部清空后关闭遮罩。
-    if (!hadActiveGlobal && hasActiveGlobal)
-      settings.value.enableWallpaperMasking = true
-    else if (!hasActiveGlobal)
-      settings.value.enableWallpaperMasking = false
+    if (!hadActiveGlobal && hasActiveGlobal) settings.value.enableWallpaperMasking = true
+    else if (!hasActiveGlobal) settings.value.enableWallpaperMasking = false
   }
 }
 
 function changeWallpaperType(type: WallpaperMode) {
   if (isGlobal.value) {
-    if (isEditingDark.value)
-      settings.value.darkModeWallpaperMode = type
-    else
-      settings.value.wallpaperMode = type
-  }
-  else {
-    if (isEditingDark.value)
-      settings.value.searchPageDarkModeWallpaperMode = type
-    else
-      settings.value.searchPageWallpaperMode = type
+    if (isEditingDark.value) settings.value.darkModeWallpaperMode = type
+    else settings.value.wallpaperMode = type
+  } else {
+    if (isEditingDark.value) settings.value.searchPageDarkModeWallpaperMode = type
+    else settings.value.searchPageWallpaperMode = type
   }
 
   // Set the active wallpaper to empty if it's a locally uploaded wallpaper to prevent the `QUOTA_BYTES quota exceeded` error
   if (type === 'byUrl') {
     const activeUrl = settings.value[activeWallpaperKey.value]
-    if (activeUrl.startsWith('data:image/') || isLocalWallpaper(activeUrl))
-      changeWallpaper('')
+    if (activeUrl.startsWith('data:image/') || isLocalWallpaper(activeUrl)) changeWallpaper('')
   }
 }
 
@@ -198,7 +208,7 @@ function fileToBase64(inputFile: File) {
     const reader = new FileReader()
     reader.readAsDataURL(inputFile)
     reader.onload = () => resolve(reader.result)
-    reader.onerror = error => reject(error)
+    reader.onerror = (error) => reject(error)
   })
 }
 
@@ -208,17 +218,14 @@ function triggerUploadWallpaper() {
 
 function handleLocalWallpaperClick() {
   const localWallpaperUrl = activeLocalWallpaper.value?.url
-  if (localWallpaperUrl)
-    changeWallpaper(localWallpaperUrl)
-  else
-    triggerUploadWallpaper()
+  if (localWallpaperUrl) changeWallpaper(localWallpaperUrl)
+  else triggerUploadWallpaper()
 }
 
 async function handleUploadWallpaper(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file)
-    return
+  if (!file) return
   input.value = ''
 
   const targetSlotKey = activeLocalSlotKey.value
@@ -227,14 +234,18 @@ async function handleUploadWallpaper(e: Event) {
   compressAndResizeImage(file, 2560, 1440, 0.9, async (compressedFile: File) => {
     try {
       // 转换为base64
-      const base64 = await fileToBase64(compressedFile) as string
+      const base64 = (await fileToBase64(compressedFile)) as string
 
       // 仅在旧本地壁纸不再被其他主题或页面引用时清理存储
       const previousWallpaper = localSettings.value[targetSlotKey]
       if (
-        previousWallpaper?.isLocal
-        && previousWallpaper.id
-        && !isLocalWallpaperIdReferencedElsewhere(previousWallpaper.id, targetSlotKey, targetSettingKey)
+        previousWallpaper?.isLocal &&
+        previousWallpaper.id &&
+        !isLocalWallpaperIdReferencedElsewhere(
+          previousWallpaper.id,
+          targetSlotKey,
+          targetSettingKey,
+        )
       ) {
         removeLocalWallpaper(previousWallpaper.id)
       }
@@ -251,8 +262,7 @@ async function handleUploadWallpaper(e: Event) {
         ...localWallpaperRef,
         url: localWallpaperUrl, // 使用标识符而不是base64
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('上传壁纸失败:', error)
     }
   })
@@ -271,13 +281,13 @@ function handleRemoveCustomWallpaper() {
 
   if (removedWallpaper?.isLocal && removedWallpaper.id) {
     const usedByOtherSlot = LOCAL_WALLPAPER_SLOT_KEYS.some(
-      otherSlotKey => otherSlotKey !== slotKey && localSettings.value[otherSlotKey]?.id === removedWallpaper.id,
+      (otherSlotKey) =>
+        otherSlotKey !== slotKey && localSettings.value[otherSlotKey]?.id === removedWallpaper.id,
     )
     if (!usedByOtherSlot) {
       removeLocalWallpaper(removedWallpaper.id)
       for (const key of WALLPAPER_SETTING_KEYS) {
-        if (settings.value[key] === removedWallpaper.url)
-          setWallpaperForKey(key, '')
+        if (settings.value[key] === removedWallpaper.url) setWallpaperForKey(key, '')
       }
     }
   }
@@ -286,8 +296,7 @@ function handleRemoveCustomWallpaper() {
 // 检查本地壁纸是否有效，如果无效则清理
 async function validateLocalWallpaper() {
   const [, wallpapersLoaded] = await Promise.all([localSettingsReady, localWallpapersLoaded])
-  if (!wallpapersLoaded)
-    return
+  if (!wallpapersLoaded) return
 
   for (const slotKey of LOCAL_WALLPAPER_SLOT_KEYS) {
     const localWallpaper = localSettings.value[slotKey]
@@ -312,7 +321,11 @@ onMounted(() => {
 
 <template>
   <SettingsItemGroup :title="$t('settings.group_wallpaper')">
-    <SettingsItem v-if="!isGlobal" :title="$t('settings.individually_set_search_page_wallpaper')" right-width="auto">
+    <SettingsItem
+      v-if="!isGlobal"
+      :title="$t('settings.individually_set_search_page_wallpaper')"
+      right-width="auto"
+    >
       <template #desc>
         <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
       </template>
@@ -364,7 +377,11 @@ onMounted(() => {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.wallpaper_mode')" :desc="$t('settings.wallpaper_mode_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.wallpaper_mode')"
+        :desc="$t('settings.wallpaper_mode_desc')"
+        right-width="auto"
+      >
         <Select
           v-model="wallpaperMode"
           :aria-label="$t('settings.wallpaper_mode')"
@@ -378,86 +395,122 @@ onMounted(() => {
           <div grid="~ xl:cols-5 lg:cols-4 cols-3 gap-4">
             <picture
               class="bew-settings-option--lift"
-              aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
-              un-border="4 transparent" cursor-pointer
-              grid place-items-center
+              aspect-video
+              bg="$bew-fill-1"
+              rounded="$bew-radius"
+              overflow-hidden
+              un-border="4 transparent"
+              cursor-pointer
+              grid
+              place-items-center
               :class="{ 'selected-wallpaper': currentWallpaper === '' }"
               @click="changeWallpaper('')"
             >
               <div i-tabler:photo-off text="size-$bew-icon-size-xl $bew-text-3" />
             </picture>
 
-            <Tooltip v-for="item in WALLPAPERS" :key="item.url" placement="top" :content="item.name" aspect-video>
+            <Tooltip
+              v-for="item in WALLPAPERS"
+              :key="item.url"
+              placement="top"
+              :content="item.name"
+              aspect-video
+            >
               <picture
                 class="bew-settings-option--lift"
-                aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
-                un-border="4 transparent" w-full
+                aspect-video
+                bg="$bew-fill-1"
+                rounded="$bew-radius"
+                overflow-hidden
+                un-border="4 transparent"
+                w-full
                 :class="{ 'selected-wallpaper': currentWallpaper === item.url }"
                 @click="changeWallpaper(item.url)"
               >
                 <img
                   :src="item.thumbnail || item.url"
                   :alt="item.name"
-                  w-full h-full object-cover
+                  w-full
+                  h-full
+                  object-cover
                   class="img-no-error"
-                >
+                />
               </picture>
             </Tooltip>
 
             <Tooltip placement="top" :content="activeLocalWallpaper?.name || ''" aspect-video>
               <!-- Upload wallpaper input -->
               <input
-                ref="uploadWallpaperRef" type="file" accept="image/*"
+                ref="uploadWallpaperRef"
+                type="file"
+                accept="image/*"
                 hidden
                 @change="handleUploadWallpaper"
-              >
+              />
 
               <picture
                 class="group bew-settings-option--lift"
-                :class="{ 'selected-wallpaper': !!activeLocalWallpaper?.url && currentWallpaper === activeLocalWallpaper.url }"
-                aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
-                un-border="4 transparent" w-full
+                :class="{
+                  'selected-wallpaper':
+                    !!activeLocalWallpaper?.url && currentWallpaper === activeLocalWallpaper.url,
+                }"
+                aspect-video
+                bg="$bew-fill-1"
+                rounded="$bew-radius"
+                overflow-hidden
+                un-border="4 transparent"
+                w-full
                 flex="~ items-center justify-center"
                 @click="handleLocalWallpaperClick"
               >
                 <div
                   v-if="activeLocalWallpaper"
-                  class="opacity-0 group-hover:opacity-100" duration-300
-                  pos="absolute top-1 right-1" z-1 flex="~ gap-1"
-                  :style="{ fontSize: 'var(--bew-font-size-control)', lineHeight: 'var(--bew-line-height-control)' }"
+                  class="opacity-0 group-hover:opacity-100"
+                  duration-300
+                  pos="absolute top-1 right-1"
+                  z-1
+                  flex="~ gap-1"
+                  :style="{
+                    fontSize: 'var(--bew-font-size-control)',
+                    lineHeight: 'var(--bew-line-height-control)',
+                  }"
                 >
                   <button
-                    style="backdrop-filter: var(--bew-filter-glass-1);"
-                    bg="$bew-content" rounded-full w-28px h-28px
-                    grid place-items-center
+                    style="backdrop-filter: var(--bew-filter-glass-1)"
+                    bg="$bew-content"
+                    rounded-full
+                    w-28px
+                    h-28px
+                    grid
+                    place-items-center
                     @click.stop="triggerUploadWallpaper"
                   >
                     <i i-mingcute:edit-2-line />
                   </button>
                   <button
-                    style="backdrop-filter: var(--bew-filter-glass-1);"
-                    bg="$bew-content" rounded-full w-28px h-28px
-                    grid place-items-center
+                    style="backdrop-filter: var(--bew-filter-glass-1)"
+                    bg="$bew-content"
+                    rounded-full
+                    w-28px
+                    h-28px
+                    grid
+                    place-items-center
                     @click.stop="handleRemoveCustomWallpaper"
                   >
                     <i i-mingcute:delete-2-line />
                   </button>
                 </div>
-                <div
-                  v-if="!activeLocalWallpaper"
-                  absolute w-full h-full grid place-items-center
-                >
-                  <div
-                    i-tabler:photo-up
-                    text="size-$bew-icon-size-xl $bew-text-3"
-                  />
+                <div v-if="!activeLocalWallpaper" absolute w-full h-full grid place-items-center>
+                  <div i-tabler:photo-up text="size-$bew-icon-size-xl $bew-text-3" />
                 </div>
                 <img
                   v-else
                   :src="localWallpaperDisplayUrl || activeLocalWallpaper.url"
                   :alt="activeLocalWallpaper.name"
-                  w-full h-full object-cover
-                >
+                  w-full
+                  h-full
+                  object-cover
+                />
               </picture>
             </Tooltip>
           </div>
@@ -467,17 +520,29 @@ onMounted(() => {
         <template #bottom>
           <div flex items-center gap-4>
             <picture
-              aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
-              un-border="4 transparent" cursor-pointer shrink-0
+              aspect-video
+              bg="$bew-fill-1"
+              rounded="$bew-radius"
+              overflow-hidden
+              un-border="4 transparent"
+              cursor-pointer
+              shrink-0
               w="xl:1/5 lg:1/4 md:1/3"
             >
               <img
                 v-if="currentWallpaper"
                 :key="currentWallpaper"
-                :src="currentWallpaper" alt="" loading="lazy"
-                w-full h-full object-cover
-                onerror="this.style.display='none'; this.onerror=null;"
-              >
+                :src="currentWallpaper"
+                alt=""
+                loading="lazy"
+                w-full
+                h-full
+                object-cover
+                onerror="
+                  this.style.display = 'none'
+                  this.onerror = null
+                "
+              />
             </picture>
             <div>
               <Input v-model="currentWallpaper" w-full />
@@ -530,16 +595,48 @@ onMounted(() => {
         <Radio v-if="isGlobal" v-model="settings.enableWallpaperMasking" />
         <Radio v-else v-model="settings.searchPageEnableWallpaperMasking" />
       </SettingsItem>
-      <SettingsItem v-if="isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking" :title="$t('settings.wallpaper_mask_opacity')" right-width="auto">
+      <SettingsItem
+        v-if="
+          isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking
+        "
+        :title="$t('settings.wallpaper_mask_opacity')"
+        right-width="auto"
+      >
         <div class="slider-control">
-          <Slider v-if="isGlobal" v-model="settings.wallpaperMaskOpacity" :label="`${settings.wallpaperMaskOpacity}%`" />
-          <Slider v-else v-model="settings.searchPageWallpaperMaskOpacity" :label="`${settings.searchPageWallpaperMaskOpacity}%`" />
+          <Slider
+            v-if="isGlobal"
+            v-model="settings.wallpaperMaskOpacity"
+            :label="`${settings.wallpaperMaskOpacity}%`"
+          />
+          <Slider
+            v-else
+            v-model="settings.searchPageWallpaperMaskOpacity"
+            :label="`${settings.searchPageWallpaperMaskOpacity}%`"
+          />
         </div>
       </SettingsItem>
-      <SettingsItem v-if="isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking" :title="$t('settings.wallpaper_blur_intensity')" right-width="auto">
+      <SettingsItem
+        v-if="
+          isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking
+        "
+        :title="$t('settings.wallpaper_blur_intensity')"
+        right-width="auto"
+      >
         <div class="slider-control">
-          <Slider v-if="isGlobal" v-model="settings.wallpaperBlurIntensity" :min="0" :max="60" :label="`${settings.wallpaperBlurIntensity}px`" />
-          <Slider v-else v-model="settings.searchPageWallpaperBlurIntensity" :min="0" :max="60" :label="`${settings.searchPageWallpaperBlurIntensity}px`" />
+          <Slider
+            v-if="isGlobal"
+            v-model="settings.wallpaperBlurIntensity"
+            :min="0"
+            :max="60"
+            :label="`${settings.wallpaperBlurIntensity}px`"
+          />
+          <Slider
+            v-else
+            v-model="settings.searchPageWallpaperBlurIntensity"
+            :min="0"
+            :max="60"
+            :label="`${settings.searchPageWallpaperBlurIntensity}px`"
+          />
         </div>
       </SettingsItem>
     </template>
@@ -548,7 +645,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .selected-wallpaper {
-  --uno: "border-$bew-theme-color-60";
+  --uno: 'border-$bew-theme-color-60';
 }
 
 .slider-control {

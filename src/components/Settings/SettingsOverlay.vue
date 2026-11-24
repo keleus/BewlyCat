@@ -10,7 +10,10 @@ import { createTransformer } from '~/utils/transformer'
 
 import SettingsCategoryLayout from './components/SettingsCategoryLayout.vue'
 import SettingsSearchResults from './components/SettingsSearchResults.vue'
-import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
+import {
+  createPinnedChannelHistory,
+  pinnedChannelHistoryKey,
+} from './composables/usePinnedChannelHistory'
 import { useSettingsNavigation } from './composables/useSettingsNavigation'
 import { useSettingsSearch } from './composables/useSettingsSearch'
 import { provideSettingsSearchFilter } from './composables/useSettingsSearchFilter'
@@ -28,10 +31,12 @@ const emit = defineEmits<{
   'update:pendingNavigation': [value: SettingsNavigationTarget | undefined]
 }>()
 
-const pinnedChannelHistory = createPinnedChannelHistory(computed({
-  get: () => settings.value.topBarPinnedChannels,
-  set: keys => settings.value.topBarPinnedChannels = keys,
-}))
+const pinnedChannelHistory = createPinnedChannelHistory(
+  computed({
+    get: () => settings.value.topBarPinnedChannels,
+    set: (keys) => (settings.value.topBarPinnedChannels = keys),
+  }),
+)
 provide(pinnedChannelHistoryKey, pinnedChannelHistory)
 
 // Settings is cached by KeepAlive; closing it does not dispose its scope.
@@ -142,21 +147,27 @@ watch(
   },
 )
 
-watch(() => props.pendingNavigation, (request) => {
-  if (!request)
-    return
+watch(
+  () => props.pendingNavigation,
+  (request) => {
+    if (!request) return
 
-  // 二级页定位键直接取自 settingsMenus 的 storageKey，避免另建菜单映射表。
-  const secondaryStorageKey = settingsMenus.find(menu => menu.value === request.menu)?.storageKey
-  searchNavigation.navigateToSearchResult({
-    menu: request.menu as MenuType,
-    targetTitleKey: request.targetTitleKey,
-    storageValues: request.secondaryPage && secondaryStorageKey
-      ? [{ key: secondaryStorageKey, value: request.secondaryPage }]
-      : undefined,
-  })
-  emit('update:pendingNavigation', undefined)
-}, { immediate: true })
+    // 二级页定位键直接取自 settingsMenus 的 storageKey，避免另建菜单映射表。
+    const secondaryStorageKey = settingsMenus.find(
+      (menu) => menu.value === request.menu,
+    )?.storageKey
+    searchNavigation.navigateToSearchResult({
+      menu: request.menu as MenuType,
+      targetTitleKey: request.targetTitleKey,
+      storageValues:
+        request.secondaryPage && secondaryStorageKey
+          ? [{ key: secondaryStorageKey, value: request.secondaryPage }]
+          : undefined,
+    })
+    emit('update:pendingNavigation', undefined)
+  },
+  { immediate: true },
+)
 
 function handleClose() {
   emit('close')
@@ -176,8 +187,7 @@ function handleSecondaryPageChange(page: string) {
 
 // KeepAlive 关闭后组件仍保持挂载，仅在浮层激活时响应 ESC。
 useEventListener(window, 'keydown', (e: KeyboardEvent) => {
-  if (overlayActive.value && e.key === 'Escape')
-    handleClose()
+  if (overlayActive.value && e.key === 'Escape') handleClose()
 })
 
 function changeMenuItem(menuItem: MenuType) {
@@ -186,37 +196,38 @@ function changeMenuItem(menuItem: MenuType) {
 }
 
 onBeforeUnmount(() => {
-  if (settingsContentFrame !== undefined)
-    cancelAnimationFrame(settingsContentFrame)
+  if (settingsContentFrame !== undefined) cancelAnimationFrame(settingsContentFrame)
 })
 </script>
 
 <template>
   <div class="fixed w-full h-full top-0 left-0" data-layout-edit-control>
-    <div
-      class="fixed w-full h-full top-0 left-0"
-      @click="handleClose"
-    />
+    <div class="fixed w-full h-full top-0 left-0" @click="handleClose" />
     <div
       id="settings-window"
       ref="settingsWindow"
-      pos="fixed top-1/2 left-1/2" w="90%" h="90%"
-      max-w-1000px max-h-900px transform="~ translate-x--1/2 translate-y--1/2 gpu"
+      pos="fixed top-1/2 left-1/2"
+      w="90%"
+      h="90%"
+      max-w-1000px
+      max-h-900px
+      transform="~ translate-x--1/2 translate-y--1/2 gpu"
       flex="~ justify-between items-center"
     >
       <aside
         class="settings-primary-navigation group"
-        shrink-0 p="x-4"
-        pos="absolute xl:left--84px left--44px" z-2
+        shrink-0
+        p="x-4"
+        pos="absolute xl:left--84px left--44px"
+        z-2
       >
         <ul
           class="settings-primary-navigation__list"
-          style="
-            box-shadow: var(--bew-shadow-4);
-          "
+          style="box-shadow: var(--bew-shadow-4)"
           relative
           bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
-          overflow-hidden antialiased
+          overflow-hidden
+          antialiased
         >
           <!-- frosted glass background -->
           <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
@@ -227,7 +238,9 @@ onBeforeUnmount(() => {
               // 对齐 1.6.9：侧栏固定用 dialog 级 glass-2
               backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
             }"
-            z--1 pointer-events-none rounded-inherit
+            z--1
+            pointer-events-none
+            rounded-inherit
           />
 
           <li
@@ -245,12 +258,20 @@ onBeforeUnmount(() => {
             >
               <div
                 v-show="menuItem.value !== activatedMenuItem"
-                text="xl center" w-40px h-20px flex="~ shrink-0" justify-center
+                text="xl center"
+                w-40px
+                h-20px
+                flex="~ shrink-0"
+                justify-center
                 :class="menuItem.icon"
               />
               <div
                 v-show="menuItem.value === activatedMenuItem"
-                text="xl center" w-40px h-20px flex="~ shrink-0" justify-center
+                text="xl center"
+                w-40px
+                h-20px
+                flex="~ shrink-0"
+                justify-center
                 :class="menuItem.iconActivated"
               />
               <div flex="~ items-center gap-2" shrink-0>
@@ -265,25 +286,43 @@ onBeforeUnmount(() => {
         class="settings-content"
         :style="{
           '--un-shadow': 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)',
-          'backdropFilter': settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+          backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
         }"
-        relative overflow-hidden flex-1 min-w-0
+        relative
+        overflow-hidden
+        flex-1
+        min-w-0
         h-full
         bg="$bew-elevated-alt"
-        shadow rounded="$bew-modal-radius" border="1 $bew-border-color"
+        shadow
+        rounded="$bew-modal-radius"
+        border="1 $bew-border-color"
       >
         <header
           class="settings-header"
-          flex justify-between items-center w-full h-92px
-          pos="absolute top-0 left-0" p="x-11" box-border gap-4
-          z-1 rounded="t-$bew-modal-radius"
+          flex
+          justify-between
+          items-center
+          w-full
+          h-92px
+          pos="absolute top-0 left-0"
+          p="x-11"
+          box-border
+          gap-4
+          z-1
+          rounded="t-$bew-modal-radius"
           style="
-            text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
+            text-shadow:
+              0 0 10px var(--bew-elevated-solid),
+              0 0 15px var(--bew-elevated-solid);
           "
         >
           <!-- Mask -->
           <div
-            pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
+            pos="absolute top-0 left-0"
+            w-inherit
+            h-inherit
+            pointer-events-none
             :style="{
               maskImage: settings.enableFrostedGlass
                 ? 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)'
@@ -291,11 +330,16 @@ onBeforeUnmount(() => {
               WebkitMaskImage: settings.enableFrostedGlass
                 ? 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)'
                 : 'none',
-              backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-elevated-alt-solid)',
+              backgroundColor: settings.enableFrostedGlass
+                ? 'transparent'
+                : 'var(--bew-elevated-alt-solid)',
               backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
-              WebkitBackdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
+              WebkitBackdropFilter: settings.enableFrostedGlass
+                ? 'blur(3px) saturate(180%)'
+                : 'none',
             }"
-            z--1 rounded-inherit
+            z--1
+            rounded-inherit
           />
           <nav class="settings-breadcrumb" :aria-label="$t('settings.breadcrumb')">
             <span>{{ $t('settings.title') }}</span>
@@ -310,7 +354,9 @@ onBeforeUnmount(() => {
             class="settings-search"
             :class="{ 'has-query': Boolean(searchQuery) }"
             :style="{
-              backgroundColor: settings.enableFrostedGlass ? 'var(--bew-content)' : 'var(--bew-content-solid)',
+              backgroundColor: settings.enableFrostedGlass
+                ? 'var(--bew-content)'
+                : 'var(--bew-content-solid)',
             }"
             @click="focusSettingsSearch"
           >
@@ -323,7 +369,7 @@ onBeforeUnmount(() => {
               :aria-label="$t('settings.search.placeholder')"
               :aria-describedby="isSearching ? 'settings-search-status' : undefined"
               @keydown.esc="searchQuery = ''"
-            >
+            />
           </div>
           <div class="settings-header-actions">
             <button
@@ -331,17 +377,21 @@ onBeforeUnmount(() => {
               class="settings-header-action settings-open-in-new-tab"
               :aria-label="$t('settings.open_in_new_tab')"
               :title="$t('settings.open_in_new_tab')"
-              style="
-                box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-              "
+              style="box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2)"
               :style="{
                 backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
               }"
-              text="!16px hover:$bew-theme-color" w="32px" h="32px"
+              text="!16px hover:$bew-theme-color"
+              w="32px"
+              h="32px"
               flex="~ items-center justify-center shrink-0"
-              relative z-1
+              relative
+              z-1
               bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-              rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
+              rounded-8
+              cursor="pointer"
+              border="1 $bew-border-color"
+              box-border
               duration-300
               @click="openSettingsPageInNewTab"
             >
@@ -352,17 +402,21 @@ onBeforeUnmount(() => {
               class="settings-header-action"
               :aria-label="$t('common.operation.close')"
               :title="$t('common.operation.close')"
-              style="
-                box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-              "
+              style="box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2)"
               :style="{
                 backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
               }"
-              text="!16px hover:$bew-theme-color" w="32px" h="32px"
+              text="!16px hover:$bew-theme-color"
+              w="32px"
+              h="32px"
               flex="~ items-center justify-center shrink-0"
-              relative z-1
+              relative
+              z-1
               bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-              rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
+              rounded-8
+              cursor="pointer"
+              border="1 $bew-border-color"
+              box-border
               duration-300
               @click="handleClose"
             >
@@ -373,8 +427,12 @@ onBeforeUnmount(() => {
         <div
           ref="scrollViewportRef"
           :style="{
-            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
-            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
+            maskImage: settings.enableFrostedGlass
+              ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)'
+              : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
+            WebkitMaskImage: settings.enableFrostedGlass
+              ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)'
+              : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
             scrollbarGutter: 'stable',
             overflowAnchor: 'none',
             overscrollBehavior: 'contain',
@@ -383,15 +441,20 @@ onBeforeUnmount(() => {
             // 因 DOM 顺序靠后而绘制到头部之上。
             isolation: 'isolate',
           }"
-          h-inherit of-y-auto of-x-hidden
-          style="padding-top: 92px;"
+          h-inherit
+          of-y-auto
+          of-x-hidden
+          style="padding-top: 92px"
         >
           <!-- 底部留白高于右下角帮助按钮（16px 边距 + 32px），让末行内容可滚到按钮上方 -->
           <main w-full min-h="[calc(100%-92px)]" p="x-12 b-20">
             <!-- <div h-80px mt--8 /> -->
 
             <template v-if="isSearching">
-              <SettingsSearchResults :sections="searchResultSections" :summary="searchResultsSummary" />
+              <SettingsSearchResults
+                :sections="searchResultSections"
+                :summary="searchResultsSummary"
+              />
             </template>
             <Transition v-else name="page-fade">
               <SettingsCategoryLayout
@@ -438,7 +501,7 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .menu-item-activated {
-  --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
+  --uno: 'text-$bew-text-auto bg-$bew-theme-color-auto';
 }
 
 // Animate from the capsule's real geometric radius instead of `radius-full`.
@@ -452,7 +515,8 @@ onBeforeUnmount(() => {
   display: flex;
   box-sizing: border-box;
   width: calc(
-    var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
+    var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) +
+      var(--settings-primary-nav-inset)
   );
   padding: var(--settings-primary-nav-inset);
   flex-direction: column;
@@ -721,7 +785,8 @@ onBeforeUnmount(() => {
     &:hover {
       .settings-primary-navigation__list {
         width: calc(
-          var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
+          var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) +
+            var(--settings-primary-nav-inset)
         );
         border-radius: 28px;
       }
@@ -777,7 +842,7 @@ onBeforeUnmount(() => {
     left: 8px;
     height: 1px;
     background: var(--bew-border-color);
-    content: "";
+    content: '';
   }
 }
 </style>

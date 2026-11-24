@@ -4,7 +4,7 @@
 // on every element during full-page style recalculations; `outline-color` only
 // takes effect on focused elements.
 :where(.bewly-wrapper, .bewly-design) {
-  font-feature-settings: "tnum";
+  font-feature-settings: 'tnum';
 }
 
 :where(.bewly-wrapper, .bewly-design) :focus {
@@ -99,7 +99,7 @@ html.dark.bewly-design {
   position: relative;
 
   &::before {
-    content: "";
+    content: '';
     display: block;
     width: 100%;
     height: 100%;
@@ -151,9 +151,9 @@ html.dark.bewly-design {
     input,
     select,
     textarea,
-    [role="button"],
-    [role="tab"],
-    [tabindex]:not([tabindex="-1"])
+    [role='button'],
+    [role='tab'],
+    [tabindex]:not([tabindex='-1'])
   ):focus-visible {
     outline: 2px solid var(--bew-theme-color-40);
     outline-offset: var(--bew-space-0-5);
@@ -521,15 +521,15 @@ html.dark.bewly-design {
     background-color var(--bew-duration-fast) var(--bew-ease-standard),
     box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 
-  &:hover:not(:disabled):not([data-active="true"]) {
+  &:hover:not(:disabled):not([data-active='true']) {
     background: var(--bew-fill-2);
   }
 
-  &:active:not(:disabled):not([data-active="true"]) {
+  &:active:not(:disabled):not([data-active='true']) {
     background: var(--bew-fill-3);
   }
 
-  &[data-active="true"] {
+  &[data-active='true'] {
     color: var(--bew-text-auto);
     background: var(--bew-theme-color-auto);
     box-shadow: var(--bew-shadow-2);
@@ -587,8 +587,8 @@ html.dark.bewly-design {
   transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
 
   &:hover,
-  &[aria-selected="true"],
-  &[aria-pressed="true"] {
+  &[aria-selected='true'],
+  &[aria-pressed='true'] {
     background: var(--bew-fill-2);
   }
 
@@ -615,7 +615,7 @@ html.dark.bewly-design {
     background: var(--bew-theme-color-10);
   }
 
-  &[aria-pressed="true"] {
+  &[aria-pressed='true'] {
     color: var(--bew-theme-color);
     background: transparent;
   }

@@ -18,7 +18,11 @@ import type { WatchLaterResult } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { onMessage, sendMessage } from '~/utils/messaging'
 import type { WatchLaterTarget } from '~/utils/watchLaterSnapshot'
-import { applyWatchLaterChange, createWatchLaterSnapshot, toWatchLaterEntry } from '~/utils/watchLaterSnapshot'
+import {
+  applyWatchLaterChange,
+  createWatchLaterSnapshot,
+  toWatchLaterEntry,
+} from '~/utils/watchLaterSnapshot'
 
 /**
  * 当前账号的稍后再看成员关系（只含 aid/bvid/epid），供各处卡片判断“是否已加入”。
@@ -65,7 +69,7 @@ function getCurrentAccountId() {
 
 function pruneOverlay() {
   const now = Date.now()
-  overlay = overlay.filter(item => now - item.at < CHANGE_OVERLAY_WINDOW)
+  overlay = overlay.filter((item) => now - item.at < CHANGE_OVERLAY_WINDOW)
 }
 
 function applyOverlay(snapshot: WatchLaterSnapshot) {
@@ -78,9 +82,11 @@ function isSameEntry(a: WatchLaterEntry, b: WatchLaterEntry) {
 }
 
 function isSameSnapshot(a: WatchLaterSnapshot, b: WatchLaterSnapshot) {
-  return a.count === b.count
-    && a.entries.length === b.entries.length
-    && a.entries.every((entry, i) => isSameEntry(entry, b.entries[i]))
+  return (
+    a.count === b.count &&
+    a.entries.length === b.entries.length &&
+    a.entries.every((entry, i) => isSameEntry(entry, b.entries[i]))
+  )
 }
 
 function render() {
@@ -101,8 +107,7 @@ function resetForAccount(nextAccountId: number) {
 
 function syncAccount() {
   const currentAccountId = getCurrentAccountId()
-  if (currentAccountId !== accountId)
-    resetForAccount(currentAccountId)
+  if (currentAccountId !== accountId) resetForAccount(currentAccountId)
   return currentAccountId
 }
 
@@ -115,43 +120,36 @@ function setBaseSnapshot(snapshot: WatchLaterSnapshot, time: number) {
   }
   updatedAt = time
   ready.value = true
-  peerWaiters.splice(0).forEach(resolve => resolve())
+  peerWaiters.splice(0).forEach((resolve) => resolve())
 }
 
 function addOverlayChange(change: WatchLaterChange) {
   // 立即并入当前快照；保留一段时间，用于覆盖随后到达、尚未反映该变更的列表结果
   pruneOverlay()
   overlay.push({ change, at: Date.now() })
-  if (baseSnapshot)
-    baseSnapshot = applyWatchLaterChange(baseSnapshot, change)
+  if (baseSnapshot) baseSnapshot = applyWatchLaterChange(baseSnapshot, change)
   render()
 }
 
 function getIndex(snapshot: WatchLaterSnapshot) {
-  if (indexedSnapshot === snapshot)
-    return index
+  if (indexedSnapshot === snapshot) return index
 
   index = { aid: new Map(), bvid: new Map(), epid: new Map() }
   for (const entry of snapshot.entries) {
-    if (entry.aid)
-      index.aid.set(entry.aid, entry)
-    if (entry.bvid)
-      index.bvid.set(entry.bvid, entry)
-    if (entry.epid)
-      index.epid.set(entry.epid, entry)
+    if (entry.aid) index.aid.set(entry.aid, entry)
+    if (entry.bvid) index.bvid.set(entry.bvid, entry)
+    if (entry.epid) index.epid.set(entry.epid, entry)
   }
   indexedSnapshot = snapshot
   return index
 }
 
 function setupListeners() {
-  if (listenersReady)
-    return
+  if (listenersReady) return
   listenersReady = true
 
   onMessage<WatchLaterStateUpdated>(WATCH_LATER_STATE_MESSAGE.UPDATED, (data) => {
-    if (data.accountId === syncAccount())
-      setBaseSnapshot(data.snapshot, data.updatedAt)
+    if (data.accountId === syncAccount()) setBaseSnapshot(data.snapshot, data.updatedAt)
   })
 
   onMessage<WatchLaterStateMutate>(WATCH_LATER_STATE_MESSAGE.MUTATED, (data) => {
@@ -166,9 +164,8 @@ function setupListeners() {
 }
 
 async function fetchSnapshot() {
-  const response = await api.watchlater.getAllWatchLaterList() as WatchLaterResult
-  if (response.code !== 0)
-    throw new Error(response.message || String(response.code))
+  const response = (await api.watchlater.getAllWatchLaterList()) as WatchLaterResult
+  if (response.code !== 0) throw new Error(response.message || String(response.code))
   return createWatchLaterSnapshot(response.data?.list ?? [], response.data?.count ?? 0)
 }
 
@@ -177,7 +174,7 @@ function waitForPeerRefresh() {
     const timer = setTimeout(done, PEER_REFRESH_TIMEOUT)
     function done() {
       clearTimeout(timer)
-      peerWaiters = peerWaiters.filter(waiter => waiter !== done)
+      peerWaiters = peerWaiters.filter((waiter) => waiter !== done)
       resolve()
     }
     peerWaiters.push(done)
@@ -185,8 +182,10 @@ function waitForPeerRefresh() {
 }
 
 async function releaseRefresh(id: number, refreshId: number) {
-  await sendMessage<WatchLaterStateRelease>(WATCH_LATER_STATE_MESSAGE.RELEASE_REFRESH, { accountId: id, refreshId })
-    .catch(() => {})
+  await sendMessage<WatchLaterStateRelease>(WATCH_LATER_STATE_MESSAGE.RELEASE_REFRESH, {
+    accountId: id,
+    refreshId,
+  }).catch(() => {})
 }
 
 async function load(id: number, maxAge: number, force: boolean) {
@@ -197,8 +196,7 @@ async function load(id: number, maxAge: number, force: boolean) {
   )
 
   if (id !== accountId) {
-    if (claim.refreshId !== undefined)
-      await releaseRefresh(id, claim.refreshId)
+    if (claim.refreshId !== undefined) await releaseRefresh(id, claim.refreshId)
     return
   }
 
@@ -208,8 +206,7 @@ async function load(id: number, maxAge: number, force: boolean) {
 
   if (!claim.shouldRefresh || claim.refreshId === undefined) {
     // 其他标签页正在拉取，等待其广播
-    if (!ready.value)
-      await waitForPeerRefresh()
+    if (!ready.value) await waitForPeerRefresh()
     return
   }
 
@@ -225,10 +222,8 @@ async function load(id: number, maxAge: number, force: boolean) {
       { accountId: id, refreshId, snapshot },
     )
     // 未发布说明已有更新的刷新接手，结果会通过广播到达
-    if (published && id === accountId)
-      setBaseSnapshot(published.snapshot, published.updatedAt)
-  }
-  catch (error) {
+    if (published && id === accountId) setBaseSnapshot(published.snapshot, published.updatedAt)
+  } catch (error) {
     await releaseRefresh(id, refreshId)
     throw error
   }
@@ -238,17 +233,15 @@ async function load(id: number, maxAge: number, force: boolean) {
  * 确保已加载稍后再看成员关系。缓存未过期时不发请求；多个调用与标签页共享同一次请求。
  * force 用于需要服务器最新结果的场景（如无法得知具体变更的批量移除）。
  */
-export function ensureWatchLaterState(options: { maxAge?: number, force?: boolean } = {}): Promise<void> {
+export function ensureWatchLaterState(
+  options: { maxAge?: number; force?: boolean } = {},
+): Promise<void> {
   const { maxAge = DEFAULT_MAX_AGE, force = false } = options
   const id = syncAccount()
-  if (!id)
-    return Promise.resolve()
-  if (!force && ready.value && Date.now() - updatedAt < maxAge)
-    return Promise.resolve()
-  if (pendingLoad && !force)
-    return pendingLoad
-  if (!force && Date.now() - lastLoadStartedAt < MIN_LOAD_INTERVAL)
-    return Promise.resolve()
+  if (!id) return Promise.resolve()
+  if (!force && ready.value && Date.now() - updatedAt < maxAge) return Promise.resolve()
+  if (pendingLoad && !force) return pendingLoad
+  if (!force && Date.now() - lastLoadStartedAt < MIN_LOAD_INTERVAL) return Promise.resolve()
 
   setupListeners()
   lastLoadStartedAt = Date.now()
@@ -257,8 +250,7 @@ export function ensureWatchLaterState(options: { maxAge?: number, force?: boolea
       console.error('获取稍后再看状态失败:', error)
     })
     .finally(() => {
-      if (pendingLoad === request)
-        pendingLoad = undefined
+      if (pendingLoad === request) pendingLoad = undefined
     })
   pendingLoad = request
   return request
@@ -273,15 +265,15 @@ export function noteWatchLaterCount(count: number) {
 export function findWatchLaterEntry(target: WatchLaterTarget): WatchLaterEntry | undefined {
   // 读取 view 建立响应式依赖；账号切换由 syncAccount 清空 view，这里不再读取 Cookie
   const snapshot = view.value
-  if (!snapshot.entries.length)
-    return undefined
+  if (!snapshot.entries.length) return undefined
   const entry = toWatchLaterEntry(target)
-  if (!entry)
-    return undefined
+  if (!entry) return undefined
   const { aid, bvid, epid } = getIndex(snapshot)
-  return (entry.aid ? aid.get(entry.aid) : undefined)
-    ?? (entry.bvid ? bvid.get(entry.bvid) : undefined)
-    ?? (entry.epid ? epid.get(entry.epid) : undefined)
+  return (
+    (entry.aid ? aid.get(entry.aid) : undefined) ??
+    (entry.bvid ? bvid.get(entry.bvid) : undefined) ??
+    (entry.epid ? epid.get(entry.epid) : undefined)
+  )
 }
 
 export function isInWatchLater(target: WatchLaterTarget) {
@@ -295,15 +287,15 @@ export function getWatchLaterAid(target: WatchLaterTarget) {
 
 function recordChange(change: WatchLaterChange) {
   const id = syncAccount()
-  if (!id)
-    return
+  if (!id) return
 
   setupListeners()
   addOverlayChange(change)
-  sendMessage<WatchLaterStateMutate>(
-    WATCH_LATER_STATE_MESSAGE.MUTATE,
-    { accountId: id, change, sourceId },
-  ).catch(() => {
+  sendMessage<WatchLaterStateMutate>(WATCH_LATER_STATE_MESSAGE.MUTATE, {
+    accountId: id,
+    change,
+    sourceId,
+  }).catch(() => {
     // 后台不可达时仅影响其他标签页，下次刷新会校正
   })
 }
@@ -311,8 +303,7 @@ function recordChange(change: WatchLaterChange) {
 /** 在添加/移除接口成功后调用，同步到所有页面 */
 export function markWatchLater(target: WatchLaterTarget, added: boolean) {
   const entry = toWatchLaterEntry(target)
-  if (entry)
-    recordChange({ type: added ? 'add' : 'remove', entry })
+  if (entry) recordChange({ type: added ? 'add' : 'remove', entry })
 }
 
 export function markWatchLaterCleared() {

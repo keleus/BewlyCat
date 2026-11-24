@@ -6,7 +6,11 @@ import type {
   ImageLoadQueueHandle,
   ImageLoadQueueSettleReason,
 } from '~/utils/imageLoadQueue'
-import { enqueueImageLoad, getImageLoadPriority, subscribeImageLoadRoot } from '~/utils/imageLoadQueue'
+import {
+  enqueueImageLoad,
+  getImageLoadPriority,
+  subscribeImageLoadRoot,
+} from '~/utils/imageLoadQueue'
 
 // Only strings are retained. Image/DOM/bitmap objects must not be kept alive.
 const MAX_REMEMBERED_PICTURES = 240
@@ -32,9 +36,10 @@ let sharedRootResizeObserver: ResizeObserver | null = null
 const observedRootHeights = new Map<Element, number>()
 
 function syncObservedRoots() {
-  if (typeof ResizeObserver === 'undefined')
-    return
-  const roots = new Set(sharedObserverRecords.map(record => record.root || document.documentElement))
+  if (typeof ResizeObserver === 'undefined') return
+  const roots = new Set(
+    sharedObserverRecords.map((record) => record.root || document.documentElement),
+  )
   for (const root of observedRootHeights.keys()) {
     if (!roots.has(root)) {
       sharedRootResizeObserver?.unobserve(root)
@@ -49,13 +54,15 @@ function syncObservedRoots() {
   sharedRootResizeObserver ??= new ResizeObserver((entries) => {
     let changed = false
     for (const { target } of entries) {
-      if (observedRootHeights.has(target) && observedRootHeights.get(target) !== target.clientHeight) {
+      if (
+        observedRootHeights.has(target) &&
+        observedRootHeights.get(target) !== target.clientHeight
+      ) {
         observedRootHeights.set(target, target.clientHeight)
         changed = true
       }
     }
-    if (changed)
-      refreshSharedObservers()
+    if (changed) refreshSharedObservers()
   })
   for (const root of roots) {
     if (!observedRootHeights.has(root)) {
@@ -67,36 +74,40 @@ function syncObservedRoots() {
 
 function createIntersectionObserver(record: SharedObserverRecord): IntersectionObserver {
   return new IntersectionObserver(
-    entries => entries.forEach((entry) => {
-      record.observations.get(entry.target)?.forEach(observation => observation.callback(entry))
-    }),
-    { root: record.root === document.scrollingElement ? null : record.root, rootMargin: record.rootMargin, threshold: 0.01 },
+    (entries) =>
+      entries.forEach((entry) => {
+        record.observations.get(entry.target)?.forEach((observation) => observation.callback(entry))
+      }),
+    {
+      root: record.root === document.scrollingElement ? null : record.root,
+      rootMargin: record.rootMargin,
+      threshold: 0.01,
+    },
   )
 }
 
 function attachSharedResizeListener() {
-  if (sharedResizeListenerActive || typeof window === 'undefined')
-    return
+  if (sharedResizeListenerActive || typeof window === 'undefined') return
 
   window.addEventListener('resize', refreshSharedObservers)
   sharedResizeListenerActive = true
 }
 
 function detachSharedResizeListener() {
-  if (!sharedResizeListenerActive || typeof window === 'undefined')
-    return
+  if (!sharedResizeListenerActive || typeof window === 'undefined') return
 
   window.removeEventListener('resize', refreshSharedObservers)
   sharedResizeListenerActive = false
 }
 
 function refreshSharedObservers() {
-  if (sharedObserverRecords.length === 0)
-    return
+  if (sharedObserverRecords.length === 0) return
 
-  const observations = sharedObserverRecords.flatMap(record => [...record.observations.entries()].flatMap(
-    ([element, callbacks]) => [...callbacks].map(observation => ({ element, observation, root: record.root })),
-  ))
+  const observations = sharedObserverRecords.flatMap((record) =>
+    [...record.observations.entries()].flatMap(([element, callbacks]) =>
+      [...callbacks].map((observation) => ({ element, observation, root: record.root })),
+    ),
+  )
 
   sharedObserverRecords.forEach((record) => {
     record.observer.disconnect()
@@ -106,7 +117,9 @@ function refreshSharedObservers() {
 
   observations.forEach(({ element, observation, root }) => {
     const rootMargin = observation.getRootMargin()
-    let record = sharedObserverRecords.find(item => item.root === root && item.rootMargin === rootMargin)
+    let record = sharedObserverRecords.find(
+      (item) => item.root === root && item.rootMargin === rootMargin,
+    )
     if (!record) {
       record = {
         root,
@@ -136,7 +149,9 @@ function observeIntersection(
 ) {
   const observation: SharedObservation = { callback, getRootMargin }
   const rootMargin = getRootMargin()
-  let record = sharedObserverRecords.find(item => item.root === root && item.rootMargin === rootMargin)
+  let record = sharedObserverRecords.find(
+    (item) => item.root === root && item.rootMargin === rootMargin,
+  )
 
   if (!record) {
     record = {
@@ -161,16 +176,14 @@ function observeIntersection(
 
   let active = true
   return () => {
-    if (!active)
-      return
+    if (!active) return
     active = false
 
     const currentRecord = sharedObserverRecords.find((item) => {
       const currentCallbacks = item.observations.get(element)
       return currentCallbacks?.has(observation) === true
     })
-    if (!currentRecord)
-      return
+    if (!currentRecord) return
 
     const currentCallbacks = currentRecord.observations.get(element)
     currentCallbacks?.delete(observation)
@@ -179,16 +192,13 @@ function observeIntersection(
       currentRecord.observer.unobserve(element)
     }
 
-    if (currentRecord.observations.size > 0)
-      return
+    if (currentRecord.observations.size > 0) return
 
     currentRecord.observer.disconnect()
     const recordIndex = sharedObserverRecords.indexOf(currentRecord)
-    if (recordIndex >= 0)
-      sharedObserverRecords.splice(recordIndex, 1)
+    if (recordIndex >= 0) sharedObserverRecords.splice(recordIndex, 1)
     syncObservedRoots()
-    if (sharedObserverRecords.length === 0)
-      detachSharedResizeListener()
+    if (sharedObserverRecords.length === 0) detachSharedResizeListener()
   }
 }
 
@@ -209,17 +219,13 @@ function runReleaseSweep() {
     if (pendingRelease.deadline <= now) {
       pendingImageReleases.delete(element)
       pendingRelease.release()
-    }
-    else {
+    } else {
       nextDeadline = Math.min(nextDeadline, pendingRelease.deadline)
     }
   }
 
   if (Number.isFinite(nextDeadline)) {
-    releaseSweepTimer = setTimeout(
-      runReleaseSweep,
-      Math.max(0, nextDeadline - Date.now()),
-    )
+    releaseSweepTimer = setTimeout(runReleaseSweep, Math.max(0, nextDeadline - Date.now()))
   }
 }
 
@@ -229,14 +235,12 @@ function scheduleImageRelease(element: Element, delay: number, release: () => vo
     release,
   })
 
-  if (releaseSweepTimer !== null)
-    clearTimeout(releaseSweepTimer)
+  if (releaseSweepTimer !== null) clearTimeout(releaseSweepTimer)
   runReleaseSweep()
 }
 
 function cancelImageRelease(element: Element | undefined) {
-  if (!element)
-    return
+  if (!element) return
 
   pendingImageReleases.delete(element)
   if (pendingImageReleases.size === 0 && releaseSweepTimer !== null) {
@@ -246,8 +250,7 @@ function cancelImageRelease(element: Element | undefined) {
 }
 
 function hasLoadedPicture(src: string): boolean {
-  if (!src || !loadedPictureSources.has(src))
-    return false
+  if (!src || !loadedPictureSources.has(src)) return false
 
   // Refresh insertion order so recently reused covers are evicted later.
   loadedPictureSources.delete(src)
@@ -256,23 +259,20 @@ function hasLoadedPicture(src: string): boolean {
 }
 
 function rememberLoadedPicture(src: string) {
-  if (!src)
-    return
+  if (!src) return
 
   loadedPictureSources.delete(src)
   loadedPictureSources.add(src)
 
   while (loadedPictureSources.size > MAX_REMEMBERED_PICTURES) {
     const oldestSource = loadedPictureSources.values().next().value
-    if (!oldestSource)
-      break
+    if (!oldestSource) break
     loadedPictureSources.delete(oldestSource)
   }
 }
 
 function forgetLoadedPicture(src: string) {
-  if (src)
-    loadedPictureSources.delete(src)
+  if (src) loadedPictureSources.delete(src)
 }
 </script>
 
@@ -352,10 +352,8 @@ function cleanupObservers() {
 }
 
 function getObserverRoot(): Element | null {
-  if (typeof window === 'undefined')
-    return null
-  if (settings.value.useOriginalBilibiliHomepage)
-    return document.scrollingElement
+  if (typeof window === 'undefined') return null
+  if (settings.value.useOriginalBilibiliHomepage) return document.scrollingElement
   const viewport = bewlyApp?.scrollViewportRef?.value
   return viewport?.isConnected ? viewport : null
 }
@@ -364,11 +362,9 @@ function getViewportHeight(root = getObserverRoot()): number {
   // Cards mount while the grid inserts rows; reading clientHeight there forced
   // a full style recalculation per batch. The shared root ResizeObserver keeps
   // this height current, so only a root's first picture reads it.
-  const height = root instanceof HTMLElement
-    ? observedRootHeights.get(root) ?? root.clientHeight
-    : 0
-  if (height > 0)
-    return height
+  const height =
+    root instanceof HTMLElement ? (observedRootHeights.get(root) ?? root.clientHeight) : 0
+  if (height > 0) return height
   return typeof window !== 'undefined' ? window.innerHeight : 0
 }
 
@@ -386,8 +382,7 @@ function getPreloadScreens(): number {
 
 function getObserverRootMargin(screens: number): string {
   const viewportHeight = getViewportHeight(observedRoot)
-  if (viewportHeight <= 0)
-    return props.rootMargin || '150px'
+  if (viewportHeight <= 0) return props.rootMargin || '150px'
 
   const margin = Math.max(1, Math.round(viewportHeight * screens))
   return `${margin}px 0px`
@@ -408,8 +403,7 @@ function bindImageEl(el: Element | { $el?: unknown } | null) {
 
 function settleImageWaiter(generation: number) {
   const waiter = imageLoadWaiter
-  if (!waiter || waiter.generation !== generation || waiter.settled)
-    return
+  if (!waiter || waiter.generation !== generation || waiter.settled) return
 
   waiter.settled = true
   imageLoadWaiter = null
@@ -418,8 +412,7 @@ function settleImageWaiter(generation: number) {
 
 function clearImageWaiter() {
   const waiter = imageLoadWaiter
-  if (!waiter)
-    return
+  if (!waiter) return
 
   waiter.settled = true
   imageLoadWaiter = null
@@ -427,7 +420,7 @@ function clearImageWaiter() {
 }
 
 function detachImageElement() {
-  imgRef.value?.querySelectorAll('source').forEach(source => source.removeAttribute('srcset'))
+  imgRef.value?.querySelectorAll('source').forEach((source) => source.removeAttribute('srcset'))
   const imageEl = imageElRef.value
   if (imageEl) {
     // Clearing the real element releases its decoded resource promptly. The
@@ -455,19 +448,16 @@ function cancelCurrentLoad(reason: ImageLoadQueueCancelReason = 'cancelled') {
   const handle = queueHandle
   queueHandle = null
 
-  if (handle)
-    handle.cancel(reason)
+  if (handle) handle.cancel(reason)
 
   // A task may have settled between the component callback and this call.
   // Clear in that case as well, while avoiding a second generation bump when
   // the queue's cancellation callback already did it.
-  if (loadGeneration === generationBeforeCancel)
-    clearImageResources()
+  if (loadGeneration === generationBeforeCancel) clearImageResources()
 }
 
 function startEagerImage() {
-  if (!isComponentActive || props.loading !== 'eager')
-    return
+  if (!isComponentActive || props.loading !== 'eager') return
 
   cancelScheduledRelease()
   cleanupObservers()
@@ -484,8 +474,7 @@ function startEagerImage() {
 }
 
 function handleQueueSettled(generation: number, reason: ImageLoadQueueSettleReason) {
-  if (generation !== loadGeneration)
-    return
+  if (generation !== loadGeneration) return
 
   queueHandle = null
   if (loadState === 'loading' && (reason === 'failed' || reason === 'completed')) {
@@ -494,13 +483,11 @@ function handleQueueSettled(generation: number, reason: ImageLoadQueueSettleReas
 }
 
 function handleQueueCancelled(generation: number) {
-  if (generation === loadGeneration)
-    clearImageResources()
+  if (generation === loadGeneration) clearImageResources()
 }
 
 function waitForImage(image: HTMLImageElement, generation: number, isCurrent: () => boolean) {
-  if (!isCurrent() || generation !== loadGeneration)
-    return Promise.resolve()
+  if (!isCurrent() || generation !== loadGeneration) return Promise.resolve()
 
   return new Promise<void>((resolve) => {
     imageLoadWaiter = { generation, image, settled: false, resolve }
@@ -511,41 +498,36 @@ function waitForImage(image: HTMLImageElement, generation: number, isCurrent: ()
     }
 
     // Cached images may have completed before the event listener was reached.
-    if (!image.complete)
-      return
-    if (image.naturalWidth > 0)
-      void processImageLoad(image, generation)
-    else
-      handleImageError({ currentTarget: image } as unknown as Event)
+    if (!image.complete) return
+    if (image.naturalWidth > 0) void processImageLoad(image, generation)
+    else handleImageError({ currentTarget: image } as unknown as Event)
   })
 }
 
 function isCurrentImage(image: HTMLImageElement, generation: number): boolean {
-  return isComponentActive
-    && generation === loadGeneration
-    && generation === activeImageGeneration
-    && image === imageElRef.value
-    && image.getAttribute('src') === actualSrc.value
+  return (
+    isComponentActive &&
+    generation === loadGeneration &&
+    generation === activeImageGeneration &&
+    image === imageElRef.value &&
+    image.getAttribute('src') === actualSrc.value
+  )
 }
 
 async function processImageLoad(image: HTMLImageElement, generation: number) {
-  if (!isCurrentImage(image, generation) || imageCompletedGeneration === generation)
-    return
-  if (imageProcessingGeneration === generation)
-    return
+  if (!isCurrentImage(image, generation) || imageCompletedGeneration === generation) return
+  if (imageProcessingGeneration === generation) return
 
   imageProcessingGeneration = generation
   try {
     try {
       await image.decode()
-    }
-    catch {
+    } catch {
       // A successful load is still usable when decode() is unavailable or
       // rejects, so reveal it after the best effort decode.
     }
 
-    if (!isCurrentImage(image, generation))
-      return
+    if (!isCurrentImage(image, generation)) return
 
     imageCompletedGeneration = generation
     loadState = 'loaded'
@@ -553,28 +535,23 @@ async function processImageLoad(image: HTMLImageElement, generation: number) {
     isLoaded.value = true
     settleImageWaiter(generation)
     emit('loaded')
-  }
-  finally {
-    if (imageProcessingGeneration === generation)
-      imageProcessingGeneration = null
+  } finally {
+    if (imageProcessingGeneration === generation) imageProcessingGeneration = null
   }
 }
 
 function handleImageLoad(event: Event) {
   const image = event.currentTarget
-  if (!(image instanceof HTMLImageElement))
-    return
+  if (!(image instanceof HTMLImageElement)) return
   void processImageLoad(image, activeImageGeneration)
 }
 
 function handleImageError(event: Event) {
   const image = event.currentTarget
-  if (!(image instanceof HTMLImageElement))
-    return
+  if (!(image instanceof HTMLImageElement)) return
 
   const generation = activeImageGeneration
-  if (!isCurrentImage(image, generation))
-    return
+  if (!isCurrentImage(image, generation)) return
 
   loadState = 'failed'
   isLoaded.value = false
@@ -590,25 +567,19 @@ function handleImageError(event: Event) {
 async function checkForCompletedImage(generation: number) {
   await nextTick()
   const image = imageElRef.value
-  if (!image || !isCurrentImage(image, generation) || !image.complete)
-    return
+  if (!image || !isCurrentImage(image, generation) || !image.complete) return
 
-  if (image.naturalWidth > 0)
-    await processImageLoad(image, generation)
-  else
-    handleImageError({ currentTarget: image } as unknown as Event)
+  if (image.naturalWidth > 0) await processImageLoad(image, generation)
+  else handleImageError({ currentTarget: image } as unknown as Event)
 }
 
 function requestImageLoad() {
-  if (!isComponentActive || props.loading === 'eager' || !isWithinPreloadRange)
-    return
-  if (isImageMounted.value || queueHandle || loadState === 'failed' || !props.src)
-    return
+  if (!isComponentActive || props.loading === 'eager' || !isWithinPreloadRange) return
+  if (isImageMounted.value || queueHandle || loadState === 'failed' || !props.src) return
 
   const element = imgRef.value
   const root = observedRoot
-  if (!element)
-    return
+  if (!element) return
 
   const source = props.src
   const generation = ++loadGeneration
@@ -619,13 +590,23 @@ function requestImageLoad() {
   queueHandle = enqueueImageLoad({
     priority: () => getImageLoadPriority(element, root),
     start: async ({ isCurrent }) => {
-      if (!isCurrent() || generation !== loadGeneration || source !== props.src || !isComponentActive)
+      if (
+        !isCurrent() ||
+        generation !== loadGeneration ||
+        source !== props.src ||
+        !isComponentActive
+      )
         return
 
       // Let a source/root change flush the previous Vue render before the new
       // image element receives a src.
       await nextTick()
-      if (!isCurrent() || generation !== loadGeneration || source !== props.src || !isComponentActive)
+      if (
+        !isCurrent() ||
+        generation !== loadGeneration ||
+        source !== props.src ||
+        !isComponentActive
+      )
         return
 
       const imageGeneration = generation
@@ -639,19 +620,17 @@ function requestImageLoad() {
 
       await nextTick()
       const image = imageElRef.value
-      if (!image || !isCurrent() || generation !== loadGeneration)
-        return
+      if (!image || !isCurrent() || generation !== loadGeneration) return
 
       await waitForImage(image, imageGeneration, isCurrent)
     },
     onCancel: () => handleQueueCancelled(generation),
-    onSettled: reason => handleQueueSettled(generation, reason),
+    onSettled: (reason) => handleQueueSettled(generation, reason),
   })
 }
 
 function releaseImage() {
-  if (props.loading === 'eager' || !isImageMounted.value)
-    return
+  if (props.loading === 'eager' || !isImageMounted.value) return
 
   cancelCurrentLoad('cancelled')
   skipRevealTransition.value = hasLoadedPicture(props.src)
@@ -663,20 +642,17 @@ function cancelScheduledRelease() {
 
 function scheduleRelease() {
   const element = imgRef.value
-  if (!element || !isImageMounted.value || props.loading === 'eager')
-    return
+  if (!element || !isImageMounted.value || props.loading === 'eager') return
 
   scheduleImageRelease(element, props.releaseDelay, () => {
-    if (!isWithinRetainedRange)
-      releaseImage()
+    if (!isWithinRetainedRange) releaseImage()
   })
 }
 
 function cancelQueuedImageLoad() {
   if (loadState === 'queued') {
     cancelCurrentLoad('cancelled')
-  }
-  else if (loadState === 'failed') {
+  } else if (loadState === 'failed') {
     loadState = 'idle'
   }
 }
@@ -690,12 +666,10 @@ function createObservers() {
   cancelScheduledRelease()
   cleanupObservers()
 
-  if (!isComponentActive || props.loading === 'eager')
-    return
+  if (!isComponentActive || props.loading === 'eager') return
 
   const element = imgRef.value
-  if (!element)
-    return
+  if (!element) return
 
   observedRoot = nextRoot
   stopRootDirectionSubscription = subscribeImageLoadRoot(observedRoot)
@@ -710,54 +684,36 @@ function createObservers() {
   }
 
   const root = observedRoot
-  stopPreloadObserving = observeIntersection(
-    element,
-    root,
-    getPreloadRootMargin,
-    (entry) => {
-      if (!isComponentActive || observedRoot !== root)
-        return
+  stopPreloadObserving = observeIntersection(element, root, getPreloadRootMargin, (entry) => {
+    if (!isComponentActive || observedRoot !== root) return
 
-      isWithinPreloadRange = entry.isIntersecting
-      if (entry.isIntersecting) {
-        cancelScheduledRelease()
-        requestImageLoad()
-      }
-      else {
-        // Only queued work is cancelled immediately. An active request gets
-        // the retain boundary's grace period before it is physically cleared.
-        cancelQueuedImageLoad()
-      }
-    },
-  )
-  stopRetainObserving = observeIntersection(
-    element,
-    root,
-    getRetainRootMargin,
-    (entry) => {
-      if (!isComponentActive || observedRoot !== root)
-        return
+    isWithinPreloadRange = entry.isIntersecting
+    if (entry.isIntersecting) {
+      cancelScheduledRelease()
+      requestImageLoad()
+    } else {
+      // Only queued work is cancelled immediately. An active request gets
+      // the retain boundary's grace period before it is physically cleared.
+      cancelQueuedImageLoad()
+    }
+  })
+  stopRetainObserving = observeIntersection(element, root, getRetainRootMargin, (entry) => {
+    if (!isComponentActive || observedRoot !== root) return
 
-      isWithinRetainedRange = entry.isIntersecting
-      if (entry.isIntersecting)
-        cancelScheduledRelease()
-      else
-        scheduleRelease()
-    },
-  )
+    isWithinRetainedRange = entry.isIntersecting
+    if (entry.isIntersecting) cancelScheduledRelease()
+    else scheduleRelease()
+  })
 }
 
 function resetForSourceChange() {
   cancelCurrentLoad('cancelled')
-  if (!queueHandle && loadState !== 'idle')
-    clearImageResources()
-  else if (queueHandle)
-    queueHandle = null
+  if (!queueHandle && loadState !== 'idle') clearImageResources()
+  else if (queueHandle) queueHandle = null
 
   // A loaded task normally cleared queueHandle in onSettled. Always clear the
   // actual element on a prop change, including the eager path.
-  if (isImageMounted.value || actualSrc.value)
-    clearImageResources()
+  if (isImageMounted.value || actualSrc.value) clearImageResources()
 }
 
 onMounted(() => {
@@ -782,8 +738,7 @@ onDeactivated(() => {
   cancelScheduledRelease()
   cleanupObservers()
   cancelCurrentLoad('cancelled')
-  if (isImageMounted.value || actualSrc.value)
-    clearImageResources()
+  if (isImageMounted.value || actualSrc.value) clearImageResources()
   isWithinPreloadRange = false
   isWithinRetainedRange = false
 })
@@ -793,50 +748,49 @@ onBeforeUnmount(() => {
   cleanupObservers()
   cancelScheduledRelease()
   cancelCurrentLoad('cancelled')
-  if (isImageMounted.value || actualSrc.value)
-    clearImageResources()
-})
-
-watch(() => props.src, (newSrc, oldSrc) => {
-  if (oldSrc && oldSrc !== newSrc)
-    forgetLoadedPicture(oldSrc)
-
-  resetForSourceChange()
-  skipRevealTransition.value = hasLoadedPicture(newSrc)
-  isLoaded.value = false
-
-  if (!isComponentActive)
-    return
-  if (props.loading === 'eager') {
-    startEagerImage()
-    return
-  }
-  if (isWithinPreloadRange)
-    requestImageLoad()
-})
-
-watch(() => props.loading, (loading) => {
-  resetForSourceChange()
-  if (!isComponentActive)
-    return
-
-  if (loading === 'eager')
-    startEagerImage()
-  else
-    createObservers()
+  if (isImageMounted.value || actualSrc.value) clearImageResources()
 })
 
 watch(
-  () => [
-    bewlyApp?.scrollViewportRef?.value,
-    settings.value.useOriginalBilibiliHomepage,
-    props.retainScreens,
-    props.preloadScreens,
-    props.rootMargin,
-  ] as const,
+  () => props.src,
+  (newSrc, oldSrc) => {
+    if (oldSrc && oldSrc !== newSrc) forgetLoadedPicture(oldSrc)
+
+    resetForSourceChange()
+    skipRevealTransition.value = hasLoadedPicture(newSrc)
+    isLoaded.value = false
+
+    if (!isComponentActive) return
+    if (props.loading === 'eager') {
+      startEagerImage()
+      return
+    }
+    if (isWithinPreloadRange) requestImageLoad()
+  },
+)
+
+watch(
+  () => props.loading,
+  (loading) => {
+    resetForSourceChange()
+    if (!isComponentActive) return
+
+    if (loading === 'eager') startEagerImage()
+    else createObservers()
+  },
+)
+
+watch(
+  () =>
+    [
+      bewlyApp?.scrollViewportRef?.value,
+      settings.value.useOriginalBilibiliHomepage,
+      props.retainScreens,
+      props.preloadScreens,
+      props.rootMargin,
+    ] as const,
   () => {
-    if (props.loading !== 'eager' && isComponentActive)
-      createObservers()
+    if (props.loading !== 'eager' && isComponentActive) createObservers()
   },
 )
 </script>
@@ -844,9 +798,17 @@ watch(
 <template>
   <picture
     ref="imgRef"
-    w-full max-w-full align-middle
+    w-full
+    max-w-full
+    align-middle
     rounded="$bew-radius"
-    style="aspect-ratio: 16 / 9; display: block; position: relative; overflow: hidden; contain: layout style;"
+    style="
+      aspect-ratio: 16 / 9;
+      display: block;
+      position: relative;
+      overflow: hidden;
+      contain: layout style;
+    "
     :style="{ backgroundColor: showSkeleton ? 'var(--bew-skeleton)' : undefined }"
   >
     <!-- Keep the backdrop stable while the decoded image fades in. Removing
@@ -854,23 +816,25 @@ watch(
          image becomes opaque, producing a separate brightness flash. -->
     <!-- Queue entries do not mount this branch, so they do not own a src. -->
     <template v-if="isImageMounted && actualSrc">
-      <source :srcset="`${actualSrc}.avif`" type="image/avif">
-      <source :srcset="`${actualSrc}.webp`" type="image/webp">
+      <source :srcset="`${actualSrc}.avif`" type="image/avif" />
+      <source :srcset="`${actualSrc}.webp`" type="image/webp" />
       <img
         :ref="bindImageEl"
         :src="actualSrc"
         :alt="alt"
         loading="eager"
         decoding="async"
-        block w-full h-full
+        block
+        w-full
+        h-full
         rounded-inherit
-        style="aspect-ratio: 16 / 9; object-fit: cover; object-position: center;"
+        style="aspect-ratio: 16 / 9; object-fit: cover; object-position: center"
         :style="{ opacity: isLoaded ? 1 : 0 }"
         class="image-transition"
         :class="{ 'image-transition--instant': skipRevealTransition }"
         @load="handleImageLoad"
         @error="handleImageError"
-      >
+      />
     </template>
   </picture>
 </template>

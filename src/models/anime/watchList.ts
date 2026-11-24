@@ -172,8 +172,7 @@ export interface Rights {
   allow_bp_rank?: number
 }
 
-export interface DemandEndTime {
-}
+export interface DemandEndTime {}
 
 export enum SeasonTypeName {
   国创 = '国创',

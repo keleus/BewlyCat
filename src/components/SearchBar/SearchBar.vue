@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { onClickOutside, onKeyStroke, useDebounceFn, useDocumentVisibility, useElementBounding, useMediaQuery } from '@vueuse/core'
+import {
+  onClickOutside,
+  onKeyStroke,
+  useDebounceFn,
+  useDocumentVisibility,
+  useElementBounding,
+  useMediaQuery,
+} from '@vueuse/core'
 import DOMPurify from 'dompurify'
 import type { CSSProperties } from 'vue'
 import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
@@ -11,7 +18,12 @@ import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
-import { buildKeywordSearchUrl, navigateToPluginSearchResults, navigateToPluginSearchResultsInPlace, openSearchResults } from '~/utils/searchNavigation'
+import {
+  buildKeywordSearchUrl,
+  navigateToPluginSearchResults,
+  navigateToPluginSearchResultsInPlace,
+  openSearchResults,
+} from '~/utils/searchNavigation'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
 import {
@@ -73,13 +85,19 @@ const emit = defineEmits<{
   search: [value: string]
 }>()
 
-const resolvedFocusedCharacter = computed(() => resolveSearchBarCharacterUrl(props.focusedCharacter ?? ''))
+const resolvedFocusedCharacter = computed(() =>
+  resolveSearchBarCharacterUrl(props.focusedCharacter ?? ''),
+)
 
 const searchWrapRef = ref<HTMLElement>()
 // The search box sits in the fixed top bar, so page scrolling never moves it.
 // The default capturing scroll listener re-read its rect on every scroll event
 // of the feed, forcing a layout each time.
-const { left: searchWrapLeft, top: searchWrapTop, update: updateSearchWrapBounds } = useElementBounding(searchWrapRef, {
+const {
+  left: searchWrapLeft,
+  top: searchWrapTop,
+  update: updateSearchWrapBounds,
+} = useElementBounding(searchWrapRef, {
   windowScroll: false,
   updateTiming: 'next-frame',
 })
@@ -107,8 +125,7 @@ const visibleHotSearchList = computed(() => {
   return hotSearchList.value.slice(0, limit)
 })
 const narrowTopBarPopupStyle = computed<CSSProperties | undefined>(() => {
-  if (!props.topBarMode || !isNarrowLayout.value)
-    return undefined
+  if (!props.topBarMode || !isNarrowLayout.value) return undefined
 
   return {
     position: 'absolute',
@@ -128,13 +145,12 @@ const visibleKeyboardSelectionMode = computed<KeyboardSelectionMode>(() => {
   return 'none'
 })
 const shouldShowSearchDropdown = computed(() => {
-  if (!isFocus.value)
-    return false
+  if (!isFocus.value) return false
 
-  const hasHotSearch = (props.showHotSearch ?? settings.value.showHotSearchInTopBar) && hotSearchList.value.length > 0
+  const hasHotSearch =
+    (props.showHotSearch ?? settings.value.showHotSearchInTopBar) && hotSearchList.value.length > 0
   const hasSearchHistory = searchHistory.value.length !== 0
-  if (!hasHotSearch && !hasSearchHistory)
-    return false
+  if (!hasHotSearch && !hasSearchHistory) return false
 
   return keyword.value.length === 0 || keyboardSelectionMode.value === 'history'
 })
@@ -150,42 +166,38 @@ const placeholderText = computed(() => {
 // 尝试获取 BEWLY_APP（在首页时可用）
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
 
-watch(() => props.modelValue, (value) => {
-  const next = value ?? ''
-  if (next !== keyword.value) {
-    resetKeyboardSelection()
-    keyword.value = next
+watch(
+  () => props.modelValue,
+  (value) => {
+    const next = value ?? ''
+    if (next !== keyword.value) {
+      resetKeyboardSelection()
+      keyword.value = next
 
-    if (isFocus.value)
-      queueSearchSuggestions(next)
-    else
-      invalidateSearchSuggestions()
-  }
-})
+      if (isFocus.value) queueSearchSuggestions(next)
+      else invalidateSearchSuggestions()
+    }
+  },
+)
 
 watch(keyword, (value) => {
-  if (selectedIndex.value === -1)
-    originalKeywordBeforeKeyboardSelection.value = value
+  if (selectedIndex.value === -1) originalKeywordBeforeKeyboardSelection.value = value
 
-  if (value !== (props.modelValue ?? ''))
-    emit('update:modelValue', value)
+  if (value !== (props.modelValue ?? '')) emit('update:modelValue', value)
 })
 
 watch(isFocus, async (focus) => {
-  if (props.darkenOnFocus && bewlyApp)
-    bewlyApp.searchFocusOverlayActive.value = focus
+  if (props.darkenOnFocus && bewlyApp) bewlyApp.searchFocusOverlayActive.value = focus
 
   // 延后加载搜索历史
   if (focus) {
     try {
       if (settings.value.enableSearchHistory) {
         searchHistory.value = await getSearchHistory()
-      }
-      else {
+      } else {
         searchHistory.value = []
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to load search history:', error)
       searchHistory.value = []
     }
@@ -193,8 +205,7 @@ watch(isFocus, async (focus) => {
     if (props.showHotSearch ?? settings.value.showHotSearchInTopBar) {
       try {
         await loadHotSearchData()
-      }
-      catch (error) {
+      } catch (error) {
         console.error('Failed to load hot search list:', error)
       }
     }
@@ -209,8 +220,7 @@ onClickOutside(searchWrapRef, () => {
 
 // 加载热搜数据
 async function loadHotSearchData() {
-  if (isLoadingHotSearch.value)
-    return
+  if (isLoadingHotSearch.value) return
 
   try {
     isLoadingHotSearch.value = true
@@ -218,19 +228,16 @@ async function loadHotSearchData() {
     if (res && res.code === 0) {
       hotSearchList.value = res.data.trending.list.slice(0, 10)
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to load hot search data:', error)
-  }
-  finally {
+  } finally {
     isLoadingHotSearch.value = false
   }
 }
 
 // 加载搜索推荐数据
 async function loadSearchRecommendation() {
-  if (isLoadingSearchRecommendation.value)
-    return
+  if (isLoadingSearchRecommendation.value) return
 
   try {
     isLoadingSearchRecommendation.value = true
@@ -238,11 +245,9 @@ async function loadSearchRecommendation() {
     if (res && res.code === 0 && settings.value.showSearchRecommendation) {
       searchRecommendation.value = res.data
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to load search recommendation:', error)
-  }
-  finally {
+  } finally {
     isLoadingSearchRecommendation.value = false
   }
 }
@@ -253,18 +258,20 @@ let recommendationTimer: ReturnType<typeof setInterval> | null = null
 // 初始化搜索推荐（组件挂载时调用）
 function initSearchRecommendation() {
   cleanupRecommendationTimer()
-  if (!settings.value.showSearchRecommendation || documentVisibility.value !== 'visible')
-    return
+  if (!settings.value.showSearchRecommendation || documentVisibility.value !== 'visible') return
 
   // 立即加载一次
   loadSearchRecommendation()
 
   // 仅可见标签页定时更新；后台缓存负责多个搜索框和标签页之间的请求去重。
-  recommendationTimer = setInterval(() => {
-    if (settings.value.showSearchRecommendation && documentVisibility.value === 'visible') {
-      loadSearchRecommendation()
-    }
-  }, 10 * 60 * 1000) // 10分钟
+  recommendationTimer = setInterval(
+    () => {
+      if (settings.value.showSearchRecommendation && documentVisibility.value === 'visible') {
+        loadSearchRecommendation()
+      }
+    },
+    10 * 60 * 1000,
+  ) // 10分钟
 }
 
 // 清理定时器
@@ -279,20 +286,22 @@ function cleanupRecommendationTimer() {
 watch([() => settings.value.showSearchRecommendation, documentVisibility], ([enabled]) => {
   if (enabled) {
     initSearchRecommendation()
-  }
-  else {
+  } else {
     cleanupRecommendationTimer()
     searchRecommendation.value = null
   }
 })
 
 // 监听搜索历史设置变化
-watch(() => settings.value.enableSearchHistory, async (enabled, wasEnabled) => {
-  if (wasEnabled === true && enabled === false) {
-    await clearAllSearchHistory()
-    searchHistory.value = []
-  }
-})
+watch(
+  () => settings.value.enableSearchHistory,
+  async (enabled, wasEnabled) => {
+    if (wasEnabled === true && enabled === false) {
+      await clearAllSearchHistory()
+      searchHistory.value = []
+    }
+  },
+)
 
 // 组件挂载时初始化
 onMounted(() => {
@@ -303,8 +312,7 @@ onMounted(() => {
 
 // 组件卸载时清理定时器
 onBeforeUnmount(() => {
-  if (props.darkenOnFocus && bewlyApp)
-    bewlyApp.searchFocusOverlayActive.value = false
+  if (props.darkenOnFocus && bewlyApp) bewlyApp.searchFocusOverlayActive.value = false
 
   cleanupRecommendationTimer()
 })
@@ -313,24 +321,26 @@ onKeyStroke('/', (e: KeyboardEvent) => {
   // Reference: https://github.com/polywock/globalSpeed/blob/3705ac836402b324550caf92aa65075b2f2347c6/src/contentScript/ConfigSync.ts#L94
   const target = e.target as HTMLElement
   const ignoreTagNames = ['INPUT', 'TEXTAREA']
-  if (target && (ignoreTagNames.includes(target.tagName) || target.isContentEditable))
-    return
+  if (target && (ignoreTagNames.includes(target.tagName) || target.isContentEditable)) return
 
   const activeElement = findLeafActiveElement(document) as HTMLElement | undefined
   if (activeElement && target !== activeElement) {
-    if (ignoreTagNames.includes(activeElement.tagName) || activeElement.isContentEditable)
-      return
+    if (ignoreTagNames.includes(activeElement.tagName) || activeElement.isContentEditable) return
   }
 
   e.preventDefault()
   keywordRef.value?.focus()
 })
-onKeyStroke('Escape', (e: KeyboardEvent) => {
-  e.preventDefault()
-  keywordRef.value?.blur()
-  isFocus.value = false
-  resetKeyboardSelection()
-}, { target: keywordRef })
+onKeyStroke(
+  'Escape',
+  (e: KeyboardEvent) => {
+    e.preventDefault()
+    keywordRef.value?.blur()
+    isFocus.value = false
+    resetKeyboardSelection()
+  },
+  { target: keywordRef },
+)
 
 let suggestionRequestGeneration = 0
 let resolvedSuggestionTerm = ''
@@ -343,16 +353,14 @@ function invalidateSearchSuggestions() {
 
 async function loadSearchSuggestions(term: string, generation: number) {
   // A queued request may already be obsolete before the debounce expires.
-  if (generation !== suggestionRequestGeneration || keyword.value.trim() !== term)
-    return
+  if (generation !== suggestionRequestGeneration || keyword.value.trim() !== term) return
 
   try {
     const res: SuggestionResponse = await api.search.getSearchSuggestion({ term })
 
     // Only the response for the current input may update the list. Without this
     // guard, a slower request for a shorter term can overwrite newer highlights.
-    if (generation !== suggestionRequestGeneration || keyword.value.trim() !== term)
-      return
+    if (generation !== suggestionRequestGeneration || keyword.value.trim() !== term) return
 
     if (!res || res.code !== 0) {
       resolvedSuggestionTerm = ''
@@ -362,8 +370,7 @@ async function loadSearchSuggestions(term: string, generation: number) {
     const nextSuggestions = Array.isArray(res.result?.tag) ? res.result.tag : []
     suggestions.splice(0, suggestions.length, ...nextSuggestions)
     resolvedSuggestionTerm = term
-  }
-  catch (error) {
+  } catch (error) {
     if (generation === suggestionRequestGeneration) {
       resolvedSuggestionTerm = ''
       suggestions.length = 0
@@ -383,8 +390,7 @@ function queueSearchSuggestions(value: string) {
     return
   }
 
-  if (term === resolvedSuggestionTerm && suggestions.length > 0)
-    return
+  if (term === resolvedSuggestionTerm && suggestions.length > 0) return
 
   const generation = ++suggestionRequestGeneration
   resolvedSuggestionTerm = ''
@@ -426,8 +432,7 @@ function extractKeywordFromUrl(url: string): string {
   try {
     const urlObj = new URL(url)
     return urlObj.searchParams.get('keyword') || ''
-  }
-  catch {
+  } catch {
     return ''
   }
 }
@@ -440,8 +445,7 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     normalized = extractKeywordFromUrl(searchRecommendation.value.url)
   }
 
-  if (!normalized)
-    return
+  if (!normalized) return
 
   if (settings.value.enableSearchHistory) {
     const searchItem = {
@@ -450,8 +454,7 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     }
     try {
       searchHistory.value = await addSearchHistory(searchItem)
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to add search history:', error)
     }
   }
@@ -465,9 +468,8 @@ async function navigateToSearchResultPage(rawKeyword: string) {
   }
 
   // 插件搜索结果页的顶栏始终原地更新结果；其他入口遵循「搜索栏链接打开行为」。
-  const isSearchResultsTopBar = props.topBarMode
-    && isHomePage()
-    && bewlyApp?.activatedPage.value === AppPage.SearchResults
+  const isSearchResultsTopBar =
+    props.topBarMode && isHomePage() && bewlyApp?.activatedPage.value === AppPage.SearchResults
   const didNavigate = isSearchResultsTopBar
     ? navigateToPluginSearchResults(normalized)
     : navigateToPluginSearchResultsInPlace(normalized)
@@ -495,10 +497,8 @@ async function handleDelete(value: string) {
 }
 
 function getKeyboardSelectionItems(mode: KeyboardSelectionMode) {
-  if (mode === 'suggestions')
-    return suggestions.map(item => item.value)
-  if (mode === 'history')
-    return searchHistory.value.map(item => item.value)
+  if (mode === 'suggestions') return suggestions.map((item) => item.value)
+  if (mode === 'history') return searchHistory.value.map((item) => item.value)
   return []
 }
 
@@ -509,17 +509,14 @@ function resetKeyboardSelection(options: { restoreKeyword?: boolean } = {}) {
   selectedIndex.value = -1
   keyboardSelectionMode.value = 'none'
 
-  if (restoreKeyword)
-    keyword.value = originalKeyword
+  if (restoreKeyword) keyword.value = originalKeyword
 }
 
 function getKeyboardSelectionContext() {
-  const mode = selectedIndex.value === -1
-    ? visibleKeyboardSelectionMode.value
-    : keyboardSelectionMode.value
+  const mode =
+    selectedIndex.value === -1 ? visibleKeyboardSelectionMode.value : keyboardSelectionMode.value
 
-  if (mode === 'none')
-    return null
+  if (mode === 'none') return null
 
   const items = getKeyboardSelectionItems(mode)
   if (items.length === 0) {
@@ -527,8 +524,7 @@ function getKeyboardSelectionContext() {
     return null
   }
 
-  if (selectedIndex.value === -1)
-    originalKeywordBeforeKeyboardSelection.value = keyword.value
+  if (selectedIndex.value === -1) originalKeywordBeforeKeyboardSelection.value = keyword.value
 
   keyboardSelectionMode.value = mode
   return { items, mode }
@@ -536,12 +532,10 @@ function getKeyboardSelectionContext() {
 
 function handleKeyUp(e: KeyboardEvent) {
   // Skip the key event triggered by IME
-  if (e.isComposing)
-    return
+  if (e.isComposing) return
 
   const context = getKeyboardSelectionContext()
-  if (!context || selectedIndex.value === -1)
-    return
+  if (!context || selectedIndex.value === -1) return
 
   if (selectedIndex.value === 0) {
     resetKeyboardSelection({ restoreKeyword: true })
@@ -554,12 +548,10 @@ function handleKeyUp(e: KeyboardEvent) {
 
 function handleKeyDown(e: KeyboardEvent) {
   // Skip the key event triggered by IME
-  if (e.isComposing)
-    return
+  if (e.isComposing) return
 
   const context = getKeyboardSelectionContext()
-  if (!context)
-    return
+  if (!context) return
 
   if (selectedIndex.value >= context.items.length - 1) {
     selectedIndex.value = context.items.length - 1
@@ -585,8 +577,7 @@ async function handleClearSearchHistory() {
 
 function handleFocusOut(event: FocusEvent) {
   const nextTarget = event.relatedTarget as HTMLElement | null
-  if (nextTarget && searchWrapRef.value?.contains(nextTarget))
-    return
+  if (nextTarget && searchWrapRef.value?.contains(nextTarget)) return
 
   isFocus.value = false
   resetKeyboardSelection()
@@ -619,14 +610,22 @@ function handleClearKeyword() {
     />
     <Transition name="mask">
       <div
-        v-if="darkenOnFocus && isFocus" pos="fixed top-0 left-0" w-full h-full bg="black opacity-60"
+        v-if="darkenOnFocus && isFocus"
+        pos="fixed top-0 left-0"
+        w-full
+        h-full
+        bg="black opacity-60"
         @click="isFocus = false"
       />
     </Transition>
 
     <div
       v-if="blurredOnFocus"
-      pos="fixed top-0 left-0" w-full h-full duration-500 pointer-events-none
+      pos="fixed top-0 left-0"
+      w-full
+      h-full
+      duration-500
+      pointer-events-none
       ease-out
       :style="{
         backdropFilter: isFocus ? 'blur(15px)' : 'blur(0)',
@@ -638,22 +637,29 @@ function handleClearKeyword() {
       :class="isFocus ? 'focus' : ''"
       role="search"
       autocomplete="off"
-      flex="~ items-center" pos="relative"
+      flex="~ items-center"
+      pos="relative"
       h-inherit
       @submit.prevent
     >
       <Transition name="focus-character">
         <img
-          v-show="resolvedFocusedCharacter && isFocus" :src="resolvedFocusedCharacter"
+          v-show="resolvedFocusedCharacter && isFocus"
+          :src="resolvedFocusedCharacter"
           class="focus-character-image"
-          width="100" object-contain
-        >
+          width="100"
+          object-contain
+        />
       </Transition>
 
       <input
         ref="keywordRef"
         :aria-label="$t('common.search')"
-        :aria-activedescendant="keyboardSelectionMode === 'suggestions' && selectedIndex >= 0 ? `search-suggestion-${selectedIndex}` : undefined"
+        :aria-activedescendant="
+          keyboardSelectionMode === 'suggestions' && selectedIndex >= 0
+            ? `search-suggestion-${selectedIndex}`
+            : undefined
+        "
         :aria-controls="suggestions.length > 0 ? 'search-suggestion' : undefined"
         :aria-expanded="isFocus && suggestions.length > 0"
         aria-autocomplete="list"
@@ -678,11 +684,14 @@ function handleClearKeyword() {
         @keyup.up.stop.passive="handleKeyUp"
         @keyup.down.stop.passive="handleKeyDown"
         @keydown.stop="() => {}"
-      >
+      />
       <button
         v-if="isFocus && keyword"
         type="button"
-        pos="absolute right-12" bg="$bew-fill-1 hover:$bew-fill-2" text="xs" rounded="$bew-radius-half"
+        pos="absolute right-12"
+        bg="$bew-fill-1 hover:$bew-fill-2"
+        text="xs"
+        rounded="$bew-radius-half"
         p-1
         flex="~ items-center justify-between"
         @click="handleClearKeyword"
@@ -723,12 +732,16 @@ function handleClearKeyword() {
 
           <div class="hot-search-container p-2 grid grid-cols-2 gap-x-4 gap-y-1">
             <ALink
-              v-for="(item, index) in visibleHotSearchList" :key="item.keyword"
+              v-for="(item, index) in visibleHotSearchList"
+              :key="item.keyword"
               :href="buildKeywordHref(item.keyword)"
               type="searchBar"
               :custom-click-event="true"
               class="hot-search-item cursor-pointer duration-300"
-              flex items-center gap-2 p="x-2 y-1"
+              flex
+              items-center
+              gap-2
+              p="x-2 y-1"
               @click="handleKeywordLinkClick(item.keyword, $event)"
             >
               <span
@@ -737,58 +750,83 @@ function handleClearKeyword() {
                   'top-1': index === 0,
                   'top-2': index === 1,
                   'top-3': index === 2,
-                  'normal': index > 2,
+                  normal: index > 2,
                 }"
               >
                 {{ index + 1 }}
               </span>
-              <span class="keyword" text="base $bew-text-1" truncate flex-1>{{ item.show_name }}</span>
+              <span class="keyword" text="base $bew-text-1" truncate flex-1>{{
+                item.show_name
+              }}</span>
               <img
                 v-if="item.icon && !item.icon.includes('.gif')"
                 :src="item.icon"
                 class="hot-search-icon"
-                w-4 h-4 object-contain
+                w-4
+                h-4
+                object-contain
                 alt=""
-              >
+              />
             </ALink>
           </div>
         </div>
 
         <!-- 分割线 -->
         <div
-          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0 && searchHistory.length > 0"
+          v-if="
+            (showHotSearch ?? settings.showHotSearchInTopBar) &&
+            hotSearchList.length > 0 &&
+            searchHistory.length > 0
+          "
           class="divider"
-          mx-2 my-1 h-px bg="$bew-border-color"
+          mx-2
+          my-1
+          h-px
+          bg="$bew-border-color"
         />
 
         <!-- 搜索历史区块 -->
-        <div
-          v-if="searchHistory.length !== 0"
-          class="history-section"
-        >
+        <div v-if="searchHistory.length !== 0" class="history-section">
           <div class="title p-2 pb-0 flex justify-between">
             <span>{{ $t('search_bar.history_title') }}</span>
-            <button class="rounded-2 duration-300 pointer-events-auto cursor-pointer" hover="text-$bew-theme-color" text="base $bew-text-2" @click="handleClearSearchHistory">
+            <button
+              class="rounded-2 duration-300 pointer-events-auto cursor-pointer"
+              hover="text-$bew-theme-color"
+              text="base $bew-text-2"
+              @click="handleClearSearchHistory"
+            >
               {{ $t('search_bar.clear_history') }}
             </button>
           </div>
 
           <div class="history-item-container p2 flex flex-wrap gap-x-3 gap-y-3">
             <ALink
-              v-for="(item, index) in searchHistory" :key="item.timestamp"
+              v-for="(item, index) in searchHistory"
+              :key="item.timestamp"
               :href="buildKeywordHref(item.value)"
               type="searchBar"
               :custom-click-event="true"
               class="history-item group"
               :class="{ active: keyboardSelectionMode === 'history' && selectedIndex === index }"
-              flex justify-between items-center
+              flex
+              justify-between
+              items-center
               @click="handleKeywordLinkClick(item.value, $event)"
             >
               <span> {{ item.value }}</span>
               <button
-                rounded-full duration-300 pointer-events-auto cursor-pointer p-1
-                text="xs $bew-text-2 hover:white" leading-0 bg="$bew-fill-2 hover:$bew-theme-color"
-                pos="absolute top-0 right-0" scale-80 opacity-0 group-hover:opacity-100
+                rounded-full
+                duration-300
+                pointer-events-auto
+                cursor-pointer
+                p-1
+                text="xs $bew-text-2 hover:white"
+                leading-0
+                bg="$bew-fill-2 hover:$bew-theme-color"
+                pos="absolute top-0 right-0"
+                scale-80
+                opacity-0
+                group-hover:opacity-100
                 @mousedown.prevent
                 @click.stop.prevent="handleDelete(item.value)"
               >
@@ -827,7 +865,7 @@ function handleClearKeyword() {
 
 <style lang="scss" scoped>
 ::v-deep(.suggest_high_light) {
-  --uno: "text-$bew-theme-color not-italic";
+  --uno: 'text-$bew-theme-color not-italic';
 }
 
 .result-list-enter-active,
@@ -839,7 +877,7 @@ function handleClearKeyword() {
 
 .result-list-enter-from,
 .result-list-leave-to {
-  --uno: "transform translate-y-4 opacity-0 scale-95";
+  --uno: 'transform translate-y-4 opacity-0 scale-95';
 }
 
 .focus-character-enter-active,
@@ -851,7 +889,7 @@ function handleClearKeyword() {
 
 .focus-character-enter-from,
 .focus-character-leave-to {
-  --uno: "transform translate-y-6 opacity-0";
+  --uno: 'transform translate-y-6 opacity-0';
 }
 
 .mask-enter-active,
@@ -861,12 +899,12 @@ function handleClearKeyword() {
 
 .mask-enter-from,
 .mask-leave-to {
-  --uno: "opacity-0";
+  --uno: 'opacity-0';
 }
 
 .mask-enter-to,
 .mask-leave-from {
-  --uno: "opacity-100";
+  --uno: 'opacity-100';
 }
 
 #search-wrap {
@@ -890,8 +928,8 @@ function handleClearKeyword() {
   --b-search-bar-focus-placeholder-color: var(--bew-text-3);
 
   @mixin card-content {
-    --uno: "text-base outline-none w-full bg-$b-search-bar-normal-color border-1 border-$bew-border-color";
-    --uno: "shadow-[var(--bew-shadow-2),var(--bew-shadow-edge-glow-1)]";
+    --uno: 'text-base outline-none w-full bg-$b-search-bar-normal-color border-1 border-$bew-border-color';
+    --uno: 'shadow-[var(--bew-shadow-2),var(--bew-shadow-edge-glow-1)]';
     // --b-search-bar-glass 由外部（如顶栏的 slide-out 过渡）覆盖为恒等滤镜，
     // 让玻璃与透明度动画同步渐变，避免 Chromium 丢弃 backdrop-filter 造成饱和度跳变
     backdrop-filter: var(--b-search-bar-glass, var(--bew-filter-glass-1));
@@ -914,10 +952,10 @@ function handleClearKeyword() {
       @include card-content;
       appearance: none;
 
-      &[type="search"]::-webkit-search-cancel-button,
-      &[type="search"]::-webkit-search-decoration,
-      &[type="search"]::-webkit-search-results-button,
-      &[type="search"]::-webkit-search-results-decoration {
+      &[type='search']::-webkit-search-cancel-button,
+      &[type='search']::-webkit-search-decoration,
+      &[type='search']::-webkit-search-results-button,
+      &[type='search']::-webkit-search-results-decoration {
         -webkit-appearance: none;
         appearance: none;
         display: none;
@@ -946,7 +984,7 @@ function handleClearKeyword() {
       }
 
       &:focus {
-        --uno: "bg-$b-search-bar-focus-color";
+        --uno: 'bg-$b-search-bar-focus-color';
       }
     }
 
@@ -984,7 +1022,7 @@ function handleClearKeyword() {
       transition: color 280ms ease;
 
       &::before {
-        content: "";
+        content: '';
         position: absolute;
         left: 50%;
         top: 50%;
@@ -1022,26 +1060,26 @@ function handleClearKeyword() {
   }
 
   @mixin search-content {
-    --uno: "text-base outline-none w-full p-2 mt-2 absolute hover:block";
+    --uno: 'text-base outline-none w-full p-2 mt-2 absolute hover:block';
   }
 
   @mixin search-content-item {
-    --uno: "px-4 py-2 w-full rounded-$bew-radius duration-300 cursor-pointer not-first:mt-1 tracking-wider hover:bg-$bew-fill-2";
+    --uno: 'px-4 py-2 w-full rounded-$bew-radius duration-300 cursor-pointer not-first:mt-1 tracking-wider hover:bg-$bew-fill-2';
   }
 
   #search-dropdown {
     @include search-content;
-    --uno: "max-h-420px important-overflow-y-auto";
+    --uno: 'max-h-420px important-overflow-y-auto';
     z-index: 1000;
 
     .title {
-      --uno: "text-lg font-500";
+      --uno: 'text-lg font-500';
     }
 
     .hot-search-section {
       .hot-search-container {
         .hot-search-item {
-          --uno: "relative cursor-pointer duration-300";
+          --uno: 'relative cursor-pointer duration-300';
           border-radius: var(--bew-interactive-radius);
           transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
 
@@ -1062,28 +1100,28 @@ function handleClearKeyword() {
           }
 
           .index {
-            --uno: "text-xs min-w-4 text-center";
+            --uno: 'text-xs min-w-4 text-center';
             font-weight: var(--bew-font-weight-bold);
 
             &.top-1 {
-              --uno: "text-red-500";
+              --uno: 'text-red-500';
             }
 
             &.top-2 {
-              --uno: "text-orange-500";
+              --uno: 'text-orange-500';
             }
 
             &.top-3 {
-              --uno: "text-yellow-500";
+              --uno: 'text-yellow-500';
             }
 
             &.normal {
-              --uno: "text-$bew-text-3";
+              --uno: 'text-$bew-text-3';
             }
           }
 
           .keyword {
-            --uno: "text-base truncate flex-1";
+            --uno: 'text-base truncate flex-1';
           }
 
           &:hover,
@@ -1095,17 +1133,17 @@ function handleClearKeyword() {
     }
 
     .divider {
-      --uno: "mx-2 my-1 h-px bg-$bew-border-color";
+      --uno: 'mx-2 my-1 h-px bg-$bew-border-color';
     }
 
     .history-section {
       .history-item-container {
         .history-item {
-          --uno: "relative cursor-pointer duration-300";
-          --uno: "py-2 px-6 bg-$bew-fill-1 hover:bg-$bew-theme-color-20 hover:text-$bew-theme-color rounded-$bew-radius-half";
+          --uno: 'relative cursor-pointer duration-300';
+          --uno: 'py-2 px-6 bg-$bew-fill-1 hover:bg-$bew-theme-color-20 hover:text-$bew-theme-color rounded-$bew-radius-half';
 
           &.active {
-            --uno: "bg-$bew-fill-2 text-$bew-theme-color shadow-[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]";
+            --uno: 'bg-$bew-fill-2 text-$bew-theme-color shadow-[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]';
           }
         }
       }
@@ -1114,14 +1152,14 @@ function handleClearKeyword() {
 
   #search-suggestion {
     @include search-content;
-    --uno: "max-h-420px important-overflow-y-auto";
+    --uno: 'max-h-420px important-overflow-y-auto';
     z-index: 1000;
 
     .suggestion-item {
       @include search-content-item;
 
       &.active {
-        --uno: "bg-$bew-fill-2 shadow-[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]";
+        --uno: 'bg-$bew-fill-2 shadow-[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]';
       }
     }
   }

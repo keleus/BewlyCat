@@ -32,7 +32,7 @@ const dockPositions = computed(() => {
   ]
 })
 
-const pageOptions = computed((): { label: string, icon: string, value: string }[] => {
+const pageOptions = computed((): { label: string; icon: string; value: string }[] => {
   return mainStore.dockItems.map((e: any) => {
     return {
       label: t(e.i18nKey),
@@ -55,15 +55,19 @@ const sidebarPositions = computed(() => {
   ]
 })
 
-watch(() => settings.value.halfHideDock, (newValue) => {
-  if (newValue)
-    settings.value.autoHideDock = false
-})
+watch(
+  () => settings.value.halfHideDock,
+  (newValue) => {
+    if (newValue) settings.value.autoHideDock = false
+  },
+)
 
-watch(() => settings.value.autoHideDock, (newValue) => {
-  if (newValue)
-    settings.value.halfHideDock = false
-})
+watch(
+  () => settings.value.autoHideDock,
+  (newValue) => {
+    if (newValue) settings.value.halfHideDock = false
+  },
+)
 
 function resetDockContent() {
   settings.value.dockItemsConfig = mainStore.dockItems.map((e: DockItem) => {
@@ -78,10 +82,9 @@ function resetDockContent() {
 
 function handleToggleDockItem(dockItem: any) {
   // Prevent disabling all dock items if there is only one
-  if (settings.value.dockItemsConfig.filter(dockItem => dockItem.visible === true).length > 1)
+  if (settings.value.dockItemsConfig.filter((dockItem) => dockItem.visible === true).length > 1)
     dockItem.visible = !dockItem.visible
-  else
-    dockItem.visible = true
+  else dockItem.visible = true
 }
 
 function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean) {
@@ -93,13 +96,14 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
   <div>
     <SettingsItemGroup :title="$t('settings.group_dock')">
       <SettingsItem :title="$t('settings.dock_position')" right-width="auto">
-        <Select
-          v-model="settings.dockPosition"
-          :options="dockPositions"
-          w="160px"
-        />
+        <Select v-model="settings.dockPosition" :options="dockPositions" w="160px" />
       </SettingsItem>
-      <SettingsItem v-if="!settings.useOriginalBilibiliHomepage" :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')" right-width="auto">
+      <SettingsItem
+        v-if="!settings.useOriginalBilibiliHomepage"
+        :title="$t('settings.always_use_dock')"
+        :desc="$t('settings.always_use_dock_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.alwaysUseDock" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.auto_hide_dock')" right-width="auto">
@@ -135,13 +139,21 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
           <draggable
             v-model="settings.dockItemsConfig"
             item-key="page"
-            :component-data="{ style: 'display: flex; gap: 0.5rem; flex-wrap: wrap; flex-direction: column;' }"
+            :component-data="{
+              style: 'display: flex; gap: 0.5rem; flex-wrap: wrap; flex-direction: column;',
+            }"
           >
             <template #item="{ element }">
               <div
                 class="bew-settings-option--lift"
-                :data-settings-title="pageOptions.find(option => option.value === element.page)?.label"
-                flex="~ gap-2 justify-between items-center wrap" p="x-4 y-2" bg="$bew-fill-1" rounded="$bew-radius" cursor-all-scroll
+                :data-settings-title="
+                  pageOptions.find((option) => option.value === element.page)?.label
+                "
+                flex="~ gap-2 justify-between items-center wrap"
+                p="x-4 y-2"
+                bg="$bew-fill-1"
+                rounded="$bew-radius"
+                cursor-all-scroll
                 duration-300
                 :style="{
                   background: element.visible ? 'var(--bew-theme-color-20)' : 'var(--bew-fill-1)',
@@ -150,16 +162,17 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
                 @click="handleToggleDockItem(element)"
               >
                 <div flex="~ gap-2 items-center">
-                  <div :class="pageOptions.find((page:any) => (page.value === element.page))?.icon as string" />
+                  <div
+                    :class="
+                      pageOptions.find((page: any) => page.value === element.page)?.icon as string
+                    "
+                  />
                   <div w-80px text-ellipsis>
-                    {{ pageOptions.find(option => option.value === element.page)?.label }}
+                    {{ pageOptions.find((option) => option.value === element.page)?.label }}
                   </div>
                 </div>
                 <div flex="~ gap-4 items-center justify-between wrap" @click.stop>
-                  <div
-                    v-if="!settings.useOriginalBilibiliHomepage"
-                    flex="~ items-center"
-                  >
+                  <div v-if="!settings.useOriginalBilibiliHomepage" flex="~ items-center">
                     {{ $t('settings.dock_item_use_original_bili_web_page') }}
                     <Radio
                       :model-value="element.useOriginalBiliPage"
@@ -176,7 +189,11 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
           </draggable>
         </template>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.show_layout_edit_button')"
+        :desc="$t('settings.show_layout_edit_button_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.showLayoutEditButton" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.enable_dock_glowing_effect')" right-width="auto">
@@ -198,27 +215,49 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       <SettingsItem :title="$t('settings.enable_refresh_button_on_dock')" right-width="auto">
         <Radio v-model="settings.enableRefreshButtonOnDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')"
+        right-width="auto"
+      >
         <Radio v-model="settings.backToTopAndRefreshButtonsAreSeparated" />
       </SettingsItem>
-      <SettingsItem v-if="!settings.useOriginalBilibiliHomepage" :title="$t('settings.enable_undo_refresh_button')" :desc="$t('settings.enable_undo_refresh_button_desc')" right-width="auto">
+      <SettingsItem
+        v-if="!settings.useOriginalBilibiliHomepage"
+        :title="$t('settings.enable_undo_refresh_button')"
+        :desc="$t('settings.enable_undo_refresh_button_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.enableUndoRefreshButton" />
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">
-      <SettingsItem :title="$t('settings.module_sidebar')" :desc="$t('settings.module_sidebar_desc')" right-width="auto">
+    <SettingsItemGroup
+      :title="$t('settings.group_sidebar')"
+      :desc="$t('settings.group_sidebar_desc')"
+    >
+      <SettingsItem
+        :title="$t('settings.module_sidebar')"
+        :desc="$t('settings.module_sidebar_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.enableSideBar" />
       </SettingsItem>
-      <SettingsItem v-if="settings.enableSideBar" :title="$t('settings.sidebar_position')" right-width="auto">
+      <SettingsItem
+        v-if="settings.enableSideBar"
+        :title="$t('settings.sidebar_position')"
+        right-width="auto"
+      >
         <Select v-model="settings.sidebarPosition" :options="sidebarPositions" w="160px" />
       </SettingsItem>
-      <SettingsItem v-if="settings.enableSideBar" :title="$t('settings.auto_hide_sidebar')" right-width="auto">
+      <SettingsItem
+        v-if="settings.enableSideBar"
+        :title="$t('settings.auto_hide_sidebar')"
+        right-width="auto"
+      >
         <Radio v-model="settings.autoHideSidebar" />
       </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>
 
-<style lang="scss" scoped>
-</style>
+<style lang="scss" scoped></style>

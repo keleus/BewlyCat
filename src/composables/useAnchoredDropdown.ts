@@ -19,8 +19,7 @@ export function useAnchoredDropdown(
 
   function updatePosition() {
     const rect = anchorRef.value?.getBoundingClientRect()
-    if (!rect)
-      return
+    if (!rect) return
     const spaceBelow = window.innerHeight - rect.bottom - LIST_GAP - VIEWPORT_MARGIN
     const spaceAbove = rect.top - LIST_GAP - VIEWPORT_MARGIN
     const openUp = spaceBelow < Math.min(maxHeight, 160) && spaceAbove > spaceBelow
@@ -50,27 +49,28 @@ export function useAnchoredDropdown(
       show()
       return
     }
-    if (!count)
-      return
+    if (!count) return
     activeIndex.value = (activeIndex.value + step + count) % count
     nextTick(() => listRef.value?.children[activeIndex.value]?.scrollIntoView({ block: 'nearest' }))
   }
 
   /** 列表展开时 Esc 只收起列表，不关闭外层弹窗 */
   function hideOnEscape(event: KeyboardEvent) {
-    if (!open.value)
-      return
+    if (!open.value) return
     event.stopPropagation()
     hide()
   }
 
-  useEventListener(window, 'wheel', (event: WheelEvent) => {
-    if (open.value && listRef.value && !event.composedPath().includes(listRef.value))
-      hide()
-  }, { passive: true })
+  useEventListener(
+    window,
+    'wheel',
+    (event: WheelEvent) => {
+      if (open.value && listRef.value && !event.composedPath().includes(listRef.value)) hide()
+    },
+    { passive: true },
+  )
   useEventListener(window, 'resize', () => {
-    if (open.value)
-      hide()
+    if (open.value) hide()
   })
 
   return { open, activeIndex, style, show, hide, move, hideOnEscape }

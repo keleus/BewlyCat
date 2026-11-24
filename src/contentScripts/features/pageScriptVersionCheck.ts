@@ -10,10 +10,8 @@ const PAGE_SCRIPT_RESPONSE_TIMEOUT_MS = 5000
  */
 export function verifyPageScriptVersion(expectedVersion: string): void {
   try {
-    if (window.top !== window)
-      return
-  }
-  catch {
+    if (window.top !== window) return
+  } catch {
     return
   }
 
@@ -23,11 +21,9 @@ export function verifyPageScriptVersion(expectedVersion: string): void {
     window.removeEventListener('message', onMessage)
   }
   function onMessage(event: MessageEvent) {
-    if (event.source !== window)
-      return
+    if (event.source !== window) return
     const identity = readPageScriptIdentityMessage(event.data)
-    if (!identity)
-      return
+    if (!identity) return
     stop()
     if (identity === 'legacy')
       promptPageRefreshFromContentScript('legacy-content-script', 1, identity)
@@ -40,8 +36,7 @@ export function verifyPageScriptVersion(expectedVersion: string): void {
   timer = setTimeout(stop, PAGE_SCRIPT_RESPONSE_TIMEOUT_MS)
   try {
     window.postMessage({ type: PAGE_SCRIPT_PING }, window.location.origin)
-  }
-  catch {
+  } catch {
     stop()
   }
 }

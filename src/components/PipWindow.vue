@@ -46,13 +46,16 @@ async function openPipWindow() {
     pipWindowEl.value.addEventListener('pagehide', () => {
       handleClose()
     })
-  }
-  else {
+  } else {
     const width = window.innerWidth * 0.8
     const height = window.innerHeight * 0.8
-    const left = (screen.width / 2) - (width / 2)
-    const top = (screen.height / 2) - (height / 2)
-    window.open(currentUrl.value, '', `width=${width}px,height=${height}px,left=${left}px,top=${top}px,toolbar=no,location=no,directories=no,menubar=no,scrollbars=yes,resizable=yes,status=no`)
+    const left = screen.width / 2 - width / 2
+    const top = screen.height / 2 - height / 2
+    window.open(
+      currentUrl.value,
+      '',
+      `width=${width}px,height=${height}px,left=${left}px,top=${top}px,toolbar=no,location=no,directories=no,menubar=no,scrollbars=yes,resizable=yes,status=no`,
+    )
     handleClose()
   }
 }
@@ -65,8 +68,7 @@ function handleOpenInNewTab() {
 async function handleClose() {
   await releaseIframeResources()
   await nextTick()
-  if (pipWindowEl.value)
-    pipWindowEl.value.close()
+  if (pipWindowEl.value) pipWindowEl.value.close()
   await nextTick()
   emit('close')
 }
@@ -114,15 +116,18 @@ const isEscPressed = ref<boolean>(false)
   <div ref="pipWindowRef">
     <div pos="absolute top-0 left-0" w-full h-full>
       <div
-        pos="relative top-0" z-1 flex="~ items-center justify-end gap-2"
-        w-full h="$bew-top-bar-height"
+        pos="relative top-0"
+        z-1
+        flex="~ items-center justify-end gap-2"
+        w-full
+        h="$bew-top-bar-height"
         pointer-events-none
       >
         <Button
           style="
-              --b-button-color: var(--bew-elevated-solid);
-              --b-button-color-hover: var(--bew-elevated-solid-hover);
-            "
+            --b-button-color: var(--bew-elevated-solid);
+            --b-button-color-hover: var(--bew-elevated-solid-hover);
+          "
           pointer-events-auto
           @click="handleOpenInNewTab"
         >
@@ -150,11 +155,7 @@ const isEscPressed = ref<boolean>(false)
           {{ $t('iframe_drawer.close') }}
           <!-- <kbd>Esc</kbd> -->
         </Button>
-        <Button
-          v-else
-          type="error"
-          @click="handleClose"
-        >
+        <Button v-else type="error" @click="handleClose">
           <template #left>
             <i i-mingcute:close-line />
           </template>
@@ -164,8 +165,11 @@ const isEscPressed = ref<boolean>(false)
       </div>
       <iframe
         ref="iframeRef"
-        :src="url" frameborder="0"
-        w-full h-full p-0
+        :src="url"
+        frameborder="0"
+        w-full
+        h-full
+        p-0
         pos="absolute top-0 left-0"
         bg="$bew-bg"
       />

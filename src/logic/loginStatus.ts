@@ -4,12 +4,12 @@ export enum LoginStatus {
   TransientError = 'transient-error',
 }
 
-export type LoginCheckResult<T>
-  = | { status: LoginStatus.LoggedIn, data: T }
-    | { status: LoginStatus.LoggedOut }
-    | { status: LoginStatus.TransientError }
+export type LoginCheckResult<T> =
+  | { status: LoginStatus.LoggedIn; data: T }
+  | { status: LoginStatus.LoggedOut }
+  | { status: LoginStatus.TransientError }
 
-export type NavChecker<T> = () => Promise<{ code: number, data?: T }>
+export type NavChecker<T> = () => Promise<{ code: number; data?: T }>
 
 /**
  * 从 Cookie 字符串解析 DedeUserID（登录用户的 mid）。
@@ -20,8 +20,7 @@ export type NavChecker<T> = () => Promise<{ code: number, data?: T }>
  */
 export function parseDedeUserID(cookieString: string): number | undefined {
   const match = cookieString.match(/(?:^|;\s*)DedeUserID=(\d+)/)
-  if (!match)
-    return undefined
+  if (!match) return undefined
 
   const mid = Number(match[1])
   return mid > 0 ? mid : undefined
@@ -38,15 +37,12 @@ export async function checkLoginStatus<T>(check: NavChecker<T>): Promise<LoginCh
   try {
     const res = await check()
 
-    if (res?.code === 0)
-      return { status: LoginStatus.LoggedIn, data: res.data as T }
+    if (res?.code === 0) return { status: LoginStatus.LoggedIn, data: res.data as T }
 
-    if (res?.code === -101)
-      return { status: LoginStatus.LoggedOut }
+    if (res?.code === -101) return { status: LoginStatus.LoggedOut }
 
     return { status: LoginStatus.TransientError }
-  }
-  catch {
+  } catch {
     return { status: LoginStatus.TransientError }
   }
 }

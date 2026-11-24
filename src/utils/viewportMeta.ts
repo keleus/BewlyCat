@@ -4,9 +4,9 @@ export const RESPONSIVE_VIEWPORT_CONTENT = 'width=device-width, initial-scale=1'
 function normalizeViewportContent(content: string): string {
   const preservedDirectives = content
     .split(',')
-    .map(directive => directive.trim())
+    .map((directive) => directive.trim())
     .filter(Boolean)
-    .filter(directive => !/^(?:width|initial-scale)\s*=/i.test(directive))
+    .filter((directive) => !/^(?:width|initial-scale)\s*=/i.test(directive))
 
   return [RESPONSIVE_VIEWPORT_CONTENT, ...preservedDirectives].join(', ')
 }

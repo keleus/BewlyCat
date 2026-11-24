@@ -2,7 +2,7 @@
 // App.vue 在底层渲染全局背景（壁纸、遮罩、渐变、深色基准色及毛玻璃模糊均由外观设置统一控制），
 // 页面容器、弹幕发送栏、弹幕列表、选集面板与宽屏侧栏整体透明穿透融入同一层毛玻璃，消除块状割裂感；
 // 仅真正覆盖滚动内容或视频画面的吸顶/吸底栏与悬浮按钮保留独立毛玻璃底衬防叠字。
-@use "./videoPageSurfaces" as surfaces;
+@use './videoPageSurfaces' as surfaces;
 
 html.bewly-video-glass.bewly-design {
   background-color: var(--bew-homepage-bg);
@@ -41,7 +41,11 @@ html.bewly-video-glass.bewly-design {
     --bew-comment-tree-line-color: rgb(24 25 28 / 24%);
     --bew-ip-tag-text: var(--bew-text-2);
     --bew-video-glass-floating-input-bg-hover: var(--bew-content);
-    --bew-video-glass-floating-input-bg-active: color-mix(in oklab, var(--bew-content-solid) 35%, var(--bew-content));
+    --bew-video-glass-floating-input-bg-active: color-mix(
+      in oklab,
+      var(--bew-content-solid) 35%,
+      var(--bew-content)
+    );
 
     body {
       --text1: var(--bew-text-1);
@@ -132,8 +136,8 @@ html.bewly-video-glass.bewly-design {
     --bew-comment-bottom-fixed-active-border: var(--bew-border-color);
     --bew-comment-bottom-fixed-active-radius: var(--bew-panel-radius) var(--bew-panel-radius) 0 0;
     --bew-comment-bottom-fixed-active-shadow:
-      inset 1px 0 0 var(--bew-border-color), inset -1px 0 0 var(--bew-border-color), var(--bew-shadow-edge-glow-1),
-      var(--bew-shadow-2);
+      inset 1px 0 0 var(--bew-border-color), inset -1px 0 0 var(--bew-border-color),
+      var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
     --bew-comment-sticky-footer-bg: var(--bew-video-glass-sticky-bg);
     --bew-comment-sticky-footer-filter: var(--bew-video-glass-sticky-filter);
     --bew-comment-tag-color: var(--bew-text-2);
@@ -159,7 +163,10 @@ html.bewly-video-glass.bewly-design {
     }
 
     // 旧版评论输入框与新版评论框共用同套轻量半透明填充与边框状态
-    :is(.bb-comment, .comment-bilibili-fold) :is(.comment-send, .comment-send-lite) .textarea-container .ipt-txt {
+    :is(.bb-comment, .comment-bilibili-fold)
+      :is(.comment-send, .comment-send-lite)
+      .textarea-container
+      .ipt-txt {
       background: var(--bew-comment-box-bg) !important;
       border-color: var(--bew-comment-box-border) !important;
       box-shadow: var(--bew-comment-box-shadow) !important;
@@ -207,7 +214,10 @@ html.bewly-video-glass.bewly-design {
       border-color: var(--bew-comment-box-border-hover) !important;
     }
 
-    :is(.bb-comment, .comment-bilibili-fold) :is(.comment-send, .comment-send-lite) .textarea-container .ipt-txt:focus {
+    :is(.bb-comment, .comment-bilibili-fold)
+      :is(.comment-send, .comment-send-lite)
+      .textarea-container
+      .ipt-txt:focus {
       background: var(--bew-comment-box-bg-active) !important;
       border-color: var(--bew-comment-box-border-active) !important;
       box-shadow: var(--bew-comment-box-active-shadow) !important;
@@ -215,7 +225,7 @@ html.bewly-video-glass.bewly-design {
 
     .tag-panel .tag-link:hover,
     .video-tag-container .show-more-btn:hover,
-    .random-play-order-select:is(:hover, :active, [aria-expanded="true"]):not(:disabled),
+    .random-play-order-select:is(:hover, :active, [aria-expanded='true']):not(:disabled),
     .rec-footer:hover {
       background: var(--bew-fill-2) !important;
     }
@@ -225,7 +235,8 @@ html.bewly-video-glass.bewly-design {
       :is(.simple-base-item, .normal-base-item, .pod-item):is(:hover, .normal:hover),
     .multi-page-v1 .cur-list .list-box li:hover,
     .video-sections-v1 .video-episode-card:hover,
-    :is(.playlist-app, #bewly-widescreen-root) :is(.singlep-list-item-inner, .multip-list-item-inner):hover {
+    :is(.playlist-app, #bewly-widescreen-root)
+      :is(.singlep-list-item-inner, .multip-list-item-inner):hover {
       background-color: var(--bew-fill-1) !important;
     }
 
@@ -257,14 +268,22 @@ html.bewly-video-glass.bewly-design {
   &.animePlaybackAndMoviePage body {
     @include surfaces.transparent-bangumi-page-surfaces;
 
-    [class*="upinfo_upInfoCard"],
-    [class*="rankList_sponsor_rank_item"][class*="rankList_pos_rank_module"]
-      [class*="rankList_sp_right"]
-      [class*="rankList_sp_msg"],
+    [class*='upinfo_upInfoCard'],
+    [class*='rankList_sponsor_rank_item'][class*='rankList_pos_rank_module']
+      [class*='rankList_sp_right']
+      [class*='rankList_sp_msg'],
     .sponsor-rank-item.pos-rank-module .sp-right .sp-msg,
-    :is(.main-container, #bewly-widescreen-root) .review-module .review-list .review-item .review-body,
+    :is(.main-container, #bewly-widescreen-root)
+      .review-module
+      .review-list
+      .review-item
+      .review-body,
     :is(.main-container, #bewly-widescreen-root) .season-list .ss-list-wrapper .expand-more,
-    :is(.main-container, #bewly-widescreen-root) .media-info .media-right .media-tool-bar .btn-rating,
+    :is(.main-container, #bewly-widescreen-root)
+      .media-info
+      .media-right
+      .media-tool-bar
+      .btn-rating,
     :is(.main-container, #bewly-widescreen-root)
       .ep-list-wrapper
       .list-wrapper.simple
@@ -275,7 +294,7 @@ html.bewly-video-glass.bewly-design {
       box-shadow: none !important;
     }
 
-    [class*="follow_btnFollow"][class*="follow_followed"] {
+    [class*='follow_btnFollow'][class*='follow_followed'] {
       background: var(--bew-fill-1) !important;
       box-shadow: none !important;
 
@@ -285,7 +304,7 @@ html.bewly-video-glass.bewly-design {
     }
 
     // 番剧数字选集格子（选中态保留主题色底）
-    [class*="numberListItem_number_list_item"]:not([class*="numberListItem_select"]) {
+    [class*='numberListItem_number_list_item']:not([class*='numberListItem_select']) {
       --bg1: var(--bew-fill-1);
 
       &:hover {
@@ -293,8 +312,8 @@ html.bewly-video-glass.bewly-design {
       }
     }
 
-    [class*="navTools_navItem"],
-    [class*="navTools_toolItem"],
+    [class*='navTools_navItem'],
+    [class*='navTools_toolItem'],
     .main-container .nav-tools .tool-item:not(:hover) {
       background: var(--bew-content) !important;
       border-color: var(--bew-border-color) !important;
@@ -303,8 +322,8 @@ html.bewly-video-glass.bewly-design {
       backdrop-filter: var(--bew-filter-glass-1);
     }
 
-    [class*="navTools_navItem"]:hover,
-    [class*="navTools_toolItem"]:hover {
+    [class*='navTools_navItem']:hover,
+    [class*='navTools_toolItem']:hover {
       background: var(--bew-content-hover) !important;
     }
   }
@@ -355,9 +374,9 @@ html.bewly-video-glass.bewly-design {
       }
     }
 
-    &[data-sidebar-mode="fit"]:not([data-sidebar-full="true"]):not([data-sidebar-custom-width="true"]):not(
-        [data-wide-video-priority="true"]
-      ) {
+    &[data-sidebar-mode='fit']:not([data-sidebar-full='true']):not(
+        [data-sidebar-custom-width='true']
+      ):not([data-wide-video-priority='true']) {
       --bew-comment-sticky-footer-bg: var(--bewly-widescreen-sidebar-bg);
 
       .bewly-widescreen-stage::before,
@@ -375,20 +394,20 @@ html.bewly-video-glass.bewly-design {
       }
 
       .bewly-widescreen-stage::before {
-        content: "";
+        content: '';
         background: var(--bew-video-glass-drawer-bg);
         -webkit-backdrop-filter: var(--bew-video-glass-drawer-filter);
         backdrop-filter: var(--bew-video-glass-drawer-filter);
       }
 
-      &[data-sidebar-position="left"] .bewly-widescreen-stage::before,
-      &[data-sidebar-position="left"] .bewly-widescreen-stage::after {
+      &[data-sidebar-position='left'] .bewly-widescreen-stage::before,
+      &[data-sidebar-position='left'] .bewly-widescreen-stage::after {
         left: 0;
         right: auto;
       }
 
-      &[data-sidebar-expanded="true"] .bewly-widescreen-stage::before,
-      &[data-sidebar-expanded="true"] .bewly-widescreen-stage::after {
+      &[data-sidebar-expanded='true'] .bewly-widescreen-stage::before,
+      &[data-sidebar-expanded='true'] .bewly-widescreen-stage::after {
         transform: translateX(0);
       }
     }
@@ -407,8 +426,8 @@ html.bewly-video-glass.bewly-design {
       transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
     }
 
-    &[data-sidebar-scrolled="true"] .bewly-widescreen-sidebar-top,
-    &[data-tabs-stuck="true"] .bewly-widescreen-tabs {
+    &[data-sidebar-scrolled='true'] .bewly-widescreen-sidebar-top,
+    &[data-tabs-stuck='true'] .bewly-widescreen-tabs {
       background: var(--bew-video-glass-sticky-bg);
       -webkit-backdrop-filter: var(--bew-video-glass-sticky-filter);
       backdrop-filter: var(--bew-video-glass-sticky-filter);
@@ -431,12 +450,16 @@ html.bewly-video-glass.bewly-design {
   // 弥补底层 .bewly-video-page-background--overlay（z-index: 999）位于宽屏播放器后方无法覆盖视频画面的缺口，
   // 同时通过二次模糊显著改善 HDR 视频硬件层对单层 backdrop-filter 的削弱。
   &.bewly-video-glass-overlay:not(.disable-frosted-glass)
-    #bewly-widescreen-root[data-sidebar-mode="fit"]:not([data-sidebar-full="true"]):not(
-      [data-sidebar-custom-width="true"]
-    ):not([data-wide-video-priority="true"])
+    #bewly-widescreen-root[data-sidebar-mode='fit']:not([data-sidebar-full='true']):not(
+      [data-sidebar-custom-width='true']
+    ):not([data-wide-video-priority='true'])
     .bewly-widescreen-stage::after {
-    content: "";
-    background: color-mix(in oklab, var(--bew-bg) calc(var(--bew-content-opacity) * 74%), transparent);
+    content: '';
+    background: color-mix(
+      in oklab,
+      var(--bew-bg) calc(var(--bew-content-opacity) * 74%),
+      transparent
+    );
     -webkit-backdrop-filter: var(--bew-filter-glass-blur-2);
     backdrop-filter: var(--bew-filter-glass-blur-2);
   }

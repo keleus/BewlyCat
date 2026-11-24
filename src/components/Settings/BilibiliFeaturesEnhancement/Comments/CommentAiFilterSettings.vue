@@ -7,10 +7,7 @@ import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import Slider from '~/components/Slider.vue'
 import { settings } from '~/logic'
-import type {
-  CommentAiFilterDimension,
-  CommentAiFilterDisplayMode,
-} from '~/utils/commentAiFilter'
+import type { CommentAiFilterDimension, CommentAiFilterDisplayMode } from '~/utils/commentAiFilter'
 import {
   COMMENT_AI_FILTER_BATCH_SIZE_MAX,
   COMMENT_AI_FILTER_BATCH_SIZE_MIN,
@@ -24,9 +21,9 @@ import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 const { t } = useI18n()
 
 const testing = ref(false)
-const testResult = ref<{ ok: boolean, message: string } | null>(null)
+const testResult = ref<{ ok: boolean; message: string } | null>(null)
 
-const displayModeOptions = computed<{ label: string, value: CommentAiFilterDisplayMode }[]>(() => [
+const displayModeOptions = computed<{ label: string; value: CommentAiFilterDisplayMode }[]>(() => [
   {
     label: t('settings.comment_ai_filter.display_mode.collapse'),
     value: 'collapse',
@@ -87,16 +84,13 @@ function hasDimension(dimension: CommentAiFilterDimension): boolean {
 
 function toggleDimension(dimension: CommentAiFilterDimension, enabled: boolean) {
   const current = new Set(settings.value.commentAiFilterDimensions)
-  if (enabled)
-    current.add(dimension)
-  else
-    current.delete(dimension)
+  if (enabled) current.add(dimension)
+  else current.delete(dimension)
   settings.value.commentAiFilterDimensions = Array.from(current)
 }
 
 async function runConnectionTest() {
-  if (testing.value)
-    return
+  if (testing.value) return
   testing.value = true
   testResult.value = null
 
@@ -115,8 +109,7 @@ async function runConnectionTest() {
           flagged: response.flaggedCount,
         }),
       }
-    }
-    else {
+    } else {
       testResult.value = {
         ok: false,
         message: t('settings.comment_ai_filter.test_failed', {
@@ -124,16 +117,14 @@ async function runConnectionTest() {
         }),
       }
     }
-  }
-  catch (error) {
+  } catch (error) {
     testResult.value = {
       ok: false,
       message: t('settings.comment_ai_filter.test_failed', {
         error: error instanceof Error ? error.message : String(error),
       }),
     }
-  }
-  finally {
+  } finally {
     testing.value = false
   }
 }
@@ -188,7 +179,11 @@ async function runConnectionTest() {
         right-width="auto"
       >
         <template #bottom>
-          <div class="ai-dimension-tags" role="group" :aria-label="$t('settings.comment_ai_filter.dimensions.title')">
+          <div
+            class="ai-dimension-tags"
+            role="group"
+            :aria-label="$t('settings.comment_ai_filter.dimensions.title')"
+          >
             <SettingsToggleTag
               v-for="option in dimensionOptions"
               :key="option.value"
@@ -240,26 +235,24 @@ async function runConnectionTest() {
         :desc="$t('settings.comment_ai_filter.test_connection_desc')"
         right-width="auto"
       >
-        <Button
-          type="secondary"
-          size="small"
-          :disabled="testing"
-          @click="runConnectionTest"
-        >
+        <Button type="secondary" size="small" :disabled="testing" @click="runConnectionTest">
           <template #left>
             <span v-if="testing" i-svg-spinners:ring-resize aria-hidden="true" />
             <span v-else i-tabler-plug-connected aria-hidden="true" />
           </template>
-          {{ testing ? $t('settings.comment_ai_filter.testing') : $t('settings.comment_ai_filter.test_btn') }}
+          {{
+            testing
+              ? $t('settings.comment_ai_filter.testing')
+              : $t('settings.comment_ai_filter.test_btn')
+          }}
         </Button>
 
         <template v-if="testResult" #bottom>
-          <p
-            class="test-result"
-            :class="testResult.ok ? 'is-success' : 'is-error'"
-            role="status"
-          >
-            <span :class="testResult.ok ? 'i-tabler-circle-check' : 'i-tabler-alert-circle'" aria-hidden="true" />
+          <p class="test-result" :class="testResult.ok ? 'is-success' : 'is-error'" role="status">
+            <span
+              :class="testResult.ok ? 'i-tabler-circle-check' : 'i-tabler-alert-circle'"
+              aria-hidden="true"
+            />
             <span>{{ testResult.message }}</span>
           </p>
         </template>

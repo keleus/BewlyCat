@@ -1,18 +1,22 @@
 import type { UnReadDm, UnReadMessage } from '~/components/TopBar/types'
 import type { Settings } from '~/logic/storage'
 
-export type NotificationBadgeSettings = Pick<Settings, | 'showReplyNotificationReminder'
+export type NotificationBadgeSettings = Pick<
+  Settings,
+  | 'showReplyNotificationReminder'
   | 'showAtNotificationReminder'
   | 'showLikeNotificationReminder'
   | 'showSystemNotificationReminder'
   | 'showFollowedPrivateMessageUnreadCount'
-  | 'showUnfollowedPrivateMessageUnreadCount'>
+  | 'showUnfollowedPrivateMessageUnreadCount'
+>
 
 export function getNotificationCounts(
   message: Partial<UnReadMessage> = {},
   dm: Partial<UnReadDm> = {},
 ) {
-  const count = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 0
+  const count = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 0
   return {
     reply: count(message.reply),
     at: count(message.at),

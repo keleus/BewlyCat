@@ -33,18 +33,15 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
 
   function cancelSearchNavigation() {
     searchNavigationId++
-    if (searchTargetRetryTimer !== undefined)
-      window.clearTimeout(searchTargetRetryTimer)
-    if (searchTargetFrame !== undefined)
-      window.cancelAnimationFrame(searchTargetFrame)
+    if (searchTargetRetryTimer !== undefined) window.clearTimeout(searchTargetRetryTimer)
+    if (searchTargetFrame !== undefined) window.cancelAnimationFrame(searchTargetFrame)
     searchTargetRetryTimer = undefined
     searchTargetFrame = undefined
     clearSearchTargetHighlight()
   }
 
   function clearSearchTargetHighlight() {
-    if (searchTargetHighlightTimer)
-      window.clearTimeout(searchTargetHighlightTimer)
+    if (searchTargetHighlightTimer) window.clearTimeout(searchTargetHighlightTimer)
 
     highlightedSearchTarget?.classList.remove('settings-search-target')
     highlightedSearchTarget?.removeAttribute('data-settings-search-highlight')
@@ -55,7 +52,7 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
   function highlightSearchTarget(target: HTMLElement) {
     clearSearchTargetHighlight()
     const visualTarget = target.matches('.b-settings-item-group')
-      ? target.querySelector<HTMLElement>(':scope > .group-title') ?? target
+      ? (target.querySelector<HTMLElement>(':scope > .group-title') ?? target)
       : target
 
     highlightedSearchTarget = visualTarget
@@ -71,15 +68,19 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
   function hasClosedDetailsAncestor(element: HTMLElement, viewport: HTMLElement) {
     let ancestor = element.parentElement
     while (ancestor && ancestor !== viewport) {
-      if (ancestor instanceof HTMLDetailsElement && !ancestor.open)
-        return true
+      if (ancestor instanceof HTMLDetailsElement && !ancestor.open) return true
       ancestor = ancestor.parentElement
     }
     return false
   }
 
-  function isUsableTarget(element: HTMLElement | null, viewport: HTMLElement): element is HTMLElement {
-    return Boolean(element && (isVisibleTarget(element) || hasClosedDetailsAncestor(element, viewport)))
+  function isUsableTarget(
+    element: HTMLElement | null,
+    viewport: HTMLElement,
+  ): element is HTMLElement {
+    return Boolean(
+      element && (isVisibleTarget(element) || hasClosedDetailsAncestor(element, viewport)),
+    )
   }
 
   function scrollToSearchTarget(
@@ -95,7 +96,13 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
     const retry = () => {
       searchTargetRetryTimer = window.setTimeout(() => {
         searchTargetRetryTimer = undefined
-        scrollToSearchTarget(targetKey, expectedTitle, fallbackTargetKey, navigationId, attempts + 1)
+        scrollToSearchTarget(
+          targetKey,
+          expectedTitle,
+          fallbackTargetKey,
+          navigationId,
+          attempts + 1,
+        )
       }, 100)
     }
     const viewport = options.scrollViewportRef.value
@@ -105,24 +112,32 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
       return
     }
 
-    const queryByKey = (key: string) => Array.from(
-      viewport.querySelectorAll<HTMLElement>(`[data-settings-key="${CSS.escape(key)}"]`),
-    ).find(element => isUsableTarget(element, viewport)) ?? null
-    const queryByTitle = (title: string | undefined) => title
-      ? Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]'))
-        .find(element => element.dataset.settingsTitle === title && isUsableTarget(element, viewport)) ?? null
-      : null
+    const queryByKey = (key: string) =>
+      Array.from(
+        viewport.querySelectorAll<HTMLElement>(`[data-settings-key="${CSS.escape(key)}"]`),
+      ).find((element) => isUsableTarget(element, viewport)) ?? null
+    const queryByTitle = (title: string | undefined) =>
+      title
+        ? (Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]')).find(
+            (element) =>
+              element.dataset.settingsTitle === title && isUsableTarget(element, viewport),
+          ) ?? null)
+        : null
 
     const keyedTarget = targetKey ? queryByKey(targetKey) : null
     const titleTarget = expectedTitle ? queryByTitle(expectedTitle) : null
     // 条件目标可能不存在；给它两轮挂载时间后落到始终可见的父项。
-    const fallbackTarget = fallbackTargetKey && attempts >= 2
-      ? queryByKey(fallbackTargetKey) ?? queryByTitle(t(fallbackTargetKey))
-      : null
+    const fallbackTarget =
+      fallbackTargetKey && attempts >= 2
+        ? (queryByKey(fallbackTargetKey) ?? queryByTitle(t(fallbackTargetKey)))
+        : null
     // 未配置父项时至少把用户带到当前页面，避免点击完全无反馈。
-    const pageTarget = attempts >= 10
-      ? Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]')).find(isVisibleTarget) ?? null
-      : null
+    const pageTarget =
+      attempts >= 10
+        ? (Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]')).find(
+            isVisibleTarget,
+          ) ?? null)
+        : null
     const target = keyedTarget ?? titleTarget ?? fallbackTarget ?? pageTarget
     const usedPageFallback = !keyedTarget && !titleTarget && !fallbackTarget && Boolean(pageTarget)
     if (!target) {
@@ -133,18 +148,15 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
     // 展开所有祖先分组，但不启用功能或改写配置。
     let ancestor: HTMLElement | null = target
     while (ancestor && ancestor !== viewport) {
-      if (ancestor instanceof HTMLDetailsElement)
-        ancestor.open = true
+      if (ancestor instanceof HTMLDetailsElement) ancestor.open = true
       ancestor = ancestor.parentElement
     }
 
     nextTick(() => {
-      if (navigationId !== searchNavigationId)
-        return
+      if (navigationId !== searchNavigationId) return
       searchTargetFrame = window.requestAnimationFrame(() => {
         searchTargetFrame = undefined
-        if (navigationId !== searchNavigationId || !viewport.contains(target))
-          return
+        if (navigationId !== searchNavigationId || !viewport.contains(target)) return
         if (viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
           retry()
           return
@@ -157,15 +169,25 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
         const targetRect = target.getBoundingClientRect()
         const viewportRect = viewport.getBoundingClientRect()
         const headerInset = Number.parseFloat(window.getComputedStyle(viewport).paddingTop) || 0
-        const centerOffset = Math.max(0, (viewport.clientHeight - headerInset - targetRect.height) / 2)
+        const centerOffset = Math.max(
+          0,
+          (viewport.clientHeight - headerInset - targetRect.height) / 2,
+        )
         // 只滚动设置容器，避免 scrollIntoView 连带滚动外层页面；避开固定顶栏。
         viewport.scrollTo({
-          top: Math.max(0, viewport.scrollTop + targetRect.top - viewportRect.top - viewport.clientTop - headerInset - centerOffset),
+          top: Math.max(
+            0,
+            viewport.scrollTop +
+              targetRect.top -
+              viewportRect.top -
+              viewport.clientTop -
+              headerInset -
+              centerOffset,
+          ),
           behavior: 'smooth',
         })
         // 页面级兜底只负责把用户带到正确页面，避免把“已定位”标注到无关设置上。
-        if (!usedPageFallback)
-          highlightSearchTarget(target)
+        if (!usedPageFallback) highlightSearchTarget(target)
       })
     })
   }
@@ -181,9 +203,11 @@ export function useSettingsSearchNavigation(options: UseSettingsSearchNavigation
     })
     const targetTitle = entry.targetTitleKey
       ? t(entry.targetTitleKey)
-      : entry.targetTitle ?? options.getSearchEntryTitle(entry)
+      : (entry.targetTitle ?? options.getSearchEntryTitle(entry))
     const targetKey = entry.targetTitleKey ?? entry.titleKey
-    nextTick(() => scrollToSearchTarget(targetKey, targetTitle, entry.fallbackTargetKey, navigationId))
+    nextTick(() =>
+      scrollToSearchTarget(targetKey, targetTitle, entry.fallbackTargetKey, navigationId),
+    )
   }
 
   onScopeDispose(cancelSearchNavigation)

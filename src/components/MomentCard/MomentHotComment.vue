@@ -5,7 +5,12 @@ import MomentRichText from './MomentRichText.vue'
 import type { DisplayMoment } from './types'
 
 // 动态列表附带的热评摘要，点击展开评论区并定位到这条热评。
-const { comment, expanded = false, loading = false, controls } = defineProps<{
+const {
+  comment,
+  expanded = false,
+  loading = false,
+  controls,
+} = defineProps<{
   comment: NonNullable<DisplayMoment['hotComment']>
   expanded?: boolean
   loading?: boolean
@@ -35,14 +40,18 @@ const { t } = useI18n()
       {{ t('moment_card.hot_comment') }}
     </span>
     <span class="moment-card__hot-comment-content">
-      <MomentRichText v-if="comment.richText.length" :segments="comment.richText" :linkable="false" />
+      <MomentRichText
+        v-if="comment.richText.length"
+        :segments="comment.richText"
+        :linkable="false"
+      />
       <template v-else>{{ comment.text }}</template>
     </span>
   </button>
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__hot-comment {
   @include mixins.interactive-layer;

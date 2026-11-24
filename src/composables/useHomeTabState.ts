@@ -5,21 +5,26 @@ type TabSnapshot = Record<string, unknown>
 
 /** Copy registered JSON data from raw values, without proxy traversal or a JSON string buffer. */
 function cloneTabData<T>(value: T, copies = new WeakMap<object, unknown>()): T {
-  if (value === null || typeof value !== 'object')
-    return value
+  if (value === null || typeof value !== 'object') return value
 
   const raw = toRaw(value)
-  if (copies.has(raw))
-    return copies.get(raw) as T
+  if (copies.has(raw)) return copies.get(raw) as T
 
-  const copy = (Array.isArray(raw) ? Array.from({ length: raw.length }) : {}) as Record<string, unknown>
+  const copy = (Array.isArray(raw) ? Array.from({ length: raw.length }) : {}) as Record<
+    string,
+    unknown
+  >
   copies.set(raw, copy)
   for (const key of Object.keys(raw)) {
     const field = cloneTabData((raw as Record<string, unknown>)[key], copies)
     if (key === '__proto__') {
-      Object.defineProperty(copy, key, { value: field, writable: true, enumerable: true, configurable: true })
-    }
-    else {
+      Object.defineProperty(copy, key, {
+        value: field,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      })
+    } else {
       copy[key] = field
     }
   }
@@ -31,15 +36,16 @@ export function createHomeTabCache() {
   const snapshots = new Map<string, TabSnapshot>()
   let generation = 0
   return {
-    get generation() { return generation },
+    get generation() {
+      return generation
+    },
     take(key: string) {
       const snapshot = snapshots.get(key)
       snapshots.delete(key)
       return snapshot
     },
     save(key: string, snapshot: TabSnapshot, version: number) {
-      if (version === generation)
-        snapshots.set(key, cloneTabData(snapshot))
+      if (version === generation) snapshots.set(key, cloneTabData(snapshot))
     },
     clear() {
       generation++
@@ -58,9 +64,20 @@ interface HomeTabCacheContext {
 
 const homeTabCacheKey: InjectionKey<HomeTabCacheContext> = Symbol('home-tab-data-cache')
 
-export function provideHomeTabCache(activeKey: () => string, restoreScroll: () => void, keepContentInView: () => void, preserveScrollPosition: () => boolean) {
+export function provideHomeTabCache(
+  activeKey: () => string,
+  restoreScroll: () => void,
+  keepContentInView: () => void,
+  preserveScrollPosition: () => boolean,
+) {
   const cache = createHomeTabCache()
-  provide(homeTabCacheKey, { cache, activeKey, restoreScroll, keepContentInView, preserveScrollPosition })
+  provide(homeTabCacheKey, {
+    cache,
+    activeKey,
+    restoreScroll,
+    keepContentInView,
+    preserveScrollPosition,
+  })
   return cache
 }
 
@@ -80,23 +97,19 @@ export function useHomeTabState(options: { retainedFields?: readonly string[] } 
   let disposed = false
 
   function read<T>(key: string, initial: T): T {
-    if (retainedFields && !retainedFields.has(key))
-      return initial
-    return snapshot && Object.hasOwn(snapshot, key) ? snapshot[key] as T : initial
+    if (retainedFields && !retainedFields.has(key)) return initial
+    return snapshot && Object.hasOwn(snapshot, key) ? (snapshot[key] as T) : initial
   }
   function take<T>(key: string, initial: T): T {
     const value = read(key, initial)
-    if (snapshot)
-      delete snapshot[key]
+    if (snapshot) delete snapshot[key]
     return value
   }
   function capture(key: string, getValue: () => unknown) {
-    if (retainedFields && !retainedFields.has(key))
-      return () => {}
+    if (retainedFields && !retainedFields.has(key)) return () => {}
     fields.set(key, getValue)
     return () => {
-      if (disposed || fields.get(key) !== getValue)
-        return
+      if (disposed || fields.get(key) !== getValue) return
       const value = cloneTabData(getValue())
       fields.set(key, () => value)
     }
@@ -129,19 +142,21 @@ export function useHomeTabState(options: { retainedFields?: readonly string[] } 
       return value
     },
     restoreScroll() {
-      if (isCurrent())
-        context?.restoreScroll()
+      if (isCurrent()) context?.restoreScroll()
     },
     keepContentInView() {
-      if (isCurrent() && !preserveScrollOnEntry)
-        context?.keepContentInView()
+      if (isCurrent() && !preserveScrollOnEntry) context?.keepContentInView()
     },
   }
   provide(homeTabStateKey, state)
   onBeforeUnmount(() => {
     disposed = true
     if (context && context.cache.generation === generation)
-      context.cache.save(ownerKey, Object.fromEntries([...fields].map(([key, getValue]) => [key, getValue()])), generation)
+      context.cache.save(
+        ownerKey,
+        Object.fromEntries([...fields].map(([key, getValue]) => [key, getValue()])),
+        generation,
+      )
     fields.clear()
     snapshot = undefined
   })

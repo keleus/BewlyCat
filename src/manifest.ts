@@ -6,7 +6,7 @@ import { isDev, isFirefox, isSafari, r } from '../scripts/utils'
 import { CONTENT_SCRIPT_EXCLUDE_MATCHES, CONTENT_SCRIPT_MATCHES } from './constants/contentScript'
 
 export async function getManifest() {
-  const pkg = await fs.readJSON(r('package.json')) as typeof PkgType
+  const pkg = (await fs.readJSON(r('package.json'))) as typeof PkgType
 
   // update this file to update this manifest.json
   // can also be conditional based on your need
@@ -27,9 +27,10 @@ export async function getManifest() {
 
     // Setting `persistent` to true in Manifest V3 results in an error in Firefox
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background
-    background: (isFirefox || isSafari)
-      ? { scripts: ['./dist/background/index.js'], persistent: isFirefox ? undefined : false }
-      : { service_worker: './dist/background/index.js', type: 'module' },
+    background:
+      isFirefox || isSafari
+        ? { scripts: ['./dist/background/index.js'], persistent: isFirefox ? undefined : false }
+        : { service_worker: './dist/background/index.js', type: 'module' },
 
     icons: {
       16: 'assets/icon-512.png',
@@ -41,14 +42,9 @@ export async function getManifest() {
       'declarativeNetRequest',
       'cookies',
       ...(!isSafari ? ['scripting'] : []),
-      ...isFirefox
-        ? ['webRequest', 'webRequestBlocking']
-        : [],
+      ...(isFirefox ? ['webRequest', 'webRequestBlocking'] : []),
     ],
-    host_permissions: [
-      '*://*.bilibili.com/*',
-      '*://*.hdslb.com/*',
-    ],
+    host_permissions: ['*://*.bilibili.com/*', '*://*.hdslb.com/*'],
     // IframePage and IframeDrawer embed supported Bilibili pages and rely on the
     // content scripts for styling, layout synchronization, and interactions.
     // Blank frames are not supported pages, so match_about_blank is intentionally omitted.
@@ -71,17 +67,14 @@ export async function getManifest() {
     ],
     web_accessible_resources: [
       {
-        resources: [
-          'assets/*',
-          'dist/contentScripts/flvPlayer.js',
-        ],
+        resources: ['assets/*', 'dist/contentScripts/flvPlayer.js'],
         matches: [...CONTENT_SCRIPT_MATCHES],
       },
     ],
     content_security_policy: {
-      extension_pages: 'script-src \'self\'; object-src \'self\'',
+      extension_pages: "script-src 'self'; object-src 'self'",
     },
-    ...isFirefox
+    ...(isFirefox
       ? {}
       : {
           declarative_net_request: {
@@ -93,11 +86,10 @@ export async function getManifest() {
               },
             ],
           },
-        },
+        }),
   }
 
-  if (isDev)
-    manifest.permissions?.push('webNavigation')
+  if (isDev) manifest.permissions?.push('webNavigation')
 
   if (isFirefox) {
     manifest.browser_specific_settings = {

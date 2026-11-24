@@ -6,7 +6,7 @@
 
 ## 样式文件编写风格
 
-``` scss
+```scss
 .bewly-design.pageName {
   // 实现对页面的特定修改，例如微调布局，将这些样式放在这里
   .right-side-bar .catalog {

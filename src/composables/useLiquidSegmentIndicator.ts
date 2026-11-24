@@ -37,7 +37,11 @@ interface LiquidGeometry {
  * Never collapses into a ball or compresses on the cross-axis.
  * The sticky feel comes only from stretching along the travel direction.
  */
-function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t: number): LiquidGeometry {
+function computeLiquidGeometry(
+  from: LiquidSegmentRect,
+  to: LiquidSegmentRect,
+  t: number,
+): LiquidGeometry {
   const progress = clamp(t, 0, 1)
 
   if (progress <= 0.001) {
@@ -47,8 +51,8 @@ function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t
     return { x: to.x, y: to.y, width: to.width, height: to.height }
   }
 
-  const dx = (to.x + to.width / 2) - (from.x + from.width / 2)
-  const dy = (to.y + to.height / 2) - (from.y + from.height / 2)
+  const dx = to.x + to.width / 2 - (from.x + from.width / 2)
+  const dy = to.y + to.height / 2 - (from.y + from.height / 2)
   const dist = Math.hypot(dx, dy)
   const isHoriz = Math.abs(dx) >= Math.abs(dy)
 
@@ -174,14 +178,12 @@ export function useLiquidSegmentIndicator(options: {
     fromRect = { ...from }
 
     const tick = (now: number) => {
-      if (token !== animToken)
-        return
+      if (token !== animToken) return
       const t = clamp((now - start) / LIQUID_MOVE_DURATION_MS, 0, 1)
       applyGeometry(computeLiquidGeometry(from, to, t))
       if (t < 1) {
         rafId = requestAnimationFrame(tick)
-      }
-      else {
+      } else {
         rafId = undefined
         applySettled(to)
         isMoving.value = false
@@ -231,10 +233,11 @@ export function useLiquidSegmentIndicator(options: {
     // interrupts an in-flight morph. Restarting from the last settled tab
     // caused the indicator to visibly jump backwards.
     const origin = rafId !== undefined ? { ...rect.value } : fromRect
-    const changed = Math.abs(activeRect.x - origin.x) > 0.5
-      || Math.abs(activeRect.y - origin.y) > 0.5
-      || Math.abs(activeRect.width - origin.width) > 0.5
-      || Math.abs(activeRect.height - origin.height) > 0.5
+    const changed =
+      Math.abs(activeRect.x - origin.x) > 0.5 ||
+      Math.abs(activeRect.y - origin.y) > 0.5 ||
+      Math.abs(activeRect.width - origin.width) > 0.5 ||
+      Math.abs(activeRect.height - origin.height) > 0.5
 
     if (!changed) {
       applySettled(activeRect)
@@ -249,8 +252,7 @@ export function useLiquidSegmentIndicator(options: {
   async function updateIndicator(immediate = false) {
     pendingImmediateMeasure ||= immediate
     await nextTick()
-    if (disposed)
-      return
+    if (disposed) return
 
     // One coalesced frame is enough after Vue has patched data-active. The old
     // nested rAF added visible input latency and allowed stale measurements to
@@ -266,8 +268,7 @@ export function useLiquidSegmentIndicator(options: {
 
   function handleReducedMotionChange(event: MediaQueryListEvent) {
     prefersReducedMotion.value = event.matches
-    if (event.matches)
-      void updateIndicator(true)
+    if (event.matches) void updateIndicator(true)
   }
 
   function setPreview(targetEl: HTMLElement | null, progress: number) {
@@ -295,24 +296,25 @@ export function useLiquidSegmentIndicator(options: {
     previewProgress = 0
     scrubbing.value = false
 
-    if (!hadPreview)
-      return
+    if (!hadPreview) return
 
     if (animateBack && container && activeEl) {
       const activeRect = readItemRect(container, activeEl)
       animateMorph(currentGeo, activeRect)
-    }
-    else {
+    } else {
       void updateIndicator(true)
     }
   }
 
-  watch(() => toValue(options.activeKey), () => {
-    previewTarget = null
-    previewProgress = 0
-    scrubbing.value = false
-    void updateIndicator(false)
-  })
+  watch(
+    () => toValue(options.activeKey),
+    () => {
+      previewTarget = null
+      previewProgress = 0
+      scrubbing.value = false
+      void updateIndicator(false)
+    },
+  )
 
   useResizeObserver(options.containerRef, () => {
     void updateIndicator(true)

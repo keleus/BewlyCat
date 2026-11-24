@@ -33,12 +33,11 @@ function toSrgbEncoded(linear: number): number {
  */
 export function parseBaseValue(color: string): number | null {
   const oklab = /^oklab\(([\d.]+)/.exec(color)
-  if (oklab)
-    return toSrgbEncoded(Number(oklab[1]) ** 3)
+  if (oklab) return toSrgbEncoded(Number(oklab[1]) ** 3)
 
-  const channels = /^(?:rgba?\(|color\(srgb )([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/.exec(color)
-  if (!channels || channels[4] === '0')
-    return null
+  const channels =
+    /^(?:rgba?\(|color\(srgb )([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/.exec(color)
+  if (!channels || channels[4] === '0') return null
   const scale = color.startsWith('color(') ? 1 : 255
   const [r, g, b] = channels.slice(1, 4).map(Number)
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / scale
@@ -96,9 +95,8 @@ export function getAmbilightTextColors(tone: AmbilightTone, backdrop: AmbilightB
       Math.max(contrast, MIN_CONTRAST[level]),
       maxTextContrast(tone, background) * LEVEL_HEADROOM[level],
     )
-    const luminance = tone === 'light'
-      ? (background + 0.05) / target - 0.05
-      : target * (background + 0.05) - 0.05
+    const luminance =
+      tone === 'light' ? (background + 0.05) / target - 0.05 : target * (background + 0.05) - 0.05
     return greyWithLuminance(luminance)
   })
 }

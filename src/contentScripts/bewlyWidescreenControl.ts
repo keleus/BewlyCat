@@ -1,14 +1,22 @@
 import { watch } from 'vue'
 
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
+import {
+  applyBewlyWidescreen,
+  ensureNativePlayerModeGuard,
+  exitBewlyWidescreen,
+  isBewlyWidescreenActive,
+  isBewlyWidescreenEngaged,
+  showBewlyWidescreenSwitchHint,
+} from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
 import { schedulePlayerControlFit } from './playerControlFit'
 
 const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
-const PLAYER_ROOT_SELECTOR = '#bilibili-player-wrap, #playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
+const PLAYER_ROOT_SELECTOR =
+  '#bilibili-player-wrap, #playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
 const PLAYER_MODE_BUTTON_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen'
 const BUTTON_CLASS = 'bewly-widescreen-control'
 const TOOLTIP_CLASS = 'bewly-player-tooltip'
@@ -51,9 +59,11 @@ function translate(key: string): string {
 }
 
 function getButtonLabel(active = isBewlyWidescreenActive()) {
-  return translate(active
-    ? 'settings.video_player_mode.exit_bewly_widescreen'
-    : 'settings.video_player_mode.bewly_widescreen')
+  return translate(
+    active
+      ? 'settings.video_player_mode.exit_bewly_widescreen'
+      : 'settings.video_player_mode.bewly_widescreen',
+  )
 }
 
 function findPlayerControlBar(): HTMLElement | null {
@@ -61,18 +71,26 @@ function findPlayerControlBar(): HTMLElement | null {
 }
 
 function findPlayerRoot(controlBar?: HTMLElement | null): HTMLElement | null {
-  return controlBar?.closest<HTMLElement>('#bilibili-player-wrap, #playerWrap, #bilibili-player, #bilibiliPlayer')
-    ?? controlBar?.closest<HTMLElement>('.bpx-player-container, .bilibili-player')
-    ?? document.querySelector<HTMLElement>(PLAYER_ROOT_SELECTOR)
+  return (
+    controlBar?.closest<HTMLElement>(
+      '#bilibili-player-wrap, #playerWrap, #bilibili-player, #bilibiliPlayer',
+    ) ??
+    controlBar?.closest<HTMLElement>('.bpx-player-container, .bilibili-player') ??
+    document.querySelector<HTMLElement>(PLAYER_ROOT_SELECTOR)
+  )
 }
 
 function isBrowserFullscreen() {
-  return !!(document.fullscreenElement || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+  return !!(
+    document.fullscreenElement ||
+    (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+  )
 }
 
 function isWebFullscreen() {
-  return Array.from(document.querySelectorAll<HTMLElement>(PLAYER_MODE_BUTTON_SELECTOR))
-    .some(button => button.classList.contains('bpx-state-entered'))
+  return Array.from(document.querySelectorAll<HTMLElement>(PLAYER_MODE_BUTTON_SELECTOR)).some(
+    (button) => button.classList.contains('bpx-state-entered'),
+  )
 }
 
 function isControlUnavailable() {
@@ -84,23 +102,23 @@ function shouldManageControl() {
 }
 
 function updateControlState(button = controlContainer) {
-  if (!button)
-    return
+  if (!button) return
 
   const active = isBewlyWidescreenActive()
   const label = getButtonLabel(active)
 
   // 全屏/窄屏显隐交给 CSS；相同状态不重复写 DOM，避免触发原生播放器观察器。
-  if (button.getAttribute('aria-label') === label
-    && button.getAttribute('aria-busy') === String(isApplying)
-    && button.classList.contains('bpx-state-entered') === active) {
+  if (
+    button.getAttribute('aria-label') === label &&
+    button.getAttribute('aria-busy') === String(isApplying) &&
+    button.classList.contains('bpx-state-entered') === active
+  ) {
     return
   }
 
   button.setAttribute('aria-label', label)
   const tooltip = button.querySelector<HTMLElement>(`.${TOOLTIP_CLASS}`)
-  if (tooltip)
-    tooltip.textContent = label
+  if (tooltip) tooltip.textContent = label
   button.setAttribute('aria-disabled', String(isApplying))
   button.setAttribute('aria-busy', String(isApplying))
   button.setAttribute('tabindex', isApplying ? '-1' : '0')
@@ -154,13 +172,11 @@ function createControlContainer(): HTMLElement {
     void handleControlClick(container)
   })
   container.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ')
-      return
+    if (event.key !== 'Enter' && event.key !== ' ') return
 
     event.preventDefault()
     event.stopPropagation()
-    if (event.repeat)
-      return
+    if (event.repeat) return
     void handleControlClick(container)
   })
 
@@ -168,8 +184,7 @@ function createControlContainer(): HTMLElement {
 }
 
 async function handleControlClick(button: HTMLElement) {
-  if (isApplying || !shouldManageControl())
-    return
+  if (isApplying || !shouldManageControl()) return
 
   if (isBewlyWidescreenActive()) {
     exitBewlyWidescreen({ userInitiated: true })
@@ -177,22 +192,21 @@ async function handleControlClick(button: HTMLElement) {
     return
   }
 
-  if (isControlUnavailable())
-    return
+  if (isControlUnavailable()) return
 
   isApplying = true
   updateControlState(button)
-  showBewlyWidescreenSwitchHint(translate('settings.video_player_mode.switching_to_bewly_widescreen'))
+  showBewlyWidescreenSwitchHint(
+    translate('settings.video_player_mode.switching_to_bewly_widescreen'),
+  )
   clearApplyFallbackTimer()
   applyFallbackTimer = setTimeout(() => {
-    if (!isBewlyWidescreenActive())
-      finishApplying()
+    if (!isBewlyWidescreenActive()) finishApplying()
   }, APPLY_TIMEOUT)
 
   try {
     applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right', false)
-  }
-  catch (error) {
+  } catch (error) {
     console.error('[BewlyCat] 切换 Bewly 宽屏失败', error)
     finishApplying()
   }
@@ -216,22 +230,19 @@ function stopPlayerObservers() {
 function removeControl() {
   controlContainer?.remove()
   controlContainer = null
-  document.querySelectorAll<HTMLElement>(`.${BUTTON_CLASS}`).forEach(control => control.remove())
+  document.querySelectorAll<HTMLElement>(`.${BUTTON_CLASS}`).forEach((control) => control.remove())
 }
 
 function stopManagingControl(remove = true) {
   stopControlDiscovery()
   stopPlayerObservers()
   controlSyncQueued = false
-  if (remove)
-    removeControl()
-  if (isApplying)
-    finishApplying()
+  if (remove) removeControl()
+  if (isApplying) finishApplying()
 }
 
 function scheduleControlSync() {
-  if (controlSyncQueued)
-    return
+  if (controlSyncQueued) return
 
   controlSyncQueued = true
   queueMicrotask(() => {
@@ -247,13 +258,10 @@ function restartControlDiscovery() {
 }
 
 function scheduleControlDiscoveryRetry() {
-  if (discoveryRetryTimer || !shouldManageControl())
-    return
+  if (discoveryRetryTimer || !shouldManageControl()) return
 
-  if (!discoveryRetryDeadline)
-    discoveryRetryDeadline = Date.now() + CONTROL_DISCOVERY_TIMEOUT
-  if (Date.now() >= discoveryRetryDeadline)
-    return
+  if (!discoveryRetryDeadline) discoveryRetryDeadline = Date.now() + CONTROL_DISCOVERY_TIMEOUT
+  if (Date.now() >= discoveryRetryDeadline) return
 
   discoveryRetryTimer = setTimeout(() => {
     discoveryRetryTimer = null
@@ -262,9 +270,11 @@ function scheduleControlDiscoveryRetry() {
 }
 
 function observePlayerStructure(playerRoot: HTMLElement, controlBar: HTMLElement) {
-  if (observedPlayerRoot === playerRoot
-    && observedControlBar === controlBar
-    && playerStructureObserver) {
+  if (
+    observedPlayerRoot === playerRoot &&
+    observedControlBar === controlBar &&
+    playerStructureObserver
+  ) {
     return
   }
 
@@ -284,16 +294,14 @@ function observePlayerStructure(playerRoot: HTMLElement, controlBar: HTMLElement
       return
     }
 
-    if (!controlContainer?.isConnected)
-      restartControlDiscovery()
+    if (!controlContainer?.isConnected) restartControlDiscovery()
   }
 
   playerStructureObserver = new MutationObserver(handlePlayerMutation)
   let current: HTMLElement | null = controlBar
   while (current) {
     playerStructureObserver.observe(current, { childList: true })
-    if (current === playerRoot)
-      break
+    if (current === playerRoot) break
     current = current.parentElement
   }
 
@@ -356,19 +364,15 @@ function syncControl() {
 }
 
 function setupPageObserver() {
-  if (pageObserver || !document.body)
-    return
+  if (pageObserver || !document.body) return
 
   pageObserver = new MutationObserver(() => {
-    if (isApplying && (isBewlyWidescreenActive()
-      || !isBewlyWidescreenEngaged())) {
+    if (isApplying && (isBewlyWidescreenActive() || !isBewlyWidescreenEngaged())) {
       finishApplying()
     }
 
-    if (controlContainer)
-      updateControlState()
-    else if (shouldManageControl())
-      scheduleControlSync()
+    if (controlContainer) updateControlState()
+    else if (shouldManageControl()) scheduleControlSync()
   })
   pageObserver.observe(document.body, {
     attributes: true,
@@ -378,8 +382,7 @@ function setupPageObserver() {
 }
 
 export function initBewlyWidescreenControl() {
-  if (hasInitialized)
-    return
+  if (hasInitialized) return
 
   hasInitialized = true
   ensureNativePlayerModeGuard()
@@ -387,10 +390,8 @@ export function initBewlyWidescreenControl() {
   watch(
     [() => settings.value.showBewlyWidescreenButton, () => settings.value.language],
     ([enabled]) => {
-      if (enabled)
-        restartControlDiscovery()
-      else
-        stopManagingControl()
+      if (enabled) restartControlDiscovery()
+      else stopManagingControl()
     },
     { immediate: true },
   )

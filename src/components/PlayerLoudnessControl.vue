@@ -2,7 +2,12 @@
 import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
-import { applyPictureAdjustment, isPictureAdjusted, loudnessTemporarilyOff, playerAdjustment } from '~/utils/playerAdjustment'
+import {
+  applyPictureAdjustment,
+  isPictureAdjusted,
+  loudnessTemporarilyOff,
+  playerAdjustment,
+} from '~/utils/playerAdjustment'
 
 const props = defineProps<{ video: HTMLVideoElement }>()
 const { t } = useI18n()
@@ -14,16 +19,18 @@ const open = ref(false)
 const state = ref('waiting')
 const gain = ref<number | null>(null)
 // A bounded telemetry history; no audio buffers, animation loop or extra timer.
-const history = ref<{ time: number, db: number }[]>([])
+const history = ref<{ time: number; db: number }[]>([])
 const gainPath = computed(() => {
   const samples = history.value
   const end = samples.at(-1)?.time ?? 0
-  return samples.map((sample, index) => {
-    const x = 30 + (1 - (end - sample.time) / 60_000) * 226
-    const y = 8 + (6 - Math.max(-18, Math.min(6, sample.db))) / 24 * 72
-    const move = index === 0 || sample.time - samples[index - 1].time > 2500
-    return `${move ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
-  }).join(' ')
+  return samples
+    .map((sample, index) => {
+      const x = 30 + (1 - (end - sample.time) / 60_000) * 226
+      const y = 8 + ((6 - Math.max(-18, Math.min(6, sample.db))) / 24) * 72
+      const move = index === 0 || sample.time - samples[index - 1].time > 2500
+      return `${move ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
 })
 const loudnessOn = computed({
   get: () => !loudnessTemporarilyOff.value,
@@ -31,17 +38,21 @@ const loudnessOn = computed({
     loudnessTemporarilyOff.value = !on
   },
 })
-watch(() => [settings.value.localLoudnessEnabled, loudnessTemporarilyOff.value], () => {
-  history.value = []
-  gain.value = null
-})
+watch(
+  () => [settings.value.localLoudnessEnabled, loudnessTemporarilyOff.value],
+  () => {
+    history.value = []
+    gain.value = null
+  },
+)
 function updateParameter(event: Event, key: 'localLoudnessTarget' | 'localLoudnessStrength') {
   const value = (event.target as HTMLInputElement).valueAsNumber
-  if (Number.isFinite(value))
-    settings.value[key] = value
+  if (Number.isFinite(value)) settings.value[key] = value
 }
 const statuses = new Set(['off', 'waiting', 'active', 'error', 'native-unavailable', 'unsupported'])
-const displayState = computed(() => settings.value.localLoudnessEnabled && !loudnessTemporarilyOff.value ? state.value : 'off')
+const displayState = computed(() =>
+  settings.value.localLoudnessEnabled && !loudnessTemporarilyOff.value ? state.value : 'off',
+)
 const life = new AbortController()
 const panelResizeObserver = new ResizeObserver(placePanel)
 
@@ -49,17 +60,27 @@ const delayStatuses = new Set(['off', 'waiting', 'active', 'unsupported', 'error
 const delayState = ref('off')
 const pictureAdjusted = computed(isPictureAdjusted)
 const adjusted = computed(() => pictureAdjusted.value || playerAdjustment.audioDelay > 0)
-const delayNotice = computed(() => playerAdjustment.audioDelay > 0 && ['waiting', 'unsupported', 'error'].includes(delayState.value)
-  ? t(`settings.player_adjustment.audio_delay_states.${delayState.value}`)
-  : t('settings.player_adjustment.audio_delay_desc'))
+const delayNotice = computed(() =>
+  playerAdjustment.audioDelay > 0 && ['waiting', 'unsupported', 'error'].includes(delayState.value)
+    ? t(`settings.player_adjustment.audio_delay_states.${delayState.value}`)
+    : t('settings.player_adjustment.audio_delay_desc'),
+)
 const videoResizeObserver = new ResizeObserver(() => applyPictureAdjustment(props.video))
 
-watch(() => [playerAdjustment.rotation, playerAdjustment.flipX, playerAdjustment.flipY], () => {
-  applyPictureAdjustment(props.video)
-}, { immediate: true })
-watch(() => playerAdjustment.audioDelay, (delay) => {
-  window.postMessage({ type: 'BEWLY_AUDIO_DELAY', delay }, location.origin)
-}, { immediate: true })
+watch(
+  () => [playerAdjustment.rotation, playerAdjustment.flipX, playerAdjustment.flipY],
+  () => {
+    applyPictureAdjustment(props.video)
+  },
+  { immediate: true },
+)
+watch(
+  () => playerAdjustment.audioDelay,
+  (delay) => {
+    window.postMessage({ type: 'BEWLY_AUDIO_DELAY', delay }, location.origin)
+  },
+  { immediate: true },
+)
 
 function rotate(step: number) {
   playerAdjustment.rotation = (playerAdjustment.rotation + step + 360) % 360
@@ -71,21 +92,23 @@ function resetPicture() {
 }
 function updateAudioDelay(event: Event) {
   const value = (event.target as HTMLInputElement).valueAsNumber
-  if (Number.isFinite(value))
-    playerAdjustment.audioDelay = value
+  if (Number.isFinite(value)) playerAdjustment.audioDelay = value
 }
 
-watch(open, (visible) => {
-  if (visible) {
-    // The top layer escapes the player's overflow and transformed containers
-    // while keeping focus, hover and player event handling in the same DOM tree.
-    panel.value?.showPopover()
-    placePanel()
-  }
-  else {
-    panel.value?.hidePopover()
-  }
-}, { flush: 'post' })
+watch(
+  open,
+  (visible) => {
+    if (visible) {
+      // The top layer escapes the player's overflow and transformed containers
+      // while keeping focus, hover and player event handling in the same DOM tree.
+      panel.value?.showPopover()
+      placePanel()
+    } else {
+      panel.value?.hidePopover()
+    }
+  },
+  { flush: 'post' },
+)
 
 // 与原生播放器控制栏按钮悬停意图对齐：短暂停留后再展开，移出时留出短暂宽限避免滑向面板时误关。
 const HOVER_OPEN_DELAY_MS = 250
@@ -118,21 +141,25 @@ function scheduleShow() {
     clearTimeout(hoverCloseTimer)
     hoverCloseTimer = undefined
   }
-  if (open.value || hoverOpenTimer !== undefined)
-    return
+  if (open.value || hoverOpenTimer !== undefined) return
   hoverOpenTimer = setTimeout(() => {
     hoverOpenTimer = undefined
     show()
   }, HOVER_OPEN_DELAY_MS)
 }
 function placePanel() {
-  if (!panel.value || !button.value || !open.value)
-    return
+  if (!panel.value || !button.value || !open.value) return
   const anchor = button.value.getBoundingClientRect()
   const width = document.documentElement.clientWidth
   const height = document.documentElement.clientHeight
-  if (anchor.width === 0 || anchor.height === 0 || anchor.bottom <= 0 || anchor.top >= height
-    || anchor.right <= 0 || anchor.left >= width) {
+  if (
+    anchor.width === 0 ||
+    anchor.height === 0 ||
+    anchor.bottom <= 0 ||
+    anchor.top >= height ||
+    anchor.right <= 0 ||
+    anchor.left >= width
+  ) {
     close()
     return
   }
@@ -153,34 +180,28 @@ function close() {
   open.value = false
 }
 function onFocusOut(event: FocusEvent) {
-  if (!(event.relatedTarget instanceof Node) || !root.value?.contains(event.relatedTarget))
-    close()
+  if (!(event.relatedTarget instanceof Node) || !root.value?.contains(event.relatedTarget)) close()
 }
 function onButtonFocus() {
-  if (button.value?.matches(':focus-visible'))
-    show()
+  if (button.value?.matches(':focus-visible')) show()
 }
 function scheduleLeave() {
   if (hoverOpenTimer !== undefined) {
     clearTimeout(hoverOpenTimer)
     hoverOpenTimer = undefined
   }
-  if (!open.value || root.value?.contains(document.activeElement))
-    return
-  if (hoverCloseTimer !== undefined)
-    clearTimeout(hoverCloseTimer)
+  if (!open.value || root.value?.contains(document.activeElement)) return
+  if (hoverCloseTimer !== undefined) clearTimeout(hoverCloseTimer)
   hoverCloseTimer = setTimeout(() => {
     hoverCloseTimer = undefined
-    if (!root.value?.contains(document.activeElement))
-      open.value = false
+    if (!root.value?.contains(document.activeElement)) open.value = false
   }, HOVER_CLOSE_DELAY_MS)
 }
 function onKey(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     button.value?.focus()
     close()
-  }
-  else if (event.key === 'ArrowDown' && event.target === button.value) {
+  } else if (event.key === 'ArrowDown' && event.target === button.value) {
     event.preventDefault()
     show()
     void nextTick(() => panel.value?.querySelector<HTMLElement>('button, input')?.focus())
@@ -194,13 +215,22 @@ function resetStatus() {
 }
 function onStatus(event: MessageEvent) {
   const data = event.data
-  if (event.source === window && data?.type === 'BEWLY_AUDIO_DELAY_STATUS' && delayStatuses.has(data.state)
-    && data.url === location.href) {
+  if (
+    event.source === window &&
+    data?.type === 'BEWLY_AUDIO_DELAY_STATUS' &&
+    delayStatuses.has(data.state) &&
+    data.url === location.href
+  ) {
     delayState.value = data.state
     return
   }
-  if (event.source !== window || data?.type !== 'BEWLY_LOUDNESS_STATUS' || !statuses.has(data.state)
-    || data.url !== location.href || data.src !== props.video.currentSrc) {
+  if (
+    event.source !== window ||
+    data?.type !== 'BEWLY_LOUDNESS_STATUS' ||
+    !statuses.has(data.state) ||
+    data.url !== location.href ||
+    data.src !== props.video.currentSrc
+  ) {
     return
   }
   state.value = data.state
@@ -211,7 +241,10 @@ function onStatus(event: MessageEvent) {
   if (typeof data.gainDb === 'number' && Number.isFinite(data.gainDb)) {
     gain.value = data.gainDb
     const time = performance.now()
-    history.value = [...history.value.filter(sample => time - sample.time <= 60_000).slice(-60), { time, db: data.gainDb }]
+    history.value = [
+      ...history.value.filter((sample) => time - sample.time <= 60_000).slice(-60),
+      { time, db: data.gainDb },
+    ]
   }
 }
 onMounted(() => {
@@ -221,14 +254,15 @@ onMounted(() => {
   // Fullscreen changes the top-layer order; reopen from the button in the new mode.
   document.addEventListener('fullscreenchange', close, { signal: life.signal })
   for (const element of [button.value, panel.value, root.value?.closest('.bpx-player-container')]) {
-    if (element)
-      panelResizeObserver.observe(element)
+    if (element) panelResizeObserver.observe(element)
   }
   for (const name of ['emptied', 'loadedmetadata'])
     props.video.addEventListener(name, resetStatus, { signal: life.signal })
   // 画面尺寸或比例变化后重新计算旋转 90° 时的缩放。
   for (const name of ['loadedmetadata', 'resize'])
-    props.video.addEventListener(name, () => applyPictureAdjustment(props.video), { signal: life.signal })
+    props.video.addEventListener(name, () => applyPictureAdjustment(props.video), {
+      signal: life.signal,
+    })
   videoResizeObserver.observe(props.video)
   requestStatus()
 })
@@ -243,59 +277,56 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    ref="root" class="loudness-widget"
-    @mouseenter="scheduleShow" @mouseleave="scheduleLeave"
-    @focusout="onFocusOut" @keydown.stop="onKey" @keyup.stop
-    @click.stop @dblclick.stop @pointerdown.stop @mousedown.stop @wheel.stop
+    ref="root"
+    class="loudness-widget"
+    @mouseenter="scheduleShow"
+    @mouseleave="scheduleLeave"
+    @focusout="onFocusOut"
+    @keydown.stop="onKey"
+    @keyup.stop
+    @click.stop
+    @dblclick.stop
+    @pointerdown.stop
+    @mousedown.stop
+    @wheel.stop
   >
     <button
-      ref="button" type="button" class="bpx-player-ctrl-btn-icon loudness-button" :class="{ 'is-adjusted': adjusted }"
-      :aria-label="t('settings.player_adjustment.title')" :aria-expanded="open" aria-controls="bewly-loudness-panel"
-      @click="open ? close() : show()" @focus="onButtonFocus"
+      ref="button"
+      type="button"
+      class="bpx-player-ctrl-btn-icon loudness-button"
+      :class="{ 'is-adjusted': adjusted }"
+      :aria-label="t('settings.player_adjustment.title')"
+      :aria-expanded="open"
+      aria-controls="bewly-loudness-panel"
+      @click="open ? close() : show()"
+      @focus="onButtonFocus"
     >
       <span class="bpx-common-svg-icon">
         <!-- 与原生控制栏图标同为 88 网格面性图形：轨道宽 8、推钮 20×12；轨道在推钮上下各留 4 的间隙 -->
         <svg viewBox="0 0 88 88" fill="#fff" aria-hidden="true">
-          <mask
-            :id="knobMaskId" maskUnits="userSpaceOnUse" x="0" y="0" width="88"
-            height="88"
-          >
+          <mask :id="knobMaskId" maskUnits="userSpaceOnUse" x="0" y="0" width="88" height="88">
             <rect width="88" height="88" fill="#fff" />
-            <rect
-              class="knob knob-1" x="10" y="22" width="20" height="20"
-              fill="#000"
-            />
-            <rect
-              class="knob knob-2" x="34" y="44" width="20" height="20"
-              fill="#000"
-            />
-            <rect
-              class="knob knob-3" x="58" y="30" width="20" height="20"
-              fill="#000"
-            />
+            <rect class="knob knob-1" x="10" y="22" width="20" height="20" fill="#000" />
+            <rect class="knob knob-2" x="34" y="44" width="20" height="20" fill="#000" />
+            <rect class="knob knob-3" x="58" y="30" width="20" height="20" fill="#000" />
           </mask>
           <g :mask="`url(#${knobMaskId})`">
             <rect x="16" y="16" width="8" height="56" rx="2" />
             <rect x="40" y="16" width="8" height="56" rx="2" />
             <rect x="64" y="16" width="8" height="56" rx="2" />
           </g>
-          <rect
-            class="knob knob-1" x="10" y="26" width="20" height="12"
-            rx="3"
-          />
-          <rect
-            class="knob knob-2" x="34" y="48" width="20" height="12"
-            rx="3"
-          />
-          <rect
-            class="knob knob-3" x="58" y="34" width="20" height="12"
-            rx="3"
-          />
+          <rect class="knob knob-1" x="10" y="26" width="20" height="12" rx="3" />
+          <rect class="knob knob-2" x="34" y="48" width="20" height="12" rx="3" />
+          <rect class="knob knob-3" x="58" y="34" width="20" height="12" rx="3" />
         </svg>
       </span>
     </button>
     <div
-      id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group" popover="manual"
+      id="bewly-loudness-panel"
+      ref="panel"
+      class="loudness-panel"
+      role="group"
+      popover="manual"
       :aria-label="t('settings.player_adjustment.title')"
     >
       <!-- 三项分别由设置页开关控制：画面、音画同步，以及同时受「启用局部音量均衡」和「显示播放器音量均衡按钮」控制的音量均衡 -->
@@ -314,13 +345,17 @@ onBeforeUnmount(() => {
             {{ t('settings.player_adjustment.rotate_right') }}
           </button>
           <button
-            type="button" class="action-button" :aria-pressed="playerAdjustment.flipX"
+            type="button"
+            class="action-button"
+            :aria-pressed="playerAdjustment.flipX"
             @click="playerAdjustment.flipX = !playerAdjustment.flipX"
           >
             {{ t('settings.player_adjustment.flip_horizontal') }}
           </button>
           <button
-            type="button" class="action-button" :aria-pressed="playerAdjustment.flipY"
+            type="button"
+            class="action-button"
+            :aria-pressed="playerAdjustment.flipY"
             @click="playerAdjustment.flipY = !playerAdjustment.flipY"
           >
             {{ t('settings.player_adjustment.flip_vertical') }}
@@ -330,53 +365,93 @@ onBeforeUnmount(() => {
       <div v-if="settings.playerAudioDelayEnabled" class="panel-section">
         <div class="section-heading">
           <span>{{ t('settings.player_adjustment.audio_sync') }}</span>
-          <button v-if="playerAdjustment.audioDelay > 0" type="button" class="text-button" @click="playerAdjustment.audioDelay = 0">
+          <button
+            v-if="playerAdjustment.audioDelay > 0"
+            type="button"
+            class="text-button"
+            @click="playerAdjustment.audioDelay = 0"
+          >
             {{ t('settings.player_adjustment.reset') }}
           </button>
         </div>
         <label class="parameter">
-          <span>{{ t('settings.player_adjustment.audio_delay') }} <output>{{ playerAdjustment.audioDelay }} ms</output></span>
+          <span
+            >{{ t('settings.player_adjustment.audio_delay') }}
+            <output>{{ playerAdjustment.audioDelay }} ms</output></span
+          >
           <input
-            type="range" :value="playerAdjustment.audioDelay" min="0" max="1000" step="10"
+            type="range"
+            :value="playerAdjustment.audioDelay"
+            min="0"
+            max="1000"
+            step="10"
             :aria-label="t('settings.player_adjustment.audio_delay')"
             :style="{ '--loudness-progress': `${playerAdjustment.audioDelay / 10}%` }"
             @input="updateAudioDelay"
-          >
+          />
         </label>
         <div class="hint" role="status">
           {{ delayNotice }}
         </div>
       </div>
-      <div v-if="settings.localLoudnessEnabled && settings.showLocalLoudnessControl" class="panel-section">
+      <div
+        v-if="settings.localLoudnessEnabled && settings.showLocalLoudnessControl"
+        class="panel-section"
+      >
         <div class="section-heading">
           {{ t('settings.local_loudness.title') }}
         </div>
         <label class="toggle-row">
           <span>{{ t('settings.local_loudness.enable') }}</span>
-          <input v-model="loudnessOn" type="checkbox" class="native-switch">
+          <input v-model="loudnessOn" type="checkbox" class="native-switch" />
         </label>
         <label class="parameter">
-          <span>{{ t('settings.local_loudness.target') }} <output>{{ settings.localLoudnessTarget }} LUFS</output></span>
+          <span
+            >{{ t('settings.local_loudness.target') }}
+            <output>{{ settings.localLoudnessTarget }} LUFS</output></span
+          >
           <input
-            type="range" :value="settings.localLoudnessTarget" min="-24" max="-14" :aria-label="t('settings.local_loudness.target')"
-            :style="{ '--loudness-progress': `${(settings.localLoudnessTarget + 24) / 10 * 100}%` }"
+            type="range"
+            :value="settings.localLoudnessTarget"
+            min="-24"
+            max="-14"
+            :aria-label="t('settings.local_loudness.target')"
+            :style="{
+              '--loudness-progress': `${((settings.localLoudnessTarget + 24) / 10) * 100}%`,
+            }"
             @input="updateParameter($event, 'localLoudnessTarget')"
-          >
+          />
         </label>
         <label class="parameter">
-          <span>{{ t('settings.local_loudness.strength') }} <output>{{ settings.localLoudnessStrength }}%</output></span>
-          <input
-            type="range" :value="settings.localLoudnessStrength" min="40" max="100" :aria-label="t('settings.local_loudness.strength')"
-            :style="{ '--loudness-progress': `${(settings.localLoudnessStrength - 40) / 60 * 100}%` }"
-            @input="updateParameter($event, 'localLoudnessStrength')"
+          <span
+            >{{ t('settings.local_loudness.strength') }}
+            <output>{{ settings.localLoudnessStrength }}%</output></span
           >
+          <input
+            type="range"
+            :value="settings.localLoudnessStrength"
+            min="40"
+            max="100"
+            :aria-label="t('settings.local_loudness.strength')"
+            :style="{
+              '--loudness-progress': `${((settings.localLoudnessStrength - 40) / 60) * 100}%`,
+            }"
+            @input="updateParameter($event, 'localLoudnessStrength')"
+          />
         </label>
         <div class="status">
           <div class="status-heading">
             <span>{{ t('settings.local_loudness.status') }}</span>
-            <span v-if="displayState === 'active' && gain !== null">{{ gain > 0 ? '+' : '' }}{{ gain.toFixed(1) }} dB</span>
+            <span v-if="displayState === 'active' && gain !== null"
+              >{{ gain > 0 ? '+' : '' }}{{ gain.toFixed(1) }} dB</span
+            >
           </div>
-          <svg class="gain-chart" viewBox="0 0 264 98" role="img" :aria-label="t('settings.local_loudness.gain_history')">
+          <svg
+            class="gain-chart"
+            viewBox="0 0 264 98"
+            role="img"
+            :aria-label="t('settings.local_loudness.gain_history')"
+          >
             <title>{{ t('settings.local_loudness.gain_history') }}</title>
             <path class="chart-grid" d="M30 8H256 M30 26H256 M30 80H256" />
             <text x="0" y="12">+6</text>
@@ -525,7 +600,7 @@ onBeforeUnmount(() => {
   &:hover {
     background: rgba(255, 255, 255, 0.2);
   }
-  &[aria-pressed="true"] {
+  &[aria-pressed='true'] {
     background: var(--bew-theme-color, #00a1d6);
   }
 }
@@ -533,7 +608,7 @@ onBeforeUnmount(() => {
 .loudness-button.is-adjusted {
   position: relative;
   &::after {
-    content: "";
+    content: '';
     position: absolute;
     top: 6px;
     right: 4px;
@@ -558,7 +633,7 @@ onBeforeUnmount(() => {
 .parameter output {
   color: rgba(255, 255, 255, 0.8);
 }
-input[type="range"] {
+input[type='range'] {
   appearance: none;
   width: 100%;
   height: 4px;
@@ -599,7 +674,7 @@ input[type="range"] {
   background: transparent;
   cursor: pointer;
   &::after {
-    content: "";
+    content: '';
     position: absolute;
     top: 2px;
     left: 2px;

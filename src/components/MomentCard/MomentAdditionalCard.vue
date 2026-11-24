@@ -6,7 +6,11 @@ import type { DisplayAdditional } from './types'
 import { getMomentThumbnailUrl } from './utils'
 
 // 动态附加卡：预约、UP 主推荐、商品、充电档位等。预约类附加卡提供原地预约按钮。
-const { additional, charge = false, reservationLoading = false } = defineProps<{
+const {
+  additional,
+  charge = false,
+  reservationLoading = false,
+} = defineProps<{
   additional: DisplayAdditional
   /** 充电专属动态：不展示附加卡封面，操作使用充电配色 */
   charge?: boolean
@@ -20,15 +24,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const isReservation = computed(() => Boolean(
-  additional.reservationId
-  && (additional.isVideoReservation || additional.isLiveReservation),
-))
+const isReservation = computed(() =>
+  Boolean(
+    additional.reservationId && (additional.isVideoReservation || additional.isLiveReservation),
+  ),
+)
 
 const reservationActionLabel = computed(() =>
   additional.isReserved
     ? t('moment_card.cancel_reservation')
-    : (additional.action || t('moment_card.reserve')),
+    : additional.action || t('moment_card.reserve'),
 )
 </script>
 
@@ -52,7 +57,7 @@ const reservationActionLabel = computed(() =>
         alt=""
         loading="lazy"
         decoding="async"
-      >
+      />
       <span>
         <strong>
           {{ additional.title || t('moment_card.additional') }}
@@ -87,7 +92,7 @@ const reservationActionLabel = computed(() =>
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__additional {
   display: grid;

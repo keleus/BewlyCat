@@ -41,8 +41,7 @@ function isCurrentAuthorization(controller: AbortController) {
 }
 
 function schedulePolling(controller: AbortController) {
-  if (!isCurrentAuthorization(controller))
-    return
+  if (!isCurrentAuthorization(controller)) return
 
   pollLoginQRCodeTimer = setTimeout(() => {
     pollLoginQRCodeTimer = undefined
@@ -51,8 +50,7 @@ function schedulePolling(controller: AbortController) {
 }
 
 async function setLoginQRCode() {
-  if (!active)
-    return
+  if (!active) return
 
   // 刷新二维码同时取消旧请求，旧二维码的迟到响应不能继续登录或启动轮询。
   stopPolling()
@@ -63,38 +61,31 @@ async function setLoginQRCode() {
   qrcodeMsg.value = ''
   try {
     const res = await getAppLoginQRCode(controller.signal)
-    if (!isCurrentAuthorization(controller))
-      return
+    if (!isCurrentAuthorization(controller)) return
 
     if (res.code === 0) {
       loginQRCodeUrl.value = res.data.url
       authCode.value = res.data.auth_code
       schedulePolling(controller)
-    }
-    else {
+    } else {
       qrcodeMsg.value = res.message
     }
-  }
-  catch (error) {
-    if (!isCurrentAuthorization(controller))
-      return
+  } catch (error) {
+    if (!isCurrentAuthorization(controller)) return
     qrcodeMsg.value = error instanceof Error ? error.message : String(error)
     console.error(error)
   }
 }
 
 async function pollLoginQRCode(controller: AbortController) {
-  if (!isCurrentAuthorization(controller))
-    return
+  if (!isCurrentAuthorization(controller)) return
 
   try {
     const pollRes = await pollAppLoginQRCode(authCode.value, controller.signal)
-    if (!isCurrentAuthorization(controller))
-      return
+    if (!isCurrentAuthorization(controller)) return
 
     // 0：成功；86038：二维码已失效；86039：未确认；86090：已扫码未确认。
-    if (pollRes.code !== 0)
-      qrcodeMsg.value = pollRes.message
+    if (pollRes.code !== 0) qrcodeMsg.value = pollRes.message
 
     if (pollRes.code === 0) {
       deactivate()
@@ -102,30 +93,24 @@ async function pollLoginQRCode(controller: AbortController) {
       toast.success(t('settings.authorization_success'))
       emit('authorized')
       emit('close')
-    }
-    else if (pollRes.code === 86038) {
+    } else if (pollRes.code === 86038) {
       await setLoginQRCode()
-    }
-    else if (pollRes.code === -3 || pollRes.code === -400 || pollRes.code === -404) {
+    } else if (pollRes.code === -3 || pollRes.code === -400 || pollRes.code === -404) {
       stopPolling()
       toast.error(pollRes.message)
     }
-  }
-  catch (error) {
-    if (!isCurrentAuthorization(controller))
-      return
+  } catch (error) {
+    if (!isCurrentAuthorization(controller)) return
     qrcodeMsg.value = error instanceof Error ? error.message : String(error)
     console.error(error)
-  }
-  finally {
+  } finally {
     // 上一轮完成后才安排下一轮，慢请求不会积压；关闭后也不会重新启动。
     schedulePolling(controller)
   }
 }
 
 function activate() {
-  if (active)
-    return
+  if (active) return
   active = true
   void setLoginQRCode()
 }

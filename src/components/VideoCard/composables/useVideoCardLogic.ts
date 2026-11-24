@@ -28,7 +28,10 @@ interface VideoCardProps {
   moreBtn?: boolean
 }
 
-export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>, savedState?: VideoCardState) {
+export function useVideoCardLogic(
+  propsOrGetter: MaybeRefOrGetter<VideoCardProps>,
+  savedState?: VideoCardState,
+) {
   const toast = useToast()
   const { openIframeDrawer, openVideoDialog } = useBewlyApp()
   const topBarStore = useTopBarStore()
@@ -95,18 +98,19 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
 
   // Computed
   const videoUrl = computed(() => {
-    if (removed.value || !props.value.video)
-      return undefined
+    if (removed.value || !props.value.video) return undefined
 
     let url = ''
     if (props.value.video.url || props.value.video.bvid || props.value.video.aid)
-      url = getCurrentVideoUrl(props.value.video, settings.value.resumeFromVideoPreview ? videoCurrentTime.value : null)
+      url = getCurrentVideoUrl(
+        props.value.video,
+        settings.value.resumeFromVideoPreview ? videoCurrentTime.value : null,
+      )
     else if (props.value.video.epid)
       url = `https://www.bilibili.com/bangumi/play/ep${props.value.video.epid}/`
     else if (props.value.video.roomid)
       url = `https://live.bilibili.com/${props.value.video.roomid}/`
-    else
-      return ''
+    else return ''
 
     try {
       const urlObj = new URL(url)
@@ -114,8 +118,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
         urlObj.pathname += '/'
       }
       return localizeBilibiliUrl(urlObj.toString())
-    }
-    catch {
+    } catch {
       return url
     }
   })
@@ -138,23 +141,23 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
   })
 
-  const shouldHideOverlayElements = computed(() =>
-    props.value.showPreview
-    && settings.value.enableVideoPreview
-    && isHover.value
-    && previewVideoUrl.value
-    && topBarStore.isLogin,
+  const shouldHideOverlayElements = computed(
+    () =>
+      props.value.showPreview &&
+      settings.value.enableVideoPreview &&
+      isHover.value &&
+      previewVideoUrl.value &&
+      topBarStore.isLogin,
   )
 
   // Helper function to extract author mids from video
   function getAuthorMids(video?: Video): number[] {
-    if (!video?.author)
-      return []
+    if (!video?.author) return []
 
     // author can be a single Author object or an array of Authors
     const authors = Array.isArray(video.author) ? video.author : [video.author]
     return authors
-      .map(author => author.mid)
+      .map((author) => author.mid)
       .filter((mid): mid is number => typeof mid === 'number')
   }
 
@@ -164,116 +167,115 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   })
 
   // Watch
-  watch([isHover, previewIdentity], async ([newValue, identity], [, previousIdentity], onCleanup) => {
-    let cancelled = false
-    onCleanup(() => {
-      cancelled = true
-    })
-    const isStale = () => cancelled || isDisposed.value || !isActive.value || !isHover.value
+  watch(
+    [isHover, previewIdentity],
+    async ([newValue, identity], [, previousIdentity], onCleanup) => {
+      let cancelled = false
+      onCleanup(() => {
+        cancelled = true
+      })
+      const isStale = () => cancelled || isDisposed.value || !isActive.value || !isHover.value
 
-    if (identity !== previousIdentity) {
-      clearPreviewVideoUrl()
-      videoCurrentTime.value = null
-    }
-
-    if (!props.value.video || !newValue)
-      return
-
-    // 如果组件已卸载，不执行任何操作
-    if (isStale())
-      return
-
-    // Moments feed preview control: Only load preview if video belongs to selected uploader
-    // This prevents loading previews for videos from other uploaders when switching
-    if (momentsSelectedUploader.value !== null && props.value.video.sourceUploaderMid !== momentsSelectedUploader.value) {
-      const authorMids = getAuthorMids(props.value.video)
-      // If no authors found, don't load preview
-      if (authorMids.length === 0)
-        return
-      // If a specific uploader is selected and video doesn't belong to them, don't load preview
-      if (!authorMids.includes(momentsSelectedUploader.value))
-        return
-    }
-
-    if (props.value.showPreview && settings.value.enableVideoPreview && !previewVideoUrl.value) {
-      // 检查登录状态，未登录不允许视频预览
-      if (!topBarStore.isLogin)
-        return
-
-      // Handle live stream preview
-      if (props.value.video.roomid) {
-        try {
-          const res = await api.live.getLivePlayUrl({
-            cid: props.value.video.roomid,
-            platform: 'web', // 使用web平台获取FLV格式，加载更快
-            qn: 80, // 流畅画质，适合预览
-          })
-          // 再次检查是否已卸载
-          if (isStale())
-            return
-          if (res.code === 0 && res.data.durl && res.data.durl.length > 0) {
-            previewVideoUrl.value = res.data.durl[0].url
-          }
-        }
-        catch {
-          // Ignore error
-        }
+      if (identity !== previousIdentity) {
+        clearPreviewVideoUrl()
+        videoCurrentTime.value = null
       }
-      // Handle video preview
-      else if (props.value.video.aid || props.value.video.bvid) {
-        let cid = props.value.video.cid
-        if (!cid) {
+
+      if (!props.value.video || !newValue) return
+
+      // 如果组件已卸载，不执行任何操作
+      if (isStale()) return
+
+      // Moments feed preview control: Only load preview if video belongs to selected uploader
+      // This prevents loading previews for videos from other uploaders when switching
+      if (
+        momentsSelectedUploader.value !== null &&
+        props.value.video.sourceUploaderMid !== momentsSelectedUploader.value
+      ) {
+        const authorMids = getAuthorMids(props.value.video)
+        // If no authors found, don't load preview
+        if (authorMids.length === 0) return
+        // If a specific uploader is selected and video doesn't belong to them, don't load preview
+        if (!authorMids.includes(momentsSelectedUploader.value)) return
+      }
+
+      if (props.value.showPreview && settings.value.enableVideoPreview && !previewVideoUrl.value) {
+        // 检查登录状态，未登录不允许视频预览
+        if (!topBarStore.isLogin) return
+
+        // Handle live stream preview
+        if (props.value.video.roomid) {
           try {
-            const res: VideoInfo = await api.video.getVideoInfo({
-              bvid: props.value.video.bvid,
+            const res = await api.live.getLivePlayUrl({
+              cid: props.value.video.roomid,
+              platform: 'web', // 使用web平台获取FLV格式，加载更快
+              qn: 80, // 流畅画质，适合预览
             })
-            // 检查是否已卸载
-            if (isStale())
-              return
-            if (res.code === 0)
-              cid = res.data.cid
-          }
-          catch {
+            // 再次检查是否已卸载
+            if (isStale()) return
+            if (res.code === 0 && res.data.durl && res.data.durl.length > 0) {
+              previewVideoUrl.value = res.data.durl[0].url
+            }
+          } catch {
             // Ignore error
           }
         }
-        // 如果组件已卸载，不发起请求
-        if (isStale())
-          return
-        try {
-          const res: VideoPreviewResult = await api.video.getVideoPreview({
-            bvid: props.value.video.bvid,
-            cid,
-          })
-          // 检查是否已卸载，已卸载则不更新状态
-          if (isStale())
-            return
-          if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
-            previewVideoUrl.value = res.data.durl[0].url
-        }
-        catch {
-          // Preview requests can fail after leaving the card or closing the page.
+        // Handle video preview
+        else if (props.value.video.aid || props.value.video.bvid) {
+          let cid = props.value.video.cid
+          if (!cid) {
+            try {
+              const res: VideoInfo = await api.video.getVideoInfo({
+                bvid: props.value.video.bvid,
+              })
+              // 检查是否已卸载
+              if (isStale()) return
+              if (res.code === 0) cid = res.data.cid
+            } catch {
+              // Ignore error
+            }
+          }
+          // 如果组件已卸载，不发起请求
+          if (isStale()) return
+          try {
+            const res: VideoPreviewResult = await api.video.getVideoPreview({
+              bvid: props.value.video.bvid,
+              cid,
+            })
+            // 检查是否已卸载，已卸载则不更新状态
+            if (isStale()) return
+            if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
+              previewVideoUrl.value = res.data.durl[0].url
+          } catch {
+            // Preview requests can fail after leaving the card or closing the page.
+          }
         }
       }
-    }
-  })
+    },
+  )
 
-  watch([previewVideoUrl, isHover], ([url, hover]) => {
-    if (!url) {
-      releaseVideoPreviewCacheEntry(previewCacheKey)
-      return
-    }
+  watch(
+    [previewVideoUrl, isHover],
+    ([url, hover]) => {
+      if (!url) {
+        releaseVideoPreviewCacheEntry(previewCacheKey)
+        return
+      }
 
-    retainVideoPreviewCacheEntry(previewCacheKey, clearPreviewVideoUrl, hover)
-  }, { immediate: true })
+      retainVideoPreviewCacheEntry(previewCacheKey, clearPreviewVideoUrl, hover)
+    },
+    { immediate: true },
+  )
 
-  watch([() => props.value.showPreview, () => settings.value.enableVideoPreview], ([showPreview, enableVideoPreview]) => {
-    if (showPreview && enableVideoPreview)
-      return
+  watch(
+    [() => props.value.showPreview, () => settings.value.enableVideoPreview],
+    ([showPreview, enableVideoPreview]) => {
+      if (showPreview && enableVideoPreview) return
 
-    previewVideoUrl.value = ''
-    isHover.value = false
-  })
+      previewVideoUrl.value = ''
+      isHover.value = false
+    },
+  )
 
   // Methods
   function handleMouseEnter(event?: MouseEvent) {
@@ -283,18 +285,14 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       mouseLeaveTimeOut.value = null
     }
 
-    if (mouseEnterTimeOut.value)
-      clearTimeout(mouseEnterTimeOut.value)
+    if (mouseEnterTimeOut.value) clearTimeout(mouseEnterTimeOut.value)
     mouseEnterTimeOut.value = null
 
     // Dragging a text selection or a link across cards is not a preview intent.
-    if (event?.buttons)
-      return
+    if (event?.buttons) return
 
     const previewEnabled = props.value.showPreview && settings.value.enableVideoPreview
-    const delay = previewEnabled
-      ? (settings.value.hoverVideoCardDelayed ? 1200 : 500)
-      : 1000
+    const delay = previewEnabled ? (settings.value.hoverVideoCardDelayed ? 1200 : 500) : 1000
     mouseEnterTimeOut.value = window.setTimeout(() => {
       mouseEnterTimeOut.value = null
       isHover.value = true
@@ -309,16 +307,14 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
 
     // Delay hiding to prevent flicker when mouse hovers near boundaries
-    if (mouseLeaveTimeOut.value)
-      clearTimeout(mouseLeaveTimeOut.value)
+    if (mouseLeaveTimeOut.value) clearTimeout(mouseLeaveTimeOut.value)
 
     mouseLeaveTimeOut.value = window.setTimeout(() => {
       mouseLeaveTimeOut.value = null
 
       // Entering native fullscreen moves the video into the browser's top layer,
       // which makes the card receive mouseleave even though the preview is still active.
-      if (isPreviewFullscreen.value)
-        return
+      if (isPreviewFullscreen.value) return
 
       isHover.value = false
     }, 100) // Short delay to debounce boundary hover
@@ -344,23 +340,37 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   }
 
   function handleClick(event: MouseEvent) {
-    if (settings.value.videoCardLinkOpenMode === 'background' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
+    if (
+      settings.value.videoCardLinkOpenMode === 'background' &&
+      videoUrl.value &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       event.preventDefault()
       openLinkInBackground(videoUrl.value)
     }
-    if (settings.value.videoCardLinkOpenMode === 'drawer' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
+    if (
+      settings.value.videoCardLinkOpenMode === 'drawer' &&
+      videoUrl.value &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       event.preventDefault()
       openIframeDrawer(videoUrl.value)
     }
-    if (settings.value.videoCardLinkOpenMode === 'dialog' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
+    if (
+      settings.value.videoCardLinkOpenMode === 'dialog' &&
+      videoUrl.value &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       event.preventDefault()
       openVideoDialog(videoUrl.value)
     }
   }
 
   function handleMoreBtnClick() {
-    if (!moreBtnRef.value)
-      return
+    if (!moreBtnRef.value) return
     const anchor = moreBtnRef.value.getBoundingClientRect()
     const position = computeFloatingMenuPosition(anchor, window.innerWidth, window.innerHeight)
 
@@ -380,8 +390,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     const video = props.value.video
 
     if (props.value.type === 'appRcmd' && video) {
-      if (!await ensureFreshAppAccessToken())
-        return
+      if (!(await ensureFreshAppAccessToken())) return
 
       // 与 PiliPlus 的 feedDislikeCancel 一致，撤销只需 goto 与 id
       requestAppClient('feedDislikeCancel', {
@@ -393,13 +402,11 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       }).then((res) => {
         if (res.code === 0) {
           removed.value = false
-        }
-        else {
+        } else {
           toast.error(res.message)
         }
       })
-    }
-    else {
+    } else {
       removed.value = false
     }
   }

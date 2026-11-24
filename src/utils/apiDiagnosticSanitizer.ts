@@ -52,7 +52,10 @@ const SENSITIVE_KEY_SOURCE = [
 
 const SENSITIVE_KEY_PATTERN = new RegExp(`^(?:${SENSITIVE_KEY_SOURCE})$`, 'i')
 const QUERY_PAIR_PATTERN = new RegExp(`(^|[?&;\\s,"'])(${SENSITIVE_KEY_SOURCE})=[^&;\\s"',]*`, 'gi')
-const JSON_PAIR_PATTERN = new RegExp(`"(${SENSITIVE_KEY_SOURCE})"\\s*:\\s*(?:"[^"]*"|-?\\d+(?:\\.\\d+)?)`, 'gi')
+const JSON_PAIR_PATTERN = new RegExp(
+  `"(${SENSITIVE_KEY_SOURCE})"\\s*:\\s*(?:"[^"]*"|-?\\d+(?:\\.\\d+)?)`,
+  'gi',
+)
 const COOKIE_HEADER_PATTERN = /\b((?:set-)?cookie)\s*:\s*[^\r\n]*/gi
 
 function isSensitiveKey(key: string): boolean {
@@ -78,21 +81,24 @@ export function sanitizeDiagnosticText(text: string, maxLength = MAX_STRING_LENG
 
 /** 深拷贝并脱敏；结果可安全地跨上下文传递，且体积有上限。 */
 export function sanitizeDiagnosticValue(value: unknown, depth = 0): unknown {
-  if (value === undefined || value === null || typeof value === 'number' || typeof value === 'boolean')
+  if (
+    value === undefined ||
+    value === null ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  )
     return value
-  if (typeof value === 'string')
-    return sanitizeDiagnosticText(value)
+  if (typeof value === 'string') return sanitizeDiagnosticText(value)
   if (value instanceof URLSearchParams)
     return sanitizeDiagnosticValue(Object.fromEntries(value), depth)
-  if (typeof value !== 'object')
-    return String(value)
-  if (depth >= MAX_DEPTH)
-    return '…'
+  if (typeof value !== 'object') return String(value)
+  if (depth >= MAX_DEPTH) return '…'
 
   if (Array.isArray(value)) {
-    const items = value.slice(0, MAX_ARRAY_ITEMS).map(item => sanitizeDiagnosticValue(item, depth + 1))
-    if (value.length > MAX_ARRAY_ITEMS)
-      items.push(`…(+${value.length - MAX_ARRAY_ITEMS})`)
+    const items = value
+      .slice(0, MAX_ARRAY_ITEMS)
+      .map((item) => sanitizeDiagnosticValue(item, depth + 1))
+    if (value.length > MAX_ARRAY_ITEMS) items.push(`…(+${value.length - MAX_ARRAY_ITEMS})`)
     return items
   }
 
@@ -100,13 +106,12 @@ export function sanitizeDiagnosticValue(value: unknown, depth = 0): unknown {
   const result: Record<string, unknown> = {}
   for (const [key, item] of entries.slice(0, MAX_OBJECT_KEYS))
     result[key] = isSensitiveKey(key) ? maskValue(item) : sanitizeDiagnosticValue(item, depth + 1)
-  if (entries.length > MAX_OBJECT_KEYS)
-    result['…'] = `+${entries.length - MAX_OBJECT_KEYS}`
+  if (entries.length > MAX_OBJECT_KEYS) result['…'] = `+${entries.length - MAX_OBJECT_KEYS}`
   return result
 }
 
 /** 拆分地址与查询参数，让参数和普通对象走同一套按键名脱敏。 */
-export function sanitizeDiagnosticUrl(url: string): { url: string, params?: unknown } {
+export function sanitizeDiagnosticUrl(url: string): { url: string; params?: unknown } {
   try {
     const { origin, pathname, searchParams } = new URL(url)
     const hasParams = [...searchParams.keys()].length > 0
@@ -114,15 +119,13 @@ export function sanitizeDiagnosticUrl(url: string): { url: string, params?: unkn
       url: `${origin}${pathname}`,
       params: hasParams ? sanitizeDiagnosticValue(searchParams) : undefined,
     }
-  }
-  catch {
+  } catch {
     return { url: sanitizeDiagnosticText(url) }
   }
 }
 
 export function sanitizeDiagnosticBody(body: unknown): unknown {
-  if (body === undefined || body === null)
-    return undefined
+  if (body === undefined || body === null) return undefined
   if (typeof FormData !== 'undefined' && body instanceof FormData) {
     const fields: Record<string, string> = {}
     body.forEach((value, key) => {
@@ -130,13 +133,11 @@ export function sanitizeDiagnosticBody(body: unknown): unknown {
     })
     return sanitizeDiagnosticValue(fields)
   }
-  if (typeof body !== 'string')
-    return sanitizeDiagnosticValue(body)
+  if (typeof body !== 'string') return sanitizeDiagnosticValue(body)
 
   try {
     return sanitizeDiagnosticValue(JSON.parse(body))
-  }
-  catch {
+  } catch {
     return /^[^=&\s]+=/.test(body)
       ? sanitizeDiagnosticValue(new URLSearchParams(body))
       : sanitizeDiagnosticText(body)

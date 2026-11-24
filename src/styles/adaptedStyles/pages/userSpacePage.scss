@@ -76,7 +76,13 @@
     #page-video #submit-video-type-filter a.active,
     .n .n-data.router-link-active .n-data-k,
     .n .n-data.router-link-active .n-data-v,
-    .wrapper .edit-video-modal .target-favlist .target-favitem:hover .target-fav-title .fav-meta .fav-name,
+    .wrapper
+      .edit-video-modal
+      .target-favlist
+      .target-favitem:hover
+      .target-fav-title
+      .fav-meta
+      .fav-name,
     .i-live .i-live-off-guest a,
     .modal-wrapper .modal-header-close:hover,
     a:hover,
@@ -147,9 +153,9 @@
     #page-fav .fav-main .fav-action-bottom .select-cancel,
     #page-fav .fav-main .fav-action-top .back-to-info:hover,
     .sub-tabs .filter-content .cur-filter:hover,
-    .fans-name[style*="color"],
+    .fans-name[style*='color'],
     .dynamic-keyword,
-    .card .main-content .user-name a[style*="color"],
+    .card .main-content .user-name a[style*='color'],
     .dynamic-link-hover-bg,
     .im-popup .bp-popup-panel .title-ctnr .popup-title,
     .paly-all-btn:hover .video-commonplayer_play {
@@ -182,14 +188,14 @@
     .bl-button--ghost,
     .bl-button--ghost:hover,
     .h .report-popup-item.checked .report-popup-item-checkbox,
-    .h .report-popup .report-popup-tip__radio input[type="radio"]:checked + label:before,
+    .h .report-popup .report-popup-tip__radio input[type='radio']:checked + label:before,
     .btn-container .btn:hover,
     .follow-dialog-wrap .follow-dialog-window .content .group-list .add-group .add-btn:hover,
     .follow-dialog-wrap .follow-dialog-window .content .group-list .add-group .input-group,
     .follow-dialog-wrap .follow-dialog-window .content .group-list .add-group .input-group .submit,
-    .content .group-list li:hover input[type="checkbox"] + i,
-    .content .group-list li input[type="checkbox"]:checked + i,
-    .content .group-list li input[type="checkbox"]:checked:hover + i,
+    .content .group-list li:hover input[type='checkbox'] + i,
+    .content .group-list li input[type='checkbox']:checked + i,
+    .content .group-list li input[type='checkbox']:checked:hover + i,
     .comment-bilibili-con .btn .btn-cancel:hover,
     .comment-bilibili-con .btn .btn-submit,
     #page-setting #setting-new-tag:focus + #setting-new-tag-btn,
@@ -239,7 +245,7 @@
     .bl-button--primary,
     .bl-button--ghost:hover,
     .h .report-popup-item.checked .report-popup-item-checkbox,
-    .h .report-popup .report-popup-tip__radio input[type="radio"]:checked + label:after,
+    .h .report-popup .report-popup-tip__radio input[type='radio']:checked + label:after,
     .follow-dialog-wrap .follow-dialog-window .bottom .btn,
     .comment-bilibili-con .btn .btn-submit,
     .bili-topic-new__default__create__icon:after,
@@ -298,7 +304,12 @@
     .bp-svg-icon.comment-hover,
     .custom-like-icon.zan-a-hover,
     .bp-svg-icon.transmit-hover,
-    .wrapper .edit-video-modal .target-favlist .target-favitem .target-fav-title .fav-select.selected,
+    .wrapper
+      .edit-video-modal
+      .target-favlist
+      .target-favitem
+      .target-fav-title
+      .fav-select.selected,
     #page-fav .fav-main .fav-action-bottom .fav-action-fixtop .clearfix:not(.filter-disable) .icon,
     .page-head .v-filter-line .style .icon.active,
     .page-head .v-filter-line .style .icon:hover,
@@ -318,19 +329,19 @@
       color: white !important;
     }
 
-    .content .group-list li input[type="checkbox"] + i {
+    .content .group-list li input[type='checkbox'] + i {
       background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAMZJREFUOBFjZACCY8cuSP/4+6ebkYHB4T8DgyRIjFgA1PMcqOcABzNLqZWVwVNGkGE///45w8DANIGZ898iOxOT58QaBlJ36MwZyb/fmeIYGP4VsDOzmDDuO3xmGSMD00VHW6NOUgxCV7v/8Lny/wz/9JlA3gS5DF0BqXyQGSCzGIAuBAYBdQDILCbqGIUwZdRARFiQyxoNQ3JDDqFvCIQhqDwDFUEIR5PHApkBMosJVDhCyjPyDILpApkBMov6BSzIBmpWAQCEVFxRmF8CTgAAAABJRU5ErkJggg==);
       border-width: 1px;
       border-radius: 5px;
       border-color: #bec3cc;
     }
 
-    .content .group-list li input[type="checkbox"]:hover + i {
+    .content .group-list li input[type='checkbox']:hover + i {
       background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAMZJREFUOBFjZACCY8cuSP/4+6ebkYHB4T8DgyRIjFgA1PMcqOcABzNLqZWVwVNGkGE///45w8DANIGZ898iOxOT58QaBlJ36MwZyb/fmeIYGP4VsDOzmDDuO3xmGSMD00VHW6NOUgxCV7v/8Lny/wz/9JlA3gS5DF0BqXyQGSCzGIAuBAYBdQDILCbqGIUwZdRARFiQyxoNQ3JDDqFvCIQhqDwDFUEIR5PHApkBMosJVDhCyjPyDILpApkBMov6BSzIBmpWAQCEVFxRmF8CTgAAAABJRU5ErkJggg==);
     }
 
-    .content .group-list li input[type="checkbox"]:checked + i,
-    .content .group-list li input[type="checkbox"]:checked:hover + i {
+    .content .group-list li input[type='checkbox']:checked + i,
+    .content .group-list li input[type='checkbox']:checked:hover + i {
       background: var(--bew-theme-color)
         url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB2aWV3Qm94PSIwIDAgOSA5IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNy41IDIuNUwzLjc1IDYuMjVMMS41IDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+)
         no-repeat 50% / 9px;
@@ -378,7 +389,13 @@
     #page-article .row .breadcrumb .item,
     .album-list__title,
     .bangumi-pagelistbox .p,
-    .wrapper .edit-video-modal .target-favlist .target-favitem .target-fav-title .fav-meta .fav-name,
+    .wrapper
+      .edit-video-modal
+      .target-favlist
+      .target-favitem
+      .target-fav-title
+      .fav-meta
+      .fav-name,
     .wrapper .edit-video-modal .edit-video-title,
     #page-series-detail .channel-detail .content .breadcrumb .item,
     .user-info .info-content .info-value,

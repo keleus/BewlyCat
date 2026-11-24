@@ -3,14 +3,17 @@ import { useSettingsSearchNode } from '../composables/useSettingsSearchFilter'
 
 type RightWidth = 'default' | 'auto'
 
-const props = withDefaults(defineProps<{
-  title?: string
-  desc?: string
-  rightWidth?: RightWidth
-  badge?: string
-}>(), {
-  rightWidth: 'default',
-})
+const props = withDefaults(
+  defineProps<{
+    title?: string
+    desc?: string
+    rightWidth?: RightWidth
+    badge?: string
+  }>(),
+  {
+    rightWidth: 'default',
+  },
+)
 
 const { visible, selfMatch } = useSettingsSearchNode(() => props.title)
 </script>
@@ -24,7 +27,11 @@ const { visible, selfMatch } = useSettingsSearchNode(() => props.title)
     py-4
   >
     <div
-      class="b-settings-item-row settings-item-content" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
+      class="b-settings-item-row settings-item-content"
+      :class="`right-width-${rightWidth}`"
+      flex="~ gap-4"
+      justify-between
+      items-center
     >
       <div class="left-content" flex-1 min-w-0>
         <div>
@@ -72,20 +79,20 @@ const { visible, selfMatch } = useSettingsSearchNode(() => props.title)
 
 .right-width-auto {
   .left-content {
-    --uno: "w-auto flex-1 min-w-0";
+    --uno: 'w-auto flex-1 min-w-0';
   }
 
   .right-content {
-    --uno: "w-auto shrink-0";
+    --uno: 'w-auto shrink-0';
   }
 }
 
 :deep(.right-content > *) {
-  --uno: "float-right clear-both";
+  --uno: 'float-right clear-both';
 }
 
 .b-settings-item + .b-settings-item {
-  --uno: "border-t-1 border-$bew-border-color";
+  --uno: 'border-t-1 border-$bew-border-color';
 }
 
 .settings-item-title {

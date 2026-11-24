@@ -30,7 +30,6 @@ const API_LIVE = {
     },
     afterHandle: AHS.J_D,
   },
-
 } satisfies APIMAP
 
 export default API_LIVE

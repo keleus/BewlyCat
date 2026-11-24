@@ -17,8 +17,7 @@ let cardResizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   const el = resolveCardElement()
-  if (!el || typeof ResizeObserver === 'undefined')
-    return
+  if (!el || typeof ResizeObserver === 'undefined') return
   cardResizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       const width = entry.contentRect.width
@@ -35,10 +34,8 @@ onBeforeUnmount(() => {
 
 function resolveCardElement(): HTMLElement | null {
   const el = cardRootRef.value
-  if (!el)
-    return null
-  if (el instanceof HTMLElement)
-    return el
+  if (!el) return null
+  if (el instanceof HTMLElement) return el
   const exposed = (el as ComponentPublicInstance).$el
   return exposed instanceof HTMLElement ? exposed : null
 }
@@ -76,16 +73,25 @@ const { isDark } = useDark()
       }"
       :href="bangumi.url"
       type="videoCard"
-      gap-4 hover:bg="$bew-fill-2" hover:ring="8 $bew-fill-2"
-      content-visibility-auto intrinsic-size-400px
+      gap-4
+      hover:bg="$bew-fill-2"
+      hover:ring="8 $bew-fill-2"
+      content-visibility-auto
+      intrinsic-size-400px
       transition="background-color duration-300, box-shadow duration-300"
-      rounded="$bew-card-radius" h-fit
+      rounded="$bew-card-radius"
+      h-fit
     >
       <!-- Cover -->
       <div
         :style="{ width: horizontal ? '170px' : '100%' }"
-        tabindex="-1" block
-        rounded="$bew-media-radius" w-full bg="$bew-skeleton" relative shrink-0
+        tabindex="-1"
+        block
+        rounded="$bew-media-radius"
+        w-full
+        bg="$bew-skeleton"
+        relative
+        shrink-0
       >
         <div aspect="12/16" overflow-hidden rounded="$bew-media-radius">
           <!-- badge -->
@@ -95,9 +101,14 @@ const { isDark } = useDark()
               backgroundColor: isDark ? bangumi.badge.bgColorDark : bangumi.badge.bgColor,
             }"
             pos="absolute top-0 right-0"
-            p="x-2 y-1" m-1 rounded="$bew-badge-radius"
-            opacity-100 group-hover:opacity-0 duration-300
-            text="sm white" z-1
+            p="x-2 y-1"
+            m-1
+            rounded="$bew-badge-radius"
+            opacity-100
+            group-hover:opacity-0
+            duration-300
+            text="sm white"
+            z-1
           >
             {{ bangumi.badge.text }}
           </div>
@@ -107,39 +118,40 @@ const { isDark } = useDark()
             v-if="bangumi.rank"
             class="bangumi-rank"
             w-full
-            pos="absolute bottom-0" z-1
+            pos="absolute bottom-0"
+            z-1
             text="white shadow"
-            p-2 h-150px flex items-end
+            p-2
+            h-150px
+            flex
+            items-end
             bg="gradient-to-b gradient-from-transparent gradient-to-[rgba(0,0,0,.6)]"
             rounded-b="$bew-media-radius"
             :style="{
-              '--un-text-shadow': bangumi.rank <= 3 ? '4px 4px 0 var(--bew-theme-color), 6px 6px 0 var(--bew-theme-color-60)' : '',
+              '--un-text-shadow':
+                bangumi.rank <= 3
+                  ? '4px 4px 0 var(--bew-theme-color), 6px 6px 0 var(--bew-theme-color-60)'
+                  : '',
             }"
           >
             {{ bangumi.rank }}
           </div>
 
-          <div
-            overflow-hidden
-            rounded="$bew-media-radius"
-            aspect="12/16"
-            pos="relative"
-          >
+          <div overflow-hidden rounded="$bew-media-radius" aspect="12/16" pos="relative">
             <!-- anime genres -->
             <div
               v-if="bangumi.evaluate || (Array.isArray(bangumi.tags) && bangumi.tags?.length > 0)"
-              pos="absolute bottom-0" w-full h-full p-2
+              pos="absolute bottom-0"
+              w-full
+              h-full
+              p-2
               flex="~ col justify-end"
-              opacity-0 group-hover:opacity-100
+              opacity-0
+              group-hover:opacity-100
               transform="~ translate-y-4 group-hover:translate-y-0"
               transition="opacity duration-300, transform duration-300"
               z-1
-              style="
-                background: linear-gradient(
-                  transparent,
-                  rgba(0, 0, 0, 0.8)
-                );
-              "
+              style="background: linear-gradient(transparent, rgba(0, 0, 0, 0.8))"
             >
               <div mb-4 text="white group-hover:shadow-[0_0_4px_rgba(0,0,0,1)]">
                 {{ bangumi.evaluate }}
@@ -155,7 +167,7 @@ const { isDark } = useDark()
                     p="x-2 y-1"
                     rounded="$bew-radius-half"
                     shrink-0
-                  >{{ tag }}
+                    >{{ tag }}
                   </span>
                 </div>
               </template>
@@ -164,8 +176,11 @@ const { isDark } = useDark()
             <img
               :src="`${removeHttpFromUrl(bangumi.cover)}@466w_622h.webp`"
               :alt="bangumi.title"
-              rounded="$bew-media-radius" aspect="12/16" max-w-full w-full
-            >
+              rounded="$bew-media-radius"
+              aspect="12/16"
+              max-w-full
+              w-full
+            />
 
             <!-- image after hovering -->
             <div
@@ -177,13 +192,14 @@ const { isDark } = useDark()
               transition="opacity duration-300, transform duration-300"
               bg="cover center"
               pos="absolute top-0 left-0"
-              opacity-0 group-hover:opacity-100
+              opacity-0
+              group-hover:opacity-100
               :style="{
                 backgroundImage: `url(${removeHttpFromUrl(
                   bangumi.coverHover || bangumi.cover,
                 )}@672w_378h_1c.webp)`,
               }"
-              style="transition-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);"
+              style="transition-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1)"
             />
           </div>
         </div>
@@ -195,24 +211,26 @@ const { isDark } = useDark()
         }"
       >
         <p un-text="lg" mb-2 class="bew-title-auto">
-          <a
-            :href="bangumi.url" target="_blank"
-            class="keep-two-lines"
-            :title="bangumi.title"
-          >
+          <a :href="bangumi.url" target="_blank" class="keep-two-lines" :title="bangumi.title">
             {{ bangumi.title }}
           </a>
         </p>
         <p v-if="bangumi.view || bangumi.follow" text="sm $bew-text-2" mb-2>
-          <span v-if="bangumi.view" mr-4>{{ $t('common.view', { count: numFormatter(bangumi.view) }, bangumi.view) }}</span>
-          <span v-if="bangumi.follow">{{ $t('common.anime_follow_count', { count: numFormatter(bangumi.follow) }, bangumi.follow) }}</span>
+          <span v-if="bangumi.view" mr-4>{{
+            $t('common.view', { count: numFormatter(bangumi.view) }, bangumi.view)
+          }}</span>
+          <span v-if="bangumi.follow">{{
+            $t('common.anime_follow_count', { count: numFormatter(bangumi.follow) }, bangumi.follow)
+          }}</span>
         </p>
         <div text="sm $bew-text-2" flex flex-wrap gap-2 items-center>
           <div
             v-if="bangumi.capsuleText && bangumi.capsuleText.trim()"
             class="bangumi-capsule"
-            text="$bew-theme-color" bg="$bew-theme-color-20"
-            p="x-2" rounded="$bew-badge-radius"
+            text="$bew-theme-color"
+            bg="$bew-theme-color-20"
+            p="x-2"
+            rounded="$bew-badge-radius"
           >
             {{ bangumi.capsuleText }}
           </div>
@@ -220,11 +238,7 @@ const { isDark } = useDark()
         </div>
       </div>
     </ALink>
-    <BangumiCardSkeleton
-      v-else-if="skeleton"
-      :horizontal="horizontal"
-      important-mb-0
-    />
+    <BangumiCardSkeleton v-else-if="skeleton" :horizontal="horizontal" important-mb-0 />
   </div>
 </template>
 

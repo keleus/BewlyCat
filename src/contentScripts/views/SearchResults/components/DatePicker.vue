@@ -25,8 +25,7 @@ const currentMonth = ref(new Date().getMonth())
 
 // 解析 max 日期
 const maxDate = computed(() => {
-  if (!props.max)
-    return null
+  if (!props.max) return null
   const date = new Date(props.max)
   return {
     year: date.getFullYear(),
@@ -37,22 +36,24 @@ const maxDate = computed(() => {
 
 // 格式化显示的日期
 const displayValue = computed(() => {
-  if (!props.modelValue)
-    return props.placeholder || t('search.start_date')
+  if (!props.modelValue) return props.placeholder || t('search.start_date')
   return props.modelValue.replace(/-/g, '/')
 })
 
 // 同步 modelValue 到 inputValue
-watch(() => props.modelValue, (newVal) => {
-  if (!isInputMode.value) {
-    inputValue.value = newVal ? displayValue.value : ''
-  }
-}, { immediate: true })
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (!isInputMode.value) {
+      inputValue.value = newVal ? displayValue.value : ''
+    }
+  },
+  { immediate: true },
+)
 
 // 解析用户输入的日期
 function parseInputDate(input: string): Date | null {
-  if (!input)
-    return null
+  if (!input) return null
 
   // 移除空格
   const cleaned = input.trim()
@@ -154,8 +155,7 @@ const calendarDays = computed(() => {
 
 // 检查日期是否被禁用
 function isDateDisabled(date: Date): boolean {
-  if (!maxDate.value)
-    return false
+  if (!maxDate.value) return false
 
   const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
   const max = new Date(maxDate.value.year, maxDate.value.month, maxDate.value.day)
@@ -165,9 +165,11 @@ function isDateDisabled(date: Date): boolean {
 
 // 检查是否是同一天
 function isSameDay(date1: Date, date2: Date): boolean {
-  return date1.getFullYear() === date2.getFullYear()
-    && date1.getMonth() === date2.getMonth()
-    && date1.getDate() === date2.getDate()
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  )
 }
 
 // 格式化日期为 YYYY-MM-DD
@@ -179,9 +181,8 @@ function formatDate(date: Date): string {
 }
 
 // 选择日期
-function selectDate(day: typeof calendarDays.value[0]) {
-  if (day.disabled)
-    return
+function selectDate(day: (typeof calendarDays.value)[0]) {
+  if (day.disabled) return
 
   const date = day.date
   emit('update:modelValue', formatDate(date))
@@ -193,8 +194,7 @@ function prevMonth() {
   if (currentMonth.value === 0) {
     currentMonth.value = 11
     currentYear.value--
-  }
-  else {
+  } else {
     currentMonth.value--
   }
 }
@@ -204,8 +204,7 @@ function nextMonth() {
   if (currentMonth.value === 11) {
     currentMonth.value = 0
     currentYear.value++
-  }
-  else {
+  } else {
     currentMonth.value++
   }
 }
@@ -242,8 +241,7 @@ function openPicker() {
     const date = new Date(props.modelValue)
     currentYear.value = date.getFullYear()
     currentMonth.value = date.getMonth()
-  }
-  else {
+  } else {
     const today = new Date()
     currentYear.value = today.getFullYear()
     currentMonth.value = today.getMonth()
@@ -273,17 +271,14 @@ function handleInputBlur() {
     // 检查日期是否有效且不超过最大日期
     if (!isDateDisabled(date)) {
       emit('update:modelValue', formatDate(date))
-    }
-    else {
+    } else {
       // 如果日期无效，恢复到原值
       inputValue.value = displayValue.value
     }
-  }
-  else if (inputValue.value.trim() === '') {
+  } else if (inputValue.value.trim() === '') {
     // 如果输入为空，清除日期
     emit('update:modelValue', '')
-  }
-  else {
+  } else {
     // 如果输入格式不正确，恢复到原值
     inputValue.value = displayValue.value
   }
@@ -293,8 +288,7 @@ function handleInputBlur() {
 function handleInputKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter') {
     ;(event.target as HTMLInputElement).blur()
-  }
-  else if (event.key === 'Escape') {
+  } else if (event.key === 'Escape') {
     inputValue.value = displayValue.value
     ;(event.target as HTMLInputElement).blur()
   }
@@ -306,7 +300,9 @@ onClickOutside(pickerRef, () => {
 })
 
 // 月份名称
-const monthNames = computed(() => Array.from({ length: 12 }, (_, index) => t('search.month', { month: index + 1 })))
+const monthNames = computed(() =>
+  Array.from({ length: 12 }, (_, index) => t('search.month', { month: index + 1 })),
+)
 const weekDays = computed(() => t('search.weekdays').split(','))
 </script>
 
@@ -324,12 +320,8 @@ const weekDays = computed(() => t('search.weekdays').split(','))
         @focus="handleInputFocus"
         @blur="handleInputBlur"
         @keydown="handleInputKeydown"
-      >
-      <button
-        type="button"
-        class="calendar-icon"
-        @click="openPicker"
-      >
+      />
+      <button type="button" class="calendar-icon" @click="openPicker">
         <div class="i-tabler:calendar" w-4 h-4 />
       </button>
     </div>
@@ -377,9 +369,9 @@ const weekDays = computed(() => t('search.weekdays').split(','))
             class="day-cell"
             :class="{
               'other-month': day.month !== 'current',
-              'disabled': day.disabled,
-              'today': day.isToday,
-              'selected': day.isSelected,
+              disabled: day.disabled,
+              today: day.isToday,
+              selected: day.isSelected,
             }"
             @click="selectDate(day)"
           >

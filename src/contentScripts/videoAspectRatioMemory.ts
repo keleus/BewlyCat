@@ -13,19 +13,21 @@ function isVideoAspectRatio(value: string): value is VideoAspectRatio {
 }
 
 function getAspectInputs(): HTMLInputElement[] {
-  return Array.from(document.querySelectorAll<HTMLInputElement>(ASPECT_INPUT_SELECTOR))
-    .filter(input => isVideoAspectRatio(input.value))
+  return Array.from(document.querySelectorAll<HTMLInputElement>(ASPECT_INPUT_SELECTOR)).filter(
+    (input) => isVideoAspectRatio(input.value),
+  )
 }
 
 function rememberSelectedAspectRatio(event: Event) {
-  if (!settings.value.rememberVideoAspectRatio)
-    return
+  if (!settings.value.rememberVideoAspectRatio) return
 
   const input = event.target
-  if (!(input instanceof HTMLInputElement)
-    || !input.matches(ASPECT_INPUT_SELECTOR)
-    || !input.checked
-    || !isVideoAspectRatio(input.value)) {
+  if (
+    !(input instanceof HTMLInputElement) ||
+    !input.matches(ASPECT_INPUT_SELECTOR) ||
+    !input.checked ||
+    !isVideoAspectRatio(input.value)
+  ) {
     return
   }
 
@@ -33,14 +35,12 @@ function rememberSelectedAspectRatio(event: Event) {
 }
 
 function syncVideoAspectRatio() {
-  if (!settings.value.rememberVideoAspectRatio)
-    return
+  if (!settings.value.rememberVideoAspectRatio) return
 
   const inputs = getAspectInputs()
-  if (!inputs.length)
-    return
+  if (!inputs.length) return
 
-  const selectedInput = inputs.find(input => input.checked)
+  const selectedInput = inputs.find((input) => input.checked)
   const savedAspectRatio = settings.value.savedVideoAspectRatio
 
   // 首次启用时沿用播放器当前值，避免意外重置用户已选择的比例。
@@ -50,19 +50,16 @@ function syncVideoAspectRatio() {
     return
   }
 
-  if (selectedInput?.value === savedAspectRatio)
-    return
+  if (selectedInput?.value === savedAspectRatio) return
 
-  const targetInput = inputs.find(input => input.value === savedAspectRatio)
-  if (!targetInput || targetInput.disabled)
-    return
+  const targetInput = inputs.find((input) => input.value === savedAspectRatio)
+  if (!targetInput || targetInput.disabled) return
 
   targetInput.click()
 }
 
 export function initVideoAspectRatioMemory() {
-  if (hasInitialized || location.hostname === 'live.bilibili.com')
-    return
+  if (hasInitialized || location.hostname === 'live.bilibili.com') return
 
   hasInitialized = true
 
@@ -73,6 +70,9 @@ export function initVideoAspectRatioMemory() {
       target: () => document.querySelector('.bpx-player-ctrl-setting-aspect'),
       sync: syncVideoAspectRatio,
     })
-    document.addEventListener('change', rememberSelectedAspectRatio, { capture: true, signal: syncController.signal })
+    document.addEventListener('change', rememberSelectedAspectRatio, {
+      capture: true,
+      signal: syncController.signal,
+    })
   })
 }

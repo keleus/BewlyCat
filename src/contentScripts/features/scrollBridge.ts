@@ -28,8 +28,7 @@ export function installScrollBridge(viewport: HTMLElement): () => void {
     releaseDriverTimer = setTimeout(() => {
       if (scrollDriver === 'document')
         viewport.scrollTo({ top: window.scrollY, behavior: 'instant' })
-      else
-        window.scrollTo({ top: viewport.scrollTop, behavior: 'instant' })
+      else window.scrollTo({ top: viewport.scrollTop, behavior: 'instant' })
       scrollDriver = null
       mirroredDocumentTop = null
     }, 150)
@@ -41,8 +40,7 @@ export function installScrollBridge(viewport: HTMLElement): () => void {
 
   function handleDocumentScroll() {
     const top = window.scrollY
-    if (Math.abs(viewport.scrollTop - top) < 1)
-      return
+    if (Math.abs(viewport.scrollTop - top) < 1) return
 
     if (mirroredDocumentTop !== null && Math.abs(mirroredDocumentTop - top) < 1) {
       mirroredDocumentTop = null
@@ -56,10 +54,8 @@ export function installScrollBridge(viewport: HTMLElement): () => void {
 
   function handleViewportScroll() {
     const top = viewport.scrollTop
-    if (Math.abs(window.scrollY - top) < 1)
-      return
-    if (scrollDriver === 'document')
-      return
+    if (Math.abs(window.scrollY - top) < 1) return
+    if (scrollDriver === 'document') return
 
     keepScrollDriver('viewport')
     mirroredDocumentTop = top
@@ -69,8 +65,7 @@ export function installScrollBridge(viewport: HTMLElement): () => void {
   const resizeObserver = new ResizeObserver(updateDocumentHeight)
   resizeObserver.observe(viewport)
   const content = viewport.querySelector('main')
-  if (content)
-    resizeObserver.observe(content)
+  if (content) resizeObserver.observe(content)
 
   updateDocumentHeight()
   window.addEventListener('scroll', handleDocumentScroll, { passive: true })
@@ -83,7 +78,6 @@ export function installScrollBridge(viewport: HTMLElement): () => void {
     clearTimeout(releaseDriverTimer)
     spacer.remove()
     document.documentElement.style.scrollbarWidth = previousScrollbarWidth
-    if (window.scrollY)
-      window.scrollTo({ top: 0, behavior: 'instant' })
+    if (window.scrollY) window.scrollTo({ top: 0, behavior: 'instant' })
   }
 }

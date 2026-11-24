@@ -8,7 +8,8 @@ import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 import { schedulePlayerControlFit } from './playerControlFit'
 
 const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
-const PLAYER_ROOT_SELECTOR = '#playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
+const PLAYER_ROOT_SELECTOR =
+  '#playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
 const TOOLTIP_CLASS = 'bewly-player-tooltip'
 const CONTROL_DISCOVERY_TIMEOUT = 15_000
 const CONTROL_DISCOVERY_RETRY_INTERVAL = 500
@@ -38,14 +39,17 @@ function findPlayerControlBar(): HTMLElement | null {
 }
 
 function findPlayerRoot(controlBar?: HTMLElement | null): HTMLElement | null {
-  return controlBar?.closest<HTMLElement>('#playerWrap, #bilibili-player, #bilibiliPlayer')
-    ?? controlBar?.closest<HTMLElement>('.bpx-player-container, .bilibili-player')
-    ?? document.querySelector<HTMLElement>(PLAYER_ROOT_SELECTOR)
+  return (
+    controlBar?.closest<HTMLElement>('#playerWrap, #bilibili-player, #bilibiliPlayer') ??
+    controlBar?.closest<HTMLElement>('.bpx-player-container, .bilibili-player') ??
+    document.querySelector<HTMLElement>(PLAYER_ROOT_SELECTOR)
+  )
 }
 
 function shouldManageControl() {
-  return settings.value.showVideoScreenshotButton
-    && (isVideoPlaybackPage() || isVideoOrBangumiPage())
+  return (
+    settings.value.showVideoScreenshotButton && (isVideoPlaybackPage() || isVideoOrBangumiPage())
+  )
 }
 
 function createControlContainer(): HTMLElement {
@@ -78,8 +82,7 @@ function createControlContainer(): HTMLElement {
     void captureVideoScreenshot(container)
   })
   container.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ')
-      return
+    if (event.key !== 'Enter' && event.key !== ' ') return
 
     event.preventDefault()
     void captureVideoScreenshot(container)
@@ -106,20 +109,20 @@ function stopPlayerObservers() {
 function removeControl() {
   controlContainer?.remove()
   controlContainer = null
-  document.querySelectorAll<HTMLElement>('.bewly-video-screenshot-control').forEach(control => control.remove())
+  document
+    .querySelectorAll<HTMLElement>('.bewly-video-screenshot-control')
+    .forEach((control) => control.remove())
 }
 
 function stopManagingControl(remove = true) {
   stopControlDiscovery()
   stopPlayerObservers()
   controlSyncQueued = false
-  if (remove)
-    removeControl()
+  if (remove) removeControl()
 }
 
 function scheduleControlSync() {
-  if (controlSyncQueued)
-    return
+  if (controlSyncQueued) return
 
   controlSyncQueued = true
   queueMicrotask(() => {
@@ -135,13 +138,10 @@ function restartControlDiscovery() {
 }
 
 function scheduleControlDiscoveryRetry() {
-  if (discoveryRetryTimer || !shouldManageControl())
-    return
+  if (discoveryRetryTimer || !shouldManageControl()) return
 
-  if (!discoveryRetryDeadline)
-    discoveryRetryDeadline = Date.now() + CONTROL_DISCOVERY_TIMEOUT
-  if (Date.now() >= discoveryRetryDeadline)
-    return
+  if (!discoveryRetryDeadline) discoveryRetryDeadline = Date.now() + CONTROL_DISCOVERY_TIMEOUT
+  if (Date.now() >= discoveryRetryDeadline) return
 
   discoveryRetryTimer = setTimeout(() => {
     discoveryRetryTimer = null
@@ -150,9 +150,11 @@ function scheduleControlDiscoveryRetry() {
 }
 
 function observePlayerStructure(playerRoot: HTMLElement, controlBar: HTMLElement) {
-  if (observedPlayerRoot === playerRoot
-    && observedControlBar === controlBar
-    && playerStructureObserver) {
+  if (
+    observedPlayerRoot === playerRoot &&
+    observedControlBar === controlBar &&
+    playerStructureObserver
+  ) {
     return
   }
 
@@ -172,16 +174,14 @@ function observePlayerStructure(playerRoot: HTMLElement, controlBar: HTMLElement
       return
     }
 
-    if (!controlContainer?.isConnected)
-      restartControlDiscovery()
+    if (!controlContainer?.isConnected) restartControlDiscovery()
   }
 
   playerStructureObserver = new MutationObserver(handlePlayerMutation)
   let current: HTMLElement | null = controlBar
   while (current) {
     playerStructureObserver.observe(current, { childList: true })
-    if (current === playerRoot)
-      break
+    if (current === playerRoot) break
     current = current.parentElement
   }
 
@@ -237,17 +237,14 @@ function syncControl() {
 }
 
 export function initVideoScreenshotControl() {
-  if (hasInitialized || location.hostname === 'live.bilibili.com')
-    return
+  if (hasInitialized || location.hostname === 'live.bilibili.com') return
 
   hasInitialized = true
   watch(
     () => settings.value.showVideoScreenshotButton,
     (enabled) => {
-      if (enabled)
-        restartControlDiscovery()
-      else
-        stopManagingControl()
+      if (enabled) restartControlDiscovery()
+      else stopManagingControl()
     },
     { immediate: true },
   )

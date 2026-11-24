@@ -37,8 +37,7 @@ export function getCommentReplyBranchExpandedToggleY(
   const branchEndY = childAnchors[childAnchors.length - 1].centerY
   const minimumY = parentAnchor.bottom + toggleHitRadius
   const maximumY = branchEndY - toggleHitRadius
-  if (maximumY <= minimumY)
-    return parentAnchor.bottom + (branchEndY - parentAnchor.bottom) / 2
+  if (maximumY <= minimumY) return parentAnchor.bottom + (branchEndY - parentAnchor.bottom) / 2
 
   return Math.min(Math.max(parentAnchor.toggleY, minimumY), maximumY)
 }
@@ -53,30 +52,23 @@ export function getCommentReplyBranchPath(
   const x = parentAnchor.centerX
 
   if (collapsed) {
-    if (collapseParentBody)
-      return `M ${coordinate(x)} ${coordinate(parentAnchor.centerY)}`
+    if (collapseParentBody) return `M ${coordinate(x)} ${coordinate(parentAnchor.centerY)}`
 
     // 折叠会改变布局，按钮与线条都以当前父评论的位置为准。
     const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius)
     const startY = parentAnchor.bottom
     const endY = Math.max(toggleY + toggleHitRadius, parentAnchor.bottom + toggleHitRadius * 2)
-    return [
-      `M ${coordinate(x)} ${coordinate(startY)}`,
-      `V ${coordinate(endY)}`,
-    ].join(' ')
+    return [`M ${coordinate(x)} ${coordinate(startY)}`, `V ${coordinate(endY)}`].join(' ')
   }
 
-  if (childAnchors.length === 0 && typeof trunkExtendY !== 'number')
-    return null
+  if (childAnchors.length === 0 && typeof trunkExtendY !== 'number') return null
 
   const pathCommands: string[] = []
   const childRadii = childAnchors.map((childAnchor) => {
     const horizontalGap = childAnchor.left - x
-    if (horizontalGap <= 0)
-      return 0
+    if (horizontalGap <= 0) return 0
     const verticalRoom = Math.max(0, childAnchor.centerY - parentAnchor.bottom)
-    if (verticalRoom <= 0)
-      return 0
+    if (verticalRoom <= 0) return 0
     return Math.min(branchRadius, horizontalGap, verticalRoom)
   })
 
@@ -102,8 +94,7 @@ export function getCommentReplyBranchPath(
   // 从主干向每个可见子评论画水平分支（正圆弧，不超出竖线）
   childAnchors.forEach((childAnchor, index) => {
     const horizontalGap = childAnchor.left - x
-    if (horizontalGap <= 0)
-      return
+    if (horizontalGap <= 0) return
 
     const radius = childRadii[index]
     if (radius <= 0) {
@@ -132,8 +123,7 @@ export function getCommentReplyBranchToggleY(
 ): number {
   const { childAnchors, collapsed, collapseParentBody, parentAnchor } = branch
   if (collapsed) {
-    if (collapseParentBody)
-      return parentAnchor.centerY
+    if (collapseParentBody) return parentAnchor.centerY
 
     return Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
   }

@@ -80,7 +80,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
       loading="lazy"
       decoding="async"
       @load="emit('coverLoad', $event)"
-    >
+    />
     <MomentVideoPreview
       v-if="previewActive && previewUrl"
       :url="previewUrl"
@@ -106,7 +106,10 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
       {{ chargeBadge }}
     </span>
   </div>
-  <div v-else class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
+  <div
+    v-else
+    class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video"
+  >
     <a
       v-if="href"
       draggable="false"
@@ -124,7 +127,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__media {
   @include mixins.interactive-layer;

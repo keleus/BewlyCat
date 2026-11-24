@@ -43,12 +43,13 @@ class BilibiliStorageProvider {
   private iframe?: HTMLIFrameElement
 
   private findIframe() {
-    return Array.from(document.getElementsByTagName('iframe')).find(i => i.src.includes(BilibiliStorageProvider.BILIBILI_COLS_IFRAME_URL))
+    return Array.from(document.getElementsByTagName('iframe')).find((i) =>
+      i.src.includes(BilibiliStorageProvider.BILIBILI_COLS_IFRAME_URL),
+    )
   }
 
   private async waitForBody() {
-    if (document.body)
-      return
+    if (document.body) return
 
     await new Promise<void>((resolve) => {
       window.addEventListener('DOMContentLoaded', () => resolve(), { once: true })
@@ -72,20 +73,23 @@ class BilibiliStorageProvider {
 
     await new Promise<void>((resolve) => {
       const timer = window.setTimeout(resolve, SEARCH_HISTORY_IFRAME_LOAD_TIMEOUT_MS)
-      iframe.addEventListener('load', () => {
-        window.clearTimeout(timer)
-        resolve()
-      }, { once: true })
+      iframe.addEventListener(
+        'load',
+        () => {
+          window.clearTimeout(timer)
+          resolve()
+        },
+        { once: true },
+      )
     })
 
     return iframe
   }
 
   private async getIframe() {
-    if (this.iframe?.isConnected)
-      return this.iframe
+    if (this.iframe?.isConnected) return this.iframe
 
-    this.iframe = this.findIframe() ?? await this.createIframe()
+    this.iframe = this.findIframe() ?? (await this.createIframe())
     return this.iframe
   }
 
@@ -105,7 +109,12 @@ class BilibiliStorageProvider {
             window.removeEventListener('message', handleMessage)
           }
           handleMessage = (e: MessageEvent<BilibiliStorageEvent>) => {
-            if (e.origin === 'https://s1.hdslb.com' && e.data && e.data?.type === 'COLS_RES' && e.data?.key === BilibiliStorageProvider.BILIBILI_HISTORY_KEY) {
+            if (
+              e.origin === 'https://s1.hdslb.com' &&
+              e.data &&
+              e.data?.type === 'COLS_RES' &&
+              e.data?.key === BilibiliStorageProvider.BILIBILI_HISTORY_KEY
+            ) {
               cleanup()
               resolve(e.data)
             }
@@ -116,12 +125,21 @@ class BilibiliStorageProvider {
           }, SEARCH_HISTORY_RESPONSE_TIMEOUT_MS)
 
           window.addEventListener('message', handleMessage)
-          iframe.contentWindow!.postMessage({ type: 'COLS_GET', key: BilibiliStorageProvider.BILIBILI_HISTORY_KEY }, iframe!.src)
+          iframe.contentWindow!.postMessage(
+            { type: 'COLS_GET', key: BilibiliStorageProvider.BILIBILI_HISTORY_KEY },
+            iframe!.src,
+          )
         })
       case 'COLS_CLR':
-        return iframe.contentWindow!.postMessage({ type: 'COLS_CLR', key: 'search_history' }, iframe.src)
+        return iframe.contentWindow!.postMessage(
+          { type: 'COLS_CLR', key: 'search_history' },
+          iframe.src,
+        )
       case 'COLS_SET':
-        return iframe.contentWindow!.postMessage({ type: 'COLS_SET', key: BilibiliStorageProvider.BILIBILI_HISTORY_KEY, value }, iframe.src)
+        return iframe.contentWindow!.postMessage(
+          { type: 'COLS_SET', key: BilibiliStorageProvider.BILIBILI_HISTORY_KEY, value },
+          iframe.src,
+        )
     }
   }
 
@@ -147,14 +165,12 @@ const provider = new BilibiliStorageProvider()
 export async function getSearchHistory(): Promise<HistoryItem[]> {
   const e = await provider.getSearchHistory()
 
-  if (!e)
-    return []
+  if (!e) return []
 
   try {
     const history = JSON.parse(e.value)
     return historySort(history)
-  }
-  catch {
+  } catch {
     return []
   }
 }
@@ -169,15 +185,12 @@ export async function addSearchHistory(historyItem: HistoryItem) {
       hasSameValue = true
     }
   })
-  if (!hasSameValue)
-    history.unshift(historyItem)
+  if (!hasSameValue) history.unshift(historyItem)
 
   // if out of limit, remove overflow items
   history = history.filter((item, index) => {
-    if (index < SEARCH_HISTORY_LIMIT)
-      return item
-    else
-      return false
+    if (index < SEARCH_HISTORY_LIMIT) return item
+    else return false
   })
 
   provider.addSearchHistory(JSON.stringify(history))
@@ -186,7 +199,7 @@ export async function addSearchHistory(historyItem: HistoryItem) {
 
 export async function removeSearchHistory(value: string) {
   let history = await getSearchHistory()
-  history = history.filter(item => item.value !== value)
+  history = history.filter((item) => item.value !== value)
   provider.removeSearchHistory(JSON.stringify(history))
   return history
 }

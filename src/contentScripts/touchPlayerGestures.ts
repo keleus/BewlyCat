@@ -7,9 +7,12 @@ import { calculateRelativeSeekTime } from '~/utils/touchGesture'
 const ROOT_CLASS = 'bewly-touch-player-gestures'
 const STYLE_ID = 'bewly-touch-player-gestures-style'
 const HUD_CLASS = 'bewly-touch-player-gesture-hud'
-const PLAYER_SELECTOR = '.bpx-player-container, #bilibili-player, .bilibili-player, .squirtle-video-wrap'
-const VIDEO_AREA_SELECTOR = '.bpx-player-video-area, .bilibili-player-video-wrap, .squirtle-video-wrap'
-const MINI_PLAYER_SELECTOR = '.bpx-player-container[data-screen="mini"], #bilibili-player.mini-player, .bilibili-player.mini-player'
+const PLAYER_SELECTOR =
+  '.bpx-player-container, #bilibili-player, .bilibili-player, .squirtle-video-wrap'
+const VIDEO_AREA_SELECTOR =
+  '.bpx-player-video-area, .bilibili-player-video-wrap, .squirtle-video-wrap'
+const MINI_PLAYER_SELECTOR =
+  '.bpx-player-container[data-screen="mini"], #bilibili-player.mini-player, .bilibili-player.mini-player'
 const INTERACTIVE_SELECTOR = [
   '.bpx-player-control-wrap',
   '.bpx-player-control-bottom',
@@ -72,7 +75,7 @@ function clamp(value: number, min: number, max: number) {
 function formatTime(seconds: number) {
   const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0
   const hours = Math.floor(safeSeconds / 3600)
-  const minutes = Math.floor(safeSeconds % 3600 / 60)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
   const remainingSeconds = safeSeconds % 60
   const minuteText = hours > 0 ? String(minutes).padStart(2, '0') : String(minutes)
   const baseTime = `${minuteText}:${String(remainingSeconds).padStart(2, '0')}`
@@ -84,48 +87,45 @@ function isTouchPointer(event: PointerEvent) {
 }
 
 function getActiveVideo(player: HTMLElement): HTMLVideoElement | null {
-  const videos = Array.from(player.querySelectorAll<HTMLVideoElement>('video'))
-    .filter(video => video.readyState !== HTMLMediaElement.HAVE_NOTHING && video.getClientRects().length > 0)
+  const videos = Array.from(player.querySelectorAll<HTMLVideoElement>('video')).filter(
+    (video) =>
+      video.readyState !== HTMLMediaElement.HAVE_NOTHING && video.getClientRects().length > 0,
+  )
 
-  return videos.sort((first, second) => {
-    const firstRect = first.getBoundingClientRect()
-    const secondRect = second.getBoundingClientRect()
-    return secondRect.width * secondRect.height - firstRect.width * firstRect.height
-  })[0] ?? null
+  return (
+    videos.sort((first, second) => {
+      const firstRect = first.getBoundingClientRect()
+      const secondRect = second.getBoundingClientRect()
+      return secondRect.width * secondRect.height - firstRect.width * firstRect.height
+    })[0] ?? null
+  )
 }
 
 function getPlayerContext(target: EventTarget | null, clientY?: number): PlayerContext | null {
-  if (!(target instanceof Element))
-    return null
-  if (target.closest(INTERACTIVE_SELECTOR))
-    return null
+  if (!(target instanceof Element)) return null
+  if (target.closest(INTERACTIVE_SELECTOR)) return null
 
   const area = target.closest<HTMLElement>(VIDEO_AREA_SELECTOR)
-  if (!area)
-    return null
+  if (!area) return null
 
   const player = area.closest<HTMLElement>(PLAYER_SELECTOR) ?? area
-  if (player.matches(MINI_PLAYER_SELECTOR) || player.closest(MINI_PLAYER_SELECTOR))
-    return null
+  if (player.matches(MINI_PLAYER_SELECTOR) || player.closest(MINI_PLAYER_SELECTOR)) return null
 
   const rect = area.getBoundingClientRect()
-  if (rect.width <= 0 || rect.height <= 0)
-    return null
+  if (rect.width <= 0 || rect.height <= 0) return null
 
   // Leave the native bottom control bar fully interactive.
   if (clientY !== undefined && clientY >= rect.bottom - Math.min(64, rect.height * 0.18))
     return null
 
   const video = getActiveVideo(player)
-  if (!video)
-    return null
+  if (!video) return null
 
   return { area, player, video, rect }
 }
 
 function ensureStyles() {
-  if (document.getElementById(STYLE_ID))
-    return
+  if (document.getElementById(STYLE_ID)) return
 
   const style = document.createElement('style')
   style.id = STYLE_ID
@@ -180,8 +180,7 @@ function showHud(area: HTMLElement, text: string, persist = false) {
   hud.textContent = text
   hud.classList.add(`${HUD_CLASS}--visible`)
 
-  if (hudHideTimeout !== null)
-    clearTimeout(hudHideTimeout)
+  if (hudHideTimeout !== null) clearTimeout(hudHideTimeout)
   hudHideTimeout = null
 
   if (!persist) {
@@ -198,7 +197,9 @@ function hideHud(area?: HTMLElement) {
     hudHideTimeout = null
   }
   if (area) {
-    area.querySelector<HTMLElement>(`:scope > .${HUD_CLASS}`)?.classList.remove(`${HUD_CLASS}--visible`)
+    area
+      .querySelector<HTMLElement>(`:scope > .${HUD_CLASS}`)
+      ?.classList.remove(`${HUD_CLASS}--visible`)
     return
   }
 
@@ -209,10 +210,8 @@ function hideHud(area?: HTMLElement) {
 
 function getTapZone(clientX: number, rect: DOMRect): TapZone {
   const ratio = (clientX - rect.left) / rect.width
-  if (ratio < DOUBLE_TAP_EDGE_RATIO)
-    return 'left'
-  if (ratio > 1 - DOUBLE_TAP_EDGE_RATIO)
-    return 'right'
+  if (ratio < DOUBLE_TAP_EDGE_RATIO) return 'left'
+  if (ratio > 1 - DOUBLE_TAP_EDGE_RATIO) return 'right'
   return 'center'
 }
 
@@ -223,8 +222,7 @@ function runDoubleTapAction(context: PlayerContext, zone: TapZone, wasPaused: bo
     if (wasPaused) {
       void video.play().catch(() => {})
       showHud(area, '▶')
-    }
-    else {
+    } else {
       video.pause()
       showHud(area, 'Ⅱ')
     }
@@ -234,10 +232,8 @@ function runDoubleTapAction(context: PlayerContext, zone: TapZone, wasPaused: bo
   const offset = zone === 'left' ? -DOUBLE_TAP_SEEK_SECONDS : DOUBLE_TAP_SEEK_SECONDS
   const maxTime = Number.isFinite(video.duration) ? video.duration : Number.POSITIVE_INFINITY
   video.currentTime = clamp(video.currentTime + offset, 0, maxTime)
-  if (wasPaused)
-    video.pause()
-  else
-    void video.play().catch(() => {})
+  if (wasPaused) video.pause()
+  else void video.play().catch(() => {})
   showHud(area, `${offset > 0 ? '+' : '−'}${DOUBLE_TAP_SEEK_SECONDS}s`)
 }
 
@@ -246,8 +242,7 @@ function handlePointerDown(event: PointerEvent) {
     return
 
   const context = getPlayerContext(event.target, event.clientY)
-  if (!context)
-    return
+  if (!context) return
 
   const horizontalRatio = (event.clientX - context.rect.left) / context.rect.width
   const volumeGesture = horizontalRatio <= EDGE_ZONE_RATIO || horizontalRatio >= 1 - EDGE_ZONE_RATIO
@@ -266,23 +261,19 @@ function handlePointerDown(event: PointerEvent) {
 }
 
 function handlePointerMove(event: PointerEvent) {
-  if (!gesture || gesture.pointerId !== event.pointerId)
-    return
+  if (!gesture || gesture.pointerId !== event.pointerId) return
 
   const deltaX = event.clientX - gesture.startX
   const deltaY = event.clientY - gesture.startY
   const distance = Math.hypot(deltaX, deltaY)
 
   if (gesture.mode === null && distance >= GESTURE_START_DISTANCE_PX) {
-    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.1)
-      gesture.mode = 'seek'
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.1) gesture.mode = 'seek'
     else if (Math.abs(deltaY) > Math.abs(deltaX) * 1.1)
       gesture.mode = gesture.volumeGesture ? 'volume' : 'ignored'
-    else
-      return
+    else return
 
-    if (gesture.mode !== 'ignored')
-      lastTap = null
+    if (gesture.mode !== 'ignored') lastTap = null
   }
 
   if (gesture.mode === 'seek') {
@@ -305,8 +296,7 @@ function handlePointerMove(event: PointerEvent) {
     return
   }
 
-  if (gesture.mode !== 'volume')
-    return
+  if (gesture.mode !== 'volume') return
 
   const change = (gesture.startY - event.clientY) / gesture.rect.height
   const volume = clamp(gesture.startVolume + change, 0, 1)
@@ -319,16 +309,16 @@ function handlePointerMove(event: PointerEvent) {
 }
 
 function handlePointerEnd(event: PointerEvent, cancelled = false) {
-  if (!gesture || gesture.pointerId !== event.pointerId)
-    return
+  if (!gesture || gesture.pointerId !== event.pointerId) return
 
   const currentGesture = gesture
   gesture = null
 
   if (currentGesture.mode === 'seek' || currentGesture.mode === 'volume') {
-    const feedback = currentGesture.mode === 'volume'
-      ? `🔊 ${Math.round(currentGesture.video.volume * 100)}%`
-      : `${formatTime(currentGesture.video.currentTime)} / ${formatTime(currentGesture.video.duration)}`
+    const feedback =
+      currentGesture.mode === 'volume'
+        ? `🔊 ${Math.round(currentGesture.video.volume * 100)}%`
+        : `${formatTime(currentGesture.video.currentTime)} / ${formatTime(currentGesture.video.duration)}`
     showHud(currentGesture.area, feedback)
     suppressClickUntil = performance.now() + 300
     event.preventDefault()
@@ -336,22 +326,25 @@ function handlePointerEnd(event: PointerEvent, cancelled = false) {
     return
   }
 
-  if (cancelled || currentGesture.mode === 'ignored')
-    return
+  if (cancelled || currentGesture.mode === 'ignored') return
 
   const elapsed = performance.now() - currentGesture.startTime
-  const distance = Math.hypot(event.clientX - currentGesture.startX, event.clientY - currentGesture.startY)
-  if (elapsed > DOUBLE_TAP_DELAY_MS || distance >= GESTURE_START_DISTANCE_PX)
-    return
+  const distance = Math.hypot(
+    event.clientX - currentGesture.startX,
+    event.clientY - currentGesture.startY,
+  )
+  if (elapsed > DOUBLE_TAP_DELAY_MS || distance >= GESTURE_START_DISTANCE_PX) return
 
   const zone = getTapZone(event.clientX, currentGesture.rect)
   const now = performance.now()
   const previousTap = lastTap
-  const isDoubleTap = previousTap
-    && previousTap.player === currentGesture.player
-    && previousTap.zone === zone
-    && now - previousTap.time <= DOUBLE_TAP_DELAY_MS
-    && Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) <= DOUBLE_TAP_DISTANCE_PX
+  const isDoubleTap =
+    previousTap &&
+    previousTap.player === currentGesture.player &&
+    previousTap.zone === zone &&
+    now - previousTap.time <= DOUBLE_TAP_DELAY_MS &&
+    Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) <=
+      DOUBLE_TAP_DISTANCE_PX
 
   if (!isDoubleTap) {
     lastTap = {
@@ -375,20 +368,16 @@ function handlePointerEnd(event: PointerEvent, cancelled = false) {
 }
 
 function handleClick(event: MouseEvent) {
-  if (performance.now() > suppressClickUntil)
-    return
-  if (!getPlayerContext(event.target))
-    return
+  if (performance.now() > suppressClickUntil) return
+  if (!getPlayerContext(event.target)) return
 
   event.preventDefault()
   event.stopImmediatePropagation()
 }
 
 function handleDoubleClick(event: MouseEvent) {
-  if (performance.now() > suppressNativeDoubleClickUntil)
-    return
-  if (!getPlayerContext(event.target))
-    return
+  if (performance.now() > suppressNativeDoubleClickUntil) return
+  if (!getPlayerContext(event.target)) return
 
   event.preventDefault()
   event.stopImmediatePropagation()
@@ -408,15 +397,16 @@ function updateEnabledState(enabled: boolean) {
 }
 
 export function initTouchPlayerGestures() {
-  if (initialized)
-    return
+  if (initialized) return
   initialized = true
 
   watch(() => settings.value.touchScreenOptimization, updateEnabledState, { immediate: true })
   document.addEventListener('pointerdown', handlePointerDown, { capture: true })
   document.addEventListener('pointermove', handlePointerMove, { capture: true, passive: false })
-  document.addEventListener('pointerup', event => handlePointerEnd(event), { capture: true })
-  document.addEventListener('pointercancel', event => handlePointerEnd(event, true), { capture: true })
+  document.addEventListener('pointerup', (event) => handlePointerEnd(event), { capture: true })
+  document.addEventListener('pointercancel', (event) => handlePointerEnd(event, true), {
+    capture: true,
+  })
   document.addEventListener('click', handleClick, { capture: true })
   document.addEventListener('dblclick', handleDoubleClick, { capture: true })
 }

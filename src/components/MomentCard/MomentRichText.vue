@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { DisplayRichTextSegment } from './types'
 
-const { segments, href = '', linkable = true } = defineProps<{
+const {
+  segments,
+  href = '',
+  linkable = true,
+} = defineProps<{
   segments: DisplayRichTextSegment[]
   /** 普通文字与表情的链接落点（通常为动态详情），保证拖选与中键打开仍落在原动态 */
   href?: string
@@ -16,15 +20,15 @@ const emit = defineEmits<{
   textClick: [event: MouseEvent]
 }>()
 
-function isLink(segment: DisplayRichTextSegment): segment is DisplayRichTextSegment & { url: string } {
+function isLink(
+  segment: DisplayRichTextSegment,
+): segment is DisplayRichTextSegment & { url: string } {
   return segment.type === 'link' && Boolean(segment.url)
 }
 
 function handleClick(event: MouseEvent, segment: DisplayRichTextSegment) {
-  if (isLink(segment))
-    emit('linkClick', event, segment.url)
-  else
-    emit('textClick', event)
+  if (isLink(segment)) emit('linkClick', event, segment.url)
+  else emit('textClick', event)
 }
 </script>
 
@@ -50,9 +54,14 @@ function handleClick(event: MouseEvent, segment: DisplayRichTextSegment) {
         :class="{ 'moment-card__emoji--large': segment.size === 2 }"
         loading="lazy"
         decoding="async"
-      >
+      />
       <template v-else>
-        <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
+        <span
+          v-if="segment.isLottery"
+          i-tabler-gift
+          class="moment-card__lottery-icon"
+          aria-hidden="true"
+        />{{ segment.text }}
       </template>
     </a>
   </template>
@@ -67,7 +76,7 @@ function handleClick(event: MouseEvent, segment: DisplayRichTextSegment) {
         :class="{ 'moment-card__emoji--large': segment.size === 2 }"
         loading="lazy"
         decoding="async"
-      >
+      />
       <template v-else>
         {{ segment.text }}
       </template>
@@ -76,7 +85,7 @@ function handleClick(event: MouseEvent, segment: DisplayRichTextSegment) {
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__text-link,
 .moment-card__rich-link {

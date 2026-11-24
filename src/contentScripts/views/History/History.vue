@@ -41,12 +41,12 @@ function getHistoryItemKey(item: HistoryItem) {
 }
 
 function transformHistoryItem(item: HistoryItem): Video {
-  const isVideo = item.history.business === Business.ARCHIVE || item.history.business === Business.PGC
+  const isVideo =
+    item.history.business === Business.ARCHIVE || item.history.business === Business.PGC
   let playbackProgress: number | undefined
   if (isVideo) {
-    const percentage = item.progress === -1
-      ? 100
-      : item.duration > 0 ? (item.progress / item.duration) * 100 : 0
+    const percentage =
+      item.progress === -1 ? 100 : item.duration > 0 ? (item.progress / item.duration) * 100 : 0
     playbackProgress = Number.isFinite(percentage) ? Math.min(100, Math.max(0, percentage)) : 0
   }
 
@@ -61,13 +61,17 @@ function transformHistoryItem(item: HistoryItem): Video {
     epid: item.history.epid || undefined,
     roomid: item.history.business === Business.LIVE ? item.history.oid : undefined,
     liveStatus: item.live_status,
-    badge: item.history.business === Business.PGC || item.history.business === Business.LIVE
-      ? {
-          text: item.history.business === Business.PGC ? t('history.pgc') : t('history.livestreaming'),
-          bgColor: 'var(--bew-theme-color)',
-          color: 'white',
-        }
-      : undefined,
+    badge:
+      item.history.business === Business.PGC || item.history.business === Business.LIVE
+        ? {
+            text:
+              item.history.business === Business.PGC
+                ? t('history.pgc')
+                : t('history.livestreaming'),
+            bgColor: 'var(--bew-theme-color)',
+            color: 'white',
+          }
+        : undefined,
     durationStr: isVideo
       ? `${calcCurrentTime(item.progress === -1 ? item.duration : Math.max(0, item.progress))} / ${calcCurrentTime(item.duration)}`
       : undefined,
@@ -86,27 +90,34 @@ function transformHistoryItem(item: HistoryItem): Video {
 }
 
 const historyGroups = computed(() => {
-  if (historyLayout.value !== 'grid')
-    return [{ date: 'list', items: historyList }]
+  if (historyLayout.value !== 'grid') return [{ date: 'list', items: historyList }]
 
   const groups = new Map<string, HistoryItem[]>()
   for (const item of historyList) {
     const date = formatDate(new Date(item.view_at * 1000), 'YYYY-MM-DD')
     const items = groups.get(date)
-    if (items)
-      items.push(item)
-    else
-      groups.set(date, [item])
+    if (items) items.push(item)
+    else groups.set(date, [item])
   }
   return Array.from(groups, ([date, items]) => ({ date, items }))
 })
 
-watch(historyLayout, async () => {
-  await nextTick()
-  if (getCSRF() && !isLoading.value && !noMoreContent.value && historyList.length && !await haveScrollbar()) {
-    void loadHistory()
-  }
-}, { flush: 'post' })
+watch(
+  historyLayout,
+  async () => {
+    await nextTick()
+    if (
+      getCSRF() &&
+      !isLoading.value &&
+      !noMoreContent.value &&
+      historyList.length &&
+      !(await haveScrollbar())
+    ) {
+      void loadHistory()
+    }
+  },
+  { flush: 'post' },
+)
 
 const HistoryBusiness = computed(() => {
   return Business
@@ -130,8 +141,7 @@ function initPageAction() {
 }
 
 async function loadHistory(): Promise<void> {
-  if (disposed || isLoading.value || noMoreContent.value)
-    return
+  if (disposed || isLoading.value || noMoreContent.value) return
 
   const version = requestVersion
   const searchKeyword = activeKeyword
@@ -139,30 +149,25 @@ async function loadHistory(): Promise<void> {
 
   try {
     while (true) {
-      if (version !== requestVersion)
-        return
+      if (version !== requestVersion) return
       const res: HistoryResult | HistorySearchResult = searchKeyword
         ? await api.history.searchHistoryList({ pn: currentPageNum.value, keyword: searchKeyword })
-        : await api.history.getHistoryList({ type: 'all', view_at: historyList.at(-1)?.view_at ?? 0 })
-      if (version !== requestVersion || res.code !== 0)
-        return
+        : await api.history.getHistoryList({
+            type: 'all',
+            view_at: historyList.at(-1)?.view_at ?? 0,
+          })
+      if (version !== requestVersion || res.code !== 0) return
 
-      historyList.push(...res.data.list as HistoryItem[])
+      historyList.push(...(res.data.list as HistoryItem[]))
       // 成功后再推进页码，失败重试仍请求同一页。
-      if (searchKeyword)
-        currentPageNum.value++
+      if (searchKeyword) currentPageNum.value++
       noMoreContent.value = res.data.list.length < 20
-      if (noMoreContent.value || await haveScrollbar())
-        return
+      if (noMoreContent.value || (await haveScrollbar())) return
     }
-  }
-  catch (error) {
-    if (version === requestVersion)
-      console.error('加载历史记录失败:', error)
-  }
-  finally {
-    if (version === requestVersion)
-      isLoading.value = false
+  } catch (error) {
+    if (version === requestVersion) console.error('加载历史记录失败:', error)
+  } finally {
+    if (version === requestVersion) isLoading.value = false
   }
 }
 
@@ -182,51 +187,49 @@ function handleSearch() {
 }
 
 function deleteHistoryItem(historyItem: HistoryItem) {
-  api.history.deleteHistoryItem({
-    kid: `${historyItem.history.business}_${historyItem.history.oid}`,
-    csrf: getCSRF(),
-  })
+  api.history
+    .deleteHistoryItem({
+      kid: `${historyItem.history.business}_${historyItem.history.oid}`,
+      csrf: getCSRF(),
+    })
     .then((res) => {
       if (res.code === 0) {
         const index = historyList.indexOf(historyItem)
-        if (index !== -1)
-          historyList.splice(index, 1)
+        if (index !== -1) historyList.splice(index, 1)
       }
     })
 }
 
 function getHistoryItemCover(item: HistoryItem) {
   if (item.history.business === 'article' || item.history.business === 'article-list') {
-    if (item.covers)
-      return removeHttpFromUrl(`${item.covers[0]}`)
+    if (item.covers) return removeHttpFromUrl(`${item.covers[0]}`)
   }
 
   return removeHttpFromUrl(item.cover)
 }
 
 function getHistoryPauseStatus() {
-  api.history.getHistoryPauseStatus()
-    .then((res) => {
-      if (res.code === 0)
-        historyStatus.value = res.data
-    })
+  api.history.getHistoryPauseStatus().then((res) => {
+    if (res.code === 0) historyStatus.value = res.data
+  })
 }
 
 function setHistoryPauseStatus(isPause: boolean) {
-  api.history.setHistoryPauseStatus({
-    csrf: getCSRF(),
-    switch: isPause,
-  })
+  api.history
+    .setHistoryPauseStatus({
+      csrf: getCSRF(),
+      switch: isPause,
+    })
     .then((res) => {
-      if (res.code === 0)
-        getHistoryPauseStatus()
+      if (res.code === 0) getHistoryPauseStatus()
     })
 }
 
 function clearAllHistory() {
-  api.history.clearAllHistory({
-    csrf: getCSRF(),
-  })
+  api.history
+    .clearAllHistory({
+      csrf: getCSRF(),
+    })
     .then((res) => {
       if (res.code === 0) {
         requestVersion++
@@ -239,27 +242,18 @@ function clearAllHistory() {
 }
 
 async function handleClearAllWatchHistory() {
-  const result = await showConfirmDialog(
-    t('history.clear_all_watch_history_confirm'),
-  )
-  if (result)
-    clearAllHistory()
+  const result = await showConfirmDialog(t('history.clear_all_watch_history_confirm'))
+  if (result) clearAllHistory()
 }
 
 async function handlePauseWatchHistory() {
-  const result = await showConfirmDialog(
-    t('history.pause_watch_history_confirm'),
-  )
-  if (result)
-    setHistoryPauseStatus(true)
+  const result = await showConfirmDialog(t('history.pause_watch_history_confirm'))
+  if (result) setHistoryPauseStatus(true)
 }
 
 async function handleTurnOnWatchHistory() {
-  const result = await showConfirmDialog(
-    t('history.turn_on_watch_history_confirm'),
-  )
-  if (result)
-    setHistoryPauseStatus(false)
+  const result = await showConfirmDialog(t('history.turn_on_watch_history_confirm'))
+  if (result) setHistoryPauseStatus(false)
 }
 
 function jumpToLoginPage() {
@@ -282,7 +276,10 @@ function jumpToLoginPage() {
           }"
           shrink-0
         >
-          <LiquidSegmentIndicator v-if="settings.enableLiquidSegmentIndicator" :active-key="historyLayout" />
+          <LiquidSegmentIndicator
+            v-if="settings.enableLiquidSegmentIndicator"
+            :active-key="historyLayout"
+          />
           <button
             v-for="layout in layoutIcons"
             :key="layout.value"
@@ -350,7 +347,8 @@ function jumpToLoginPage() {
             >
               <!-- time slot -->
               <div
-                mr-8 px-4
+                mr-8
+                px-4
                 b-l="~ 2px dashed $bew-fill-2"
                 group-hover:b-l="$bew-theme-color-40"
                 shrink-0
@@ -380,10 +378,7 @@ function jumpToLoginPage() {
                   rounded="$bew-radius-half"
                   duration-300
                 >
-                  {{
-                    useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss')
-                      .value
-                  }}
+                  {{ useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss').value }}
                 </div>
               </div>
 
@@ -392,8 +387,10 @@ function jumpToLoginPage() {
                 flex="~ gap-6 col md:col lg:row items-start"
                 relative
                 group-hover:bg="$bew-fill-2"
-                duration-300 w-full
-                p-2 m-1
+                duration-300
+                w-full
+                p-2
+                m-1
                 content-visibility-auto
               >
                 <!-- Cover -->
@@ -412,7 +409,7 @@ function jumpToLoginPage() {
                     :src="`${getHistoryItemCover(historyItem)}@480w_270h_1c`"
                     :alt="historyItem.title"
                     object-cover
-                  >
+                  />
 
                   <span
                     v-if="historyItem.history.business !== HistoryBusiness.ARCHIVE"
@@ -423,22 +420,18 @@ function jumpToLoginPage() {
                     m-1
                     rounded="$bew-radius-half"
                   >
-                    <template
-                      v-if="historyItem.history.business === HistoryBusiness.LIVE"
-                    >
+                    <template v-if="historyItem.history.business === HistoryBusiness.LIVE">
                       {{ t('history.livestreaming') }}
                     </template>
-                    <template
-                      v-else-if="historyItem.history.business === HistoryBusiness.PGC"
-                    >
+                    <template v-else-if="historyItem.history.business === HistoryBusiness.PGC">
                       {{ t('history.pgc') }}
                     </template>
                   </span>
 
                   <div
                     v-if="
-                      historyItem.history.business === HistoryBusiness.ARCHIVE
-                        || historyItem.history.business === HistoryBusiness.PGC
+                      historyItem.history.business === HistoryBusiness.ARCHIVE ||
+                      historyItem.history.business === HistoryBusiness.PGC
                     "
                     pos="absolute bottom-0 right-0"
                     bg="black opacity-60"
@@ -460,12 +453,10 @@ function jumpToLoginPage() {
                   <div w-full pos="absolute bottom-0" bg="white opacity-60">
                     <Progress
                       v-if="
-                        historyItem.history.business === HistoryBusiness.ARCHIVE
-                          || historyItem.history.business === HistoryBusiness.PGC
+                        historyItem.history.business === HistoryBusiness.ARCHIVE ||
+                        historyItem.history.business === HistoryBusiness.PGC
                       "
-                      :percentage="
-                        (historyItem.progress / historyItem.duration) * 100
-                      "
+                      :percentage="(historyItem.progress / historyItem.duration) * 100"
                     />
                   </div>
                 </div>
@@ -474,14 +465,11 @@ function jumpToLoginPage() {
                 <div flex justify-between w-full h-full>
                   <div flex="~ col">
                     <a
-                      :href="`${getHistoryUrl(historyItem)}`" target="_blank"
+                      :href="`${getHistoryUrl(historyItem)}`"
+                      target="_blank"
                       :title="historyItem.show_title ? historyItem.show_title : historyItem.title"
                     >
-                      <h3
-                        class="keep-two-lines"
-                        overflow="hidden"
-                        text="lg overflow-ellipsis"
-                      >
+                      <h3 class="keep-two-lines" overflow="hidden" text="lg overflow-ellipsis">
                         {{ historyItem.show_title ? historyItem.show_title : historyItem.title }}
                       </h3>
                     </a>
@@ -496,13 +484,20 @@ function jumpToLoginPage() {
                       hover:bg="$bew-theme-color-10"
                       duration-300
                       pr-2
-                      :href="historyItem.author_mid ? `https://space.bilibili.com/${historyItem.author_mid}` : historyItem.uri" target="_blank"
+                      :href="
+                        historyItem.author_mid
+                          ? `https://space.bilibili.com/${historyItem.author_mid}`
+                          : historyItem.uri
+                      "
+                      target="_blank"
                     >
                       <img
                         :src="
-                          removeHttpFromUrl(`${historyItem.author_face
-                            ? historyItem.author_face
-                            : historyItem.cover}@40w_40h_1c`)
+                          removeHttpFromUrl(
+                            `${
+                              historyItem.author_face ? historyItem.author_face : historyItem.cover
+                            }@40w_40h_1c`,
+                          )
                         "
                         w-30px
                         aspect-square
@@ -510,12 +505,8 @@ function jumpToLoginPage() {
                         alt=""
                         rounded="1/2"
                         mr-2
-                      >
-                      {{
-                        historyItem.author_name
-                          ? historyItem.author_name
-                          : historyItem.title
-                      }}
+                      />
+                      {{ historyItem.author_name ? historyItem.author_name : historyItem.title }}
                       <span
                         v-if="historyItem.live_status === 1"
                         text="$bew-theme-color"
@@ -523,32 +514,30 @@ function jumpToLoginPage() {
                         items-center
                         gap-1
                         m="l-2"
-                      ><div i-tabler:live-photo />
+                        ><div i-tabler:live-photo />
                         {{ t('history.live') }}
                       </span>
                     </a>
-                    <div
-                      display="xl:none"
-                      flex items-center
-                      text="$bew-text-3 sm"
-                      mt-auto
-                    >
+                    <div display="xl:none" flex items-center text="$bew-text-3 sm" mt-auto>
                       <span text-xl mr-2 lh-0>
                         <i
-                          v-if="historyItem.history.dt === 1 || historyItem.history.dt === 3 || historyItem.history.dt === 5 || historyItem.history.dt === 7"
+                          v-if="
+                            historyItem.history.dt === 1 ||
+                            historyItem.history.dt === 3 ||
+                            historyItem.history.dt === 5 ||
+                            historyItem.history.dt === 7
+                          "
                           i-mingcute:cellphone-line
                         />
                         <i v-if="historyItem.history.dt === 2" i-mingcute:tv-1-line />
                         <i
-                          v-if="historyItem.history.dt === 4 || historyItem.history.dt === 6" i-mingcute:pad-line
+                          v-if="historyItem.history.dt === 4 || historyItem.history.dt === 6"
+                          i-mingcute:pad-line
                         />
                         <i v-if="historyItem.history.dt === 33" i-mingcute:tv-2-line />
                       </span>
                       <span>
-                        {{
-                          useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss')
-                            .value
-                        }}
+                        {{ useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss').value }}
                       </span>
                     </div>
                   </div>
@@ -556,7 +545,8 @@ function jumpToLoginPage() {
                   <button
                     text="size-$bew-icon-size-lg $bew-text-3"
                     hover:color="$bew-theme-color"
-                    opacity-0 group-hover:opacity-100
+                    opacity-0
+                    group-hover:opacity-100
                     p-2
                     duration-300
                     :aria-label="t('common.operation.delete')"
@@ -576,17 +566,18 @@ function jumpToLoginPage() {
 
       <!-- loading -->
       <Transition name="fade">
-        <loading
-          v-if="isLoading && historyList.length !== 0 && !noMoreContent"
-          m="-t-4"
-        />
+        <loading v-if="isLoading && historyList.length !== 0 && !noMoreContent" m="-t-4" />
       </Transition>
     </main>
 
     <aside relative w="full md:40% lg:30% xl:25%" order="1 md:2 lg:2">
       <div
         class="history-sidebar-panel bew-popover-surface bew-popover-surface--wallpaper"
-        pos="sticky top-120px" flex="~ col gap-4" justify-start my-10 w-full
+        pos="sticky top-120px"
+        flex="~ col gap-4"
+        justify-start
+        my-10
+        w-full
       >
         <input
           v-model.lazy.trim="keyword"
@@ -600,12 +591,10 @@ function jumpToLoginPage() {
           outline-none
           w-full
           @keyup.enter="handleSearch"
-        >
+        />
         <Button
           block
-          style="
-            --b-button-shadow: var(--bew-shadow-1);
-          "
+          style="--b-button-shadow: var(--bew-shadow-1)"
           @click="handleClearAllWatchHistory"
         >
           <template #left>
@@ -616,9 +605,7 @@ function jumpToLoginPage() {
         <Button
           v-if="!historyStatus"
           block
-          style="
-            --b-button-shadow: var(--bew-shadow-1);
-          "
+          style="--b-button-shadow: var(--bew-shadow-1)"
           @click="handlePauseWatchHistory"
         >
           <template #left>
@@ -629,9 +616,7 @@ function jumpToLoginPage() {
         <Button
           v-else
           block
-          style="
-            --b-button-shadow: var(--bew-shadow-1);
-          "
+          style="--b-button-shadow: var(--bew-shadow-1)"
           @click="handleTurnOnWatchHistory"
         >
           <template #left>
@@ -668,7 +653,7 @@ function jumpToLoginPage() {
     line-height: var(--bew-line-height-control);
 
     &::before {
-      content: "";
+      content: '';
       position: absolute;
       top: var(--bew-space-3);
       left: -1px;

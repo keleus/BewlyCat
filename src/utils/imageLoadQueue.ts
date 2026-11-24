@@ -46,27 +46,23 @@ let isPumping = false
 let pumpScheduled = false
 
 function getTaskPriority(task: QueueTask): number {
-  if (!task.options.priority)
-    return 0
+  if (!task.options.priority) return 0
 
   try {
     const priority = task.options.priority()
     return Number.isFinite(priority) ? priority : Number.POSITIVE_INFINITY
-  }
-  catch {
+  } catch {
     return Number.POSITIVE_INFINITY
   }
 }
 
 function removePendingTask(task: QueueTask) {
   const index = pendingTasks.indexOf(task)
-  if (index >= 0)
-    pendingTasks.splice(index, 1)
+  if (index >= 0) pendingTasks.splice(index, 1)
 }
 
 function settleTask(task: QueueTask, reason: ImageLoadQueueSettleReason) {
-  if (task.status === 'settled')
-    return
+  if (task.status === 'settled') return
 
   task.status = 'settled'
   removePendingTask(task)
@@ -81,8 +77,7 @@ function settleTask(task: QueueTask, reason: ImageLoadQueueSettleReason) {
 }
 
 function cancelTask(task: QueueTask, reason: ImageLoadQueueCancelReason) {
-  if (task.status === 'settled')
-    return
+  if (task.status === 'settled') return
 
   task.cancelled = true
   // Mark the task settled before invoking user code. The callback can clear
@@ -91,8 +86,7 @@ function cancelTask(task: QueueTask, reason: ImageLoadQueueCancelReason) {
 
   try {
     task.options.onCancel?.(reason)
-  }
-  finally {
+  } finally {
     scheduleQueuePump()
   }
 }
@@ -113,51 +107,47 @@ function startTask(task: QueueTask) {
   let result: Promise<void> | void
   try {
     result = task.options.start(context)
-  }
-  catch {
+  } catch {
     settleTask(task, 'failed')
     scheduleQueuePump()
     return
   }
 
-  Promise.resolve(result).then(
-    () => settleTask(task, 'completed'),
-    () => settleTask(task, 'failed'),
-  ).finally(() => {
-    scheduleQueuePump()
-  })
+  Promise.resolve(result)
+    .then(
+      () => settleTask(task, 'completed'),
+      () => settleTask(task, 'failed'),
+    )
+    .finally(() => {
+      scheduleQueuePump()
+    })
 }
 
 function pumpQueue() {
-  if (isPumping || activeTasks.size >= IMAGE_LOAD_QUEUE_LIMIT || pendingTasks.length === 0)
-    return
+  if (isPumping || activeTasks.size >= IMAGE_LOAD_QUEUE_LIMIT || pendingTasks.length === 0) return
 
   isPumping = true
   try {
     // 每轮先统一读取位置，再启动图片，避免排序比较和每个空闲槽位重复测量。
     const prioritizedTasks = pendingTasks
-      .map(task => ({ task, priority: getTaskPriority(task) }))
+      .map((task) => ({ task, priority: getTaskPriority(task) }))
       .sort((first, second) => first.priority - second.priority || first.task.id - second.task.id)
 
     for (const { task } of prioritizedTasks) {
-      if (activeTasks.size >= IMAGE_LOAD_QUEUE_LIMIT)
-        break
+      if (activeTasks.size >= IMAGE_LOAD_QUEUE_LIMIT) break
 
-      if (task.status !== 'queued' || task.cancelled)
-        continue
+      if (task.status !== 'queued' || task.cancelled) continue
 
       removePendingTask(task)
       startTask(task)
     }
-  }
-  finally {
+  } finally {
     isPumping = false
   }
 }
 
 function scheduleQueuePump() {
-  if (pumpScheduled)
-    return
+  if (pumpScheduled) return
 
   pumpScheduled = true
   queueMicrotask(() => {
@@ -202,18 +192,19 @@ interface ScrollRootRecord {
 const scrollRootRecords = new Map<Element | null, ScrollRootRecord>()
 
 function getRootScrollTop(root: Element | null): number {
-  if (root && !isDocumentScrollingElement(root))
-    return root.scrollTop
+  if (root && !isDocumentScrollingElement(root)) return root.scrollTop
 
-  if (typeof window === 'undefined')
-    return 0
+  if (typeof window === 'undefined') return 0
   return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0
 }
 
 function isDocumentScrollingElement(root: Element): boolean {
-  if (typeof document === 'undefined')
-    return false
-  return root === document.scrollingElement || root === document.documentElement || root === document.body
+  if (typeof document === 'undefined') return false
+  return (
+    root === document.scrollingElement ||
+    root === document.documentElement ||
+    root === document.body
+  )
 }
 
 /**
@@ -221,8 +212,7 @@ function isDocumentScrollingElement(root: Element): boolean {
  * direction for queue ordering and is removed when the last picture leaves.
  */
 export function subscribeImageLoadRoot(root: Element | null): () => void {
-  if (typeof window === 'undefined')
-    return () => {}
+  if (typeof window === 'undefined') return () => {}
 
   let record = scrollRootRecords.get(root)
   if (!record) {
@@ -234,8 +224,7 @@ export function subscribeImageLoadRoot(root: Element | null): () => void {
       direction: 1,
       target,
       onScroll: () => {
-        if (!record)
-          return
+        if (!record) return
 
         const scrollTop = getRootScrollTop(record.root)
         if (scrollTop !== record.lastScrollTop)
@@ -254,17 +243,14 @@ export function subscribeImageLoadRoot(root: Element | null): () => void {
   let subscribed = true
 
   return () => {
-    if (!subscribed)
-      return
+    if (!subscribed) return
     subscribed = false
 
     const current = scrollRootRecords.get(root)
-    if (!current)
-      return
+    if (!current) return
 
     current.subscriberCount--
-    if (current.subscriberCount > 0)
-      return
+    if (current.subscriberCount > 0) return
 
     current.target.removeEventListener('scroll', current.onScroll)
     if (current.target === window && current.root)
@@ -277,11 +263,10 @@ export function getImageLoadScrollDirection(root: Element | null): 1 | -1 {
   return scrollRootRecords.get(root)?.direction || 1
 }
 
-function getRootViewport(root: Element | null): { top: number, bottom: number } {
+function getRootViewport(root: Element | null): { top: number; bottom: number } {
   if (root && !isDocumentScrollingElement(root)) {
     const rootRect = root.getBoundingClientRect()
-    if (rootRect.bottom > rootRect.top)
-      return { top: rootRect.top, bottom: rootRect.bottom }
+    if (rootRect.bottom > rootRect.top) return { top: rootRect.top, bottom: rootRect.bottom }
   }
 
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0
@@ -302,9 +287,7 @@ export function getImageLoadPriority(element: Element, root: Element | null): nu
     return Math.abs(elementCenter - viewportCenter)
 
   const direction = getImageLoadScrollDirection(root)
-  const isAhead = direction > 0
-    ? rect.top >= viewport.bottom
-    : rect.bottom <= viewport.top
+  const isAhead = direction > 0 ? rect.top >= viewport.bottom : rect.bottom <= viewport.top
   const distance = isAhead
     ? direction > 0
       ? Math.max(0, rect.top - viewport.bottom)

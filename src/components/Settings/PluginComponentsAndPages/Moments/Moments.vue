@@ -18,11 +18,36 @@ const { t } = useI18n()
 const { confirm: showConfirmDialog } = useConfirmDialog()
 
 const pluginComponentOptions = computed(() => [
-  { setting: 'momentsSidebarShowUserCard' as const, label: t('settings.moments_show_user_card'), labelKey: 'settings.moments_show_user_card', icon: 'i-tabler-user-square-rounded' },
-  { setting: 'momentsSidebarShowPublish' as const, label: t('settings.moments_show_publish'), labelKey: undefined, icon: 'i-tabler-edit' },
-  { setting: 'momentsSidebarShowLive' as const, label: t('settings.moments_show_live'), labelKey: undefined, icon: 'i-tabler-live-photo' },
-  { setting: 'momentsSidebarShowHotSearch' as const, label: t('settings.moments_show_hot_search'), labelKey: 'settings.moments_show_hot_search', icon: 'i-tabler-flame' },
-  { setting: 'momentsShowUpList' as const, label: t('settings.moments_show_up_list'), labelKey: undefined, icon: 'i-tabler-users' },
+  {
+    setting: 'momentsSidebarShowUserCard' as const,
+    label: t('settings.moments_show_user_card'),
+    labelKey: 'settings.moments_show_user_card',
+    icon: 'i-tabler-user-square-rounded',
+  },
+  {
+    setting: 'momentsSidebarShowPublish' as const,
+    label: t('settings.moments_show_publish'),
+    labelKey: undefined,
+    icon: 'i-tabler-edit',
+  },
+  {
+    setting: 'momentsSidebarShowLive' as const,
+    label: t('settings.moments_show_live'),
+    labelKey: undefined,
+    icon: 'i-tabler-live-photo',
+  },
+  {
+    setting: 'momentsSidebarShowHotSearch' as const,
+    label: t('settings.moments_show_hot_search'),
+    labelKey: 'settings.moments_show_hot_search',
+    icon: 'i-tabler-flame',
+  },
+  {
+    setting: 'momentsShowUpList' as const,
+    label: t('settings.moments_show_up_list'),
+    labelKey: undefined,
+    icon: 'i-tabler-users',
+  },
 ])
 
 const openModeOptions = computed(() => [
@@ -64,17 +89,19 @@ const videoCardOpenModeOptions = computed(() => [
 ])
 
 // 3、4 列未做适配，需确认后才展开
-const moreGridColumnsUnlocked = ref(settings.value.momentsGridColumns === '3' || settings.value.momentsGridColumns === '4')
+const moreGridColumnsUnlocked = ref(
+  settings.value.momentsGridColumns === '3' || settings.value.momentsGridColumns === '4',
+)
 
-const gridColumnOptions = computed<{ label: string, value: MomentsGridColumns | 'more' }[]>(() => [
+const gridColumnOptions = computed<{ label: string; value: MomentsGridColumns | 'more' }[]>(() => [
   { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' },
   { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' },
-  ...moreGridColumnsUnlocked.value
+  ...(moreGridColumnsUnlocked.value
     ? [
         { label: t('settings.moments_grid_columns_option', { count: 3 }), value: '3' as const },
         { label: t('settings.moments_grid_columns_option', { count: 4 }), value: '4' as const },
       ]
-    : [{ label: t('settings.moments_grid_columns_more'), value: 'more' as const }],
+    : [{ label: t('settings.moments_grid_columns_more'), value: 'more' as const }]),
 ])
 
 async function selectGridColumns(value: MomentsGridColumns | 'more') {
@@ -82,11 +109,15 @@ async function selectGridColumns(value: MomentsGridColumns | 'more') {
     settings.value.momentsGridColumns = value
     return
   }
-  if (await showConfirmDialog(t('settings.moments_grid_columns_more_confirm'), { title: t('settings.moments_grid_columns') }))
+  if (
+    await showConfirmDialog(t('settings.moments_grid_columns_more_confirm'), {
+      title: t('settings.moments_grid_columns'),
+    })
+  )
     moreGridColumnsUnlocked.value = true
 }
 
-const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition }[]>(() => [
+const momentsTabsPositionOptions = computed<{ label: string; value: TabsPosition }[]>(() => [
   { label: t('common.position.left'), value: 'left' },
   { label: t('common.position.center'), value: 'center' },
 ])
@@ -104,7 +135,11 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         :desc="$t('settings.moments_visible_components_plugin_desc')"
       >
         <template #bottom>
-          <SettingsSearchContainer class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
+          <SettingsSearchContainer
+            class="moment-setting-tags"
+            role="group"
+            :aria-label="$t('settings.moments_visible_components')"
+          >
             <SettingsToggleTag
               v-for="option in pluginComponentOptions"
               :key="option.setting"
@@ -145,10 +180,7 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
       >
         <Radio v-model="settings.momentsStartFromLastSeen" />
       </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.moments_enable_live_preview')"
-        right-width="auto"
-      >
+      <SettingsItem :title="$t('settings.moments_enable_live_preview')" right-width="auto">
         <Radio v-model="settings.momentsEnableLivePreview" />
       </SettingsItem>
       <SettingsItem
@@ -159,7 +191,10 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         <Radio v-model="settings.momentsEnableVideoPreview" />
       </SettingsItem>
       <template v-if="settings.momentsEnableVideoPreview">
-        <SettingsItem :title="$t('settings.enable_video_ctrl_bar_on_video_card')" right-width="auto">
+        <SettingsItem
+          :title="$t('settings.enable_video_ctrl_bar_on_video_card')"
+          right-width="auto"
+        >
           <Radio v-model="settings.momentsEnableVideoControls" />
         </SettingsItem>
         <SettingsItem
@@ -181,11 +216,7 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         :desc="$t('settings.moments_card_open_mode_desc')"
         right-width="auto"
       >
-        <Select
-          v-model="settings.momentsCardOpenMode"
-          :options="openModeOptions"
-          w="180px"
-        />
+        <Select v-model="settings.momentsCardOpenMode" :options="openModeOptions" w="180px" />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.moments_video_card_open_mode')"

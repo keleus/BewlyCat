@@ -5,23 +5,22 @@ import { fileURLToPath } from 'node:url'
 
 import { bgCyan, black } from 'kolorist'
 
-export const r = (...args: string[]) => resolve(dirname(fileURLToPath(import.meta.url)), '..', ...args)
+export const r = (...args: string[]) =>
+  resolve(dirname(fileURLToPath(import.meta.url)), '..', ...args)
 export const isDev = process.env.NODE_ENV !== 'production'
 export const isWin = process.platform === 'win32'
 export const isFirefox = process.env.FIREFOX === 'true'
 export const isSafari = process.env.SAFARI === 'true'
 
 function readBuildCommit(): string {
-  if (!isDev)
-    return ''
+  if (!isDev) return ''
   try {
     return execFileSync('git', ['rev-parse', 'HEAD'], {
       cwd: r(),
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim()
-  }
-  catch {
+  } catch {
     // 源码压缩包可能不含 Git 元数据，此时仅显示版本号。
     return ''
   }

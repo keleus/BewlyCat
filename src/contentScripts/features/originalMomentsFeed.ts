@@ -7,8 +7,7 @@ export function isOriginalMomentsFeed(url: string = location.href) {
   try {
     const { hostname, pathname } = new URL(url)
     return hostname === 't.bilibili.com' && /^\/?$/.test(stripBilibiliLocalePathname(pathname))
-  }
-  catch {
+  } catch {
     return false
   }
 }

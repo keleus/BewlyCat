@@ -11,7 +11,12 @@ const { visible } = useSettingsSearchNode(() => undefined)
 </script>
 
 <template>
-  <details v-show="visible" class="shortcuts-group" :open="defaultOpen" :data-settings-title="title">
+  <details
+    v-show="visible"
+    class="shortcuts-group"
+    :open="defaultOpen"
+    :data-settings-title="title"
+  >
     <summary>{{ title }}</summary>
     <SettingsItemGroup>
       <slot />
@@ -41,7 +46,7 @@ const { visible } = useSettingsSearchNode(() => undefined)
     }
 
     &::before {
-      content: "›";
+      content: '›';
     }
 
     &:hover {

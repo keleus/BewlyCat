@@ -31,8 +31,7 @@ interface NewerMomentsResult<T> {
 
 function parseDynamicId(id: unknown): bigint | null {
   const value = typeof id === 'number' ? String(id) : id
-  if (typeof value !== 'string' || !/^\d+$/.test(value))
-    return null
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return null
   return BigInt(value)
 }
 
@@ -53,14 +52,12 @@ export function isNotOlderDynamicId(a: unknown, b: unknown): boolean {
 /** 当前账号全部未读视频动态 ID（新到旧）；请求失败返回 null，由调用方退回顶部加载。 */
 export async function fetchUnreadMomentIds(): Promise<string[] | null> {
   try {
-    const res = await api.moment.getTopBarNewMomentsCount({}) as DynamicEntranceResult
-    if (res.code !== 0)
-      return null
+    const res = (await api.moment.getTopBarNewMomentsCount({})) as DynamicEntranceResult
+    if (res.code !== 0) return null
     return (res.data?.dyn_basic_infos || [])
-      .map(info => String(info.dyn_id ?? ''))
-      .filter(id => parseDynamicId(id) !== null)
-  }
-  catch (error) {
+      .map((info) => String(info.dyn_id ?? ''))
+      .filter((id) => parseDynamicId(id) !== null)
+  } catch (error) {
     console.error('获取未读动态失败:', error)
     return null
   }
@@ -87,7 +84,7 @@ export async function fetchNewerMoments<T extends { id_str?: string }>(
   step: number,
   maxPages = 5,
 ): Promise<NewerMomentsResult<T> | null> {
-  const newerCount = unreadIds.findIndex(id => !isNewerDynamicId(id, topId))
+  const newerCount = unreadIds.findIndex((id) => !isNewerDynamicId(id, topId))
   const unreadAbove = newerCount === -1 ? unreadIds.length : newerCount
   const startIndex = Math.max(0, unreadAbove - step)
   const reachedTop = startIndex === 0
@@ -96,18 +93,14 @@ export async function fetchNewerMoments<T extends { id_str?: string }>(
 
   for (let page = 0; page < maxPages; page++) {
     const result = await fetchPage(offset)
-    if (!result)
-      return null
+    if (!result) return null
 
     let reachedTopId = false
     for (const item of result.items) {
-      if (isNewerDynamicId(item.id_str, topId))
-        items.push(item)
-      else
-        reachedTopId = true
+      if (isNewerDynamicId(item.id_str, topId)) items.push(item)
+      else reachedTopId = true
     }
-    if (reachedTopId || !result.hasMore || !result.offset || result.offset === offset)
-      break
+    if (reachedTopId || !result.hasMore || !result.offset || result.offset === offset) break
     offset = result.offset
   }
 

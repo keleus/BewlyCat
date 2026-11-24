@@ -15,7 +15,11 @@ import Pagination from '../components/Pagination.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
 import { useSearchRequest } from '../composables/useSearchRequest'
-import { convertBangumiHighlight, convertMediaFtHighlight, isMediaFtItem } from '../searchTransforms'
+import {
+  convertBangumiHighlight,
+  convertMediaFtHighlight,
+  isMediaFtItem,
+} from '../searchTransforms'
 import { dedupeByKey } from '../utils/searchHelpers'
 
 const props = defineProps<{
@@ -65,38 +69,44 @@ const {
   setHasMore,
   setExhausted,
   reset: resetLoadMore,
-} = useLoadMore(async () => {
-  const success = await performSearch(true)
-  const itemsCount = results.value?.length || 0
-  return { success, itemsCount }
-}, {
-  isLoading: () => isLoading.value,
-})
+} = useLoadMore(
+  async () => {
+    const success = await performSearch(true)
+    const itemsCount = results.value?.length || 0
+    return { success, itemsCount }
+  },
+  {
+    isLoading: () => isLoading.value,
+  },
+)
 
 // 将番剧分组为番剧和影视
 const bangumiGroups = computed(() => {
   const list = results.value || []
   return {
-    bangumi: list.filter(item => !isMediaFtItem(item)),
-    movie: list.filter(item => isMediaFtItem(item)),
+    bangumi: list.filter((item) => !isMediaFtItem(item)),
+    movie: list.filter((item) => isMediaFtItem(item)),
   }
 })
 
-watch(() => props.keyword, async (newKeyword, oldKeyword) => {
-  const normalizedNew = (newKeyword || '').trim()
-  const normalizedOld = (oldKeyword || '').trim()
+watch(
+  () => props.keyword,
+  async (newKeyword, oldKeyword) => {
+    const normalizedNew = (newKeyword || '').trim()
+    const normalizedOld = (oldKeyword || '').trim()
 
-  if (!normalizedNew) {
-    resetAll()
-    return
-  }
+    if (!normalizedNew) {
+      resetAll()
+      return
+    }
 
-  // 关键词变化时才执行
-  if (normalizedNew !== normalizedOld) {
-    resetAll()
-    await performSearch(false)
-  }
-})
+    // 关键词变化时才执行
+    if (normalizedNew !== normalizedOld) {
+      resetAll()
+      await performSearch(false)
+    }
+  },
+)
 
 // 组件挂载时立即执行搜索
 onMounted(() => {
@@ -112,21 +122,22 @@ onMounted(() => {
 
 async function performSearch(loadMore: boolean): Promise<boolean> {
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return false
+  if (!keyword) return false
 
   // 分页模式下不支持 loadMore
   const isLoadMore = paginationMode.value === 'scroll' && loadMore
 
-  if (isLoadMore && (isLoading.value || exhausted.value))
-    return false
+  if (isLoadMore && (isLoading.value || exhausted.value)) return false
 
-  if (!isLoadMore)
-    setExhausted(false)
+  if (!isLoadMore) setExhausted(false)
 
   // 滚动模式下：loadMore 使用 getNextPage，否则从第1页开始
   // 翻页模式下：使用 currentPage（如果有设置）或从第1页开始
-  const targetPage = isLoadMore ? getNextPage(true) : (currentPage.value > 0 ? currentPage.value : getNextPage(false))
+  const targetPage = isLoadMore
+    ? getNextPage(true)
+    : currentPage.value > 0
+      ? currentPage.value
+      : getNextPage(false)
   const previousLength = results.value?.length || 0
 
   const success = await search(
@@ -138,18 +149,17 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     },
   )
 
-  if (!success || !lastResponse.value?.data)
-    return false
+  if (!success || !lastResponse.value?.data) return false
 
   const rawData = lastResponse.value.data
   const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
 
   if (isLoadMore && results.value) {
     const merged = [...results.value, ...incomingList]
-    results.value = dedupeByKey(merged, item =>
-      String(item?.season_id ?? item?.media_id ?? item?.id ?? JSON.stringify(item)))
-  }
-  else {
+    results.value = dedupeByKey(merged, (item) =>
+      String(item?.season_id ?? item?.media_id ?? item?.id ?? JSON.stringify(item)),
+    )
+  } else {
     results.value = incomingList
   }
 
@@ -164,14 +174,12 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
     if (incomingList.length === 0) {
       setExhausted(true)
-    }
-    else if (newItems <= 0 && targetPage >= totalPages.value) {
+    } else if (newItems <= 0 && targetPage >= totalPages.value) {
       setExhausted(true)
     }
 
     // 处理加载完成
-    if (isLoadMore)
-      await handleLoadMoreCompletion(haveScrollbar)
+    if (isLoadMore) await handleLoadMoreCompletion(haveScrollbar)
   }
 
   return true
@@ -179,12 +187,10 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
 // 翻页模式的页码切换
 async function handlePageChange(page: number) {
-  if (paginationMode.value !== 'pagination')
-    return
+  if (paginationMode.value !== 'pagination') return
 
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return
+  if (!keyword) return
 
   // 先滚动到顶部
   handleBackToTop()
@@ -259,16 +265,8 @@ defineExpose({
           :key="bangumi.id || bangumi.title"
           class="bangumi-highlight-card"
         >
-          <a
-            class="bangumi-highlight-cover"
-            :href="bangumi.url"
-            target="_blank"
-            @click.stop
-          >
-            <img
-              :src="bangumi.cover"
-              :alt="bangumi.title"
-            >
+          <a class="bangumi-highlight-cover" :href="bangumi.url" target="_blank" @click.stop>
+            <img :src="bangumi.cover" :alt="bangumi.title" />
             <div v-if="bangumi.badge?.text || bangumi.capsuleText" class="bangumi-highlight-badge">
               {{ bangumi.badge?.text || bangumi.capsuleText }}
             </div>
@@ -306,12 +304,7 @@ defineExpose({
               :fallback-url="bangumi.url"
             />
             <div class="bangumi-highlight-actions" flex items-center gap-3>
-              <a
-                class="bangumi-highlight-button"
-                :href="bangumi.url"
-                target="_blank"
-                @click.stop
-              >
+              <a class="bangumi-highlight-button" :href="bangumi.url" target="_blank" @click.stop>
                 {{ bangumi.buttonText || t('search.watch_now') }}
               </a>
             </div>
@@ -328,22 +321,18 @@ defineExpose({
             :key="item.id || item.title"
             class="bangumi-highlight-card"
           >
-            <a
-              class="bangumi-highlight-cover"
-              :href="item.url"
-              target="_blank"
-              @click.stop
-            >
-              <img
-                :src="item.cover"
-                :alt="item.title"
-              >
+            <a class="bangumi-highlight-cover" :href="item.url" target="_blank" @click.stop>
+              <img :src="item.cover" :alt="item.title" />
               <div v-if="item.badge" class="bangumi-highlight-badge">
                 {{ item.badge }}
               </div>
             </a>
             <div class="bangumi-highlight-info">
-              <div class="bangumi-highlight-title bew-card-title-text" text="$bew-text-1" font-medium>
+              <div
+                class="bangumi-highlight-title bew-card-title-text"
+                text="$bew-text-1"
+                font-medium
+              >
                 {{ item.title }}
               </div>
               <div class="bangumi-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
@@ -369,12 +358,7 @@ defineExpose({
                 :fallback-url="item.url"
               />
               <div class="bangumi-highlight-actions" flex items-center gap-3>
-                <a
-                  class="bangumi-highlight-button"
-                  :href="item.url"
-                  target="_blank"
-                  @click.stop
-                >
+                <a class="bangumi-highlight-button" :href="item.url" target="_blank" @click.stop>
                   {{ t('search.watch_now') }}
                 </a>
               </div>
@@ -386,10 +370,7 @@ defineExpose({
 
     <!-- 滚动加载模式 -->
     <template v-if="paginationMode === 'scroll'">
-      <SmoothLoading
-        :show="isLoading && results && results.length > 0"
-        :keep-space="true"
-      />
+      <SmoothLoading :show="isLoading && results && results.length > 0" :keep-space="true" />
 
       <Empty
         v-if="!isLoading && results && results.length > 0 && !hasMore"

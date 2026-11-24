@@ -24,8 +24,10 @@ const TITLE_LINE_HEIGHT = 1.35
  */
 export function useVideoCardSharedStyles() {
   // 标题字体大小类（全局共享，使用4档预设）
-  const titleFontSizeClass = computed(() =>
-    VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardTitleFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.base,
+  const titleFontSizeClass = computed(
+    () =>
+      VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardTitleFontSize] ??
+      VIDEO_CARD_FONT_SIZE_MAP.base,
   )
 
   // 标题样式（全局共享）
@@ -36,13 +38,16 @@ export function useVideoCardSharedStyles() {
   })
 
   // 作者字体大小类（全局共享）
-  const authorFontSizeClass = computed(() =>
-    VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardAuthorFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.sm,
+  const authorFontSizeClass = computed(
+    () =>
+      VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardAuthorFontSize] ??
+      VIDEO_CARD_FONT_SIZE_MAP.sm,
   )
 
   // 元数据字体大小类（全局共享）
-  const metaFontSizeClass = computed(() =>
-    VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardMetaFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.xs,
+  const metaFontSizeClass = computed(
+    () =>
+      VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardMetaFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.xs,
   )
 
   return {

@@ -6,7 +6,10 @@ import Select from '~/components/Select.vue'
 import Slider from '~/components/Slider.vue'
 import { settings } from '~/logic'
 import type { CommentReplyPaginationMode, CommentReplyTreeMode } from '~/logic/storage'
-import { COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT, COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT } from '~/logic/storage'
+import {
+  COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT,
+  COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT,
+} from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -16,10 +19,7 @@ import CommentAiFilterSettings from './CommentAiFilterSettings.vue'
 
 const { t } = useI18n()
 
-type CommentToggleSetting
-  = | 'showIPLocation'
-    | 'showSex'
-    | 'showCommentHostTag'
+type CommentToggleSetting = 'showIPLocation' | 'showSex' | 'showCommentHostTag'
 
 interface CommentToggleOption {
   setting: CommentToggleSetting
@@ -29,27 +29,46 @@ interface CommentToggleOption {
 }
 
 const commentToggleOptions = computed<CommentToggleOption[]>(() => [
-  { setting: 'showIPLocation', label: t('settings.show_ip_location'), description: t('settings.show_ip_location_desc'), icon: 'i-tabler-map-pin' },
-  { setting: 'showSex', label: t('settings.show_sex'), description: t('settings.show_sex_desc'), icon: 'i-tabler-gender-bigender' },
-  { setting: 'showCommentHostTag', label: t('settings.show_comment_host_tag'), description: t('settings.show_comment_host_tag_desc'), icon: 'i-tabler-user-star' },
+  {
+    setting: 'showIPLocation',
+    label: t('settings.show_ip_location'),
+    description: t('settings.show_ip_location_desc'),
+    icon: 'i-tabler-map-pin',
+  },
+  {
+    setting: 'showSex',
+    label: t('settings.show_sex'),
+    description: t('settings.show_sex_desc'),
+    icon: 'i-tabler-gender-bigender',
+  },
+  {
+    setting: 'showCommentHostTag',
+    label: t('settings.show_comment_host_tag'),
+    description: t('settings.show_comment_host_tag_desc'),
+    icon: 'i-tabler-user-star',
+  },
 ])
 
-const commentReplyTreeModeOptions = computed<{ label: string, value: CommentReplyTreeMode }[]>(() => [
-  {
-    label: t('settings.comment_reply_tree_mode.line_collapse_main'),
-    value: 'lineCollapseMain',
-  },
-  {
-    label: t('settings.comment_reply_tree_mode.line_keep_main'),
-    value: 'lineKeepMain',
-  },
-  {
-    label: t('settings.comment_reply_tree_mode.indent_only'),
-    value: 'indentOnly',
-  },
-])
+const commentReplyTreeModeOptions = computed<{ label: string; value: CommentReplyTreeMode }[]>(
+  () => [
+    {
+      label: t('settings.comment_reply_tree_mode.line_collapse_main'),
+      value: 'lineCollapseMain',
+    },
+    {
+      label: t('settings.comment_reply_tree_mode.line_keep_main'),
+      value: 'lineKeepMain',
+    },
+    {
+      label: t('settings.comment_reply_tree_mode.indent_only'),
+      value: 'indentOnly',
+    },
+  ],
+)
 
-const commentReplyPaginationModeOptions = computed<{ label: string, value: CommentReplyPaginationMode }[]>(() => [
+const commentReplyPaginationModeOptions = computed<
+  { label: string; value: CommentReplyPaginationMode }[]
+>(() => [
   {
     label: t('settings.comment_reply_pagination_mode.load_more'),
     value: 'loadMore',
@@ -63,7 +82,11 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
 
 <template>
   <SettingsItemGroup :title="$t('settings.group_comments')">
-    <SettingsSearchContainer class="comment-setting-tags" role="group" :aria-label="$t('settings.group_comments')">
+    <SettingsSearchContainer
+      class="comment-setting-tags"
+      role="group"
+      :aria-label="$t('settings.group_comments')"
+    >
       <SettingsToggleTag
         v-for="option in commentToggleOptions"
         :key="option.setting"

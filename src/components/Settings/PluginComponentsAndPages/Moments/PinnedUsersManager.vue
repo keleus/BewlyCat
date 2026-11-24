@@ -20,7 +20,7 @@ const managedUsers = computed<MomentsPinnedUser[]>({
   },
 })
 
-const managedUserMids = computed(() => managedUsers.value.map(user => user.mid))
+const managedUserMids = computed(() => managedUsers.value.map((user) => user.mid))
 const reachedPinnedLimit = computed(() => managedUsers.value.length >= MAX_PINNED_USERS)
 
 const copy = computed(() => ({
@@ -39,45 +39,37 @@ function avatarUrl(url = '') {
 }
 
 async function addUser(user: UserSearchCandidate) {
-  if (managedUserMids.value.includes(user.mid))
-    return copy.value.alreadyIn
+  if (managedUserMids.value.includes(user.mid)) return copy.value.alreadyIn
   if (reachedPinnedLimit.value)
     return t('settings.up_picker.pinned_limit', { count: MAX_PINNED_USERS })
 
   const relationResponse = await api.user.getRelations({ fids: user.mid })
   const relation = relationResponse.code === 0 ? relationResponse.data?.[user.mid] : null
-  const isFollowing = relation?.attribute === 1 || relation?.attribute === 2 || relation?.attribute === 6
+  const isFollowing =
+    relation?.attribute === 1 || relation?.attribute === 2 || relation?.attribute === 6
   if (!isFollowing) {
     const message = copy.value.needFollow(user.name)
     toast.warning(message)
     return message
   }
 
-  managedUsers.value = [
-    ...managedUsers.value,
-    { mid: user.mid, name: user.name, face: user.face },
-  ]
+  managedUsers.value = [...managedUsers.value, { mid: user.mid, name: user.name, face: user.face }]
   toast.success(copy.value.added(user.name))
 }
 
 function removeUser(mid: string) {
-  const user = managedUsers.value.find(item => item.mid === mid)
-  managedUsers.value = managedUsers.value.filter(item => item.mid !== mid)
-  if (user)
-    toast.info(copy.value.removed(user.name))
+  const user = managedUsers.value.find((item) => item.mid === mid)
+  managedUsers.value = managedUsers.value.filter((item) => item.mid !== mid)
+  if (user) toast.info(copy.value.removed(user.name))
 }
 </script>
 
 <template>
   <div class="pinned-users-manager">
-    <UserSearchPicker
-      :select="addUser"
-      :exclude="managedUserMids"
-      :disabled="reachedPinnedLimit"
-    />
+    <UserSearchPicker :select="addUser" :exclude="managedUserMids" :disabled="reachedPinnedLimit" />
     <div v-if="managedUsers.length" class="pinned-users-manager__list">
       <article v-for="user in managedUsers" :key="user.mid">
-        <img :src="avatarUrl(user.face)" :alt="user.name">
+        <img :src="avatarUrl(user.face)" :alt="user.name" />
         <span>
           <strong>{{ user.name }}</strong>
           <small>UID {{ user.mid }}</small>

@@ -1,14 +1,14 @@
 export const APP_CLIENT_REQUEST = 'bewly-app-client-request'
 
 /** 后台只接受固定的 APP 接口，不透传任意 URL */
-export type AppClientEndpoint
-  = | 'qrcodeAuthCode'
-    | 'qrcodePoll'
-    | 'refreshTokenV3'
-    | 'refreshTokenV2'
-    | 'feedIndex'
-    | 'feedDislike'
-    | 'feedDislikeCancel'
+export type AppClientEndpoint =
+  | 'qrcodeAuthCode'
+  | 'qrcodePoll'
+  | 'refreshTokenV3'
+  | 'refreshTokenV2'
+  | 'feedIndex'
+  | 'feedDislike'
+  | 'feedDislikeCancel'
 
 export interface AppClientRequest {
   endpoint: AppClientEndpoint

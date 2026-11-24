@@ -1,12 +1,11 @@
 {
   "name": "bewly-cat",
   "displayName": "BewlyCat",
-  "type": "module",
   "version": "1.8.5",
   "private": true,
-  "packageManager": "pnpm@11.17.0",
   "description": "Just make a few small changes to your Bilibili homepage.",
   "homepage": "https://github.com/keleus/BewlyCat",
+  "type": "module",
   "scripts": {
     "build-pack": "pnpm build && pnpm build-firefox && pnpm pack:zip && pnpm pack:zip-firefox && pnpm pack:zip-firefox-sources",
     "dev": "pnpm run clear && cross-env NODE_ENV=development esno scripts/dev.ts",
@@ -31,8 +30,10 @@
     "clear": "rimraf --glob extension extension.*",
     "clear-firefox": "rimraf --glob extension-firefox extension-firefox.*",
     "clear-safari": "rimraf --glob extension-safari extension-safari.*",
-    "lint": "eslint",
-    "lint:fix": "eslint --fix",
+    "lint": "oxlint --report-unused-disable-directives && oxfmt --check",
+    "lint:fix": "oxlint --fix --report-unused-disable-directives && oxfmt",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "typecheck": "vue-tsc",
     "postinstall": "simple-git-hooks",
     "knip": "knip",
@@ -53,7 +54,6 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^5.2.1",
     "@ffflorian/jszip-cli": "^3.8.6",
     "@iconify/json": "^2.2.376",
     "@intlify/unplugin-vue-i18n": "^11.2.8",
@@ -66,9 +66,6 @@
     "chokidar": "^4.0.3",
     "cross-env": "^10.0.0",
     "crx": "^5.0.1",
-    "eslint": "^9.33.0",
-    "eslint-plugin-format": "^1.0.1",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
     "esno": "^4.8.0",
     "fs-extra": "^11.3.1",
     "knip": "^5.62.0",
@@ -76,10 +73,12 @@
     "lightningcss": "^1.33.0",
     "lint-staged": "^16.1.5",
     "npm-run-all": "^4.1.5",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.95.0",
     "release-it": "^19.0.4",
     "release-it-pnpm": "^4.6.6",
     "rimraf": "^6.0.1",
-    "sass": "^1.90.0",
+    "sass-embedded": "^1.108.2",
     "simple-git-hooks": "^2.13.1",
     "tsdown": "^0.23.7",
     "typescript": "^5.9.2",
@@ -97,8 +96,13 @@
     "pre-push": "pnpm lint && pnpm typecheck"
   },
   "lint-staged": {
-    "*": "eslint --fix"
+    "*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}": [
+      "oxlint --fix --no-error-on-unmatched-pattern",
+      "oxfmt --no-error-on-unmatched-pattern"
+    ],
+    "*.{json,jsonc,css,scss,html,md,yml,yaml}": "oxfmt --no-error-on-unmatched-pattern"
   },
+  "packageManager": "pnpm@11.17.0",
   "webExt": {
     "run": {
       "keepProfileChanges": true,

@@ -20,14 +20,22 @@ import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
 import type { ApiErrorReportSource } from '~/utils/apiDiagnostics'
 import { recordPageApiFailure } from '~/utils/apiDiagnostics'
-import { getRecommendationFilterDiagnostics, getRecommendationSettingsDiagnostics } from '~/utils/apiDiagnosticSettings'
+import {
+  getRecommendationFilterDiagnostics,
+  getRecommendationSettingsDiagnostics,
+} from '~/utils/apiDiagnosticSettings'
 import { ensureFreshAppAccessToken, requestAppClient } from '~/utils/authProvider'
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { av2bv } from '~/utils/bvid'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { getCookie, jumpScrollTo } from '~/utils/main'
 import type { RequestFailure } from '~/utils/requestFailure'
-import { classifyRequestFailure, getRequestFailure, pickRequestFailure, RequestFailureError } from '~/utils/requestFailure'
+import {
+  classifyRequestFailure,
+  getRequestFailure,
+  pickRequestFailure,
+  RequestFailureError,
+} from '~/utils/requestFailure'
 import { isVerticalVideo } from '~/utils/uriParse'
 
 import { isWithinHomeContentStart } from '../homeScroll'
@@ -91,7 +99,16 @@ const appFilterFunc = useFilter(
   ],
 )
 
-const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop, scrollViewportRef } = useBewlyApp()
+const {
+  handleReachBottom,
+  handlePageRefresh,
+  haveScrollbar,
+  undoForwardState,
+  handleUndoRefresh,
+  handleForwardRefresh,
+  handleBackToTop,
+  scrollViewportRef,
+} = useBewlyApp()
 
 // 先声明数据变量
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
@@ -99,9 +116,11 @@ const appVideoList = tabState.ref<AppVideoElement[]>('appVideoList', [])
 
 const isWebRecommendationMode = computed(() => settings.value.recommendationMode !== 'app')
 // App 推荐的单列 / 双列返回不同卡片，切换任一都需要重新加载推荐流
-const recommendationFeedKey = computed(() => settings.value.recommendationMode === 'app'
-  ? `app:${settings.value.appRecommendationColumn}`
-  : settings.value.recommendationMode)
+const recommendationFeedKey = computed(() =>
+  settings.value.recommendationMode === 'app'
+    ? `app:${settings.value.appRecommendationColumn}`
+    : settings.value.recommendationMode,
+)
 let requestVersion = 0
 type WebRecommendRequestType = 'refresh' | 'loadMore'
 type WebRecommendationIdentity = 'web' | 'webNoCookie'
@@ -147,14 +166,13 @@ function logRecommendRequestFailure(
 }
 
 function getRecommendErrorLogDetails(error: unknown): Record<string, unknown> {
-  const errorRecord = error && typeof error === 'object'
-    ? error as Record<string, unknown>
-    : undefined
+  const errorRecord =
+    error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined
 
   return {
     error,
     name: error instanceof Error ? error.name : errorRecord?.name,
-    message: error instanceof Error ? error.message : errorRecord?.message ?? String(error),
+    message: error instanceof Error ? error.message : (errorRecord?.message ?? String(error)),
     code: errorRecord?.code,
     isRiskControl: errorRecord?.isRiskControl,
     originalError: errorRecord?.originalError,
@@ -175,11 +193,9 @@ const immersiveItems = computed<ImmersiveFeedItem[]>(() => {
   const items: ImmersiveFeedItem[] = []
   for (const element of currentVideoList.value) {
     const video = element.displayData
-    if (!video || video.goto !== 'av' || seen.has(element.uniqueId))
-      continue
+    if (!video || video.goto !== 'av' || seen.has(element.uniqueId)) continue
     const bvid = video.bvid || (video.id > 0 ? av2bv(video.id) : '')
-    if (!bvid)
-      continue
+    if (!bvid) continue
     seen.add(element.uniqueId)
     items.push({ key: element.uniqueId, video: bvid === video.bvid ? video : { ...video, bvid } })
   }
@@ -290,7 +306,10 @@ let webFreshIdx1hTimestamp = tabState.read('webFreshIdx1hTimestamp', Date.now())
 tabState.capture('webFreshIdx1hTimestamp', () => webFreshIdx1hTimestamp)
 const webRefreshBrush = tabState.ref<number>('webRefreshBrush', 0)
 const webLoadMoreBrush = tabState.ref<number>('webLoadMoreBrush', 1)
-let webRecommendationUniqId = tabState.read('webRecommendationUniqId', createWebRecommendationUniqId())
+let webRecommendationUniqId = tabState.read(
+  'webRecommendationUniqId',
+  createWebRecommendationUniqId(),
+)
 tabState.capture('webRecommendationUniqId', () => webRecommendationUniqId)
 const webShowlistGroups = tabState.ref<string[]>('webShowlistGroups', [])
 const webLastClicklist = tabState.ref<string[]>('webLastClicklist', [])
@@ -313,46 +332,67 @@ const hasShownFilteredFeedRiskWarning = tabState.ref('hasShownFilteredFeedRiskWa
 const hasFilledRecommendationViewport = tabState.ref('hasFilledRecommendationViewport', false)
 let consecutiveFullyFilteredLoadCount = tabState.read('consecutiveFullyFilteredLoadCount', 0)
 tabState.capture('consecutiveFullyFilteredLoadCount', () => consecutiveFullyFilteredLoadCount)
-let consecutiveFullyFilteredCandidateCount = tabState.read('consecutiveFullyFilteredCandidateCount', 0)
-tabState.capture('consecutiveFullyFilteredCandidateCount', () => consecutiveFullyFilteredCandidateCount)
-let pendingFilteredFeedSampleWarning: { count: number, total: number } | undefined
-const hasActiveWebRecommendationFilter = computed(() => settings.value.enableFilterByDuration
-  || settings.value.enableFilterByViewCount
-  || settings.value.enableFilterByLikeCount
-  || settings.value.enableFilterByTitle
-  || settings.value.enableFilterByUser
-  || settings.value.enableFilterByPublishTime)
-const hasActiveAppRecommendationFilter = computed(() => settings.value.filterOutVerticalVideos
-  || settings.value.enableFilterByDuration
-  || settings.value.enableFilterByViewCount
-  || settings.value.enableFilterByTitle
-  || settings.value.enableFilterByUser)
-const hasActiveRecommendationFilter = computed(() => isWebRecommendationMode.value
-  ? hasActiveWebRecommendationFilter.value
-  : hasActiveAppRecommendationFilter.value)
-const filteredFeedRetentionRate = computed(() => filteredFeedCandidateCount.value > 0
-  ? filteredFeedKeptCount.value / filteredFeedCandidateCount.value
-  : 1)
-const requiresManualFilteredPaging = computed(() => hasActiveRecommendationFilter.value
-  && filteredFeedCandidateCount.value >= FILTERED_FEED_SAMPLE_SIZE
-  && filteredFeedRetentionRate.value < FILTERED_FEED_MIN_RETENTION_RATE)
+let consecutiveFullyFilteredCandidateCount = tabState.read(
+  'consecutiveFullyFilteredCandidateCount',
+  0,
+)
+tabState.capture(
+  'consecutiveFullyFilteredCandidateCount',
+  () => consecutiveFullyFilteredCandidateCount,
+)
+let pendingFilteredFeedSampleWarning: { count: number; total: number } | undefined
+const hasActiveWebRecommendationFilter = computed(
+  () =>
+    settings.value.enableFilterByDuration ||
+    settings.value.enableFilterByViewCount ||
+    settings.value.enableFilterByLikeCount ||
+    settings.value.enableFilterByTitle ||
+    settings.value.enableFilterByUser ||
+    settings.value.enableFilterByPublishTime,
+)
+const hasActiveAppRecommendationFilter = computed(
+  () =>
+    settings.value.filterOutVerticalVideos ||
+    settings.value.enableFilterByDuration ||
+    settings.value.enableFilterByViewCount ||
+    settings.value.enableFilterByTitle ||
+    settings.value.enableFilterByUser,
+)
+const hasActiveRecommendationFilter = computed(() =>
+  isWebRecommendationMode.value
+    ? hasActiveWebRecommendationFilter.value
+    : hasActiveAppRecommendationFilter.value,
+)
+const filteredFeedRetentionRate = computed(() =>
+  filteredFeedCandidateCount.value > 0
+    ? filteredFeedKeptCount.value / filteredFeedCandidateCount.value
+    : 1,
+)
+const requiresManualFilteredPaging = computed(
+  () =>
+    hasActiveRecommendationFilter.value &&
+    filteredFeedCandidateCount.value >= FILTERED_FEED_SAMPLE_SIZE &&
+    filteredFeedRetentionRate.value < FILTERED_FEED_MIN_RETENTION_RATE,
+)
 
-const recommendationFilterSettingsSignature = computed(() => JSON.stringify([
-  settings.value.disableFilterForFollowedUser,
-  settings.value.filterOutVerticalVideos,
-  settings.value.enableFilterByDuration,
-  settings.value.enableFilterByViewCount,
-  settings.value.enableFilterByLikeCount,
-  settings.value.enableFilterByTitle,
-  settings.value.enableFilterByUser,
-  settings.value.enableFilterByPublishTime,
-  settings.value.filterByDuration,
-  settings.value.filterByViewCount,
-  settings.value.filterByLikeCount,
-  settings.value.filterByPublishTime,
-  settings.value.filterByTitle.map(item => item.keyword),
-  settings.value.filterByUser.map(item => item.keyword),
-]))
+const recommendationFilterSettingsSignature = computed(() =>
+  JSON.stringify([
+    settings.value.disableFilterForFollowedUser,
+    settings.value.filterOutVerticalVideos,
+    settings.value.enableFilterByDuration,
+    settings.value.enableFilterByViewCount,
+    settings.value.enableFilterByLikeCount,
+    settings.value.enableFilterByTitle,
+    settings.value.enableFilterByUser,
+    settings.value.enableFilterByPublishTime,
+    settings.value.filterByDuration,
+    settings.value.filterByViewCount,
+    settings.value.filterByLikeCount,
+    settings.value.filterByPublishTime,
+    settings.value.filterByTitle.map((item) => item.keyword),
+    settings.value.filterByUser.map((item) => item.keyword),
+  ]),
+)
 
 const errorReportSource: ApiErrorReportSource = {
   scene: '个性推荐',
@@ -367,7 +407,9 @@ const errorReportSource: ApiErrorReportSource = {
       已加载视频: currentVideoList.value.length,
       过滤保留: `${filteredFeedKeptCount.value} / ${filteredFeedCandidateCount.value}`,
       因过滤率过高需手动翻页: requiresManualFilteredPaging.value,
-      连续空加载: isWebRecommendationMode.value ? consecutiveEmptyLoads.value : appConsecutiveEmptyLoads.value,
+      连续空加载: isWebRecommendationMode.value
+        ? consecutiveEmptyLoads.value
+        : appConsecutiveEmptyLoads.value,
       连续整批被过滤: consecutiveFullyFilteredLoadCount,
       风控冷却等级: webRiskCooldownLevel,
       风控冷却剩余: `${Math.ceil(getWebRiskCooldownRemainingMs() / 1000)} 秒`,
@@ -382,8 +424,7 @@ function createRecommendationFailureToast(message: string) {
 
 function formatApiFailureDetail({ code, message }: RequestFailure): string {
   const codeText = code === undefined ? '' : String(code)
-  if (!message || message === codeText)
-    return codeText || '-'
+  if (!message || message === codeText) return codeText || '-'
   return codeText ? `${codeText} ${message}` : message
 }
 
@@ -405,7 +446,9 @@ function getRecommendFailureReason(failure: RequestFailure | null | undefined): 
     case 'invalidResponse':
       return t('home.recommendation_failure_reason.invalid_response')
     case 'api':
-      return t('home.recommendation_failure_reason.api', { detail: formatApiFailureDetail(failure) })
+      return t('home.recommendation_failure_reason.api', {
+        detail: formatApiFailureDetail(failure),
+      })
     case 'empty':
       return t('home.recommendation_failure_reason.empty')
     case 'riskControl':
@@ -415,7 +458,10 @@ function getRecommendFailureReason(failure: RequestFailure | null | undefined): 
   }
 }
 
-function getRecommendFailureMessage(failure: RequestFailure | null | undefined, isAppMode: boolean): string {
+function getRecommendFailureMessage(
+  failure: RequestFailure | null | undefined,
+  isAppMode: boolean,
+): string {
   const reason = getRecommendFailureReason(failure)
   if (isAppMode)
     return reason ? t('home.app_recommendation_failed', { reason }) : t('home.app_retry_web')
@@ -425,8 +471,7 @@ function getRecommendFailureMessage(failure: RequestFailure | null | undefined, 
 // 无法确定原因时沿用通用的失败说明
 const requestFailedDescription = computed(() => {
   const failure = lastRecommendFailure.value
-  if (!requestFailed.value || !failure || !getRecommendFailureReason(failure))
-    return undefined
+  if (!requestFailed.value || !failure || !getRecommendFailureReason(failure)) return undefined
   return getRecommendFailureMessage(failure, !isWebRecommendationMode.value)
 })
 
@@ -441,10 +486,10 @@ function resetFilteredFeedPagingState() {
 
 function showFilteredFeedRiskWarning(count: number, total: number) {
   if (
-    !settings.value.showRecommendationFilterRiskWarning
-    || hasShownFilteredFeedRiskWarning.value
-    || !hasFilledRecommendationViewport.value
-    || total < 1
+    !settings.value.showRecommendationFilterRiskWarning ||
+    hasShownFilteredFeedRiskWarning.value ||
+    !hasFilledRecommendationViewport.value ||
+    total < 1
   ) {
     return
   }
@@ -454,8 +499,7 @@ function showFilteredFeedRiskWarning(count: number, total: number) {
 }
 
 function markRecommendationViewportFilled(hasScrollbar: boolean) {
-  if (!hasScrollbar || hasFilledRecommendationViewport.value)
-    return
+  if (!hasScrollbar || hasFilledRecommendationViewport.value) return
 
   hasFilledRecommendationViewport.value = true
   if (pendingFilteredFeedSampleWarning) {
@@ -469,9 +513,9 @@ function markRecommendationViewportFilled(hasScrollbar: boolean) {
 function recordFilteredFeedBatch(candidateCount: number, keptCount: number) {
   const fullyFiltered = candidateCount > 0 && keptCount === 0
   if (
-    !hasActiveRecommendationFilter.value
-    || !hasFilledRecommendationViewport.value
-    || !fullyFiltered
+    !hasActiveRecommendationFilter.value ||
+    !hasFilledRecommendationViewport.value ||
+    !fullyFiltered
   ) {
     consecutiveFullyFilteredLoadCount = 0
     consecutiveFullyFilteredCandidateCount = 0
@@ -485,16 +529,14 @@ function recordFilteredFeedBatch(candidateCount: number, keptCount: number) {
 }
 
 function recordFilteredFeedCandidate(kept: boolean) {
-  if (!hasActiveRecommendationFilter.value)
-    return
+  if (!hasActiveRecommendationFilter.value) return
 
   filteredFeedCandidateCount.value++
-  if (kept)
-    filteredFeedKeptCount.value++
+  if (kept) filteredFeedKeptCount.value++
 
   if (
-    filteredFeedCandidateCount.value === FILTERED_FEED_SAMPLE_SIZE
-    && filteredFeedKeptCount.value < FILTERED_FEED_RISK_WARNING_MIN_KEPT
+    filteredFeedCandidateCount.value === FILTERED_FEED_SAMPLE_SIZE &&
+    filteredFeedKeptCount.value < FILTERED_FEED_RISK_WARNING_MIN_KEPT
   ) {
     pendingFilteredFeedSampleWarning = {
       count: filteredFeedKeptCount.value,
@@ -521,14 +563,13 @@ let initialDataPromise: Promise<void> | undefined
 function scheduleInitTask(task: () => void, delay: number) {
   const timer = window.setTimeout(() => {
     initTimers.delete(timer)
-    if (tabState.isCurrent())
-      task()
+    if (tabState.isCurrent()) task()
   }, delay)
   initTimers.add(timer)
 }
 
 function clearInitTimers() {
-  initTimers.forEach(timer => window.clearTimeout(timer))
+  initTimers.forEach((timer) => window.clearTimeout(timer))
   initTimers.clear()
   for (const [timer, resolve] of retryTimers) {
     window.clearTimeout(timer)
@@ -538,8 +579,7 @@ function clearInitTimers() {
 }
 
 function ensureInitialData() {
-  if (hasInitializedData.value || initialDataPromise)
-    return
+  if (hasInitializedData.value || initialDataPromise) return
 
   // 首次请求不能依赖可能在卸载时被清理的延迟定时器，否则快速的
   // 页面切换可能留下永久骨架屏，且不会真正发起推荐接口请求。
@@ -551,39 +591,40 @@ function ensureInitialData() {
 tabState.capture('appAuthorized', () => Boolean(appAuthTokens.value.accessToken))
 
 onMounted(() => {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   if (tabState.restored) {
     forYouStore.resetState()
     isLoading.value = false
     initPageAction()
-    const authorizationChanged = settings.value.recommendationMode === 'app'
-      && tabState.read('appAuthorized', false) !== Boolean(appAuthTokens.value.accessToken)
-    if (authorizationChanged)
-      hasInitializedData.value = false
-    else if (currentVideoList.value.length > 0)
-      hasInitializedData.value = true
+    const authorizationChanged =
+      settings.value.recommendationMode === 'app' &&
+      tabState.read('appAuthorized', false) !== Boolean(appAuthTokens.value.accessToken)
+    if (authorizationChanged) hasInitializedData.value = false
+    else if (currentVideoList.value.length > 0) hasInitializedData.value = true
     ensureInitialData()
     return
   }
-  const preservedModeHasItems = settings.value.recommendationMode === 'app'
-    ? forYouStore.state.appVideoList.length > 0
-    : forYouStore.state.videoList.length > 0
+  const preservedModeHasItems =
+    settings.value.recommendationMode === 'app'
+      ? forYouStore.state.appVideoList.length > 0
+      : forYouStore.state.videoList.length > 0
 
   // 如果启用状态保留且store中有数据，则恢复状态
   if (
-    settings.value.preserveForYouState
-    && forYouStore.state.isInitialized
-    && forYouStore.state.recommendationMode === settings.value.recommendationMode
-    && (settings.value.recommendationMode !== 'app' || forYouStore.state.appRecommendationColumn === settings.value.appRecommendationColumn)
-    && preservedModeHasItems
+    settings.value.preserveForYouState &&
+    forYouStore.state.isInitialized &&
+    forYouStore.state.recommendationMode === settings.value.recommendationMode &&
+    (settings.value.recommendationMode !== 'app' ||
+      forYouStore.state.appRecommendationColumn === settings.value.appRecommendationColumn) &&
+    preservedModeHasItems
   ) {
     // 恢复关键状态
     const savedState = forYouStore.getCompleteState()
     videoList.value = [...savedState.videoList]
     appVideoList.value = [...savedState.appVideoList]
     appFeedIdx.value = savedState.appFeedIdx ?? 0
-    appRecentShownKeys.value = savedState.appRecentShownKeys?.slice(-APP_RECENT_SHOWN_MAX_KEYS) || []
+    appRecentShownKeys.value =
+      savedState.appRecentShownKeys?.slice(-APP_RECENT_SHOWN_MAX_KEYS) || []
     refreshIdx.value = savedState.refreshIdx
     webFreshIdx1h.value = savedState.webFreshIdx1h ?? 1
     webFreshIdx1hTimestamp = savedState.webFreshIdx1hTimestamp ?? Date.now()
@@ -595,14 +636,12 @@ onMounted(() => {
     noMoreContent.value = savedState.noMoreContent
     if (savedState.webShowlistGroups?.length)
       webShowlistGroups.value = savedState.webShowlistGroups.filter(Boolean).slice(-1)
-    else
-      rebuildShowlistGroupsFromList(videoList.value)
+    else rebuildShowlistGroupsFromList(videoList.value)
     hasInitializedData.value = true
     isLoading.value = false
     void nextTick(async () => {
       const hasScrollbar = await haveScrollbar()
-      if (tabState.isCurrent())
-        markRecommendationViewportFilled(hasScrollbar)
+      if (tabState.isCurrent()) markRecommendationViewportFilled(hasScrollbar)
     })
 
     // Store 只负责跨卸载恢复。数据已交还给当前组件后立即释放快照，
@@ -630,11 +669,13 @@ onMounted(() => {
 
     // 恢复滚动位置。搜索页模式下靠近顶部切回时保持当前位置，但重新挂载首页后
     // 栏目位置表已清空，store 中保留的较深位置仍需恢复。
-    if (savedState.scrollTop && (!tabState.preserveScrollOnEntry || !isWithinHomeContentStart(savedState.scrollTop))) {
+    if (
+      savedState.scrollTop &&
+      (!tabState.preserveScrollOnEntry || !isWithinHomeContentStart(savedState.scrollTop))
+    ) {
       nextTick(() => {
         const viewport = scrollViewportRef.value
-        if (tabState.isCurrent() && viewport)
-          jumpScrollTo(viewport, savedState.scrollTop || 0)
+        if (tabState.isCurrent() && viewport) jumpScrollTo(viewport, savedState.scrollTop || 0)
       })
     }
 
@@ -648,8 +689,7 @@ onMounted(() => {
         }
       }, 100)
     }, 1000)
-  }
-  else {
+  } else {
     // 首次加载或未启用状态保留时，初始化数据
     initPageAction()
     ensureInitialData()
@@ -691,7 +731,10 @@ onBeforeUnmount(() => {
 
 onKeyStroke((e: KeyboardEvent) => {
   if (showDislikeDialog.value) {
-    const dislikeReasons = activatedAppVideo.value?.three_point_v2?.find(option => option.type === ThreePointV2Type.Dislike)?.reasons || []
+    const dislikeReasons =
+      activatedAppVideo.value?.three_point_v2?.find(
+        (option) => option.type === ThreePointV2Type.Dislike,
+      )?.reasons || []
 
     if (e.key >= '0' && e.key <= '9') {
       e.preventDefault()
@@ -699,16 +742,17 @@ onKeyStroke((e: KeyboardEvent) => {
         if (dislikeReasons[Number(e.key) - 1] && reason.id === dislikeReasons[Number(e.key) - 1].id)
           selectedDislikeReason.value = reason.id
       })
-    }
-    else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      const currentIndex = dislikeReasons.findIndex(reason => selectedDislikeReason.value === reason.id)
-      if (currentIndex > 0)
-        selectedDislikeReason.value = dislikeReasons[currentIndex - 1].id
-    }
-    else if (e.key === 'ArrowDown') {
+      const currentIndex = dislikeReasons.findIndex(
+        (reason) => selectedDislikeReason.value === reason.id,
+      )
+      if (currentIndex > 0) selectedDislikeReason.value = dislikeReasons[currentIndex - 1].id
+    } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      const currentIndex = dislikeReasons.findIndex(reason => selectedDislikeReason.value === reason.id)
+      const currentIndex = dislikeReasons.findIndex(
+        (reason) => selectedDislikeReason.value === reason.id,
+      )
       if (currentIndex < dislikeReasons.length - 1)
         selectedDislikeReason.value = dislikeReasons[currentIndex + 1].id
     }
@@ -746,16 +790,26 @@ function transformWebVideo(item: VideoItem): VideoCardDisplayData {
 function getAppRcmdReasons(item: AppVideoItem): string[] {
   const reason = item.rcmd_reason
   const text = typeof reason === 'string' ? reason : reason?.content
-  return text?.split('|').map(part => part.trim()).filter(Boolean) ?? []
+  return (
+    text
+      ?.split('|')
+      .map((part) => part.trim())
+      .filter(Boolean) ?? []
+  )
 }
 
 const APP_CHANNEL_REASON_PREFIX = '频道:'
 
 function getAppChannelNames(item: AppVideoItem): string[] {
-  const reasons = item.three_point_v2?.find(option => option.type === ThreePointV2Type.Dislike)?.reasons ?? []
-  return reasons.flatMap(({ name }) =>
-    name?.startsWith(APP_CHANNEL_REASON_PREFIX) ? [name.slice(APP_CHANNEL_REASON_PREFIX.length).trim()] : [],
-  ).filter(Boolean)
+  const reasons =
+    item.three_point_v2?.find((option) => option.type === ThreePointV2Type.Dislike)?.reasons ?? []
+  return reasons
+    .flatMap(({ name }) =>
+      name?.startsWith(APP_CHANNEL_REASON_PREFIX)
+        ? [name.slice(APP_CHANNEL_REASON_PREFIX.length).trim()]
+        : [],
+    )
+    .filter(Boolean)
 }
 
 function isAppVerticalVideo(item: AppVideoItem): boolean {
@@ -763,15 +817,12 @@ function isAppVerticalVideo(item: AppVideoItem): boolean {
 }
 
 function getAppBangumiUrl(uri?: string): string {
-  if (!uri)
-    return ''
-  if (/^https?:\/\//.test(uri))
-    return uri
+  if (!uri) return ''
+  if (/^https?:\/\//.test(uri)) return uri
 
   // bilibili://pgc/season/ep/123456 或 bilibili://pgc/season/123456
   const match = uri.match(/^bilibili:\/\/pgc\/season\/(ep\/)?(\d+)/)
-  if (!match)
-    return ''
+  if (!match) return ''
   return `https://www.bilibili.com/bangumi/play/${match[1] ? 'ep' : 'ss'}${match[2]}`
 }
 
@@ -781,8 +832,11 @@ function getAppBangumiUrl(uri?: string): string {
  */
 function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
   const paramAid = item.card_goto === 'av' ? Number(item.param) : 0
-  const aid = item.player_args?.aid || item.args?.aid || (Number.isSafeInteger(paramAid) && paramAid > 0 ? paramAid : undefined)
-  const followedReason = getAppRcmdReasons(item).find(reason => APP_FOLLOWED_REASONS.has(reason))
+  const aid =
+    item.player_args?.aid ||
+    item.args?.aid ||
+    (Number.isSafeInteger(paramAid) && paramAid > 0 ? paramAid : undefined)
+  const followedReason = getAppRcmdReasons(item).find((reason) => APP_FOLLOWED_REASONS.has(reason))
 
   return {
     ...item,
@@ -794,7 +848,8 @@ function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
       up_name: item.args?.up_name || item.mask?.avatar?.text || item.desc_button?.text,
     },
     // 单列接口没有「已关注」推荐理由，改用 is_atten 标记
-    bottom_rcmd_reason: item.bottom_rcmd_reason || followedReason || (item.is_atten ? '已关注' : undefined),
+    bottom_rcmd_reason:
+      item.bottom_rcmd_reason || followedReason || (item.is_atten ? '已关注' : undefined),
   }
 }
 
@@ -810,17 +865,20 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
 
   // HD 接口的推荐理由（如「1万点赞」）；竖屏已有类型图标，关注状态已由 followed 体现
   // 之后追加「我不想看」中的频道名（如「频道:二次元」），作为视频所属频道标签显示
-  const tags = [...new Set([
-    ...getAppRcmdReasons(item).filter(reason => reason !== '竖屏' && !APP_FOLLOWED_REASONS.has(reason)),
-    ...getAppChannelNames(item),
-  ])].map(reason => decodeHtmlEntities(reason))
+  const tags = [
+    ...new Set([
+      ...getAppRcmdReasons(item).filter(
+        (reason) => reason !== '竖屏' && !APP_FOLLOWED_REASONS.has(reason),
+      ),
+      ...getAppChannelNames(item),
+    ]),
+  ].map((reason) => decodeHtmlEntities(reason))
 
   // 预先计算 type，避免在模板中调用函数
   let type: 'horizontal' | 'vertical' | 'bangumi' = 'horizontal'
   if (item.card_goto === 'bangumi') {
     type = 'bangumi'
-  }
-  else if (isAppVerticalVideo(item)) {
+  } else if (isAppVerticalVideo(item)) {
     type = 'vertical'
   }
 
@@ -859,8 +917,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
 
 function getWebVideoKey(item: VideoItem): string {
   const bvid = item.bvid?.trim()
-  if (bvid)
-    return bvid
+  if (bvid) return bvid
   return `${item.id}`
 }
 
@@ -871,51 +928,50 @@ function isValidWebRecommendationVideo(item: VideoItem): boolean {
 function getAppVideoKeys(item: AppVideoItem): string[] {
   const keys: string[] = []
   const bvid = item.bvid?.trim()
-  if (bvid)
-    keys.push(`bvid:${bvid}`)
+  if (bvid) keys.push(`bvid:${bvid}`)
 
   const aid = item.args?.aid
-  if (aid && aid > 0)
-    keys.push(`aid:${aid}`)
+  if (aid && aid > 0) keys.push(`aid:${aid}`)
 
   // 番剧等卡片可能没有 aid，用卡片类型与 param 兜底
   const param = `${item.param ?? ''}`.trim()
-  if (param && item.card_goto !== 'av')
-    keys.push(`${item.card_goto}:${param}`)
+  if (param && item.card_goto !== 'av') keys.push(`${item.card_goto}:${param}`)
   return keys
 }
 
 function isAppAdItem(item: AppVideoItem): boolean {
-  return item.card_type?.includes('banner')
-    || item.card_type === 'cm_v1'
-    || item.card_goto === 'ad_av'
-    || item.card_goto === 'ad_web_s'
-    || !!item.ad_info
+  return (
+    item.card_type?.includes('banner') ||
+    item.card_type === 'cm_v1' ||
+    item.card_goto === 'ad_av' ||
+    item.card_goto === 'ad_web_s' ||
+    !!item.ad_info
+  )
 }
 
 function isValidAppRecommendationVideo(item: AppVideoItem): boolean {
-  return (item.card_goto === 'av' || item.card_goto === 'bangumi')
-    && !isAppAdItem(item)
-    && getAppVideoKeys(item).length > 0
+  return (
+    (item.card_goto === 'av' || item.card_goto === 'bangumi') &&
+    !isAppAdItem(item) &&
+    getAppVideoKeys(item).length > 0
+  )
 }
 
 function rememberAppRecentShown(list: AppVideoElement[]) {
-  const listKeys = list.flatMap(video => video.item ? getAppVideoKeys(video.item) : [])
-  if (!listKeys.length)
-    return
+  const listKeys = list.flatMap((video) => (video.item ? getAppVideoKeys(video.item) : []))
+  if (!listKeys.length) return
 
   // 重新出现的记录移到末尾，超出上限时优先淘汰最早展示的
   const listKeySet = new Set(listKeys)
   appRecentShownKeys.value = [
-    ...appRecentShownKeys.value.filter(key => !listKeySet.has(key)),
+    ...appRecentShownKeys.value.filter((key) => !listKeySet.has(key)),
     ...listKeySet,
   ].slice(-APP_RECENT_SHOWN_MAX_KEYS)
 }
 
 function getWebShowlistEntry(item: VideoItem, exposed = false): string | undefined {
   const goto = `${item.goto || ''}`.trim()
-  if (!goto)
-    return undefined
+  if (!goto) return undefined
 
   const sourceId = item.id || item.business_info?.src_id || 'undefined'
   const archiveAid = goto === 'ad' ? item.business_info?.archive?.aid : undefined
@@ -925,7 +981,7 @@ function getWebShowlistEntry(item: VideoItem, exposed = false): string | undefin
 
 function buildLastShowlistGroup(items: VideoItem[]): string {
   return items
-    .map(item => getWebShowlistEntry(item))
+    .map((item) => getWebShowlistEntry(item))
     .filter((entry): entry is string => !!entry)
     .join(',')
 }
@@ -935,8 +991,7 @@ function getLastShowlistFromGroups(): string {
 }
 
 function getNoCookieStoredLastShowlist(): string {
-  if (!settings.value.rememberNoCookieRecommendationState)
-    return ''
+  if (!settings.value.rememberNoCookieRecommendationState) return ''
 
   return noCookieForYouRecommendationState.value.showlistGroups
     .filter(Boolean)
@@ -945,24 +1000,26 @@ function getNoCookieStoredLastShowlist(): string {
 }
 
 function getNoCookieNextFreshIdx(): number {
-  if (!settings.value.rememberNoCookieRecommendationState)
-    return refreshIdx.value
+  if (!settings.value.rememberNoCookieRecommendationState) return refreshIdx.value
 
   const nextFreshIdx = noCookieForYouRecommendationState.value.nextFreshIdx
   return Number.isFinite(nextFreshIdx) && nextFreshIdx > 0 ? Math.floor(nextFreshIdx) : 1
 }
 
-function saveNoCookieRecommendationState(group: string, recommendationMode: string, nextFreshIdx?: number) {
+function saveNoCookieRecommendationState(
+  group: string,
+  recommendationMode: string,
+  nextFreshIdx?: number,
+) {
   if (recommendationMode !== 'webNoCookie' || !settings.value.rememberNoCookieRecommendationState)
     return
-  if (!group && nextFreshIdx === undefined)
-    return
+  if (!group && nextFreshIdx === undefined) return
 
-  const groups = noCookieForYouRecommendationState.value.showlistGroups
-    .filter(storedGroup => storedGroup && storedGroup !== group)
+  const groups = noCookieForYouRecommendationState.value.showlistGroups.filter(
+    (storedGroup) => storedGroup && storedGroup !== group,
+  )
 
-  if (group)
-    groups.push(group)
+  if (group) groups.push(group)
 
   noCookieForYouRecommendationState.value = {
     showlistGroups: groups.slice(-NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS),
@@ -973,7 +1030,7 @@ function saveNoCookieRecommendationState(group: string, recommendationMode: stri
 function rebuildShowlistGroupsFromList(list: VideoElement[]) {
   const items = list
     .slice(-WEB_LOAD_MORE_PAGE_SIZE)
-    .map(video => video.item)
+    .map((video) => video.item)
     .filter((item): item is VideoItem => !!item)
   const group = buildLastShowlistGroup(items)
   webShowlistGroups.value = group ? [group] : []
@@ -985,10 +1042,8 @@ function createWebRecommendationUniqId(): string {
 
 function getWebRecommendationDevice(): 'win' | 'mac' | 'linux' | 'unknown' {
   const userAgent = navigator.userAgent
-  if (/windows|win32|win64|wow32|wow64/i.test(userAgent))
-    return 'win'
-  if (/macintosh|macintel|macppc|mac68k|macos/i.test(userAgent))
-    return 'mac'
+  if (/windows|win32|win64|wow32|wow64/i.test(userAgent)) return 'win'
+  if (/macintosh|macintel|macppc|mac68k|macos/i.test(userAgent)) return 'mac'
   if ((/linux/i.test(userAgent) && !/android/i.test(userAgent)) || /x11/i.test(userAgent))
     return 'linux'
   return 'unknown'
@@ -1031,29 +1086,27 @@ function resetWebRecommendState() {
 }
 
 function markWebRecommendationExposed(element: VideoElement | AppVideoElement) {
-  if (!isWebRecommendationMode.value || !element.item)
-    return
+  if (!isWebRecommendationMode.value || !element.item) return
 
   const item = element.item as VideoItem
   const pendingEntry = getWebShowlistEntry(item)
   const exposedEntry = getWebShowlistEntry(item, true)
-  if (!pendingEntry || !exposedEntry)
-    return
+  if (!pendingEntry || !exposedEntry) return
 
-  webShowlistGroups.value = webShowlistGroups.value.map(group => group
-    .split(',')
-    .map(entry => entry === pendingEntry ? exposedEntry : entry)
-    .join(','))
+  webShowlistGroups.value = webShowlistGroups.value.map((group) =>
+    group
+      .split(',')
+      .map((entry) => (entry === pendingEntry ? exposedEntry : entry))
+      .join(','),
+  )
 }
 
 function recordWebRecommendationClick(element: VideoElement | AppVideoElement) {
-  if (!isWebRecommendationMode.value || !element.item)
-    return
+  if (!isWebRecommendationMode.value || !element.item) return
 
   const item = element.item as VideoItem
   const goto = `${item.goto || ''}`.trim()
-  if (!goto || !item.id)
-    return
+  if (!goto || !item.id) return
 
   webLastClicklist.value.push(`${goto}_${item.id}`)
   if (webLastClicklist.value.length > WEB_LAST_CLICKLIST_MAX_ITEMS)
@@ -1070,7 +1123,11 @@ function waitForRecommendRetry(delayMs: number): Promise<void> {
   })
 }
 
-function getRecommendRetryDelay(attempt: number, baseDelayMs: number, remainingWindowMs: number): number {
+function getRecommendRetryDelay(
+  attempt: number,
+  baseDelayMs: number,
+  remainingWindowMs: number,
+): number {
   return Math.max(0, Math.min(baseDelayMs * 2 ** Math.max(0, attempt - 1), remainingWindowMs))
 }
 
@@ -1079,8 +1136,7 @@ function getWebRiskCooldownRemainingMs(): number {
 }
 
 function isWebRiskCooldownActive(): boolean {
-  if (getWebRiskCooldownRemainingMs() > 0)
-    return true
+  if (getWebRiskCooldownRemainingMs() > 0) return true
 
   webRiskCooldownUntil.value = 0
   webRiskCooldownToastKey = 0
@@ -1108,15 +1164,15 @@ function resetWebRiskRecoveryState() {
 }
 
 function notifyWebRiskCooldown() {
-  if (!isWebRiskCooldownActive())
-    return
+  if (!isWebRiskCooldownActive()) return
 
-  if (webRiskCooldownToastKey === webRiskCooldownUntil.value)
-    return
+  if (webRiskCooldownToastKey === webRiskCooldownUntil.value) return
 
   webRiskCooldownToastKey = webRiskCooldownUntil.value
   const remainingSeconds = Math.max(1, Math.ceil(getWebRiskCooldownRemainingMs() / 1000))
-  toast.error(createRecommendationFailureToast(t('home.risk_control_paused', { seconds: remainingSeconds })))
+  toast.error(
+    createRecommendationFailureToast(t('home.risk_control_paused', { seconds: remainingSeconds })),
+  )
 }
 
 function stopWebRecommendationForRisk() {
@@ -1127,8 +1183,7 @@ function stopWebRecommendationForRisk() {
 }
 
 watch(recommendationFeedKey, () => {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   requestVersion++
   noMoreContent.value = false
   resetWebRiskRecoveryState()
@@ -1170,14 +1225,15 @@ watch(recommendationFeedKey, () => {
 
 // APP 扫码授权只会更新本地 access token，不会改变网页 Cookie 登录态。
 // 仅监听「有无 token」的变化，避免后台例行轮换 token 时打断当前推荐流。
-watch(() => Boolean(appAuthTokens.value.accessToken), () => {
-  if (tabState.isCurrent() && settings.value.recommendationMode === 'app')
-    void initData()
-})
+watch(
+  () => Boolean(appAuthTokens.value.accessToken),
+  () => {
+    if (tabState.isCurrent() && settings.value.recommendationMode === 'app') void initData()
+  },
+)
 
 async function initData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   requestVersion++
   // 当前组件即将持有最新列表，旧的跨卸载快照不再有保留价值。
   forYouStore.resetState()
@@ -1202,16 +1258,13 @@ async function initData() {
   needToLoginFirst.value = false
   try {
     await getData('refresh')
-  }
-  finally {
-    if (tabState.isCurrent())
-      hasInitializedData.value = true
+  } finally {
+    if (tabState.isCurrent()) hasInitializedData.value = true
   }
 }
 
 async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   const version = requestVersion
   if (isWebRecommendationMode.value && isWebRiskCooldownActive()) {
     noMoreContent.value = true
@@ -1227,13 +1280,15 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
   try {
     if (isWebRecommendationMode.value) {
       await getRecommendVideos(version, webRequestType)
-    }
-    else {
+    } else {
       try {
         await getAppRecommendVideos(version, webRequestType)
-      }
-      catch (error) {
-        if (!tabState.isCurrent() || version !== requestVersion || settings.value.recommendationMode !== 'app')
+      } catch (error) {
+        if (
+          !tabState.isCurrent() ||
+          version !== requestVersion ||
+          settings.value.recommendationMode !== 'app'
+        )
           return
 
         console.error('App recommendation failed:', error)
@@ -1243,9 +1298,10 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
           // 切换到 web 模式并提示用户；Web 模式若同样失败会给出自己的原因说明。
           settings.value.recommendationMode = 'web'
           // 回退成功后页面没有失败状态，这条提示是查看详情的唯一入口，需要留足点击时间。
-          toast.warning(createRecommendationFailureToast(t('home.app_fallback_web')), { timeout: 10_000 })
-        }
-        else {
+          toast.warning(createRecommendationFailureToast(t('home.app_fallback_web')), {
+            timeout: 10_000,
+          })
+        } else {
           const failure = getRequestFailure(error)
           lastRecommendFailure.value = failure
           requestFailed.value = true
@@ -1254,8 +1310,7 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
         }
       }
     }
-  }
-  catch (error) {
+  } catch (error) {
     if (tabState.isCurrent() && version === requestVersion) {
       console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败`, {
         time: new Date().toLocaleString(),
@@ -1267,8 +1322,7 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
       requestFailed.value = true
       noMoreContent.value = true
     }
-  }
-  finally {
+  } finally {
     if (tabState.isCurrent() && version === requestVersion) {
       isLoading.value = false
       emit('afterLoading')
@@ -1277,8 +1331,7 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
 }
 
 function loadMore(manual = false) {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   if (isWebRecommendationMode.value && isWebRiskCooldownActive()) {
     noMoreContent.value = true
     notifyWebRiskCooldown()
@@ -1287,12 +1340,12 @@ function loadMore(manual = false) {
 
   // 如果正在递归加载中，跳过外部触发的加载请求
   if (
-    !hasInitializedData.value
-    || isLoading.value
-    || noMoreContent.value
-    || isRecursiveLoading.value
-    || (!manual && requiresManualFilteredPaging.value)
-    || (!manual && !isDocumentVisible())
+    !hasInitializedData.value ||
+    isLoading.value ||
+    noMoreContent.value ||
+    isRecursiveLoading.value ||
+    (!manual && requiresManualFilteredPaging.value) ||
+    (!manual && !isDocumentVisible())
   ) {
     return
   }
@@ -1316,18 +1369,18 @@ function handleManualLoadMore() {
 }
 
 function initPageAction() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
   undoForwardState.value = hasBackState.value
     ? UndoForwardState.ShowUndo
-    : hasForwardState.value ? UndoForwardState.ShowForward : UndoForwardState.Hidden
+    : hasForwardState.value
+      ? UndoForwardState.ShowForward
+      : UndoForwardState.Hidden
 
   // VideoCardGrid owns infinite scrolling. Clear callbacks left by other kept-alive tabs.
   handleReachBottom.value = undefined
 
   handlePageRefresh.value = async () => {
-    if (isLoading.value)
-      return
+    if (isLoading.value) return
 
     // 根据当前模式保存数据
     if (isWebRecommendationMode.value) {
@@ -1352,8 +1405,7 @@ function initPageAction() {
 
       // 显示撤销按钮
       undoForwardState.value = UndoForwardState.ShowUndo
-    }
-    else if (settings.value.recommendationMode === 'app') {
+    } else if (settings.value.recommendationMode === 'app') {
       // APP 模式下保存刷新前的当前状态到后退缓存
       cachedAppVideoList.value = [...appVideoList.value]
       cachedAppFeedIdx.value = appFeedIdx.value
@@ -1403,8 +1455,10 @@ function initPageAction() {
         undoForwardState.value = UndoForwardState.Hidden
         resetFilteredFeedPagingState()
         consecutiveEmptyLoads.value = 0 // 重置空加载计数器
-      }
-      else if (settings.value.recommendationMode === 'app' && cachedAppVideoList.value.length > 0) {
+      } else if (
+        settings.value.recommendationMode === 'app' &&
+        cachedAppVideoList.value.length > 0
+      ) {
         // 滚动到页面顶部
         handleBackToTop()
 
@@ -1461,8 +1515,10 @@ function initPageAction() {
         resetFilteredFeedPagingState()
         consecutiveEmptyLoads.value = 0 // 重置空加载计数器
         return true
-      }
-      else if (settings.value.recommendationMode === 'app' && forwardAppVideoList.value.length > 0) {
+      } else if (
+        settings.value.recommendationMode === 'app' &&
+        forwardAppVideoList.value.length > 0
+      ) {
         // 滚动到页面顶部
         handleBackToTop()
 
@@ -1489,9 +1545,11 @@ function initPageAction() {
   }
 }
 
-async function getRecommendVideos(version = requestVersion, requestType: WebRecommendRequestType = 'refresh') {
-  if (!tabState.isCurrent() || version !== requestVersion)
-    return
+async function getRecommendVideos(
+  version = requestVersion,
+  requestType: WebRecommendRequestType = 'refresh',
+) {
+  if (!tabState.isCurrent() || version !== requestVersion) return
 
   const recommendationMode = settings.value.recommendationMode
   let canFillViewport = false
@@ -1510,17 +1568,26 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       return
     }
 
-    const beforeLoadCount = videoList.value.filter(video => video.item).length
+    const beforeLoadCount = videoList.value.filter((video) => video.item).length
 
     // 使用当前的 refreshIdx，只在成功时才递增
     const isLoadMoreRequest = requestType === 'loadMore'
-    const shouldUseNoCookieStoredFreshIdx = !isLoadMoreRequest && recommendationMode === 'webNoCookie' && settings.value.rememberNoCookieRecommendationState
-    const currentRefreshIdx = shouldUseNoCookieStoredFreshIdx ? getNoCookieNextFreshIdx() : refreshIdx.value
+    const shouldUseNoCookieStoredFreshIdx =
+      !isLoadMoreRequest &&
+      recommendationMode === 'webNoCookie' &&
+      settings.value.rememberNoCookieRecommendationState
+    const currentRefreshIdx = shouldUseNoCookieStoredFreshIdx
+      ? getNoCookieNextFreshIdx()
+      : refreshIdx.value
     const currentFreshIdx1h = getCurrentWebFreshIdx1h()
     const pageSize = isLoadMoreRequest ? WEB_LOAD_MORE_PAGE_SIZE : WEB_REFRESH_PAGE_SIZE
     const fetchRow = isLoadMoreRequest ? webFetchRow.value + WEB_FETCH_ROW_STEP : 1
     const currentLastShowlist = getLastShowlistFromGroups()
-    const lastShowlist = currentLastShowlist || (!isLoadMoreRequest && recommendationMode === 'webNoCookie' ? getNoCookieStoredLastShowlist() : '')
+    const lastShowlist =
+      currentLastShowlist ||
+      (!isLoadMoreRequest && recommendationMode === 'webNoCookie'
+        ? getNoCookieStoredLastShowlist()
+        : '')
 
     const requestOptions = {
       web_location: WEB_LOCATION,
@@ -1539,12 +1606,12 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       last_clicklist: webLastClicklist.value.join(',') || undefined,
     }
 
-    const primaryIdentity: WebRecommendationIdentity = recommendationMode === 'webNoCookie' ? 'webNoCookie' : 'web'
+    const primaryIdentity: WebRecommendationIdentity =
+      recommendationMode === 'webNoCookie' ? 'webNoCookie' : 'web'
     // Web 模式可以在带 Cookie 请求失败后降级为匿名推荐；无 Cookie 模式
     // 必须保持用户选择，不能反向携带登录 Cookie。
-    const requestIdentities: readonly WebRecommendationIdentity[] = primaryIdentity === 'web'
-      ? ['web', 'webNoCookie']
-      : ['webNoCookie']
+    const requestIdentities: readonly WebRecommendationIdentity[] =
+      primaryIdentity === 'web' ? ['web', 'webNoCookie'] : ['webNoCookie']
     let requestLog: RecommendRequestLogContext | undefined
     let response: forYouResult | undefined
     let successfulIdentity: WebRecommendationIdentity | undefined
@@ -1554,9 +1621,10 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
     for (const [identityIndex, identity] of requestIdentities.entries()) {
       const phase = identityIndex === 0 ? 'primary' : 'fallback'
       const retryDeadline = Date.now() + WEB_REQUEST_RETRY_WINDOW_MS
-      const requestRecommendVideos = identity === 'webNoCookie'
-        ? api.video.getNoCookieRecommendVideos
-        : api.video.getRecommendVideos
+      const requestRecommendVideos =
+        identity === 'webNoCookie'
+          ? api.video.getNoCookieRecommendVideos
+          : api.video.getRecommendVideos
 
       for (let attempt = 1; attempt <= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY; attempt++) {
         requestLog = createRecommendRequestLogContext(
@@ -1566,8 +1634,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
         try {
           response = await requestRecommendVideos(requestOptions)
-        }
-        catch (error) {
+        } catch (error) {
           hadRiskControlFailure ||= isBilibiliRiskControl(error)
           requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ error }))
           logRecommendRequestFailure(requestLog, {
@@ -1578,13 +1645,18 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           response = undefined
         }
 
-        if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        if (
+          !tabState.isCurrent() ||
+          version !== requestVersion ||
+          recommendationMode !== settings.value.recommendationMode
+        )
           return
 
-        const hasItems = response?.code === 0
-          && response.data
-          && Array.isArray(response.data.item)
-          && response.data.item.length > 0
+        const hasItems =
+          response?.code === 0 &&
+          response.data &&
+          Array.isArray(response.data.item) &&
+          response.data.item.length > 0
 
         if (hasItems) {
           successfulIdentity = identity
@@ -1594,14 +1666,18 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         if (response) {
           const isRiskResponse = isBilibiliRiskControl(response)
           // 部分风控会伪装成 code=0 的空列表，同样按风控失败计数。
-          const isSuspiciousEmptyResponse = response.code === 0
-            && (!response.data || !Array.isArray(response.data.item) || response.data.item.length === 0)
+          const isSuspiciousEmptyResponse =
+            response.code === 0 &&
+            (!response.data ||
+              !Array.isArray(response.data.item) ||
+              response.data.item.length === 0)
           hadRiskControlFailure ||= isRiskResponse || isSuspiciousEmptyResponse
           requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ response }))
           // code=0 的空列表后台不视为失败；带风控标记的响应后台已经记录。
           if (isSuspiciousEmptyResponse && !isRiskResponse) {
             recordPageApiFailure({
-              query: identity === 'webNoCookie' ? 'getNoCookieRecommendVideos' : 'getRecommendVideos',
+              query:
+                identity === 'webNoCookie' ? 'getNoCookieRecommendVideos' : 'getRecommendVideos',
               message: '推荐接口返回 code=0 但列表为空',
               params: requestOptions,
               response,
@@ -1621,26 +1697,38 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           })
         }
 
-        if (attempt >= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY
-          || response?.code === 62011
-          || requestFailure?.kind === 'hostPermission') {
+        if (
+          attempt >= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY ||
+          response?.code === 62011 ||
+          requestFailure?.kind === 'hostPermission'
+        ) {
           break
         }
 
         const remainingWindowMs = retryDeadline - Date.now()
-        const retryDelayMs = getRecommendRetryDelay(attempt, WEB_REQUEST_RETRY_BASE_DELAY_MS, remainingWindowMs)
-        if (retryDelayMs <= 0)
-          break
+        const retryDelayMs = getRecommendRetryDelay(
+          attempt,
+          WEB_REQUEST_RETRY_BASE_DELAY_MS,
+          remainingWindowMs,
+        )
+        if (retryDelayMs <= 0) break
         await waitForRecommendRetry(retryDelayMs)
-        if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        if (
+          !tabState.isCurrent() ||
+          version !== requestVersion ||
+          recommendationMode !== settings.value.recommendationMode
+        )
           return
       }
 
-      if (successfulIdentity || requestFailure?.kind === 'hostPermission')
-        break
+      if (successfulIdentity || requestFailure?.kind === 'hostPermission') break
     }
 
-    if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+    if (
+      !tabState.isCurrent() ||
+      version !== requestVersion ||
+      recommendationMode !== settings.value.recommendationMode
+    )
       return
 
     if (!response || !requestLog || !successfulIdentity) {
@@ -1652,17 +1740,19 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       requestFailed.value = true
       noMoreContent.value = true
       // 后台断开、缺少站点访问权限或断网时请求根本没有到达 B 站，即使另一次尝试像风控也不进入风控冷却。
-      const isLocalFailure = requestFailure?.kind === 'background'
-        || requestFailure?.kind === 'hostPermission'
-        || requestFailure?.kind === 'offline'
+      const isLocalFailure =
+        requestFailure?.kind === 'background' ||
+        requestFailure?.kind === 'hostPermission' ||
+        requestFailure?.kind === 'offline'
       if (hadRiskControlFailure && !isLocalFailure) {
         // 风控冷却有单独的提示
         lastRecommendFailure.value = null
         stopWebRecommendationForRisk()
-      }
-      else {
+      } else {
         lastRecommendFailure.value = requestFailure ?? null
-        toast.error(createRecommendationFailureToast(getRecommendFailureMessage(requestFailure, false)))
+        toast.error(
+          createRecommendationFailureToast(getRecommendFailureMessage(requestFailure, false)),
+        )
       }
       return
     }
@@ -1679,8 +1769,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       if (isLoadMoreRequest) {
         webFetchRow.value = fetchRow
         webLoadMoreBrush.value++
-      }
-      else {
+      } else {
         webRefreshBrush.value++
       }
 
@@ -1691,34 +1780,28 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       let filteredBatchKeptCount = 0
 
       videoList.value.forEach((video) => {
-        if (video.item)
-          existingIds.add(getWebVideoKey(video.item))
+        if (video.item) existingIds.add(getWebVideoKey(video.item))
       })
 
       response.data.item.forEach((item: VideoItem) => {
         // 过滤掉广告卡片
-        if (item.goto === 'ad')
-          return
+        if (item.goto === 'ad') return
 
         // 过滤掉缺少必要字段的数据（owner 或 stat 为 null）
-        if (!item.owner || !item.stat)
-          return
+        if (!item.owner || !item.stat) return
 
         const passesSettingsFilter = !activeWebFilter || activeWebFilter(item)
         if (activeWebFilter && isValidWebRecommendationVideo(item)) {
           filteredBatchCandidateCount++
-          if (passesSettingsFilter)
-            filteredBatchKeptCount++
+          if (passesSettingsFilter) filteredBatchKeptCount++
           recordFilteredFeedCandidate(passesSettingsFilter)
         }
 
         const itemKey = getWebVideoKey(item)
-        if (existingIds.has(itemKey))
-          return
+        if (existingIds.has(itemKey)) return
 
         existingIds.add(itemKey)
-        if (!passesSettingsFilter)
-          return
+        if (!passesSettingsFilter) return
 
         resData.push(item)
       })
@@ -1732,13 +1815,12 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
       // when videoList has length property, it means it is the first time to load
       if (!beforeLoadCount) {
-        videoList.value = resData.map(item => ({
+        videoList.value = resData.map((item) => ({
           uniqueId: getWebVideoKey(item),
           item,
           displayData: transformWebVideo(item),
         }))
-      }
-      else {
+      } else {
         resData.forEach((item) => {
           // If the `filterFunc` is unset, indicating that the user hasn't specified the filter,
           // skep the `findFirstEmptyItemIndex` check to enhance the performance
@@ -1748,17 +1830,15 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
               item,
               displayData: transformWebVideo(item),
             })
-          }
-          else {
-            const findFirstEmptyItemIndex = videoList.value.findIndex(video => !video.item)
+          } else {
+            const findFirstEmptyItemIndex = videoList.value.findIndex((video) => !video.item)
             if (findFirstEmptyItemIndex !== -1) {
               videoList.value[findFirstEmptyItemIndex] = {
                 uniqueId: getWebVideoKey(item),
                 item,
                 displayData: transformWebVideo(item),
               }
-            }
-            else {
+            } else {
               videoList.value.push({
                 uniqueId: getWebVideoKey(item),
                 item,
@@ -1776,25 +1856,22 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       )
 
       // 检查是否成功添加了新内容
-      const afterLoadCount = videoList.value.filter(video => video.item).length
+      const afterLoadCount = videoList.value.filter((video) => video.item).length
       if (afterLoadCount > beforeLoadCount) {
         // 成功加载了新内容，重置空加载计数器
         consecutiveEmptyLoads.value = 0
-      }
-      else {
+      } else {
         // 没有加载到新内容，增加空加载计数器
         consecutiveEmptyLoads.value++
       }
       canFillViewport = true
-    }
-    else if (response.code === 62011) {
+    } else if (response.code === 62011) {
       logRecommendRequestFailure(requestLog, {
         code: response.code,
         message: response.message,
       })
       needToLoginFirst.value = true
-    }
-    else {
+    } else {
       // 其他错误码也应该停止加载，避免无限重试
       logRecommendRequestFailure(requestLog, {
         code: response.code,
@@ -1803,10 +1880,14 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       requestFailed.value = true
       noMoreContent.value = true
     }
-  }
-  finally {
-    if (tabState.isCurrent() && canFillViewport && version === requestVersion && recommendationMode === settings.value.recommendationMode) {
-      const filledItems = videoList.value.filter(video => video.item)
+  } finally {
+    if (
+      tabState.isCurrent() &&
+      canFillViewport &&
+      version === requestVersion &&
+      recommendationMode === settings.value.recommendationMode
+    ) {
+      const filledItems = videoList.value.filter((video) => video.item)
       videoList.value = filledItems
 
       if (!needToLoginFirst.value && !noMoreContent.value) {
@@ -1817,20 +1898,21 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           markRecommendationViewportFilled(hasScrollbar)
           if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
             if (
-              !hasActiveRecommendationFilter.value
-              && isDocumentVisible()
-              && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS
+              !hasActiveRecommendationFilter.value &&
+              isDocumentVisible() &&
+              consecutiveEmptyLoads.value < MAX_EMPTY_LOADS
             ) {
               // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
               isRecursiveLoading.value = true
               try {
                 await getRecommendVideos(version, 'loadMore')
-              }
-              finally {
+              } finally {
                 isRecursiveLoading.value = false
               }
-            }
-            else if (!hasActiveRecommendationFilter.value && consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+            } else if (
+              !hasActiveRecommendationFilter.value &&
+              consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS
+            ) {
               noMoreContent.value = true
             }
           }
@@ -1844,8 +1926,7 @@ async function getAppRecommendVideos(
   version = requestVersion,
   requestType: WebRecommendRequestType = 'refresh',
 ) {
-  if (!tabState.isCurrent() || version !== requestVersion)
-    return
+  if (!tabState.isCurrent() || version !== requestVersion) return
 
   const recommendationMode = settings.value.recommendationMode
 
@@ -1868,7 +1949,7 @@ async function getAppRecommendVideos(
     return
   }
 
-  if (!await ensureFreshAppAccessToken()) {
+  if (!(await ensureFreshAppAccessToken())) {
     console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败`, {
       time: new Date().toLocaleString(),
       mode: recommendationMode,
@@ -1879,7 +1960,11 @@ async function getAppRecommendVideos(
     return
   }
 
-  if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+  if (
+    !tabState.isCurrent() ||
+    version !== requestVersion ||
+    recommendationMode !== settings.value.recommendationMode
+  )
     return
 
   const batchesToLoad = APP_LOAD_BATCHES.value
@@ -1889,11 +1974,13 @@ async function getAppRecommendVideos(
   // 当前列表与之前刷新展示过的推荐都视为已出现，避免同一视频重复展示
   const seenCandidateIds = new Set([
     ...appRecentShownKeys.value,
-    ...appVideoList.value.flatMap(video => video.item ? getAppVideoKeys(video.item) : []),
+    ...appVideoList.value.flatMap((video) => (video.item ? getAppVideoKeys(video.item) : [])),
   ])
-  const locale = settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese
-    ? 'zh-Hant_TW'
-    : 'zh-Hans_CN'
+  const locale =
+    settings.value.language === LanguageType.Mandarin_TW ||
+    settings.value.language === LanguageType.Cantonese
+      ? 'zh-Hant_TW'
+      : 'zh-Hans_CN'
 
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
@@ -1916,26 +2003,35 @@ async function getAppRecommendVideos(
             idx,
             pull: idx === 0,
           })
-        }
-        catch (error) {
-          requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ error }, 'items'))
+        } catch (error) {
+          requestFailure = pickRequestFailure(
+            requestFailure,
+            classifyRequestFailure({ error }, 'items'),
+          )
           logRecommendRequestFailure(requestLog, { error, attempt })
           response = undefined
         }
 
-        if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        if (
+          !tabState.isCurrent() ||
+          version !== requestVersion ||
+          recommendationMode !== settings.value.recommendationMode
+        )
           return
 
-        const hasItems = response?.code === 0
-          && response.data
-          && Array.isArray(response.data.items)
-          && response.data.items.length > 0
+        const hasItems =
+          response?.code === 0 &&
+          response.data &&
+          Array.isArray(response.data.items) &&
+          response.data.items.length > 0
 
-        if (hasItems || response?.code === 62011)
-          break
+        if (hasItems || response?.code === 62011) break
 
         if (response) {
-          requestFailure = pickRequestFailure(requestFailure, classifyRequestFailure({ response }, 'items'))
+          requestFailure = pickRequestFailure(
+            requestFailure,
+            classifyRequestFailure({ response }, 'items'),
+          )
           if (response.code === 0) {
             recordPageApiFailure({
               query: 'feedIndex',
@@ -1952,26 +2048,45 @@ async function getAppRecommendVideos(
           })
         }
 
-        if (attempt >= APP_REQUEST_MAX_ATTEMPTS || requestFailure?.kind === 'hostPermission')
-          break
+        if (attempt >= APP_REQUEST_MAX_ATTEMPTS || requestFailure?.kind === 'hostPermission') break
 
         const remainingWindowMs = retryDeadline - Date.now()
-        const retryDelayMs = getRecommendRetryDelay(attempt, APP_REQUEST_RETRY_BASE_DELAY_MS, remainingWindowMs)
-        if (retryDelayMs <= 0)
-          break
+        const retryDelayMs = getRecommendRetryDelay(
+          attempt,
+          APP_REQUEST_RETRY_BASE_DELAY_MS,
+          remainingWindowMs,
+        )
+        if (retryDelayMs <= 0) break
         await waitForRecommendRetry(retryDelayMs)
-        if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        if (
+          !tabState.isCurrent() ||
+          version !== requestVersion ||
+          recommendationMode !== settings.value.recommendationMode
+        )
           return
       }
 
-      if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+      if (
+        !tabState.isCurrent() ||
+        version !== requestVersion ||
+        recommendationMode !== settings.value.recommendationMode
+      )
         return
 
       if (!response || !requestLog)
-        throw new RequestFailureError('App 推荐接口连续请求失败', requestFailure ?? { kind: 'unknown' })
+        throw new RequestFailureError(
+          'App 推荐接口连续请求失败',
+          requestFailure ?? { kind: 'unknown' },
+        )
 
-      if (response.code === 0 && (!response.data || !Array.isArray(response.data.items) || response.data.items.length === 0))
-        throw new RequestFailureError('App 推荐接口连续返回空数据', requestFailure ?? { kind: 'empty' })
+      if (
+        response.code === 0 &&
+        (!response.data || !Array.isArray(response.data.items) || response.data.items.length === 0)
+      )
+        throw new RequestFailureError(
+          'App 推荐接口连续返回空数据',
+          requestFailure ?? { kind: 'empty' },
+        )
 
       if (response.code === 0) {
         // 无论本批是否有可展示的卡片，都推进游标，下次请求下一页
@@ -1981,24 +2096,21 @@ async function getAppRecommendVideos(
         response.data.items.forEach((rawItem: AppVideoItem) => {
           const item = normalizeAppVideoItem(rawItem)
           // 移除横幅、广告与无效卡片
-          if (!isValidAppRecommendationVideo(item))
-            return
+          if (!isValidAppRecommendationVideo(item)) return
 
           const videoKeys = getAppVideoKeys(item)
-          if (videoKeys.some(key => seenCandidateIds.has(key)))
-            return
-          videoKeys.forEach(key => seenCandidateIds.add(key))
+          if (videoKeys.some((key) => seenCandidateIds.has(key))) return
+          videoKeys.forEach((key) => seenCandidateIds.add(key))
 
           if (activeAppFilter) {
             // 推荐理由标为「竖屏」但 uri 尺寸未体现竖屏的视频，同样按竖屏视频过滤
-            const passesSettingsFilter = activeAppFilter(item)
-              && !(settings.value.filterOutVerticalVideos && isAppVerticalVideo(item))
+            const passesSettingsFilter =
+              activeAppFilter(item) &&
+              !(settings.value.filterOutVerticalVideos && isAppVerticalVideo(item))
             filteredBatchCandidateCount++
-            if (passesSettingsFilter)
-              filteredBatchKeptCount++
+            if (passesSettingsFilter) filteredBatchKeptCount++
             recordFilteredFeedCandidate(passesSettingsFilter)
-            if (!passesSettingsFilter)
-              return
+            if (!passesSettingsFilter) return
           }
 
           appVideoList.value.push({
@@ -2007,16 +2119,14 @@ async function getAppRecommendVideos(
             displayData: transformAppVideo(item),
           })
         })
-      }
-      else if (response.code === 62011) {
+      } else if (response.code === 62011) {
         logRecommendRequestFailure(requestLog, {
           code: response.code,
           message: response.message,
         })
         needToLoginFirst.value = true
         break
-      }
-      else {
+      } else {
         logRecommendRequestFailure(requestLog, {
           code: response.code,
           message: response.message,
@@ -2026,9 +2136,12 @@ async function getAppRecommendVideos(
           requestFailure ?? classifyRequestFailure({ response }, 'items'),
         )
       }
-    }
-    catch (error) {
-      if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+    } catch (error) {
+      if (
+        !tabState.isCurrent() ||
+        version !== requestVersion ||
+        recommendationMode !== settings.value.recommendationMode
+      )
         return
 
       requestFailed.value = true
@@ -2037,7 +2150,11 @@ async function getAppRecommendVideos(
   }
 
   // 检查是否成功添加了新内容
-  if (!tabState.isCurrent() || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+  if (
+    !tabState.isCurrent() ||
+    version !== requestVersion ||
+    recommendationMode !== settings.value.recommendationMode
+  )
     return
 
   recordFilteredFeedBatch(filteredBatchCandidateCount, filteredBatchKeptCount)
@@ -2046,8 +2163,7 @@ async function getAppRecommendVideos(
   if (afterLoadCount > beforeLoadCount) {
     // 成功加载了新内容，重置空加载计数器
     appConsecutiveEmptyLoads.value = 0
-  }
-  else {
+  } else {
     // 没有加载到新内容，增加空加载计数器
     appConsecutiveEmptyLoads.value++
   }
@@ -2057,39 +2173,37 @@ async function getAppRecommendVideos(
 
     let shouldContinue = false
     const hasScrollbar = await haveScrollbar()
-    if (!tabState.isCurrent() || version !== requestVersion)
-      return
+    if (!tabState.isCurrent() || version !== requestVersion) return
     markRecommendationViewportFilled(hasScrollbar)
 
     if (!hasScrollbar || appVideoList.value.length < PAGE_SIZE) {
       shouldContinue = true
-    }
-    else if (scrollLoadStartLength.value > 0) {
+    } else if (scrollLoadStartLength.value > 0) {
       const loadedCount = appVideoList.value.length - scrollLoadStartLength.value
       if (loadedCount < PAGE_SIZE) {
         shouldContinue = true
-      }
-      else {
+      } else {
         scrollLoadStartLength.value = 0
       }
     }
 
     if (
-      shouldContinue
-      && !hasActiveRecommendationFilter.value
-      && isDocumentVisible()
-      && appConsecutiveEmptyLoads.value < MAX_EMPTY_LOADS
+      shouldContinue &&
+      !hasActiveRecommendationFilter.value &&
+      isDocumentVisible() &&
+      appConsecutiveEmptyLoads.value < MAX_EMPTY_LOADS
     ) {
       // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
       isRecursiveLoading.value = true
       try {
         await getAppRecommendVideos(version, requestType)
-      }
-      finally {
+      } finally {
         isRecursiveLoading.value = false
       }
-    }
-    else if (!hasActiveRecommendationFilter.value && appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+    } else if (
+      !hasActiveRecommendationFilter.value &&
+      appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS
+    ) {
       noMoreContent.value = true
     }
   }
@@ -2097,35 +2211,33 @@ async function getAppRecommendVideos(
 
 // 从视口内第一张可播放的卡片开始，避免重复播放已经滑过的推荐
 function getFirstVisibleImmersiveKey(): string | undefined {
-  const playableKeys = new Set(immersiveItems.value.map(item => item.key))
+  const playableKeys = new Set(immersiveItems.value.map((item) => item.key))
   const viewportHeight = window.innerHeight
-  const slots = Array.from(forYouRootRef.value?.querySelectorAll<HTMLElement>('.video-card-slot[data-index]') ?? [])
+  const slots = Array.from(
+    forYouRootRef.value?.querySelectorAll<HTMLElement>('.video-card-slot[data-index]') ?? [],
+  )
   const visibleIndexes = slots
     .filter((slot) => {
       const rect = slot.getBoundingClientRect()
       return rect.bottom > 0 && rect.top < viewportHeight
     })
-    .map(slot => Number(slot.dataset.index))
+    .map((slot) => Number(slot.dataset.index))
     .filter(Number.isInteger)
-  if (!visibleIndexes.length)
-    return undefined
+  if (!visibleIndexes.length) return undefined
 
   const list = currentVideoList.value
   for (let index = Math.min(...visibleIndexes); index < list.length; index++) {
     const key = list[index]?.uniqueId
-    if (key && playableKeys.has(key))
-      return key
+    if (key && playableKeys.has(key)) return key
   }
   return undefined
 }
 
 function openImmersiveMode() {
-  if (isImmersiveModeOpen.value)
-    return
+  if (isImmersiveModeOpen.value) return
   immersiveInitialKey.value = getFirstVisibleImmersiveKey()
   isImmersiveModeOpen.value = true
-  if (!hasInitializedData.value && !isLoading.value)
-    void initData()
+  if (!hasInitializedData.value && !isLoading.value) void initData()
 }
 
 function closeImmersiveMode() {
@@ -2138,9 +2250,8 @@ function handleImmersiveLoadMore() {
 }
 
 function handleImmersivePlay(key: string) {
-  const element = currentVideoList.value.find(item => item.uniqueId === key)
-  if (!element)
-    return
+  const element = currentVideoList.value.find((item) => item.uniqueId === key)
+  if (!element) return
   markWebRecommendationExposed(element)
   recordWebRecommendationClick(element)
 }
@@ -2160,8 +2271,7 @@ defineExpose({
     handleForwardRefresh.value?.()
   },
   canGoBack: () => {
-    if (isWebRecommendationMode.value)
-      return hasBackState.value && cachedVideoList.value.length > 0
+    if (isWebRecommendationMode.value) return hasBackState.value && cachedVideoList.value.length > 0
     else if (settings.value.recommendationMode === 'app')
       return hasBackState.value && cachedAppVideoList.value.length > 0
     return false
@@ -2223,11 +2333,17 @@ function getItemKey(item: VideoElement | AppVideoElement) {
     <Empty
       v-if="needToLoginFirst"
       mt-6
-      :description="$t(isWebRecommendationMode ? 'common.please_log_in_first' : 'home.app_authorization_required')"
+      :description="
+        $t(
+          isWebRecommendationMode
+            ? 'common.please_log_in_first'
+            : 'home.app_authorization_required',
+        )
+      "
     >
       <Button
         type="primary"
-        @click="isWebRecommendationMode ? jumpToLoginPage() : showAppAuthorizationDialog = true"
+        @click="isWebRecommendationMode ? jumpToLoginPage() : (showAppAuthorizationDialog = true)"
       >
         {{ $t(isWebRecommendationMode ? 'common.login' : 'home.reauthorize_app') }}
       </Button>

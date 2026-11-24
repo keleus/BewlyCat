@@ -30,7 +30,9 @@ function createClearButton(container: Element): HTMLElement {
  * 清空所有选中的收藏夹
  */
 function clearAllSelections(container: Element) {
-  const checkboxes = container.querySelectorAll<HTMLInputElement>('.group-list ul li input[type="checkbox"]:checked')
+  const checkboxes = container.querySelectorAll<HTMLInputElement>(
+    '.group-list ul li input[type="checkbox"]:checked',
+  )
 
   checkboxes.forEach((checkbox) => {
     // 模拟点击来取消选中，这样可以触发 Vue 的响应式更新
@@ -54,15 +56,12 @@ function isFullFolder(label: HTMLElement): boolean {
  */
 function markFullDisabledFolders(dialog: Element) {
   dialog.querySelectorAll<HTMLElement>('.group-list li label').forEach((label) => {
-    if (label.dataset[FAV_MARKED_ATTR])
-      return
+    if (label.dataset[FAV_MARKED_ATTR]) return
 
     const input = label.querySelector<HTMLInputElement>('input[type="checkbox"]')
-    if (!input)
-      return
+    if (!input) return
 
-    if (!input.checked && isFullFolder(label))
-      label.classList.add(FULL_DISABLED_CLASS)
+    if (!input.checked && isFullFolder(label)) label.classList.add(FULL_DISABLED_CLASS)
 
     label.dataset[FAV_MARKED_ATTR] = '1'
   })
@@ -72,8 +71,7 @@ function markFullDisabledFolders(dialog: Element) {
  * 是否应阻止勾选：收藏夹已满、当前未勾选，且视频原本不在其中
  */
 function shouldBlockFullFolderToggle(label: HTMLElement, target: Element): boolean {
-  if (!label.classList.contains(FULL_DISABLED_CLASS))
-    return false
+  if (!label.classList.contains(FULL_DISABLED_CLASS)) return false
 
   const input = label.querySelector<HTMLInputElement>('input[type="checkbox"]')
   // checkbox 的 click 捕获阶段已经执行预激活并翻转 checked；点击 label 时则尚未翻转。
@@ -85,7 +83,7 @@ function shouldBlockFullFolderToggle(label: HTMLElement, target: Element): boole
  * 显示与 B 站一致的「收藏夹已满」提示
  */
 function showFolderFullMessage(anchor: HTMLElement) {
-  document.querySelectorAll('.bili-msg').forEach(el => el.remove())
+  document.querySelectorAll('.bili-msg').forEach((el) => el.remove())
 
   const message = document.createElement('div')
   message.className = 'bili-msg error'
@@ -106,24 +104,25 @@ function showFolderFullMessage(anchor: HTMLElement) {
  */
 function bindFullFolderGuard(dialog: Element) {
   const element = dialog as HTMLElement
-  if (element.dataset[FULL_GUARD_BOUND_ATTR])
-    return
+  if (element.dataset[FULL_GUARD_BOUND_ATTR]) return
 
   element.dataset[FULL_GUARD_BOUND_ATTR] = '1'
 
-  element.addEventListener('click', (event) => {
-    const target = event.target
-    if (!(target instanceof Element))
-      return
+  element.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
 
-    const label = target.closest<HTMLElement>('.group-list li label')
-    if (!label || !shouldBlockFullFolderToggle(label, target))
-      return
+      const label = target.closest<HTMLElement>('.group-list li label')
+      if (!label || !shouldBlockFullFolderToggle(label, target)) return
 
-    event.preventDefault()
-    event.stopPropagation()
-    showFolderFullMessage(label)
-  }, true)
+      event.preventDefault()
+      event.stopPropagation()
+      showFolderFullMessage(label)
+    },
+    true,
+  )
 }
 
 /**
@@ -132,8 +131,7 @@ function bindFullFolderGuard(dialog: Element) {
 function applyEnlargedStyle(dialog: Element) {
   if (settings.value.enlargeFavoriteDialog) {
     dialog.classList.add('bewly-enlarged-favorite-dialog')
-  }
-  else {
+  } else {
     dialog.classList.remove('bewly-enlarged-favorite-dialog')
   }
 }
@@ -161,8 +159,7 @@ function injectClearButton(dialog: Element) {
   if (submitBtn) {
     // 将清空按钮插入到确认按钮之前
     bottomContainer.insertBefore(clearBtn, submitBtn)
-  }
-  else {
+  } else {
     // 如果没有确认按钮，直接追加到容器开头
     bottomContainer.prepend(clearBtn)
   }
@@ -200,16 +197,14 @@ export function initFavoriteDialogEnhancement() {
   const flushDisabledFolders = () => {
     markFoldersQueued = false
     for (const context of pendingDisabledContexts) {
-      if (context.isConnected)
-        markFullDisabledFolders(context)
+      if (context.isConnected) markFullDisabledFolders(context)
     }
     pendingDisabledContexts.clear()
   }
 
   const scheduleMarkDisabledFolders = (context: HTMLElement) => {
     pendingDisabledContexts.add(context)
-    if (markFoldersQueued)
-      return
+    if (markFoldersQueued) return
     markFoldersQueued = true
     queueMicrotask(flushDisabledFolders)
   }
@@ -217,8 +212,7 @@ export function initFavoriteDialogEnhancement() {
   // 创建 MutationObserver 监听 DOM 变化
   observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-      if (mutation.addedNodes.length === 0)
-        continue
+      if (mutation.addedNodes.length === 0) continue
       // 跳过播放器内部高频弹幕与控件变更，收藏弹窗不会挂载在播放器内。
       if (mutation.target instanceof Element && mutation.target.closest(PLAYER_CONTAINER_SELECTOR))
         continue
@@ -226,8 +220,7 @@ export function initFavoriteDialogEnhancement() {
       // 检查新增的节点
       for (let i = 0; i < mutation.addedNodes.length; i++) {
         const node = mutation.addedNodes[i]
-        if (!(node instanceof HTMLElement))
-          continue
+        if (!(node instanceof HTMLElement)) continue
 
         if (node.classList.contains('collection-m-exp')) {
           // 延迟一点注入，确保弹窗内容已渲染
@@ -279,5 +272,5 @@ export function stopFavoriteDialogEnhancement() {
   }
 
   // 移除所有已注入的按钮
-  document.querySelectorAll('.bewly-clear-selection-btn').forEach(btn => btn.remove())
+  document.querySelectorAll('.bewly-clear-selection-btn').forEach((btn) => btn.remove())
 }

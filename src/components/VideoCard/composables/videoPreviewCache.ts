@@ -14,11 +14,16 @@ function moveVideoPreviewCacheEntryToRecent(key: symbol, entry: VideoPreviewCach
 
 function trimVideoPreviewCache() {
   while (videoPreviewCacheEntries.size > MAX_PREVIEW_VIDEO_CACHE) {
-    const oldestInactiveEntry = Array.from(videoPreviewCacheEntries.entries()).find(([, entry]) => !entry.active)
-    const nextEntry = oldestInactiveEntry ?? videoPreviewCacheEntries.entries().next().value as [symbol, VideoPreviewCacheEntry] | undefined
+    const oldestInactiveEntry = Array.from(videoPreviewCacheEntries.entries()).find(
+      ([, entry]) => !entry.active,
+    )
+    const nextEntry =
+      oldestInactiveEntry ??
+      (videoPreviewCacheEntries.entries().next().value as
+        | [symbol, VideoPreviewCacheEntry]
+        | undefined)
 
-    if (!nextEntry)
-      return
+    if (!nextEntry) return
 
     const [key, entry] = nextEntry
     videoPreviewCacheEntries.delete(key)

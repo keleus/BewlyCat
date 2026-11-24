@@ -3,7 +3,11 @@ import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import Dialog from '~/components/Dialog.vue'
-import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
+import {
+  DRAWER_VIDEO_ENTER_PAGE_FULL,
+  DRAWER_VIDEO_EXIT_PAGE_FULL,
+  VIDEO_DIALOG_IFRAME_NAME,
+} from '~/constants/globalEvents'
 import {
   DIALOG_SAFE_HEIGHT,
   disposeDialogIframe,
@@ -45,14 +49,12 @@ function focusIframe(retryCount = 3) {
   nextTick(() => {
     requestAnimationFrame(() => {
       const iframe = iframeRef.value
-      if (!iframe || isDisposed)
-        return
+      if (!iframe || isDisposed) return
 
       iframe.focus({ preventScroll: true })
       try {
         iframe.contentWindow?.focus()
-      }
-      catch {
+      } catch {
         // 跨域 iframe 可能拒绝直接聚焦 window；此时保留 iframe 元素焦点。
       }
 
@@ -73,18 +75,15 @@ function syncPlayerImmersive() {
   }
 
   const immersive = readIframePlayerImmersive(iframe)
-  if (immersive !== null)
-    playerImmersive.value = immersive
+  if (immersive !== null) playerImmersive.value = immersive
 }
 
 function syncExternalUrl() {
   let url = props.url
   try {
     const currentUrl = iframeRef.value?.contentWindow?.location.href
-    if (currentUrl && /^https?:\/\//.test(currentUrl))
-      url = currentUrl
-  }
-  catch {
+    if (currentUrl && /^https?:\/\//.test(currentUrl)) url = currentUrl
+  } catch {
     // 跨域页面无法读取地址，保留原始链接。
   }
   // 与 iframe 的 src 分开，更新外链时不能重新挂载播放器。
@@ -94,8 +93,7 @@ function syncExternalUrl() {
 
 function handleIframeLoad(event: Event) {
   const iframe = event.target as HTMLIFrameElement | null
-  if (!iframe || iframe !== iframeRef.value || isDisposed)
-    return
+  if (!iframe || iframe !== iframeRef.value || isDisposed) return
 
   syncExternalUrl()
   prepareDialogIframeDocument(iframe)
@@ -113,16 +111,14 @@ function destroyIframe() {
   playerImmersive.value = false
 
   const iframe = iframeRef.value
-  if (!iframe)
-    return
+  if (!iframe) return
   // 先断开组件侧引用，about:blank 的迟到 load 事件不得重新注册观察器。
   iframeRef.value = null
   disposeDialogIframe(iframe)
 }
 
 function close() {
-  if (isDisposed)
-    return
+  if (isDisposed) return
   isDisposed = true
   destroyIframe()
   emit('close')
@@ -130,16 +126,14 @@ function close() {
 
 function openInNewTab() {
   const url = syncExternalUrl()
-  if (!url)
-    return
+  if (!url) return
 
   window.open(url, '_blank', 'noopener,noreferrer')
   close()
 }
 
 function handleFrameMessage(event: MessageEvent) {
-  if (!iframeRef.value || event.source !== iframeRef.value.contentWindow)
-    return
+  if (!iframeRef.value || event.source !== iframeRef.value.contentWindow) return
 
   const messageType = event.data && typeof event.data === 'object' ? event.data.type : event.data
   if (messageType === DRAWER_VIDEO_ENTER_PAGE_FULL) {
@@ -151,8 +145,7 @@ function handleFrameMessage(event: MessageEvent) {
     return
   }
   // iframe 内未被播放器消费的 ESC 会请求关闭弹窗
-  if (messageType === 'BEWLY_DRAWER_CLOSE_REQUEST')
-    close()
+  if (messageType === 'BEWLY_DRAWER_CLOSE_REQUEST') close()
 }
 
 useEventListener(window, 'message', handleFrameMessage)
@@ -218,7 +211,12 @@ onBeforeUnmount(() => {
     </template>
     <div class="video-dialog-frame" :class="{ 'is-loading': !frameLoaded }">
       <div class="video-dialog-frame__loading" aria-hidden="true">
-        <img class="video-dialog-frame__loading-icon" :src="loadingGifUrl" alt="" aria-hidden="true">
+        <img
+          class="video-dialog-frame__loading-icon"
+          :src="loadingGifUrl"
+          alt=""
+          aria-hidden="true"
+        />
         {{ t('video_dialog.loading') }}
       </div>
       <iframe

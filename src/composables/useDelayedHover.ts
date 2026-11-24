@@ -4,8 +4,21 @@ import type { Ref } from 'vue'
 import { settings } from '~/logic'
 
 // Hover and focus-triggered opening are disabled when touchscreen optimization is enabled.
-export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnter, enter, beforeLeave, leave }:
-{ enterDelay?: number, leaveDelay?: number, beforeEnter?: () => void, enter: () => void, beforeLeave?: () => void, leave: () => void }) {
+export function useDelayedHover({
+  enterDelay = 300,
+  leaveDelay = 300,
+  beforeEnter,
+  enter,
+  beforeLeave,
+  leave,
+}: {
+  enterDelay?: number
+  leaveDelay?: number
+  beforeEnter?: () => void
+  enter: () => void
+  beforeLeave?: () => void
+  leave: () => void
+}) {
   const el = ref<HTMLElement>() as Ref<HTMLElement | undefined> & { reset: () => void }
 
   let enterTimer: any | undefined
@@ -36,8 +49,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   }
 
   function scheduleEnter() {
-    if (beforeEnter)
-      beforeEnter()
+    if (beforeEnter) beforeEnter()
 
     if (enterTimer) {
       clearTimeout(enterTimer)
@@ -53,11 +65,9 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
     }, enterDelay)
   }
   function scheduleLeave() {
-    if (focusWithin || mouseWithin)
-      return
+    if (focusWithin || mouseWithin) return
 
-    if (beforeLeave)
-      beforeLeave()
+    if (beforeLeave) beforeLeave()
 
     if (enterTimer) {
       clearTimeout(enterTimer)
@@ -82,8 +92,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
     mouseWithin = false
     if (isEntered) {
       isEntered = false
-      if (beforeLeave)
-        beforeLeave()
+      if (beforeLeave) beforeLeave()
       leave()
     }
   }
@@ -107,12 +116,10 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
 
   function handleFocusIn() {
     // pointerdown 后紧随的 focusin 是点击顺带产生的，不算键盘驻留
-    if (Date.now() - lastPointerDownAt < 200)
-      return
+    if (Date.now() - lastPointerDownAt < 200) return
 
     // 切回标签页时浏览器恢复焦点派发的 focusin 也不算键盘驻留
-    if (restoringWindowFocus)
-      return
+    if (restoringWindowFocus) return
 
     focusWithin = true
     scheduleEnter()
@@ -120,8 +127,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
 
   function handleFocusOut(event: FocusEvent) {
     const nextTarget = event.relatedTarget as Node | null
-    if (nextTarget && el.value?.contains(nextTarget))
-      return
+    if (nextTarget && el.value?.contains(nextTarget)) return
 
     focusWithin = false
     scheduleLeave()
@@ -143,28 +149,32 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
     element.removeEventListener('mouseleave', handleMouseLeave)
   }
 
-  watch(el, (element, _, onCleanup) => {
-    if (element && !settings.value.touchScreenOptimization)
-      addInteractionListeners(element)
+  watch(
+    el,
+    (element, _, onCleanup) => {
+      if (element && !settings.value.touchScreenOptimization) addInteractionListeners(element)
 
-    onCleanup(() => {
-      if (element)
-        removeInteractionListeners(element)
-    })
-  }, { flush: 'post' })
+      onCleanup(() => {
+        if (element) removeInteractionListeners(element)
+      })
+    },
+    { flush: 'post' },
+  )
 
-  watch(() => settings.value.touchScreenOptimization, (newValue) => {
-    if (newValue) {
-      clearHoverTimers()
-      focusWithin = false
-      mouseWithin = false
-      if (el.value)
-        removeInteractionListeners(el.value)
-    }
-    else if (el.value) {
-      addInteractionListeners(el.value)
-    }
-  }, { immediate: true })
+  watch(
+    () => settings.value.touchScreenOptimization,
+    (newValue) => {
+      if (newValue) {
+        clearHoverTimers()
+        focusWithin = false
+        mouseWithin = false
+        if (el.value) removeInteractionListeners(el.value)
+      } else if (el.value) {
+        addInteractionListeners(el.value)
+      }
+    },
+    { immediate: true },
+  )
 
   onScopeDispose(clearHoverTimers)
 
@@ -174,8 +184,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   // 焦点移入页面内的 iframe（如其它扩展注入的预览框）也会触发 window blur，此时页面仍在前台，
   // 用户还在操作弹窗，不能当作交互结束：hasFocus() 在焦点位于子框架时仍为 true。
   useEventListener(window, 'blur', () => {
-    if (!document.hasFocus())
-      reset()
+    if (!document.hasFocus()) reset()
   })
 
   // 标记窗口正在恢复焦点：本帧内到达的 focusin 是浏览器自动恢复的焦点，

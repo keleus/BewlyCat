@@ -10,9 +10,7 @@
       "~/*": ["./src/*"]
     },
     "resolveJsonModule": true,
-    "types": [
-      "vite/client"
-    ],
+    "types": ["vite/client"],
     "allowImportingTsExtensions": true,
     "strict": true,
     "noImplicitAny": true,

@@ -28,44 +28,47 @@ interface IDisposable {
  * [setTimeout]: https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
  */
 
-// eslint-disable-next-line import/no-mutable-exports
 export let runWhenIdle: (callback: (idle: IdleDeadline) => void, timeout?: number) => IDisposable
 
-declare function requestIdleCallback(callback: (args: IdleDeadline) => void, options?: { timeout: number }): number
-declare function cancelIdleCallback(handle: number): void;
+declare function requestIdleCallback(
+  callback: (args: IdleDeadline) => void,
+  options?: { timeout: number },
+): number
+declare function cancelIdleCallback(handle: number): void
 
-(function () {
+;(function () {
   if (typeof requestIdleCallback !== 'function' || typeof cancelIdleCallback !== 'function') {
     runWhenIdle = (runner) => {
       let disposed = false
       setTimeout(() => {
-        if (disposed)
-          return
+        if (disposed) return
         const end = Date.now() + 15 // one frame at 64fps
-        runner(Object.freeze({
-          didTimeout: true,
-          timeRemaining() {
-            return Math.max(0, end - Date.now())
-          },
-        }))
+        runner(
+          Object.freeze({
+            didTimeout: true,
+            timeRemaining() {
+              return Math.max(0, end - Date.now())
+            },
+          }),
+        )
       })
       return {
         dispose() {
-          if (disposed)
-            return
+          if (disposed) return
           disposed = true
         },
       }
     }
-  }
-  else {
+  } else {
     runWhenIdle = (runner, timeout?) => {
-      const handle: number = requestIdleCallback(runner, typeof timeout === 'number' ? { timeout } : undefined)
+      const handle: number = requestIdleCallback(
+        runner,
+        typeof timeout === 'number' ? { timeout } : undefined,
+      )
       let disposed = false
       return {
         dispose() {
-          if (disposed)
-            return
+          if (disposed) return
 
           disposed = true
           cancelIdleCallback(handle)
@@ -80,9 +83,7 @@ export class LazyValue<T> {
   private _value: T | undefined
   private _didRun = false
 
-  constructor(
-    private executor: () => T,
-  ) {}
+  constructor(private executor: () => T) {}
 
   get value(): T {
     if (!this._didRun) {

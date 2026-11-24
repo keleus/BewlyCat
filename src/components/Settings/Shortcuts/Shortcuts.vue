@@ -6,11 +6,13 @@ import { useToast } from 'vue-toastification'
 import Button from '~/components/Button.vue' // Assuming Button component exists
 import Radio from '~/components/Radio.vue'
 import { originalSettings, settings } from '~/logic'
-import type {
-  BaseShortcutSetting,
-  ShortcutsSettings,
-} from '~/logic/storage'
-import { formatShortcutKey, getShortcutKeyFromEvent, isSameShortcutKey, resolveEffectiveShortcutSetting } from '~/utils/shortcutKeys'
+import type { BaseShortcutSetting, ShortcutsSettings } from '~/logic/storage'
+import {
+  formatShortcutKey,
+  getShortcutKeyFromEvent,
+  isSameShortcutKey,
+  resolveEffectiveShortcutSetting,
+} from '~/utils/shortcutKeys'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
@@ -66,51 +68,188 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
   {
     title: t('settings.shortcuts.group.homepage'),
     shortcuts: [
-      { id: 'homeRefresh', name: t('settings.shortcuts.home_refresh'), description: t('settings.shortcuts.home_refresh_desc'), defaultKey: 'R' },
+      {
+        id: 'homeRefresh',
+        name: t('settings.shortcuts.home_refresh'),
+        description: t('settings.shortcuts.home_refresh_desc'),
+        defaultKey: 'R',
+      },
     ],
   },
   {
     title: t('settings.shortcuts.group.general'),
     playerOnly: true,
     shortcuts: [
-      { id: 'danmuStatus', name: t('settings.shortcuts.danmu_status'), description: t('settings.shortcuts.danmu_status_desc'), defaultKey: 'Shift+D' },
-      { id: 'webFullscreen', name: t('settings.shortcuts.web_fullscreen'), description: t('settings.shortcuts.web_fullscreen_desc'), defaultKey: 'Shift+W' },
-      { id: 'widescreen', name: t('settings.shortcuts.widescreen'), description: t('settings.shortcuts.widescreen_desc'), defaultKey: 'T' },
-      { id: 'bewlyWidescreen', name: t('settings.shortcuts.bewly_widescreen'), description: t('settings.shortcuts.bewly_widescreen_desc'), defaultKey: 'Shift+T' },
-      { id: 'shortStepBackward', name: t('settings.shortcuts.short_step_backward'), description: t('settings.shortcuts.short_step_backward_desc'), defaultKey: 'J' },
-      { id: 'longStepBackward', name: t('settings.shortcuts.long_step_backward'), description: t('settings.shortcuts.long_step_backward_desc'), defaultKey: 'Shift+J' },
-      { id: 'playPause', name: t('settings.shortcuts.play_pause_ext'), description: t('settings.shortcuts.play_pause_ext_desc'), defaultKey: 'K' }, // Renamed to avoid conflict if 'playPause' is used for official
-      { id: 'shortStepForward', name: t('settings.shortcuts.short_step_forward'), description: t('settings.shortcuts.short_step_forward_desc'), defaultKey: 'L' },
-      { id: 'longStepForward', name: t('settings.shortcuts.long_step_forward'), description: t('settings.shortcuts.long_step_forward_desc'), defaultKey: 'Shift+L' },
-      { id: 'pip', name: t('settings.shortcuts.pip'), description: t('settings.shortcuts.pip_desc'), defaultKey: 'P' },
-      { id: 'turnOffLight', name: t('settings.shortcuts.turn_off_light'), description: t('settings.shortcuts.turn_off_light_desc'), defaultKey: 'I' },
-      { id: 'caption', name: t('settings.shortcuts.caption'), description: t('settings.shortcuts.caption_desc'), defaultKey: 'C' },
-      { id: 'videoScreenshot', name: t('settings.shortcuts.video_screenshot'), description: t('settings.shortcuts.video_screenshot_desc'), defaultKey: 'Shift+S' },
-      { id: 'increasePlaybackRate', name: t('settings.shortcuts.increase_playback_rate'), description: t('settings.shortcuts.increase_playback_rate_desc'), defaultKey: '+' },
-      { id: 'decreasePlaybackRate', name: t('settings.shortcuts.decrease_playback_rate'), description: t('settings.shortcuts.decrease_playback_rate_desc'), defaultKey: '-' },
-      { id: 'resetPlaybackRate', name: t('settings.shortcuts.reset_playback_rate'), description: t('settings.shortcuts.reset_playback_rate_desc'), defaultKey: '0' },
-      { id: 'previousFrame', name: t('settings.shortcuts.previous_frame'), description: t('settings.shortcuts.previous_frame_desc'), defaultKey: ',' },
-      { id: 'nextFrame', name: t('settings.shortcuts.next_frame'), description: t('settings.shortcuts.next_frame_desc'), defaultKey: '.' },
-      { id: 'replay', name: t('settings.shortcuts.replay'), description: t('settings.shortcuts.replay_desc'), defaultKey: 'Shift+Backspace' },
-      { id: 'toggleFollow', name: t('settings.shortcuts.toggle_follow'), description: t('settings.shortcuts.toggle_follow_desc'), defaultKey: 'Shift+F' },
+      {
+        id: 'danmuStatus',
+        name: t('settings.shortcuts.danmu_status'),
+        description: t('settings.shortcuts.danmu_status_desc'),
+        defaultKey: 'Shift+D',
+      },
+      {
+        id: 'webFullscreen',
+        name: t('settings.shortcuts.web_fullscreen'),
+        description: t('settings.shortcuts.web_fullscreen_desc'),
+        defaultKey: 'Shift+W',
+      },
+      {
+        id: 'widescreen',
+        name: t('settings.shortcuts.widescreen'),
+        description: t('settings.shortcuts.widescreen_desc'),
+        defaultKey: 'T',
+      },
+      {
+        id: 'bewlyWidescreen',
+        name: t('settings.shortcuts.bewly_widescreen'),
+        description: t('settings.shortcuts.bewly_widescreen_desc'),
+        defaultKey: 'Shift+T',
+      },
+      {
+        id: 'shortStepBackward',
+        name: t('settings.shortcuts.short_step_backward'),
+        description: t('settings.shortcuts.short_step_backward_desc'),
+        defaultKey: 'J',
+      },
+      {
+        id: 'longStepBackward',
+        name: t('settings.shortcuts.long_step_backward'),
+        description: t('settings.shortcuts.long_step_backward_desc'),
+        defaultKey: 'Shift+J',
+      },
+      {
+        id: 'playPause',
+        name: t('settings.shortcuts.play_pause_ext'),
+        description: t('settings.shortcuts.play_pause_ext_desc'),
+        defaultKey: 'K',
+      }, // Renamed to avoid conflict if 'playPause' is used for official
+      {
+        id: 'shortStepForward',
+        name: t('settings.shortcuts.short_step_forward'),
+        description: t('settings.shortcuts.short_step_forward_desc'),
+        defaultKey: 'L',
+      },
+      {
+        id: 'longStepForward',
+        name: t('settings.shortcuts.long_step_forward'),
+        description: t('settings.shortcuts.long_step_forward_desc'),
+        defaultKey: 'Shift+L',
+      },
+      {
+        id: 'pip',
+        name: t('settings.shortcuts.pip'),
+        description: t('settings.shortcuts.pip_desc'),
+        defaultKey: 'P',
+      },
+      {
+        id: 'turnOffLight',
+        name: t('settings.shortcuts.turn_off_light'),
+        description: t('settings.shortcuts.turn_off_light_desc'),
+        defaultKey: 'I',
+      },
+      {
+        id: 'caption',
+        name: t('settings.shortcuts.caption'),
+        description: t('settings.shortcuts.caption_desc'),
+        defaultKey: 'C',
+      },
+      {
+        id: 'videoScreenshot',
+        name: t('settings.shortcuts.video_screenshot'),
+        description: t('settings.shortcuts.video_screenshot_desc'),
+        defaultKey: 'Shift+S',
+      },
+      {
+        id: 'increasePlaybackRate',
+        name: t('settings.shortcuts.increase_playback_rate'),
+        description: t('settings.shortcuts.increase_playback_rate_desc'),
+        defaultKey: '+',
+      },
+      {
+        id: 'decreasePlaybackRate',
+        name: t('settings.shortcuts.decrease_playback_rate'),
+        description: t('settings.shortcuts.decrease_playback_rate_desc'),
+        defaultKey: '-',
+      },
+      {
+        id: 'resetPlaybackRate',
+        name: t('settings.shortcuts.reset_playback_rate'),
+        description: t('settings.shortcuts.reset_playback_rate_desc'),
+        defaultKey: '0',
+      },
+      {
+        id: 'previousFrame',
+        name: t('settings.shortcuts.previous_frame'),
+        description: t('settings.shortcuts.previous_frame_desc'),
+        defaultKey: ',',
+      },
+      {
+        id: 'nextFrame',
+        name: t('settings.shortcuts.next_frame'),
+        description: t('settings.shortcuts.next_frame_desc'),
+        defaultKey: '.',
+      },
+      {
+        id: 'replay',
+        name: t('settings.shortcuts.replay'),
+        description: t('settings.shortcuts.replay_desc'),
+        defaultKey: 'Shift+Backspace',
+      },
+      {
+        id: 'toggleFollow',
+        name: t('settings.shortcuts.toggle_follow'),
+        description: t('settings.shortcuts.toggle_follow_desc'),
+        defaultKey: 'Shift+F',
+      },
     ],
   },
   {
     title: t('settings.shortcuts.group.fullscreen_mode'),
     playerOnly: true,
     shortcuts: [
-      { id: 'increaseVideoSize', name: t('settings.shortcuts.increase_video_size'), description: t('settings.shortcuts.increase_video_size_desc'), defaultKey: '' },
-      { id: 'decreaseVideoSize', name: t('settings.shortcuts.decrease_video_size'), description: t('settings.shortcuts.decrease_video_size_desc'), defaultKey: '' },
-      { id: 'resetVideoSize', name: t('settings.shortcuts.reset_video_size'), description: t('settings.shortcuts.reset_video_size_desc'), defaultKey: '' },
-      { id: 'videoTitle', name: t('settings.shortcuts.video_title'), description: t('settings.shortcuts.video_title_desc'), defaultKey: 'B' },
-      { id: 'videoTime', name: t('settings.shortcuts.video_time'), description: t('settings.shortcuts.video_time_desc'), defaultKey: 'G' },
-      { id: 'clockTime', name: t('settings.shortcuts.clock_time'), description: t('settings.shortcuts.clock_time_desc'), defaultKey: 'H' },
+      {
+        id: 'increaseVideoSize',
+        name: t('settings.shortcuts.increase_video_size'),
+        description: t('settings.shortcuts.increase_video_size_desc'),
+        defaultKey: '',
+      },
+      {
+        id: 'decreaseVideoSize',
+        name: t('settings.shortcuts.decrease_video_size'),
+        description: t('settings.shortcuts.decrease_video_size_desc'),
+        defaultKey: '',
+      },
+      {
+        id: 'resetVideoSize',
+        name: t('settings.shortcuts.reset_video_size'),
+        description: t('settings.shortcuts.reset_video_size_desc'),
+        defaultKey: '',
+      },
+      {
+        id: 'videoTitle',
+        name: t('settings.shortcuts.video_title'),
+        description: t('settings.shortcuts.video_title_desc'),
+        defaultKey: 'B',
+      },
+      {
+        id: 'videoTime',
+        name: t('settings.shortcuts.video_time'),
+        description: t('settings.shortcuts.video_time_desc'),
+        defaultKey: 'G',
+      },
+      {
+        id: 'clockTime',
+        name: t('settings.shortcuts.clock_time'),
+        description: t('settings.shortcuts.clock_time_desc'),
+        defaultKey: 'H',
+      },
     ],
   },
 ]
 
 const visibleConfigurableShortcutsGroups = computed(() =>
-  configurableShortcutsGroups.filter(group => !group.playerOnly || settings.value.enablePlayerEnhancements),
+  configurableShortcutsGroups.filter(
+    (group) => !group.playerOnly || settings.value.enablePlayerEnhancements,
+  ),
 )
 
 // --- Reactive State ---
@@ -135,14 +274,15 @@ function getDefaultShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSett
 // --- Conflict Detection ---
 // Only extension shortcuts block each other. Official Bilibili shortcuts are
 // intentionally allowed so extension actions can override them at runtime.
-function checkShortcutConflict(key: string, currentId: ConfigurableShortcutId): { hasConflict: boolean, conflictInfo: { id: string, name: string } | null } {
-  if (!settings.value.shortcuts)
-    return { hasConflict: false, conflictInfo: null }
+function checkShortcutConflict(
+  key: string,
+  currentId: ConfigurableShortcutId,
+): { hasConflict: boolean; conflictInfo: { id: string; name: string } | null } {
+  if (!settings.value.shortcuts) return { hasConflict: false, conflictInfo: null }
 
   for (const group of configurableShortcutsGroups) {
     for (const shortcut of group.shortcuts) {
-      if (shortcut.id === currentId)
-        continue
+      if (shortcut.id === currentId) continue
 
       const shortcutSetting = getShortcutSetting(shortcut.id)
       if (shortcutSetting && typeof shortcutSetting === 'object' && shortcutSetting.key) {
@@ -177,10 +317,9 @@ function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
   // 如果快捷键设置不存在，创建一个新的
   if (!settings.value.shortcuts[id]) {
     settings.value.shortcuts[id] = { key: newKey, enabled: true }
-  }
-  else {
+  } else {
     // 更新现有设置
-    (settings.value.shortcuts[id] as BaseShortcutSetting).key = newKey
+    ;(settings.value.shortcuts[id] as BaseShortcutSetting).key = newKey
   }
 
   // Exit editing mode
@@ -194,21 +333,18 @@ function cancelEdit() {
 }
 
 function handleKeyDown(event: KeyboardEvent, id: ConfigurableShortcutId) {
-  if (editingShortcutId.value !== id)
-    return
+  if (editingShortcutId.value !== id) return
 
   event.preventDefault()
   event.stopPropagation()
 
   // 单独的修饰键返回 null，保留已录到的组合
   const keyCombo = getShortcutKeyFromEvent(event)
-  if (keyCombo)
-    currentKeyCombo.value = keyCombo
+  if (keyCombo) currentKeyCombo.value = keyCombo
 }
 
 function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
-  if (editingShortcutId.value !== id)
-    return
+  if (editingShortcutId.value !== id) return
 
   // 如果按下的是 Escape 键，取消编辑
   if (event.key === 'Escape') {
@@ -217,21 +353,32 @@ function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
   }
 
   // 如果按下的是 Backspace 键，且没有其他按键，取消编辑
-  if (event.key === 'Backspace' && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
+  if (
+    event.key === 'Backspace' &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    !event.metaKey
+  ) {
     cancelEdit()
     return
   }
 
   // 如果所有按键都已释放，保存快捷键
-  if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && currentKeyCombo.value) {
+  if (
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    !event.metaKey &&
+    currentKeyCombo.value
+  ) {
     const keyCombo = currentKeyCombo.value
     const conflictResult = checkShortcutConflict(keyCombo, id)
 
     if (conflictResult.hasConflict && conflictResult.conflictInfo) {
       toast.warning(t('settings.shortcuts.conflict', { name: conflictResult.conflictInfo.name }))
       cancelEdit()
-    }
-    else {
+    } else {
       saveShortcutKey(id, keyCombo)
     }
   }
@@ -240,8 +387,7 @@ function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
 // --- Reset and Toggle Functions ---
 function resetToDefault(shortcutDef: ConfigurableShortcutDefinition) {
   const defaultSetting = getDefaultShortcutSetting(shortcutDef.id)
-  if (!defaultSetting)
-    return
+  if (!defaultSetting) return
 
   const conflictResult = checkShortcutConflict(defaultSetting.key, shortcutDef.id)
   if (conflictResult.hasConflict && conflictResult.conflictInfo) {
@@ -250,8 +396,7 @@ function resetToDefault(shortcutDef: ConfigurableShortcutDefinition) {
   }
 
   cancelEdit()
-  if (!settings.value.shortcuts)
-    settings.value.shortcuts = {}
+  if (!settings.value.shortcuts) settings.value.shortcuts = {}
   settings.value.shortcuts[shortcutDef.id] = { ...defaultSetting }
 }
 
@@ -261,8 +406,7 @@ const shortcutResetSnapshot = ref<ShortcutsSettings>()
 function resetAllShortcuts() {
   cancelEdit()
   shortcutResetSnapshot.value = JSON.parse(JSON.stringify(settings.value.shortcuts ?? {}))
-  if (!settings.value.shortcuts)
-    settings.value.shortcuts = {}
+  if (!settings.value.shortcuts) settings.value.shortcuts = {}
 
   configurableShortcutsGroups.forEach((group) => {
     group.shortcuts.forEach((shortcutDef) => {
@@ -274,8 +418,7 @@ function resetAllShortcuts() {
 }
 
 function undoResetAllShortcuts() {
-  if (!shortcutResetSnapshot.value)
-    return
+  if (!shortcutResetSnapshot.value) return
   cancelEdit()
   settings.value.shortcuts = shortcutResetSnapshot.value
   shortcutResetSnapshot.value = undefined
@@ -297,7 +440,9 @@ function undoResetAllShortcuts() {
       </SettingsItem>
       <SettingsItem :title="t('settings.shortcuts.reset_all_ext_shortcuts')" right-width="auto">
         <template #desc>
-          <span v-if="shortcutResetSnapshot" role="status">{{ t('settings.shortcuts.reset_undo_hint') }}</span>
+          <span v-if="shortcutResetSnapshot" role="status">{{
+            t('settings.shortcuts.reset_undo_hint')
+          }}</span>
         </template>
         <div class="shortcut-reset-actions">
           <Button @click="resetAllShortcuts">
@@ -312,12 +457,13 @@ function undoResetAllShortcuts() {
 
     <!-- Configurable Extension Shortcuts -->
     <template v-for="group in visibleConfigurableShortcutsGroups" :key="group.title">
-      <ShortcutSection
-        :title="group.title"
-        default-open
-      >
+      <ShortcutSection :title="group.title" default-open>
         <template v-for="shortcutDef in group.shortcuts" :key="shortcutDef.id">
-          <SettingsItem :title="shortcutDef.name" :desc="shortcutDef.description" right-width="auto">
+          <SettingsItem
+            :title="shortcutDef.name"
+            :desc="shortcutDef.description"
+            right-width="auto"
+          >
             <div class="shortcut-item-config">
               <!-- Key Configuration with Enabled Toggle -->
               <div class="shortcut-config-row">
@@ -331,10 +477,18 @@ function undoResetAllShortcuts() {
                   @keyup="handleKeyUp($event, shortcutDef.id)"
                   @blur="cancelEdit"
                 >
-                  {{ currentKeyCombo ? formatShortcutKey(currentKeyCombo) : t('settings.shortcuts.press_keys') }}
+                  {{
+                    currentKeyCombo
+                      ? formatShortcutKey(currentKeyCombo)
+                      : t('settings.shortcuts.press_keys')
+                  }}
                 </div>
                 <div v-else class="shortcut-key border rounded px-3 py-1 text-sm">
-                  {{ formatShortcutKey(getShortcutSetting(shortcutDef.id)?.key || shortcutDef.defaultKey) || t('settings.shortcuts.not_set') }}
+                  {{
+                    formatShortcutKey(
+                      getShortcutSetting(shortcutDef.id)?.key || shortcutDef.defaultKey,
+                    ) || t('settings.shortcuts.not_set')
+                  }}
                 </div>
 
                 <!-- Action Buttons -->
@@ -365,14 +519,21 @@ function undoResetAllShortcuts() {
                 </div>
                 <Radio
                   :model-value="getShortcutSetting(shortcutDef.id)?.enabled ?? false"
-                  @update:model-value="(value) => {
-                    if (!settings.shortcuts[shortcutDef.id]) {
-                      settings.shortcuts[shortcutDef.id] = { key: shortcutDef.defaultKey, enabled: value }
+                  @update:model-value="
+                    (value) => {
+                      if (!settings.shortcuts[shortcutDef.id]) {
+                        settings.shortcuts[shortcutDef.id] = {
+                          key: shortcutDef.defaultKey,
+                          enabled: value,
+                        }
+                      } else {
+                        ;(settings.shortcuts[shortcutDef.id] ??= {
+                          key: shortcutDef.defaultKey,
+                          enabled: false,
+                        }).enabled = value
+                      }
                     }
-                    else {
-                      (settings.shortcuts[shortcutDef.id] ??= { key: shortcutDef.defaultKey, enabled: false }).enabled = value
-                    }
-                  }"
+                  "
                 />
               </div>
             </div>

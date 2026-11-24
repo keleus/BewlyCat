@@ -1,8 +1,17 @@
 import { useAppearanceSettings } from '~/composables/useAppearanceSettings'
 import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
-import { setUselessFeedCardBlockerEnabled, shouldEnableUselessFeedCardBlocker } from '~/contentScripts/features/blockUselessFeedCards'
+import {
+  setUselessFeedCardBlockerEnabled,
+  shouldEnableUselessFeedCardBlocker,
+} from '~/contentScripts/features/blockUselessFeedCards'
 import { appAuthTokens, localSettings, settings } from '~/logic'
-import { detachOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
+import {
+  detachOriginalBilibiliTopBar,
+  ensureOriginalBilibiliTopBarAppended,
+  resetBilibiliTopBarInlineStyles,
+  setOriginalBilibiliTopBarScrolled,
+  shouldShowOriginalBilibiliTopBar,
+} from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe } from '~/utils/main'
 import { applyBewlyDesignClasses } from '~/utils/videoPageDesign'
 
@@ -21,8 +30,7 @@ export function setupNecessarySettingsWatchers() {
             font-family: var(--bew-fonts) !important;
           }
         `)
-      }
-      else {
+      } else {
         danmakuFontStyleEl?.remove()
       }
     },
@@ -43,8 +51,7 @@ export function setupNecessarySettingsWatchers() {
     () => {
       if (settings.value.removeTheIndentFromChinesePunctuation) {
         document.documentElement.appendChild(removeTheIndentFromChinesePunctuationStyleEl)
-      }
-      else {
+      } else {
         document.documentElement.removeChild(removeTheIndentFromChinesePunctuationStyleEl)
       }
     },
@@ -63,13 +70,15 @@ export function setupNecessarySettingsWatchers() {
     )
   }
 
-  watch(() => settings.value.blockAds, () => {
-    // 不要在类名中使用 "ads"，否则可能被 AdGuard、AdBlock 等扩展误删。
-    if (settings.value.blockAds)
-      document.documentElement.classList.add('block-useless-contents')
-    else
-      document.documentElement.classList.remove('block-useless-contents')
-  }, { immediate: true })
+  watch(
+    () => settings.value.blockAds,
+    () => {
+      // 不要在类名中使用 "ads"，否则可能被 AdGuard、AdBlock 等扩展误删。
+      if (settings.value.blockAds) document.documentElement.classList.add('block-useless-contents')
+      else document.documentElement.classList.remove('block-useless-contents')
+    },
+    { immediate: true },
+  )
 
   // 只在原版首页标记卡片；切回自定义首页时释放监听器和待处理节点。
   watch(
@@ -89,7 +98,10 @@ export function setupNecessarySettingsWatchers() {
     ([showUserCard, showLiveList, showCommunityCenter, showHotSearch, showUpList]) => {
       document.documentElement.classList.toggle('moments-hide-original-user-card', !showUserCard)
       document.documentElement.classList.toggle('moments-hide-original-live-list', !showLiveList)
-      document.documentElement.classList.toggle('moments-hide-original-community-center', !showCommunityCenter)
+      document.documentElement.classList.toggle(
+        'moments-hide-original-community-center',
+        !showCommunityCenter,
+      )
       document.documentElement.classList.toggle('moments-hide-original-hot-search', !showHotSearch)
       document.documentElement.classList.toggle('moments-hide-original-up-list', !showUpList)
     },
@@ -109,12 +121,15 @@ export function setupNecessarySettingsWatchers() {
       display: none !important;
     }
   `)
-  watch(() => settings.value.blockTopSearchPageAds, () => {
-    if (settings.value.blockTopSearchPageAds)
-      document.documentElement.appendChild(blockTopSearchPageAdsStyleEl)
-    else
-      document.documentElement.removeChild(blockTopSearchPageAdsStyleEl)
-  }, { immediate: true })
+  watch(
+    () => settings.value.blockTopSearchPageAds,
+    () => {
+      if (settings.value.blockTopSearchPageAds)
+        document.documentElement.appendChild(blockTopSearchPageAdsStyleEl)
+      else document.documentElement.removeChild(blockTopSearchPageAdsStyleEl)
+    },
+    { immediate: true },
+  )
 
   watch(
     [() => localSettings.value.customizeCSS, () => localSettings.value.customizeCSSContent],
@@ -146,12 +161,10 @@ export function setupNecessarySettingsWatchers() {
   watch(
     () => appAuthTokens.value.accessToken,
     (token) => {
-      if (!token)
-        return
+      if (!token) return
 
       // Clear accessKey if not logged in
-      if (!getUserID())
-        appAuthTokens.value.accessToken = ''
+      if (!getUserID()) appAuthTokens.value.accessToken = ''
     },
     { immediate: true },
   )
@@ -169,13 +182,19 @@ export function setupNecessarySettingsWatchers() {
   )
 
   // 设置页在独立标签页中修改，已打开的首页需要自行切换到新的首页形态。
-  watch(() => settings.value.useOriginalBilibiliHomepage, () => {
-    if (!isInIframe() && isHomePage())
-      location.reload()
-  })
+  watch(
+    () => settings.value.useOriginalBilibiliHomepage,
+    () => {
+      if (!isInIframe() && isHomePage()) location.reload()
+    },
+  )
 
   function isOriginalTopBarEnabled(): boolean {
-    return shouldShowOriginalBilibiliTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)
+    return shouldShowOriginalBilibiliTopBar(
+      settings.value.enableTopBarModule,
+      settings.value.enableTopBar,
+      settings.value.useOriginalBilibiliTopBar,
+    )
   }
 
   // 模块关闭时原生顶栏完全交还给页面，不再隐藏。
@@ -186,7 +205,10 @@ export function setupNecessarySettingsWatchers() {
   function applyDocumentTopBarClasses(doc: Document, shouldApplyRemoveTopBar: boolean) {
     doc.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
     // 顶栏可见性或模块关闭时留给 Evolved 等第三方顶栏
-    doc.documentElement.classList.toggle('remove-custom-navbar', settings.value.enableTopBarModule && settings.value.enableTopBar)
+    doc.documentElement.classList.toggle(
+      'remove-custom-navbar',
+      settings.value.enableTopBarModule && settings.value.enableTopBar,
+    )
   }
 
   function buildIframeTopBarMessage() {
@@ -200,41 +222,45 @@ export function setupNecessarySettingsWatchers() {
 
   function applyIframeDocumentTopBarClasses(iframeDoc: Document) {
     applyDocumentTopBarClasses(iframeDoc, shouldRemoveNativeTopBar())
-    if (isOriginalTopBarEnabled())
-      resetBilibiliTopBarInlineStyles(iframeDoc)
+    if (isOriginalTopBarEnabled()) resetBilibiliTopBarInlineStyles(iframeDoc)
   }
 
   function syncTopBarPreferenceToIframes() {
-    if (isInIframe())
-      return
+    if (isInIframe()) return
 
     const message = buildIframeTopBarMessage()
     const iframeCandidates = new Set<HTMLIFrameElement>()
-    document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
-    document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
+    document
+      .querySelectorAll<HTMLIFrameElement>('iframe')
+      .forEach((iframe) => iframeCandidates.add(iframe))
+    document
+      .getElementById('bewly')
+      ?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe')
+      .forEach((iframe) => iframeCandidates.add(iframe))
 
     iframeCandidates.forEach((iframe) => {
       try {
         // Prefer direct DOM access when same-origin, so it works even if the iframe didn't inject our content script.
         const iframeDoc = iframe.contentWindow?.document
-        if (iframeDoc)
-          applyIframeDocumentTopBarClasses(iframeDoc)
-      }
-      catch {
+        if (iframeDoc) applyIframeDocumentTopBarClasses(iframeDoc)
+      } catch {
         // Ignore cross-origin / sandbox restrictions.
       }
 
       try {
         iframe.contentWindow?.postMessage(message, '*')
-      }
-      catch {
+      } catch {
         // Ignore cross-origin / sandbox restrictions.
       }
     })
   }
 
   watch(
-    [() => settings.value.enableTopBarModule, () => settings.value.enableTopBar, () => settings.value.useOriginalBilibiliTopBar],
+    [
+      () => settings.value.enableTopBarModule,
+      () => settings.value.enableTopBar,
+      () => settings.value.useOriginalBilibiliTopBar,
+    ],
     () => {
       applyOuterTopBarPolicy()
       syncTopBarPreferenceToIframes()
@@ -251,7 +277,12 @@ export function setupNecessarySettingsWatchers() {
       const observer = new MutationObserver(() => {
         applyOuterTopBarPolicy()
       })
-      observer.observe(shadow, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] })
+      observer.observe(shadow, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src'],
+      })
       onScopeDispose(() => observer.disconnect())
     }
   }
@@ -287,8 +318,7 @@ export function setupNecessarySettingsWatchers() {
   )
 
   const refreshBewlyDesignOnRouteChange = () => {
-    if (lastBewlyDesignHref === location.href)
-      return
+    if (lastBewlyDesignHref === location.href) return
 
     lastBewlyDesignHref = location.href
     applyBewlyDesignClasses()
@@ -296,8 +326,7 @@ export function setupNecessarySettingsWatchers() {
 
   let bewlyDesignRefreshQueued = false
   const scheduleBewlyDesignRefresh = () => {
-    if (bewlyDesignRefreshQueued)
-      return
+    if (bewlyDesignRefreshQueued) return
 
     bewlyDesignRefreshQueued = true
     // MAIN-world history hooks emit before the native method updates the URL.
@@ -332,16 +361,15 @@ export function setupNecessarySettingsWatchers() {
         // Handle document copy events (e.g., Ctrl+C)
         cleanShareLinkCopyHandler = (e: ClipboardEvent) => {
           const clipboardData = e.clipboardData
-          if (!clipboardData)
-            return
+          if (!clipboardData) return
 
           const text = clipboardData.getData('text/plain')
-          if (!text)
-            return
+          if (!text) return
 
           // Only process text that looks like a Bilibili share text or contains Bilibili URLs
           const isBilibiliShare = /【.+?】\s*https?:\/\//.test(text)
-          const hasBilibiliUrl = /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
+          const hasBilibiliUrl =
+            /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
 
           if (isBilibiliShare || hasBilibiliUrl) {
             const cleanedText = cleanBilibiliShareText(text, {
@@ -365,8 +393,7 @@ export function setupNecessarySettingsWatchers() {
   function hasBiliIframePage(): boolean {
     const bewlyHost = document.getElementById('bewly')
     const shadow = bewlyHost?.shadowRoot
-    if (!shadow)
-      return false
+    if (!shadow) return false
     // Only consider iframes that look like a Bilibili page.
     return Boolean(shadow.querySelector('iframe[src*="bilibili.com"]'))
   }
@@ -376,8 +403,7 @@ export function setupNecessarySettingsWatchers() {
   function applyOuterTopBarPolicy() {
     if (isInIframe()) {
       applyDocumentTopBarClasses(document, shouldRemoveNativeTopBar())
-      if (isOriginalTopBarEnabled())
-        resetBilibiliTopBarInlineStyles(document)
+      if (isOriginalTopBarEnabled()) resetBilibiliTopBarInlineStyles(document)
       return
     }
 
@@ -392,8 +418,7 @@ export function setupNecessarySettingsWatchers() {
       // 切回 Bewly 顶栏时用 remove-top-bar 隐藏即可，避免重新点亮原站首页 Vue 树。
       if (shouldShowOriginal && !shouldHideOuterBiliTopBar)
         ensureOriginalBilibiliTopBarAppended(document)
-      else
-        detachOriginalBilibiliTopBar(document)
+      else detachOriginalBilibiliTopBar(document)
 
       const shouldApplyRemoveTopBar = !shouldShowOriginal || shouldHideOuterBiliTopBar
       applyDocumentTopBarClasses(document, shouldApplyRemoveTopBar)
@@ -402,14 +427,13 @@ export function setupNecessarySettingsWatchers() {
         resetBilibiliTopBarInlineStyles(document)
 
       if (shouldShowOriginal && !shouldHideOuterBiliTopBar) {
-        const scrollTop = document.getElementById('bewly')
-          ?.shadowRoot
-          ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
-          ?.scrollTop ?? 0
+        const scrollTop =
+          document
+            .getElementById('bewly')
+            ?.shadowRoot?.querySelector<HTMLElement>('.bewly-scroll-viewport')?.scrollTop ?? 0
         setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
       }
-    }
-    else {
+    } else {
       // 原版首页和其他原生页面只切换显隐，不搬移或改写顶栏。
       detachOriginalBilibiliTopBar(document)
       applyDocumentTopBarClasses(document, shouldRemoveNativeTopBar())

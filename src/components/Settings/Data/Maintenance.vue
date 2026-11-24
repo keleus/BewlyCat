@@ -6,10 +6,33 @@ import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
-import { localSettings, localSettingsReady, migrateLegacyInvertedBooleanSettings, normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
+import {
+  localSettings,
+  localSettingsReady,
+  migrateLegacyInvertedBooleanSettings,
+  normalizeRecommendationModeSwitcherOptions,
+  originalSettings,
+  RECOMMENDATION_MODE_OPTIONS,
+  settings,
+  videoCardContextMenuKeys,
+} from '~/logic'
 import type { LocalWallpaperData } from '~/utils/localWallpaper'
-import { convertLegacyUploadedWallpaper, extractWallpaperId, getLocalWallpaperData, hasLocalWallpaper, LOCAL_DARK_WALLPAPER_BACKUP_KEY, LOCAL_WALLPAPER_BACKUP_KEY, localWallpapersLoaded, restoreLocalWallpapers } from '~/utils/localWallpaper'
-import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
+import {
+  convertLegacyUploadedWallpaper,
+  extractWallpaperId,
+  getLocalWallpaperData,
+  hasLocalWallpaper,
+  LOCAL_DARK_WALLPAPER_BACKUP_KEY,
+  LOCAL_WALLPAPER_BACKUP_KEY,
+  localWallpapersLoaded,
+  restoreLocalWallpapers,
+} from '~/utils/localWallpaper'
+import {
+  applyPendingSettingsMigrations,
+  formatSettingsMigrationConfirmMessage,
+  getPendingSettingsMigrationChoices,
+  hasPendingSettingsMigrations,
+} from '~/utils/settingsMigration'
 import { WALLPAPER_SETTING_KEYS } from '~/utils/wallpaper'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -26,7 +49,9 @@ interface NormalizedImportValue {
 }
 
 const videoCardContextMenuKeySet = new Set<string>(videoCardContextMenuKeys)
-const topBarComponentKeySet = new Set(originalSettings.topBarComponentsConfig.map(item => item.key))
+const topBarComponentKeySet = new Set(
+  originalSettings.topBarComponentsConfig.map((item) => item.key),
+)
 const topBarBadgeTypes = new Set(['number', 'dot', 'none'])
 const structuredArrayKeys = new Set([
   'dockItemsConfig',
@@ -44,16 +69,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function normalizeFilterRules(value: unknown): NormalizedImportValue {
-  if (!Array.isArray(value))
-    return { compatible: false }
+  if (!Array.isArray(value)) return { compatible: false }
 
   const normalized = value.flatMap((item) => {
     if (!isRecord(item) || typeof item.keyword !== 'string' || typeof item.remark !== 'string')
       return []
 
     const keyword = item.keyword.trim()
-    if (!keyword)
-      return []
+    if (!keyword) return []
 
     return [{ keyword, remark: item.remark.trim() }]
   })
@@ -64,61 +87,73 @@ function normalizeFilterRules(value: unknown): NormalizedImportValue {
 }
 
 function normalizeStructuredArray(key: string, value: unknown): NormalizedImportValue | null {
-  if (!structuredArrayKeys.has(key))
-    return null
+  if (!structuredArrayKeys.has(key)) return null
 
-  if (key === 'filterByTitle' || key === 'filterByUser')
-    return normalizeFilterRules(value)
+  if (key === 'filterByTitle' || key === 'filterByUser') return normalizeFilterRules(value)
 
-  if (!Array.isArray(value))
-    return { compatible: false }
+  if (!Array.isArray(value)) return { compatible: false }
 
   if (key === 'topBarPinnedChannels') {
-    return value.every(item => typeof item === 'string')
+    return value.every((item) => typeof item === 'string')
       ? { compatible: true, value: [...value] }
       : { compatible: false }
   }
 
   if (key === 'videoCardContextMenuConfig') {
-    const compatible = value.every(item => isRecord(item)
-      && typeof item.key === 'string'
-      && videoCardContextMenuKeySet.has(item.key)
-      && typeof item.visible === 'boolean')
+    const compatible = value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.key === 'string' &&
+        videoCardContextMenuKeySet.has(item.key) &&
+        typeof item.visible === 'boolean',
+    )
     return compatible ? { compatible: true, value: structuredClone(value) } : { compatible: false }
   }
 
   if (key === 'topBarComponentsConfig') {
-    const compatible = value.every(item => isRecord(item)
-      && typeof item.key === 'string'
-      && topBarComponentKeySet.has(item.key)
-      && typeof item.visible === 'boolean'
-      && typeof item.badgeType === 'string'
-      && topBarBadgeTypes.has(item.badgeType))
+    const compatible = value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.key === 'string' &&
+        topBarComponentKeySet.has(item.key) &&
+        typeof item.visible === 'boolean' &&
+        typeof item.badgeType === 'string' &&
+        topBarBadgeTypes.has(item.badgeType),
+    )
     return compatible ? { compatible: true, value: structuredClone(value) } : { compatible: false }
   }
 
   if (key === 'dockItemsConfig') {
-    const compatible = value.every(item => isRecord(item)
-      && Object.values(AppPage).includes(item.page as AppPage)
-      && typeof item.visible === 'boolean'
-      && typeof item.openInNewTab === 'boolean'
-      && typeof item.useOriginalBiliPage === 'boolean')
+    const compatible = value.every(
+      (item) =>
+        isRecord(item) &&
+        Object.values(AppPage).includes(item.page as AppPage) &&
+        typeof item.visible === 'boolean' &&
+        typeof item.openInNewTab === 'boolean' &&
+        typeof item.useOriginalBiliPage === 'boolean',
+    )
     return compatible ? { compatible: true, value: structuredClone(value) } : { compatible: false }
   }
 
   if (key === 'homePageTabVisibilityList') {
-    const compatible = value.every(item => isRecord(item)
-      && Object.values(HomeSubPage).includes(item.page as HomeSubPage)
-      && typeof item.visible === 'boolean')
+    const compatible = value.every(
+      (item) =>
+        isRecord(item) &&
+        Object.values(HomeSubPage).includes(item.page as HomeSubPage) &&
+        typeof item.visible === 'boolean',
+    )
     return compatible ? { compatible: true, value: structuredClone(value) } : { compatible: false }
   }
 
   if (key === 'recommendationModeSwitcherOptions') {
     // 兼容旧版备份中按固定顺序保存的可见项字符串数组
-    const isMode = (mode: unknown) => (RECOMMENDATION_MODE_OPTIONS as readonly unknown[]).includes(mode)
-    const compatible = value.every(item => isMode(item)) || value.every(item => isRecord(item)
-      && isMode(item.mode)
-      && typeof item.visible === 'boolean')
+    const isMode = (mode: unknown) =>
+      (RECOMMENDATION_MODE_OPTIONS as readonly unknown[]).includes(mode)
+    const compatible =
+      value.every((item) => isMode(item)) ||
+      value.every(
+        (item) => isRecord(item) && isMode(item.mode) && typeof item.visible === 'boolean',
+      )
     return compatible
       ? { compatible: true, value: normalizeRecommendationModeSwitcherOptions(value) }
       : { compatible: false }
@@ -127,52 +162,52 @@ function normalizeStructuredArray(key: string, value: unknown): NormalizedImport
   return null
 }
 
-function normalizeImportedValue(current: unknown, imported: unknown, key = ''): NormalizedImportValue {
+function normalizeImportedValue(
+  current: unknown,
+  imported: unknown,
+  key = '',
+): NormalizedImportValue {
   const structuredArray = normalizeStructuredArray(key, imported)
-  if (structuredArray)
-    return structuredArray
+  if (structuredArray) return structuredArray
 
   if (Array.isArray(current)) {
-    if (!Array.isArray(imported))
-      return { compatible: false }
-    if (!current.length)
-      return { compatible: true, value: structuredClone(imported) }
+    if (!Array.isArray(imported)) return { compatible: false }
+    if (!current.length) return { compatible: true, value: structuredClone(imported) }
 
     const normalized: unknown[] = []
     for (const item of imported) {
       const result = normalizeImportedValue(current[0], item)
-      if (!result.compatible)
-        return { compatible: false }
+      if (!result.compatible) return { compatible: false }
       normalized.push(result.value)
     }
     return { compatible: true, value: normalized }
   }
 
   if (key === 'savedVideoQuality') {
-    const compatible = imported === null || (typeof imported === 'number' && Number.isSafeInteger(imported) && imported >= 0)
+    const compatible =
+      imported === null ||
+      (typeof imported === 'number' && Number.isSafeInteger(imported) && imported >= 0)
     return compatible ? { compatible: true, value: imported } : { compatible: false }
   }
 
   if (current === null) {
     if (key === 'savedVideoAspectRatio') {
-      const compatible = imported === null || imported === '0:0' || imported === '4:3' || imported === '16:9'
+      const compatible =
+        imported === null || imported === '0:0' || imported === '4:3' || imported === '16:9'
       return compatible ? { compatible: true, value: imported } : { compatible: false }
     }
     return imported === null ? { compatible: true, value: null } : { compatible: false }
   }
 
   if (isRecord(current)) {
-    if (!isRecord(imported))
-      return { compatible: false }
+    if (!isRecord(imported)) return { compatible: false }
 
     const normalized = structuredClone(current)
     for (const [nestedKey, nestedValue] of Object.entries(imported)) {
-      if (!Object.prototype.hasOwnProperty.call(current, nestedKey))
-        continue
+      if (!Object.prototype.hasOwnProperty.call(current, nestedKey)) continue
 
       const result = normalizeImportedValue(current[nestedKey], nestedValue, nestedKey)
-      if (!result.compatible)
-        return { compatible: false }
+      if (!result.compatible) return { compatible: false }
       normalized[nestedKey] = result.value
     }
     return { compatible: true, value: normalized }
@@ -202,7 +237,7 @@ async function restoreBackupWallpapers(
   darkBackup: unknown,
   recognizedSettings: Record<string, unknown>,
 ) {
-  const backupEntries: Array<{ slot: 'light' | 'dark', backup: unknown, dataUrl: unknown }> = []
+  const backupEntries: Array<{ slot: 'light' | 'dark'; backup: unknown; dataUrl: unknown }> = []
   if (lightBackup != null) {
     backupEntries.push({
       slot: 'light',
@@ -220,19 +255,17 @@ async function restoreBackupWallpapers(
 
   try {
     await localSettingsReady
-    const restoredRefs = await restoreLocalWallpapers(backupEntries.map(entry => entry.backup))
+    const restoredRefs = await restoreLocalWallpapers(backupEntries.map((entry) => entry.backup))
 
-    let lightItem: { id: string, name: string, isLocal: true, url: string } | null = null
-    let darkItem: { id: string, name: string, isLocal: true, url: string } | null = null
+    let lightItem: { id: string; name: string; isLocal: true; url: string } | null = null
+    let darkItem: { id: string; name: string; isLocal: true; url: string } | null = null
 
     for (const [index, entry] of backupEntries.entries()) {
       const ref = restoredRefs[index]
       const url = `local-wallpaper:${ref.id}`
       const item = { ...ref, url }
-      if (entry.slot === 'light')
-        lightItem = item
-      else
-        darkItem = item
+      if (entry.slot === 'light') lightItem = item
+      else darkItem = item
 
       for (const key of WALLPAPER_SETTING_KEYS) {
         if (entry.dataUrl && recognizedSettings[key] === entry.dataUrl)
@@ -242,7 +275,10 @@ async function restoreBackupWallpapers(
 
     // 若深浅色模式共用同一张本地壁纸（导出时未重复打包），同步恢复深色槽位引用。
     if (!darkItem && lightItem) {
-      if (recognizedSettings.darkModeWallpaper === lightItem.url || recognizedSettings.searchPageDarkModeWallpaper === lightItem.url) {
+      if (
+        recognizedSettings.darkModeWallpaper === lightItem.url ||
+        recognizedSettings.searchPageDarkModeWallpaper === lightItem.url
+      ) {
         darkItem = { ...lightItem }
       }
     }
@@ -250,10 +286,9 @@ async function restoreBackupWallpapers(
     localSettings.value.locallyUploadedWallpaper = lightItem
     localSettings.value.locallyUploadedDarkWallpaper = darkItem
     return true
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to restore local wallpaper:', error)
-    const backupDataUrls = new Set(backupEntries.map(entry => entry.dataUrl).filter(Boolean))
+    const backupDataUrls = new Set(backupEntries.map((entry) => entry.dataUrl).filter(Boolean))
     for (const key of WALLPAPER_SETTING_KEYS) {
       const value = recognizedSettings[key]
       const id = typeof value === 'string' ? extractWallpaperId(value) : null
@@ -269,14 +304,17 @@ function handleImportFile(event: Event) {
   const selectedFile = input.files?.[0]
   input.value = ''
 
-  if (!selectedFile)
-    return
+  if (!selectedFile) return
 
   const reader = new FileReader()
   reader.onload = async () => {
     try {
       const importedSettings = JSON.parse(String(reader.result)) as Record<string, unknown>
-      if (!importedSettings || Array.isArray(importedSettings) || typeof importedSettings !== 'object')
+      if (
+        !importedSettings ||
+        Array.isArray(importedSettings) ||
+        typeof importedSettings !== 'object'
+      )
         throw new TypeError('Invalid settings backup')
 
       if (hasPendingSettingsMigrations(importedSettings)) {
@@ -285,22 +323,26 @@ function handleImportFile(event: Event) {
           t,
           'settings.maintenance.migrate_legacy_import_confirm',
         )
-        const toggleFields = getPendingSettingsMigrationChoices(importedSettings).map(choice => ({
+        const toggleFields = getPendingSettingsMigrationChoices(importedSettings).map((choice) => ({
           id: choice.id,
           label: String(t(choice.titleKey)),
           value: choice.value,
           enabledLabel: String(t('settings.chk_box.show')),
           disabledLabel: String(t('settings.chk_box.hidden')),
         }))
-        const shouldMigrate = await showConfirmDialog(message ?? t('settings.maintenance.migrate_legacy_import_confirm'), {
-          title: t('settings.maintenance.migrate_legacy_title'),
-          confirmLabel: t('settings.maintenance.migrate_legacy_action'),
-          toggleFields,
-        })
+        const shouldMigrate = await showConfirmDialog(
+          message ?? t('settings.maintenance.migrate_legacy_import_confirm'),
+          {
+            title: t('settings.maintenance.migrate_legacy_title'),
+            confirmLabel: t('settings.maintenance.migrate_legacy_action'),
+            toggleFields,
+          },
+        )
         if (shouldMigrate) {
-          applyPendingSettingsMigrations(importedSettings, Object.fromEntries(
-            toggleFields.map(field => [field.id, field.value]),
-          ))
+          applyPendingSettingsMigrations(
+            importedSettings,
+            Object.fromEntries(toggleFields.map((field) => [field.id, field.value])),
+          )
         }
       }
 
@@ -308,13 +350,15 @@ function handleImportFile(event: Event) {
 
       const currentSettings = originalSettings as unknown as Record<string, unknown>
       const recognizedSettings: Record<string, unknown> = {}
-      const legacyWallpaper = convertLegacyUploadedWallpaper(importedSettings.locallyUploadedWallpaper)
+      const legacyWallpaper = convertLegacyUploadedWallpaper(
+        importedSettings.locallyUploadedWallpaper,
+      )
       let ignoredCount = 0
       Object.entries(importedSettings).forEach(([key, value]) => {
         if (
-          key === LOCAL_WALLPAPER_BACKUP_KEY
-          || key === LOCAL_DARK_WALLPAPER_BACKUP_KEY
-          || (key === 'locallyUploadedWallpaper' && legacyWallpaper)
+          key === LOCAL_WALLPAPER_BACKUP_KEY ||
+          key === LOCAL_DARK_WALLPAPER_BACKUP_KEY ||
+          (key === 'locallyUploadedWallpaper' && legacyWallpaper)
         ) {
           return
         }
@@ -341,19 +385,20 @@ function handleImportFile(event: Event) {
       // 先写入壁纸数据，设置生效时才能解析到其中的本地壁纸引用。
       const wallpaperBackup = importedSettings[LOCAL_WALLPAPER_BACKUP_KEY] ?? legacyWallpaper
       const darkWallpaperBackup = importedSettings[LOCAL_DARK_WALLPAPER_BACKUP_KEY]
-      const wallpaperRestored = (wallpaperBackup == null && darkWallpaperBackup == null)
-        || await restoreBackupWallpapers(wallpaperBackup, darkWallpaperBackup, recognizedSettings)
+      const wallpaperRestored =
+        (wallpaperBackup == null && darkWallpaperBackup == null) ||
+        (await restoreBackupWallpapers(wallpaperBackup, darkWallpaperBackup, recognizedSettings))
 
       await importSettingsStorage(recognizedSettings)
 
-      toast.success(t('settings.maintenance.import_success', {
-        imported: Object.keys(recognizedSettings).length,
-        ignored: ignoredCount,
-      }))
-      if (!wallpaperRestored)
-        toast.warning(t('settings.maintenance.import_wallpaper_failed'))
-    }
-    catch {
+      toast.success(
+        t('settings.maintenance.import_success', {
+          imported: Object.keys(recognizedSettings).length,
+          ignored: ignoredCount,
+        }),
+      )
+      if (!wallpaperRestored) toast.warning(t('settings.maintenance.import_wallpaper_failed'))
+    } catch {
       toast.error(t('settings.maintenance.import_failed'))
     }
   }
@@ -369,16 +414,23 @@ async function handleExportSettings() {
     ? getLocalWallpaperData(uploadedWallpaperItem.id)
     : convertLegacyUploadedWallpaper(uploadedWallpaperItem)
   const uploadedDarkWallpaperItem = localSettings.value.locallyUploadedDarkWallpaper
-  const uploadedDarkWallpaper = uploadedDarkWallpaperItem?.id && uploadedDarkWallpaperItem.id !== uploadedWallpaperItem?.id
-    ? getLocalWallpaperData(uploadedDarkWallpaperItem.id)
-    : !uploadedDarkWallpaperItem?.id
+  const uploadedDarkWallpaper =
+    uploadedDarkWallpaperItem?.id && uploadedDarkWallpaperItem.id !== uploadedWallpaperItem?.id
+      ? getLocalWallpaperData(uploadedDarkWallpaperItem.id)
+      : !uploadedDarkWallpaperItem?.id
         ? convertLegacyUploadedWallpaper(uploadedDarkWallpaperItem)
         : null
-  const jsonStr = JSON.stringify({
-    ...settings.value,
-    ...(uploadedWallpaper ? { [LOCAL_WALLPAPER_BACKUP_KEY]: uploadedWallpaper } : {}),
-    ...(uploadedDarkWallpaper ? { [LOCAL_DARK_WALLPAPER_BACKUP_KEY]: uploadedDarkWallpaper } : {}),
-  }, null, 2)
+  const jsonStr = JSON.stringify(
+    {
+      ...settings.value,
+      ...(uploadedWallpaper ? { [LOCAL_WALLPAPER_BACKUP_KEY]: uploadedWallpaper } : {}),
+      ...(uploadedDarkWallpaper
+        ? { [LOCAL_DARK_WALLPAPER_BACKUP_KEY]: uploadedDarkWallpaper }
+        : {}),
+    },
+    null,
+    2,
+  )
   const blob = new Blob([jsonStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -391,8 +443,7 @@ async function handleExportSettings() {
 }
 
 async function handleResetSettings() {
-  if (!await showConfirmDialog(t('settings.reset_settings_confirm')))
-    return
+  if (!(await showConfirmDialog(t('settings.reset_settings_confirm')))) return
 
   // 重置时保留用户当前使用的语言
   const resetSettings = structuredClone(originalSettings)
@@ -418,7 +469,7 @@ async function handleResetSettings() {
           accept=".json"
           hidden
           @change="handleImportFile"
-        >
+        />
         <Button @click="handleImportSettings">
           <template #left>
             <div i-uil:import />

@@ -6,7 +6,7 @@
 
 ## 樣式檔書寫風格
 
-``` scss
+```scss
 .bewly-design.pageName {
   // 喺當前嘅頁面進行特別嘅修改，就好似你係噉以執吓個佈局，將嗰啲嘢擺晒落呢度
   .right-side-bar .catalog {

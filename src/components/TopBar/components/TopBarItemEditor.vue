@@ -32,8 +32,9 @@ const topBarSettingsTargets: Record<string, string> = {
   topBarSwitcher: 'topbar.top_bar_switcher',
 }
 
-const settingsTargetTitleKey = computed(() => props.settingsTargetTitleKey
-  ?? topBarSettingsTargets[props.componentKey])
+const settingsTargetTitleKey = computed(
+  () => props.settingsTargetTitleKey ?? topBarSettingsTargets[props.componentKey],
+)
 const editTargetKey = computed(() => `topbar-${props.componentKey}`)
 </script>
 
@@ -66,7 +67,7 @@ const editTargetKey = computed(() => `topbar-${props.componentKey}`)
   align-items: center;
 }
 
-.top-bar-item-editor--editing[data-layout-edit-target="topbar-search"] {
+.top-bar-item-editor--editing[data-layout-edit-target='topbar-search'] {
   width: 100%;
 }
 </style>

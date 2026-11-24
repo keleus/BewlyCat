@@ -19,25 +19,21 @@ function optionsModuleOverrides(): Plugin {
     name: 'bewly:options-module-overrides',
     enforce: 'pre',
     async resolveId(source, importer, options) {
-      if (options.isEntry)
-        return null
+      if (options.isEntry) return null
       // 只拦截目标模块，避免对 uno.css 等虚拟模块触发二次 resolve 引发 UnoCSS 重复导入提示。
-      if (!source.includes('i18n') && !source.includes('settingsMenus'))
-        return null
+      if (!source.includes('i18n') && !source.includes('settingsMenus')) return null
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
-      if (!resolved)
-        return null
+      if (!resolved) return null
       const normalized = normalizePath(resolved.id)
-      if (normalized === CONTENT_I18N_PATH)
-        return OPTIONS_I18N_PATH
-      if (normalized === SYNC_SETTINGS_MENUS_PATH)
-        return ASYNC_SETTINGS_MENUS_PATH
+      if (normalized === CONTENT_I18N_PATH) return OPTIONS_I18N_PATH
+      if (normalized === SYNC_SETTINGS_MENUS_PATH) return ASYNC_SETTINGS_MENUS_PATH
       return null
     },
   }
 }
 
-const OPTIONS_VENDOR_RE = /[\\/]node_modules[\\/](?:\.pnpm[\\/])?(?:vue|@vue|vue-i18n|@intlify|pinia|@vueuse|vue-toastification)[\\/@+]/
+const OPTIONS_VENDOR_RE =
+  /[\\/]node_modules[\\/](?:\.pnpm[\\/])?(?:vue|@vue|vue-i18n|@intlify|pinia|@vueuse|vue-toastification)[\\/@+]/
 
 // 独立设置页。它用到的模块都已包含在内容脚本中，第三方许可由内容脚本的清单覆盖。
 export function createOptionsConfig(): UserConfig {
@@ -59,7 +55,13 @@ export function createOptionsConfig(): UserConfig {
       watchLocaleFiles(),
     ],
     build: {
-      outDir: r(isFirefox ? 'extension-firefox/dist/options' : isSafari ? 'extension-safari/dist/options' : 'extension/dist/options'),
+      outDir: r(
+        isFirefox
+          ? 'extension-firefox/dist/options'
+          : isSafari
+            ? 'extension-safari/dist/options'
+            : 'extension/dist/options',
+      ),
       cssCodeSplit: false,
       emptyOutDir: true,
       sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35

@@ -32,24 +32,27 @@ const setBreadcrumb = inject<(detail?: string) => void>('setSettingsBreadcrumb')
 const scrollSettingsContentToTop = inject<() => void>('scrollSettingsContentToTop')
 const savedPage = sessionStorage.getItem(props.storageKey)
 const activePage = ref(
-  props.activePage && props.pages.some(page => page.value === props.activePage)
+  props.activePage && props.pages.some((page) => page.value === props.activePage)
     ? props.activePage
-    : props.pages.some(page => page.value === savedPage)
+    : props.pages.some((page) => page.value === savedPage)
       ? savedPage!
-      : props.pages[0]?.value ?? '',
+      : (props.pages[0]?.value ?? ''),
 )
 
-watch(() => props.activePage, (page) => {
-  if (page && page !== activePage.value && props.pages.some(item => item.value === page))
-    activePage.value = page
-})
+watch(
+  () => props.activePage,
+  (page) => {
+    if (page && page !== activePage.value && props.pages.some((item) => item.value === page))
+      activePage.value = page
+  },
+)
 
-const currentPage = computed(() =>
-  props.pages.find(page => page.value === activePage.value) ?? props.pages[0],
+const currentPage = computed(
+  () => props.pages.find((page) => page.value === activePage.value) ?? props.pages[0],
 )
 
 const pageGroups = computed(() => {
-  const groups: Array<{ key: string | null, pages: CategoryPage[] }> = []
+  const groups: Array<{ key: string | null; pages: CategoryPage[] }> = []
 
   for (const page of props.pages) {
     const groupKey = page.groupKey ?? null
@@ -71,8 +74,7 @@ watch(activePage, (page) => {
 watchEffect(() => setBreadcrumb?.(currentPage.value ? t(currentPage.value.titleKey) : undefined))
 
 function selectPage(page: string) {
-  if (page === activePage.value)
-    return
+  if (page === activePage.value) return
 
   scrollSettingsContentToTop?.()
   activePage.value = page
@@ -81,12 +83,10 @@ function selectPage(page: string) {
 function handlePageMouseDown(event: MouseEvent) {
   // Keep keyboard focus, but prevent the browser from scrolling the focused
   // secondary-nav item into view (can nudge the settings panel upward).
-  if (event.button !== 0)
-    return
+  if (event.button !== 0) return
 
   event.preventDefault()
-  if (event.currentTarget instanceof HTMLElement)
-    event.currentTarget.focus({ preventScroll: true })
+  if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus({ preventScroll: true })
 }
 </script>
 

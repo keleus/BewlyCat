@@ -14,23 +14,26 @@ function formatThreshold(enabled: boolean, threshold: string): string {
 function getAppAuthorizationLabel(): string {
   const { accessToken, accessTokenExpiresAt, refreshTokenExpiresAt } = appAuthTokens.value
   const now = Date.now()
-  if (!accessToken)
-    return '未授权'
-  if (refreshTokenExpiresAt && refreshTokenExpiresAt <= now)
-    return '授权已过期'
-  if (accessTokenExpiresAt && accessTokenExpiresAt <= now)
-    return '访问令牌已过期，可刷新'
+  if (!accessToken) return '未授权'
+  if (refreshTokenExpiresAt && refreshTokenExpiresAt <= now) return '授权已过期'
+  if (accessTokenExpiresAt && accessTokenExpiresAt <= now) return '访问令牌已过期，可刷新'
   return '已授权'
 }
 
 export function getRecommendationSettingsDiagnostics(): ApiErrorReportItems {
-  const { recommendationMode, appRecommendationColumn, autoSwitchRecommendationMode, rememberNoCookieRecommendationState } = settings.value
+  const {
+    recommendationMode,
+    appRecommendationColumn,
+    autoSwitchRecommendationMode,
+    rememberNoCookieRecommendationState,
+  } = settings.value
   const appColumn = appRecommendationColumn === 'double' ? '双列' : '单列'
 
   return {
-    推荐模式: recommendationMode === 'app'
-      ? `${RECOMMENDATION_MODE_LABELS.app} ${appColumn}`
-      : RECOMMENDATION_MODE_LABELS[recommendationMode],
+    推荐模式:
+      recommendationMode === 'app'
+        ? `${RECOMMENDATION_MODE_LABELS.app} ${appColumn}`
+        : RECOMMENDATION_MODE_LABELS[recommendationMode],
     App授权: getAppAuthorizationLabel(),
     App失败时自动切换Web: autoSwitchRecommendationMode,
     记住无Cookie推荐状态: rememberNoCookieRecommendationState,
@@ -47,7 +50,10 @@ export function getRecommendationFilterDiagnostics(): ApiErrorReportItems {
     时长过滤: formatThreshold(value.enableFilterByDuration, `${value.filterByDuration} 秒`),
     播放量过滤: formatThreshold(value.enableFilterByViewCount, `${value.filterByViewCount}`),
     点赞数过滤: formatThreshold(value.enableFilterByLikeCount, `${value.filterByLikeCount}`),
-    发布时间过滤: formatThreshold(value.enableFilterByPublishTime, `${value.filterByPublishTime} 天`),
+    发布时间过滤: formatThreshold(
+      value.enableFilterByPublishTime,
+      `${value.filterByPublishTime} 天`,
+    ),
     标题关键词过滤: formatThreshold(value.enableFilterByTitle, `${value.filterByTitle.length} 条`),
     UP主过滤: formatThreshold(value.enableFilterByUser, `${value.filterByUser.length} 条`),
   }

@@ -23,14 +23,12 @@ onMounted(async () => {
 })
 
 async function copyReport() {
-  if (!report.value)
-    return
+  if (!report.value) return
 
   try {
     await navigator.clipboard.writeText(report.value.text)
     toast.success(t('common.api_error.copied'))
-  }
-  catch {
+  } catch {
     toast.error(t('common.api_error.copy_failed'))
   }
 }

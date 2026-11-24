@@ -9,16 +9,14 @@ const bewlyPagesEnabled = computed({
   get: () => !settings.value.useOriginalBilibiliHomepage,
   set: (enabled) => {
     settings.value.useOriginalBilibiliHomepage = !enabled
-    if (enabled)
-      settings.value.enableDock = true
+    if (enabled) settings.value.enableDock = true
   },
 })
 
 const dockModuleEnabled = computed({
   get: () => bewlyPagesEnabled.value || settings.value.enableDock,
   set: (enabled) => {
-    if (bewlyPagesEnabled.value && !enabled)
-      return
+    if (bewlyPagesEnabled.value && !enabled) return
     settings.value.enableDock = enabled
   },
 })

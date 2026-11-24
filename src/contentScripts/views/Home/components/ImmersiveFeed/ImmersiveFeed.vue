@@ -60,20 +60,26 @@ let frameShowTimer: ReturnType<typeof setTimeout> | undefined
 let preloadTimer: ReturnType<typeof setTimeout> | undefined
 let lastIndex = 0
 
-const currentIndex = computed(() => currentKey.value
-  ? props.items.findIndex(item => item.key === currentKey.value)
-  : -1)
-const currentItem = computed(() => currentIndex.value >= 0 ? props.items[currentIndex.value] : undefined)
-const nextItem = computed(() => currentIndex.value >= 0 ? props.items[currentIndex.value + 1] : undefined)
+const currentIndex = computed(() =>
+  currentKey.value ? props.items.findIndex((item) => item.key === currentKey.value) : -1,
+)
+const currentItem = computed(() =>
+  currentIndex.value >= 0 ? props.items[currentIndex.value] : undefined,
+)
+const nextItem = computed(() =>
+  currentIndex.value >= 0 ? props.items[currentIndex.value + 1] : undefined,
+)
 const hasPrevious = computed(() => currentIndex.value > 0)
-const hasNext = computed(() => currentIndex.value >= 0
-  && (currentIndex.value < props.items.length - 1 || !props.noMoreContent))
+const hasNext = computed(
+  () =>
+    currentIndex.value >= 0 &&
+    (currentIndex.value < props.items.length - 1 || !props.noMoreContent),
+)
 
 // 当前视频在前、预加载的下一条在后：切换时移除前者即可，不移动 iframe（移动会导致重新加载）
 const frameItems = computed(() => {
-  const frames: Array<{ item: ImmersiveFeedItem, active: boolean }> = []
-  if (currentItem.value)
-    frames.push({ item: currentItem.value, active: true })
+  const frames: Array<{ item: ImmersiveFeedItem; active: boolean }> = []
+  if (currentItem.value) frames.push({ item: currentItem.value, active: true })
   if (preloadKey.value && nextItem.value?.key === preloadKey.value)
     frames.push({ item: nextItem.value, active: false })
   return frames
@@ -102,18 +108,20 @@ const feedState = computed<Omit<ImmersiveFeedFrameState, 'active'>>(() => ({
 }))
 
 // 列表被刷新或过滤后当前视频可能不在其中，回退到原位置附近的视频
-watch(() => props.items, (items) => {
-  if (!items.length)
-    return
-  if (!currentKey.value || !items.some(item => item.key === currentKey.value)) {
-    currentKey.value = items[Math.min(lastIndex, items.length - 1)].key
-    pendingAdvance.value = false
-  }
-  else if (pendingAdvance.value && currentIndex.value < items.length - 1) {
-    currentKey.value = items[currentIndex.value + 1].key
-    pendingAdvance.value = false
-  }
-}, { immediate: true })
+watch(
+  () => props.items,
+  (items) => {
+    if (!items.length) return
+    if (!currentKey.value || !items.some((item) => item.key === currentKey.value)) {
+      currentKey.value = items[Math.min(lastIndex, items.length - 1)].key
+      pendingAdvance.value = false
+    } else if (pendingAdvance.value && currentIndex.value < items.length - 1) {
+      currentKey.value = items[currentIndex.value + 1].key
+      pendingAdvance.value = false
+    }
+  },
+  { immediate: true },
+)
 
 function showFrame() {
   clearTimeout(frameShowTimer)
@@ -128,78 +136,82 @@ function clearPreload() {
   preparedKey.value = undefined
 }
 
-watch(currentKey, (key) => {
-  if (!key)
-    return
-  lastIndex = Math.max(0, currentIndex.value)
-  clearTimeout(frameShowTimer)
+watch(
+  currentKey,
+  (key) => {
+    if (!key) return
+    lastIndex = Math.max(0, currentIndex.value)
+    clearTimeout(frameShowTimer)
 
-  // 切到已预加载完成的下一条：同一个 iframe 转为当前视频，无需再等待
-  const promoted = key === preloadKey.value && key === preparedKey.value
-  clearPreload()
-  if (promoted) {
-    isFrameShown.value = true
-  }
-  else {
-    isFrameShown.value = false
-    frameShowTimer = setTimeout(showFrame, FRAME_SHOW_TIMEOUT_MS)
-  }
+    // 切到已预加载完成的下一条：同一个 iframe 转为当前视频，无需再等待
+    const promoted = key === preloadKey.value && key === preparedKey.value
+    clearPreload()
+    if (promoted) {
+      isFrameShown.value = true
+    } else {
+      isFrameShown.value = false
+      frameShowTimer = setTimeout(showFrame, FRAME_SHOW_TIMEOUT_MS)
+    }
 
-  emit('play', key)
-  void nextTick(() => {
-    postFeedState()
-    if (promoted)
-      frameElements.get(key)?.focus()
-  })
-}, { immediate: true })
+    emit('play', key)
+    void nextTick(() => {
+      postFeedState()
+      if (promoted) frameElements.get(key)?.focus()
+    })
+  },
+  { immediate: true },
+)
 
 // 当前视频显示后再预加载下一条；只处理下一条，不保留或预加载上一条
-watch([isFrameShown, () => nextItem.value?.key, () => settings.value.immersivePreloadNext], ([shown, nextKey, enabled]) => {
-  if (!enabled || !nextKey) {
-    clearPreload()
-    return
-  }
-  if (!shown || preloadKey.value === nextKey || preloadTimer)
-    return
-  preloadTimer = setTimeout(() => {
-    preloadTimer = undefined
-    if (settings.value.immersivePreloadNext && nextItem.value?.key === nextKey) {
-      preparedKey.value = undefined
-      preloadKey.value = nextKey
+watch(
+  [isFrameShown, () => nextItem.value?.key, () => settings.value.immersivePreloadNext],
+  ([shown, nextKey, enabled]) => {
+    if (!enabled || !nextKey) {
+      clearPreload()
+      return
     }
-  }, PRELOAD_START_DELAY_MS)
-})
+    if (!shown || preloadKey.value === nextKey || preloadTimer) return
+    preloadTimer = setTimeout(() => {
+      preloadTimer = undefined
+      if (settings.value.immersivePreloadNext && nextItem.value?.key === nextKey) {
+        preparedKey.value = undefined
+        preloadKey.value = nextKey
+      }
+    }, PRELOAD_START_DELAY_MS)
+  },
+)
 
 onBeforeUnmount(() => {
   clearTimeout(frameShowTimer)
   clearTimeout(preloadTimer)
 })
 
-watch([currentIndex, () => props.items.length, () => props.loading, () => props.noMoreContent], () => {
-  if (props.loading || props.noMoreContent)
-    return
-  if (props.items.length - currentIndex.value <= PRELOAD_REMAINING_COUNT)
-    emit('loadMore')
-}, { immediate: true })
+watch(
+  [currentIndex, () => props.items.length, () => props.loading, () => props.noMoreContent],
+  () => {
+    if (props.loading || props.noMoreContent) return
+    if (props.items.length - currentIndex.value <= PRELOAD_REMAINING_COUNT) emit('loadMore')
+  },
+  { immediate: true },
+)
 
-watch(() => props.noMoreContent, (noMore) => {
-  if (noMore)
-    pendingAdvance.value = false
-})
+watch(
+  () => props.noMoreContent,
+  (noMore) => {
+    if (noMore) pendingAdvance.value = false
+  },
+)
 
 watch(feedState, () => postFeedState())
 
 function setFrameElement(key: string, element: unknown) {
-  if (element instanceof HTMLIFrameElement)
-    frameElements.set(key, element)
-  else
-    frameElements.delete(key)
+  if (element instanceof HTMLIFrameElement) frameElements.set(key, element)
+  else frameElements.delete(key)
 }
 
 function postFeedState(targetKey?: string) {
   for (const [key, frame] of frameElements) {
-    if (targetKey && key !== targetKey)
-      continue
+    if (targetKey && key !== targetKey) continue
     const state: ImmersiveFeedFrameState = { ...feedState.value, active: key === currentKey.value }
     frame.contentWindow?.postMessage(
       createImmersiveFeedMessage(ImmersiveFeedMessageType.State, { state }),
@@ -209,7 +221,7 @@ function postFeedState(targetKey?: string) {
 }
 
 function goTo(key: string) {
-  if (props.items.some(item => item.key === key)) {
+  if (props.items.some((item) => item.key === key)) {
     pendingAdvance.value = false
     currentKey.value = key
   }
@@ -220,69 +232,57 @@ function goNext() {
     currentKey.value = props.items[currentIndex.value + 1].key
     return
   }
-  if (props.noMoreContent)
-    return
+  if (props.noMoreContent) return
   pendingAdvance.value = true
-  if (!props.loading)
-    emit('loadMore')
+  if (!props.loading) emit('loadMore')
 }
 
 function goPrevious() {
   pendingAdvance.value = false
-  if (currentIndex.value > 0)
-    currentKey.value = props.items[currentIndex.value - 1].key
+  if (currentIndex.value > 0) currentKey.value = props.items[currentIndex.value - 1].key
 }
 
 function handleFrameLoad(key: string) {
   // 让当前视频页直接接收键盘操作（空格暂停、↑↓ 切换等）；预加载页不抢焦点
-  if (key === currentKey.value)
-    frameElements.get(key)?.focus()
+  if (key === currentKey.value) frameElements.get(key)?.focus()
 }
 
 function getMessageFrameKey(source: MessageEventSource | null) {
   for (const [key, frame] of frameElements) {
-    if (frame.contentWindow && frame.contentWindow === source)
-      return key
+    if (frame.contentWindow && frame.contentWindow === source) return key
   }
   return undefined
 }
 
 useEventListener(window, 'message', (event: MessageEvent) => {
-  if (event.origin !== location.origin)
-    return
+  if (event.origin !== location.origin) return
   const frameKey = getMessageFrameKey(event.source)
-  if (!frameKey)
-    return
+  if (!frameKey) return
   const fromCurrent = frameKey === currentKey.value
 
   if (event.data?.type === FRAME_CLOSE_REQUEST) {
-    if (fromCurrent)
-      emit('close')
+    if (fromCurrent) emit('close')
     return
   }
-  if (!isImmersiveFeedMessage(event.data))
-    return
+  if (!isImmersiveFeedMessage(event.data)) return
 
   switch (event.data.type) {
     case ImmersiveFeedMessageType.Ready:
       postFeedState(frameKey)
       return
     case ImmersiveFeedMessageType.Prepared:
-      if (frameKey === preloadKey.value)
-        preparedKey.value = frameKey
+      if (frameKey === preloadKey.value) preparedKey.value = frameKey
       return
   }
 
   // 其余操作只接受当前视频页发出的请求
-  if (!fromCurrent)
-    return
+  if (!fromCurrent) return
   switch (event.data.type) {
     case ImmersiveFeedMessageType.Shown:
       showFrame()
       break
     case ImmersiveFeedMessageType.Select:
-      if (event.data.key)
-        goTo(event.data.key)
+      if (event.data.key) goTo(event.data.key)
       break
     case ImmersiveFeedMessageType.Previous:
       goPrevious()
@@ -292,8 +292,7 @@ useEventListener(window, 'message', (event: MessageEvent) => {
       goNext()
       break
     case ImmersiveFeedMessageType.LoadMore:
-      if (!props.loading && !props.noMoreContent)
-        emit('loadMore')
+      if (!props.loading && !props.noMoreContent) emit('loadMore')
       break
     case ImmersiveFeedMessageType.Close:
       emit('close')
@@ -302,39 +301,40 @@ useEventListener(window, 'message', (event: MessageEvent) => {
 })
 
 // 焦点仍在首页（iframe 尚未加载）时的快捷键；捕获阶段避免作用到背后的推荐流
-useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.ctrlKey || event.metaKey || event.altKey || isTypingContext(event))
-    return
+useEventListener(
+  window,
+  'keydown',
+  (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey || event.altKey || isTypingContext(event)) return
 
-  let handled = true
-  switch (event.key) {
-    case 'Escape':
-      emit('close')
-      break
-    case 'ArrowUp':
-    case 'PageUp':
-    case 'w':
-    case 'W':
-      handled = settings.value.immersiveKeyboardSwitch
-      if (handled)
-        goPrevious()
-      break
-    case 'ArrowDown':
-    case 'PageDown':
-    case 's':
-    case 'S':
-      handled = settings.value.immersiveKeyboardSwitch
-      if (handled)
-        goNext()
-      break
-    default:
-      handled = false
-  }
-  if (!handled)
-    return
-  event.preventDefault()
-  event.stopImmediatePropagation()
-}, { capture: true })
+    let handled = true
+    switch (event.key) {
+      case 'Escape':
+        emit('close')
+        break
+      case 'ArrowUp':
+      case 'PageUp':
+      case 'w':
+      case 'W':
+        handled = settings.value.immersiveKeyboardSwitch
+        if (handled) goPrevious()
+        break
+      case 'ArrowDown':
+      case 'PageDown':
+      case 's':
+      case 'S':
+        handled = settings.value.immersiveKeyboardSwitch
+        if (handled) goNext()
+        break
+      default:
+        handled = false
+    }
+    if (!handled) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  },
+  { capture: true },
+)
 
 onMounted(() => {
   rootRef.value?.focus({ preventScroll: true })
@@ -370,7 +370,11 @@ onMounted(() => {
         />
       </template>
       <div v-else class="immersive-feed__placeholder">
-        <span v-if="loading" class="i-mingcute-loading-3-line immersive-feed__spinner" aria-hidden="true" />
+        <span
+          v-if="loading"
+          class="i-mingcute-loading-3-line immersive-feed__spinner"
+          aria-hidden="true"
+        />
         <p>{{ loading ? t('home.immersive_loading') : t('home.immersive_empty') }}</p>
         <button type="button" class="immersive-feed__exit" @click="emit('close')">
           <span class="i-mingcute-close-line" aria-hidden="true" />
@@ -385,7 +389,7 @@ onMounted(() => {
           role="status"
           aria-live="polite"
         >
-          <img class="immersive-feed__cover-icon" :src="loadingGifUrl" alt="" aria-hidden="true">
+          <img class="immersive-feed__cover-icon" :src="loadingGifUrl" alt="" aria-hidden="true" />
           <div class="immersive-feed__cover-text">
             <span class="immersive-feed__cover-label">{{ t('home.immersive_switching') }}</span>
             <span class="immersive-feed__cover-title">{{ currentItem.video.title }}</span>

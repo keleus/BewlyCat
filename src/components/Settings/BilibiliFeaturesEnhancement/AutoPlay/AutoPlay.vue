@@ -4,7 +4,12 @@ import { useI18n } from 'vue-i18n'
 import Input from '~/components/Input.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
-import type { AutoPlayMode, CollectedSeasonPlayAllMode, CustomPlayOrderContext, DefaultCustomPlayOrder } from '~/logic/storage'
+import type {
+  AutoPlayMode,
+  CollectedSeasonPlayAllMode,
+  CustomPlayOrderContext,
+  DefaultCustomPlayOrder,
+} from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -12,7 +17,7 @@ import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 
 const { t } = useI18n()
 
-const nativeAutoPlayModes: { label: string, value: AutoPlayMode }[] = [
+const nativeAutoPlayModes: { label: string; value: AutoPlayMode }[] = [
   { label: 'auto_play_mode_auto_play', value: 'autoPlay' },
   { label: 'auto_play_mode_auto_play_with_recommend', value: 'autoPlayWithRecommend' },
   { label: 'auto_play_mode_pause_at_end', value: 'pauseAtEnd' },
@@ -42,12 +47,14 @@ const customPlayOrderOverrideOptions = computed(() => [
   ...defaultCustomPlayOrderOptions.value,
 ])
 
-const customPlayOrderContextOptions = computed<{ label: string, value: CustomPlayOrderContext }[]>(() => [
-  { label: t('settings.auto_play_multipart'), value: 'multipart' },
-  { label: t('settings.auto_play_collection'), value: 'collection' },
-  { label: t('settings.auto_play_watch_later'), value: 'watchLater' },
-  { label: t('settings.auto_play_playlist'), value: 'playlist' },
-])
+const customPlayOrderContextOptions = computed<{ label: string; value: CustomPlayOrderContext }[]>(
+  () => [
+    { label: t('settings.auto_play_multipart'), value: 'multipart' },
+    { label: t('settings.auto_play_collection'), value: 'collection' },
+    { label: t('settings.auto_play_watch_later'), value: 'watchLater' },
+    { label: t('settings.auto_play_playlist'), value: 'playlist' },
+  ],
+)
 
 const collectedSeasonPlayAllModeOptions = computed(() => [
   {
@@ -111,57 +118,52 @@ const randomPlayActivationModeOptions = computed(() => {
         :title="t('settings.group_video_type_end_behavior')"
         :desc="t('settings.group_custom_auto_play_behavior_desc')"
       >
-        <SettingsItem
-          :title="t('settings.auto_play_multipart')"
-          right-width="auto"
-        >
+        <SettingsItem :title="t('settings.auto_play_multipart')" right-width="auto">
           <Select
             v-model="settings.autoPlayMultipart"
-            :options="nativeAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+            :options="
+              nativeAutoPlayModes.map((m) => ({ label: $t(`settings.${m.label}`), value: m.value }))
+            "
             w="176px"
           />
         </SettingsItem>
 
-        <SettingsItem
-          :title="t('settings.auto_play_collection')"
-          right-width="auto"
-        >
+        <SettingsItem :title="t('settings.auto_play_collection')" right-width="auto">
           <Select
             v-model="settings.autoPlayCollection"
-            :options="nativeAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+            :options="
+              nativeAutoPlayModes.map((m) => ({ label: $t(`settings.${m.label}`), value: m.value }))
+            "
             w="176px"
           />
         </SettingsItem>
 
-        <SettingsItem
-          :title="t('settings.auto_play_watch_later')"
-          right-width="auto"
-        >
+        <SettingsItem :title="t('settings.auto_play_watch_later')" right-width="auto">
           <Select
             v-model="settings.autoPlayWatchLater"
-            :options="nativeAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+            :options="
+              nativeAutoPlayModes.map((m) => ({ label: $t(`settings.${m.label}`), value: m.value }))
+            "
             w="176px"
           />
         </SettingsItem>
 
-        <SettingsItem
-          :title="t('settings.auto_play_playlist')"
-          right-width="auto"
-        >
+        <SettingsItem :title="t('settings.auto_play_playlist')" right-width="auto">
           <Select
             v-model="settings.autoPlayPlaylist"
-            :options="nativeAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+            :options="
+              nativeAutoPlayModes.map((m) => ({ label: $t(`settings.${m.label}`), value: m.value }))
+            "
             w="176px"
           />
         </SettingsItem>
 
-        <SettingsItem
-          :title="t('settings.auto_play_recommend')"
-          right-width="auto"
-        >
+        <SettingsItem :title="t('settings.auto_play_recommend')" right-width="auto">
           <Select
             v-model="settings.autoPlayRecommend"
-            :options="nativeAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+            :options="
+              nativeAutoPlayModes.map((m) => ({ label: $t(`settings.${m.label}`), value: m.value }))
+            "
             w="176px"
           />
         </SettingsItem>
@@ -183,7 +185,11 @@ const randomPlayActivationModeOptions = computed(() => {
         :desc="t('settings.default_custom_play_order_desc')"
         right-width="auto"
       >
-        <Select v-model="settings.defaultCustomPlayOrder" :options="defaultCustomPlayOrderOptions" w="160px" />
+        <Select
+          v-model="settings.defaultCustomPlayOrder"
+          :options="defaultCustomPlayOrderOptions"
+          w="160px"
+        />
       </SettingsItem>
 
       <SettingsItem
@@ -225,7 +231,11 @@ const randomPlayActivationModeOptions = computed(() => {
         :desc="t('settings.random_play_mode_desc')"
         right-width="auto"
       >
-        <Select v-model="settings.randomPlayMode" :options="randomPlayActivationModeOptions" w="160px" />
+        <Select
+          v-model="settings.randomPlayMode"
+          :options="randomPlayActivationModeOptions"
+          w="160px"
+        />
       </SettingsItem>
 
       <SettingsItem
@@ -233,11 +243,7 @@ const randomPlayActivationModeOptions = computed(() => {
         :title="t('settings.min_videos_for_random')"
         right-width="auto"
       >
-        <Input
-          v-model="settings.minVideosForRandom"
-          type="number"
-          w="120px"
-        />
+        <Input v-model="settings.minVideosForRandom" type="number" w="120px" />
       </SettingsItem>
     </SettingsItemGroup>
 
@@ -257,5 +263,4 @@ const randomPlayActivationModeOptions = computed(() => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-</style>
+<style lang="scss" scoped></style>

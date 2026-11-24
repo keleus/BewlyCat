@@ -4,16 +4,17 @@ import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { i18n } from '~/utils/i18n'
 
 export function formatNumber(num?: number): string {
-  if (!num)
-    return '0'
+  if (!num) return '0'
   if (num >= 10000)
-    return new Intl.NumberFormat(i18n.global.locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(num)
+    return new Intl.NumberFormat(i18n.global.locale.value, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(num)
   return num.toString()
 }
 
 export function removeHighlight(text?: string): string {
-  if (typeof text !== 'string' || !text)
-    return ''
+  if (typeof text !== 'string' || !text) return ''
   // 移除高亮标签并解码 HTML 实体
   const withoutHighlight = text.replace(/<em class="keyword">/g, '').replace(/<\/em>/g, '')
   return decodeHtmlEntities(withoutHighlight)
@@ -23,8 +24,7 @@ export function removeHighlight(text?: string): string {
  * 检查视频是否是广告
  */
 export function isAdVideo(video: any): boolean {
-  if (!video)
-    return false
+  if (!video) return false
   const type = video.type || ''
   return typeof type === 'string' && type.toLowerCase().includes('ad')
 }
@@ -49,40 +49,44 @@ function formatDuration(totalSeconds: number): string {
 
 export function convertVideoData(video: any): Video {
   const cover = video.pic || video.cover
-  const normalizedCover = typeof cover === 'string' && cover.startsWith('//')
-    ? `https:${cover}`
-    : cover
+  const normalizedCover =
+    typeof cover === 'string' && cover.startsWith('//') ? `https:${cover}` : cover
 
-  const durationSeconds = parseDurationToSeconds(video.duration)
-    ?? parseDurationToSeconds(video.duration_seconds)
-    ?? parseDurationToSeconds(video.duration_ms ? Number(video.duration_ms) / 1000 : undefined)
+  const durationSeconds =
+    parseDurationToSeconds(video.duration) ??
+    parseDurationToSeconds(video.duration_seconds) ??
+    parseDurationToSeconds(video.duration_ms ? Number(video.duration_ms) / 1000 : undefined)
 
-  const durationStr = typeof video.duration === 'string'
-    ? video.duration
-    : typeof video.durationStr === 'string'
-      ? video.durationStr
-      : durationSeconds ? formatDuration(durationSeconds) : undefined
+  const durationStr =
+    typeof video.duration === 'string'
+      ? video.duration
+      : typeof video.durationStr === 'string'
+        ? video.durationStr
+        : durationSeconds
+          ? formatDuration(durationSeconds)
+          : undefined
 
   // 课堂的集数是展示标签；普通搜索结果返回的是真实内容标签，可点击搜索。
   let displayTags: string[] = []
   let searchableTags: string[] = []
   if (video.type === 'ketang' && video.episode_count_text) {
     displayTags = [video.episode_count_text]
-  }
-  else {
+  } else {
     searchableTags = extractVideoTags(video)
   }
 
-  const category = video.type === 'ketang'
-    ? undefined
-    : removeHighlight(video.typename || '').trim() || undefined
+  const category =
+    video.type === 'ketang' ? undefined : removeHighlight(video.typename || '').trim() || undefined
 
   // 处理 author 字段：确保始终返回正确的对象格式
   let author: any
 
   // 课堂类型特殊处理：使用特殊标记表示需要显示图标而不是头像
   if (video.type === 'ketang') {
-    const authorName = typeof video.author === 'string' ? video.author : (video.author?.name || video.author?.uname || '')
+    const authorName =
+      typeof video.author === 'string'
+        ? video.author
+        : video.author?.name || video.author?.uname || ''
     author = {
       name: removeHighlight(authorName),
       mid: video.mid,
@@ -90,7 +94,11 @@ export function convertVideoData(video: any): Video {
     }
   }
   // 如果 author 已经是对象且有必要的字段，直接使用
-  else if (typeof video.author === 'object' && video.author !== null && !Array.isArray(video.author)) {
+  else if (
+    typeof video.author === 'object' &&
+    video.author !== null &&
+    !Array.isArray(video.author)
+  ) {
     // 确保对象有必要的字段
     if ('authorFace' in video.author || 'face' in video.author) {
       author = {
@@ -98,8 +106,7 @@ export function convertVideoData(video: any): Video {
         mid: video.author.mid,
         authorFace: video.author.authorFace || video.author.face || '',
       }
-    }
-    else {
+    } else {
       // author 对象缺少必要字段，从其他地方构造
       const authorName = video.author.name || video.author.uname || video.owner?.name || ''
       author = {
@@ -108,10 +115,9 @@ export function convertVideoData(video: any): Video {
         authorFace: video.upic || video.uface || video.owner?.face || '',
       }
     }
-  }
-  else {
+  } else {
     // author 是字符串或其他类型，从原始字段构造
-    const authorName = typeof video.author === 'string' ? video.author : (video.owner?.name || '')
+    const authorName = typeof video.author === 'string' ? video.author : video.owner?.name || ''
     author = {
       name: removeHighlight(authorName),
       mid: video.mid || video.owner?.mid,
@@ -120,13 +126,10 @@ export function convertVideoData(video: any): Video {
   }
 
   // 已规范化的数据可能已经带有关注状态，保留它以避免网格重复查询。
-  if (typeof video.author?.followed === 'boolean')
-    author.followed = video.author.followed
+  if (typeof video.author?.followed === 'boolean') author.followed = video.author.followed
 
   // 课堂类型需要特殊处理 URL
-  const url = video.type === 'ketang' && video.arcurl
-    ? video.arcurl
-    : undefined
+  const url = video.type === 'ketang' && video.arcurl ? video.arcurl : undefined
 
   return {
     id: video.aid || video.id,
@@ -152,11 +155,13 @@ export function convertVideoData(video: any): Video {
 
 export function convertBangumiCardData(item: any) {
   const cover = item.cover || item.square_cover || item.vertical_cover || item.horizontal_cover
-  const sanitizedCover = typeof cover === 'string' && cover.startsWith('//') ? `https:${cover}` : cover
-  const url = item.url
-    || (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined)
-    || (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined)
-    || ''
+  const sanitizedCover =
+    typeof cover === 'string' && cover.startsWith('//') ? `https:${cover}` : cover
+  const url =
+    item.url ||
+    (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined) ||
+    (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined) ||
+    ''
 
   const styles = Array.isArray(item.styles)
     ? item.styles
@@ -169,12 +174,9 @@ export function convertBangumiCardData(item: any) {
 
   const tags = styles
     .map((style: any) => {
-      if (typeof style === 'string')
-        return removeHighlight(style)
-      if (typeof style?.style_name === 'string')
-        return removeHighlight(style.style_name)
-      if (typeof style?.name === 'string')
-        return removeHighlight(style.name)
+      if (typeof style === 'string') return removeHighlight(style)
+      if (typeof style?.style_name === 'string') return removeHighlight(style.style_name)
+      if (typeof style?.name === 'string') return removeHighlight(style.name)
       return null
     })
     .filter(Boolean) as string[]
@@ -186,16 +188,19 @@ export function convertBangumiCardData(item: any) {
     desc: sanitizeBangumiDescription(evaluate || descText),
     evaluate,
     tags,
-    capsuleText: removeHighlight(item.badge || item.badge_info?.text || item.season_type_name || ''),
+    capsuleText: removeHighlight(
+      item.badge || item.badge_info?.text || item.season_type_name || '',
+    ),
     view: item.play || item.stat?.view,
     follow: item.follow,
-    badge: item.badge || item.badge_info?.text
-      ? {
-          text: removeHighlight(item.badge || item.badge_info?.text),
-          bgColor: item.badge_info?.bg_color || '#FB7299',
-          bgColorDark: item.badge_info?.bg_color_night || '#FB7299',
-        }
-      : undefined,
+    badge:
+      item.badge || item.badge_info?.text
+        ? {
+            text: removeHighlight(item.badge || item.badge_info?.text),
+            bgColor: item.badge_info?.bg_color || '#FB7299',
+            bgColorDark: item.badge_info?.bg_color_night || '#FB7299',
+          }
+        : undefined,
   }
 }
 
@@ -204,7 +209,11 @@ export function convertBangumiHighlight(item: any) {
   const base = convertBangumiCardData(item)
   const score = Number(item.media_score?.score ?? item.score)
   const bizTips = Array.isArray(item.styles)
-    ? item.styles.map((style: any) => (typeof style === 'string' ? removeHighlight(style) : style?.style_name ?? style?.name)).filter(Boolean)
+    ? item.styles
+        .map((style: any) =>
+          typeof style === 'string' ? removeHighlight(style) : (style?.style_name ?? style?.name),
+        )
+        .filter(Boolean)
     : []
   const publishTimestamp = Number(item.pubtime || item.publish_time || item.ctime)
   const publishDateFormatted = formatPublishDate(publishTimestamp)
@@ -217,7 +226,12 @@ export function convertBangumiHighlight(item: any) {
     url: base.url,
     score: Number.isFinite(score) ? score : undefined,
     seasonType: removeHighlight(item.season_type_name || item.season_title || ''),
-    areas: Array.isArray(item.areas) ? item.areas.map((area: any) => removeHighlight(typeof area === 'string' ? area : area?.name)).filter(Boolean).join(' / ') : '',
+    areas: Array.isArray(item.areas)
+      ? item.areas
+          .map((area: any) => removeHighlight(typeof area === 'string' ? area : area?.name))
+          .filter(Boolean)
+          .join(' / ')
+      : '',
     publishDate: publishTimestamp,
     publishDateFormatted,
     episodeCount,
@@ -273,29 +287,27 @@ export function convertUserHighlight(user: any) {
     desc: removeHighlight(user.usign || user.sign || ''),
     level: user.level,
     gender: user.gender, // 0:保密, 1:男, 2:女
-    officialVerify: removeHighlight(user.official_verify?.title || user.official_verify?.desc || ''),
+    officialVerify: removeHighlight(
+      user.official_verify?.title || user.official_verify?.desc || '',
+    ),
     url: `https://space.bilibili.com/${user.mid}`,
     samples: convertUserSamples(user, 7),
   }
 }
 
 export function convertArticleCardData(article: any) {
-  const cover = (Array.isArray(article.image_urls) && article.image_urls[0])
-    || article.pic
-    || article.cover
+  const cover =
+    (Array.isArray(article.image_urls) && article.image_urls[0]) || article.pic || article.cover
 
   const tags = Array.isArray(article.tags)
-    ? article.tags
-      .map((tag: any) => {
-        if (typeof tag === 'string')
-          return { name: removeHighlight(tag) }
-        if (typeof tag?.name === 'string')
-          return { name: removeHighlight(tag.name) }
-        if (typeof tag?.tag_name === 'string')
-          return { name: removeHighlight(tag.tag_name) }
-        return null
-      })
-      .filter(Boolean) as Array<{ name: string }>
+    ? (article.tags
+        .map((tag: any) => {
+          if (typeof tag === 'string') return { name: removeHighlight(tag) }
+          if (typeof tag?.name === 'string') return { name: removeHighlight(tag.name) }
+          if (typeof tag?.tag_name === 'string') return { name: removeHighlight(tag.tag_name) }
+          return null
+        })
+        .filter(Boolean) as Array<{ name: string }>)
     : undefined
 
   return {
@@ -317,30 +329,33 @@ export function convertArticleCardData(article: any) {
 
 export function convertMediaFtData(item: any) {
   const cover = item.cover || item.square_cover || item.vertical_cover || item.horizontal_cover
-  const url = item.url
-    || (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined)
-    || (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined)
-    || ''
+  const url =
+    item.url ||
+    (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined) ||
+    (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined) ||
+    ''
 
   const rawYear = item.release_date || item.pubtime || item.year
-  const year = typeof rawYear === 'string'
-    ? rawYear.slice(0, 4)
-    : rawYear
+  const year = typeof rawYear === 'string' ? rawYear.slice(0, 4) : rawYear
 
   const areaSource = item.areas
   const area = Array.isArray(areaSource)
-    ? areaSource.map((n: any) => removeHighlight(typeof n === 'string' ? n : n?.name)).filter(Boolean).join(' / ')
+    ? areaSource
+        .map((n: any) => removeHighlight(typeof n === 'string' ? n : n?.name))
+        .filter(Boolean)
+        .join(' / ')
     : removeHighlight(areaSource || '')
 
-  const stylesSource = Array.isArray(item.styles) ? item.styles : Array.isArray(item.style) ? item.style : []
+  const stylesSource = Array.isArray(item.styles)
+    ? item.styles
+    : Array.isArray(item.style)
+      ? item.style
+      : []
   const tags = stylesSource
     .map((style: any) => {
-      if (typeof style === 'string')
-        return removeHighlight(style)
-      if (typeof style?.style_name === 'string')
-        return removeHighlight(style.style_name)
-      if (typeof style?.name === 'string')
-        return removeHighlight(style.name)
+      if (typeof style === 'string') return removeHighlight(style)
+      if (typeof style?.style_name === 'string') return removeHighlight(style.style_name)
+      if (typeof style?.name === 'string') return removeHighlight(style.name)
       return null
     })
     .filter(Boolean) as string[]
@@ -353,7 +368,10 @@ export function convertMediaFtData(item: any) {
     typeName: removeHighlight(item.media_type_name || item.season_type_name || item.badge || ''),
     area,
     year,
-    score: typeof item.media_score?.score === 'number' ? item.media_score.score : Number(item.media_score?.score) || undefined,
+    score:
+      typeof item.media_score?.score === 'number'
+        ? item.media_score.score
+        : Number(item.media_score?.score) || undefined,
     desc: removeHighlight(item.evaluate || item.desc || ''),
     tags,
   }
@@ -361,15 +379,17 @@ export function convertMediaFtData(item: any) {
 
 export function convertMediaFtHighlight(item: any) {
   const cover = item.cover || item.square_cover || item.vertical_cover || item.horizontal_cover
-  const url = item.url
-    || item.goto_url
-    || (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined)
-    || (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined)
-    || ''
+  const url =
+    item.url ||
+    item.goto_url ||
+    (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined) ||
+    (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined) ||
+    ''
 
-  const badge = Array.isArray(item.badges) && item.badges.length > 0
-    ? removeHighlight(item.badges[0].text)
-    : removeHighlight(item.badge || '')
+  const badge =
+    Array.isArray(item.badges) && item.badges.length > 0
+      ? removeHighlight(item.badges[0].text)
+      : removeHighlight(item.badge || '')
 
   const areas = typeof item.areas === 'string' ? item.areas : ''
   const styles = typeof item.styles === 'string' ? item.styles : ''
@@ -401,9 +421,12 @@ export function convertMediaFtHighlight(item: any) {
 }
 
 export function convertActivityData(item: any) {
-  const cover = typeof item.cover === 'string'
-    ? item.cover.startsWith('//') ? `https:${item.cover}` : item.cover
-    : undefined
+  const cover =
+    typeof item.cover === 'string'
+      ? item.cover.startsWith('//')
+        ? `https:${item.cover}`
+        : item.cover
+      : undefined
   const url = item.url || item.link || ''
 
   const rawId = item.id || item.card_value || item.pos || item.title || item.url
@@ -424,17 +447,19 @@ export function removeUnusedActivityCard(item: any) {
 
 export function convertLiveRoomData(live: any): Video {
   const cover = live.cover || live.user_cover || live.pic
-  const sanitizedCover = typeof cover === 'string' && cover.startsWith('//')
-    ? `https:${cover}`
-    : cover
+  const sanitizedCover =
+    typeof cover === 'string' && cover.startsWith('//') ? `https:${cover}` : cover
 
   // uface 可能也需要补全 https
   const authorFace = live.uface || live.face || ''
-  const sanitizedAuthorFace = typeof authorFace === 'string' && authorFace.startsWith('//')
-    ? `https:${authorFace}`
-    : authorFace
+  const sanitizedAuthorFace =
+    typeof authorFace === 'string' && authorFace.startsWith('//')
+      ? `https:${authorFace}`
+      : authorFace
 
-  const tag = removeHighlight(live.cate_name?.trim() || live.area_name_v2?.trim() || live.area_name?.trim() || '')
+  const tag = removeHighlight(
+    live.cate_name?.trim() || live.area_name_v2?.trim() || live.area_name?.trim() || '',
+  )
 
   return {
     id: live.roomid,
@@ -455,10 +480,12 @@ export function convertLiveRoomData(live: any): Video {
 }
 
 export function isMediaFtItem(item: any): boolean {
-  return item?.type === 'media_ft'
-    || item?.result_type === 'media_ft'
-    || item?.season_type === 4
-    || item?.media_type === 2
+  return (
+    item?.type === 'media_ft' ||
+    item?.result_type === 'media_ft' ||
+    item?.season_type === 4 ||
+    item?.media_type === 2
+  )
 }
 
 function extractBangumiEpisodes(item: any): BangumiEpisode[] {
@@ -466,20 +493,21 @@ function extractBangumiEpisodes(item: any): BangumiEpisode[] {
   const seenEpisodeIds = new Set<string>()
 
   const pushEpisode = (episode: any) => {
-    if (!episode)
-      return
-    const url = episode.url || episode.link || (episode.id ? `https://www.bilibili.com/bangumi/play/ep${episode.id}` : '')
-    const title = removeHighlight(episode.title || episode.index_title || episode.long_title || episode.name || '')
-    if (!title)
-      return
+    if (!episode) return
+    const url =
+      episode.url ||
+      episode.link ||
+      (episode.id ? `https://www.bilibili.com/bangumi/play/ep${episode.id}` : '')
+    const title = removeHighlight(
+      episode.title || episode.index_title || episode.long_title || episode.name || '',
+    )
+    if (!title) return
     let cover = episode.cover || episode.pic || episode.square_cover
-    if (typeof cover === 'string' && cover.startsWith('//'))
-      cover = `https:${cover}`
+    if (typeof cover === 'string' && cover.startsWith('//')) cover = `https:${cover}`
     const badge = episode.badge || episode.badges?.[0]?.text
     const longTitle = removeHighlight(episode.long_title || episode.index_title || '')
     const id = String(episode.id || episode.ep_id || episode.cid || title)
-    if (seenEpisodeIds.has(id))
-      return
+    if (seenEpisodeIds.has(id)) return
     seenEpisodeIds.add(id)
     const number = resolveEpisodeNumber(episode, title)
     foundEpisodes.push({
@@ -495,20 +523,17 @@ function extractBangumiEpisodes(item: any): BangumiEpisode[] {
 
   const collectFromArray = (arr: any[]) => {
     arr.forEach((entry) => {
-      if (!entry)
-        return
+      if (!entry) return
       if (Array.isArray(entry)) {
         collectFromArray(entry)
         return
       }
       if (typeof entry === 'object') {
-        if ('title' in entry || 'index_title' in entry || 'long_title' in entry)
-          pushEpisode(entry)
+        if ('title' in entry || 'index_title' in entry || 'long_title' in entry) pushEpisode(entry)
 
         ;['episodes', 'items', 'data', 'modules'].forEach((key) => {
           const value = entry[key]
-          if (Array.isArray(value))
-            collectFromArray(value)
+          if (Array.isArray(value)) collectFromArray(value)
         })
       }
     })
@@ -525,8 +550,7 @@ function extractBangumiEpisodes(item: any): BangumiEpisode[] {
   ]
 
   candidates.forEach((candidate) => {
-    if (Array.isArray(candidate))
-      collectFromArray(candidate)
+    if (Array.isArray(candidate)) collectFromArray(candidate)
   })
 
   if (foundEpisodes.length === 0 && Array.isArray(item?.new_ep?.index_show))
@@ -538,25 +562,31 @@ function extractBangumiEpisodes(item: any): BangumiEpisode[] {
 // 只接受「12」「第12话」这类正片序号；PV1、SP2、12.5、总集篇等特殊集不算。
 // 序号限制在 4 位以内，避免把 20240101 这类日期当成集数。
 function parseRegularEpisodeNumber(value: unknown): number | undefined {
-  if (typeof value !== 'string' && typeof value !== 'number')
-    return undefined
-  const match = removeHighlight(String(value)).trim().match(/^(?:第\s*)?(\d{1,4})(?:\s*[话話集回])?$/)
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined
+  const match = removeHighlight(String(value))
+    .trim()
+    .match(/^(?:第\s*)?(\d{1,4})(?:\s*[话話集回])?$/)
   const parsed = match ? Number.parseInt(match[1], 10) : 0
   return parsed > 0 ? parsed : undefined
 }
 
 function resolveEpisodeNumber(source: any, fallbackTitle: string): number | undefined {
   // 集标签优先：标签不是序号就是特殊集，不能再用 order 等排序字段补一个集数
-  const label = [source?.index_title, source?.title, source?.index, source?.ep_title]
-    .find(value => value !== undefined && value !== null && value !== '')
-  if (label !== undefined)
-    return parseRegularEpisodeNumber(label)
+  const label = [source?.index_title, source?.title, source?.index, source?.ep_title].find(
+    (value) => value !== undefined && value !== null && value !== '',
+  )
+  if (label !== undefined) return parseRegularEpisodeNumber(label)
 
-  const values = [source?.order, source?.episode, source?.episode_index, source?.ep_index, fallbackTitle]
+  const values = [
+    source?.order,
+    source?.episode,
+    source?.episode_index,
+    source?.ep_index,
+    fallbackTitle,
+  ]
   for (const value of values) {
     const parsed = parseRegularEpisodeNumber(value)
-    if (parsed)
-      return parsed
+    if (parsed) return parsed
   }
 
   return undefined
@@ -568,10 +598,11 @@ function convertUserSamples(source: any, limit = 6): any[] {
 
   for (let index = 0; index < list.length; index += 1) {
     const item = list[index]
-    if (!item)
-      continue
+    if (!item) continue
     const id = String(item.bvid || item.aid || item.id || item.arcurl || index)
-    const title = removeHighlight(item.title || item.long_title || i18n.global.t('search.work', { index: index + 1 }))
+    const title = removeHighlight(
+      item.title || item.long_title || i18n.global.t('search.work', { index: index + 1 }),
+    )
     const cover = normalizeMediaCover(item.pic || item.cover)
     const url = resolveUserSampleUrl(item)
     const play = parseCountNumber(item.play)
@@ -588,47 +619,39 @@ function convertUserSamples(source: any, limit = 6): any[] {
       aid: item.aid,
       bvid: item.bvid,
     })
-    if (samples.length >= limit)
-      break
+    if (samples.length >= limit) break
   }
 
   return samples
 }
 
 function normalizeMediaCover(value: any): string | undefined {
-  if (typeof value !== 'string' || !value)
-    return undefined
-  if (value.startsWith('//'))
-    return `https:${value}`
+  if (typeof value !== 'string' || !value) return undefined
+  if (value.startsWith('//')) return `https:${value}`
   return value
 }
 
 function resolveUserSampleUrl(sample: any): string | undefined {
   if (typeof sample?.bvid === 'string' && sample.bvid.trim())
     return `https://www.bilibili.com/video/${sample.bvid.trim()}`
-  if (typeof sample?.arcurl === 'string' && sample.arcurl)
-    return sample.arcurl
+  if (typeof sample?.arcurl === 'string' && sample.arcurl) return sample.arcurl
   if (typeof sample?.aid === 'number' && Number.isFinite(sample.aid))
     return `https://www.bilibili.com/video/av${sample.aid}`
   return undefined
 }
 
 function parseCountNumber(value: any): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value))
-    return value
+  if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value === 'string') {
     const sanitized = value.trim()
-    if (!sanitized || sanitized === '--')
-      return undefined
+    if (!sanitized || sanitized === '--') return undefined
     if (sanitized.endsWith('万')) {
       const parsed = Number.parseFloat(sanitized.slice(0, -1))
-      if (Number.isFinite(parsed))
-        return Math.round(parsed * 10000)
+      if (Number.isFinite(parsed)) return Math.round(parsed * 10000)
       return undefined
     }
     const numeric = Number.parseFloat(sanitized.replace(/,/g, ''))
-    if (Number.isFinite(numeric))
-      return Math.round(numeric)
+    if (Number.isFinite(numeric)) return Math.round(numeric)
   }
   return undefined
 }
@@ -651,58 +674,47 @@ function extractVideoTags(video: any): string[] {
   const rawValues: string[] = []
 
   const pushValue = (value: any) => {
-    if (typeof value === 'string')
-      rawValues.push(value)
-    else if (typeof value?.tag_name === 'string')
-      rawValues.push(value.tag_name)
-    else if (typeof value?.name === 'string')
-      rawValues.push(value.name)
+    if (typeof value === 'string') rawValues.push(value)
+    else if (typeof value?.tag_name === 'string') rawValues.push(value.tag_name)
+    else if (typeof value?.name === 'string') rawValues.push(value.name)
   }
 
   if (Array.isArray(video.tag)) {
-    for (const tag of video.tag)
-      pushValue(tag)
-  }
-  else {
+    for (const tag of video.tag) pushValue(tag)
+  } else {
     pushValue(video.tag)
   }
 
   if (Array.isArray(video.tags)) {
-    for (const tag of video.tags)
-      pushValue(tag)
+    for (const tag of video.tags) pushValue(tag)
   }
 
   const candidates = rawValues
-    .flatMap(value => splitTagValue(value))
-    .map(item => removeHighlight(item).trim().replace(/\s+/g, ' '))
+    .flatMap((value) => splitTagValue(value))
+    .map((item) => removeHighlight(item).trim().replace(/\s+/g, ' '))
     .filter(Boolean)
 
   const result: string[] = []
   const seen = new Set<string>()
 
   for (const tag of candidates) {
-    if (seen.has(tag))
-      continue
+    if (seen.has(tag)) continue
     seen.add(tag)
     result.push(tag)
-    if (result.length >= MAX_SEARCH_RESULT_TAG_COUNT)
-      break
+    if (result.length >= MAX_SEARCH_RESULT_TAG_COUNT) break
   }
 
   return result
 }
 
 function parseDurationToSeconds(raw: any): number | undefined {
-  if (raw === null || raw === undefined)
-    return undefined
+  if (raw === null || raw === undefined) return undefined
 
-  if (typeof raw === 'number' && Number.isFinite(raw))
-    return raw > 0 ? raw : undefined
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw > 0 ? raw : undefined
 
   if (typeof raw === 'string') {
-    const parts = raw.split(':').map(part => Number(part))
-    if (parts.some(part => Number.isNaN(part)))
-      return undefined
+    const parts = raw.split(':').map((part) => Number(part))
+    if (parts.some((part) => Number.isNaN(part))) return undefined
 
     let total = 0
     let multiplier = 1
@@ -717,22 +729,18 @@ function parseDurationToSeconds(raw: any): number | undefined {
 }
 
 function sanitizeBangumiDescription(desc: string): string {
-  if (!desc)
-    return ''
+  if (!desc) return ''
   if (desc.includes('[{') || desc.includes('{"')) {
     const index = desc.indexOf('[{')
-    if (index > -1)
-      return desc.slice(0, index).trim()
+    if (index > -1) return desc.slice(0, index).trim()
   }
   return desc.trim()
 }
 
 function formatPublishDate(timestamp?: number): string {
-  if (!timestamp || !Number.isFinite(timestamp) || timestamp <= 0)
-    return ''
+  if (!timestamp || !Number.isFinite(timestamp) || timestamp <= 0) return ''
   const date = new Date(timestamp * 1000)
-  if (Number.isNaN(date.getTime()))
-    return ''
+  if (Number.isNaN(date.getTime())) return ''
   const year = date.getFullYear()
   const month = `${date.getMonth() + 1}`.padStart(2, '0')
   const day = `${date.getDate()}`.padStart(2, '0')
@@ -741,56 +749,50 @@ function formatPublishDate(timestamp?: number): string {
 
 function resolveBangumiEpisodeCount(item: any, episodes: BangumiEpisode[]): number | undefined {
   const reportedCount = resolveReportedBangumiEpisodeCount(item, episodes)
-  const regularCount = new Set(episodes.map(episode => episode.number).filter(Boolean)).size
+  const regularCount = new Set(episodes.map((episode) => episode.number).filter(Boolean)).size
 
   // 接口总数包含特殊集；分集列表完整时以其中的正片数为准，不完整时无从判断，保留接口总数
-  if (regularCount > 0 && (!reportedCount || episodes.length >= reportedCount))
-    return regularCount
+  if (regularCount > 0 && (!reportedCount || episodes.length >= reportedCount)) return regularCount
 
   return reportedCount
 }
 
-function resolveReportedBangumiEpisodeCount(item: any, episodes: BangumiEpisode[]): number | undefined {
+function resolveReportedBangumiEpisodeCount(
+  item: any,
+  episodes: BangumiEpisode[],
+): number | undefined {
   const normalizeNumber = (value: any) => {
     const number = Number(value)
     return Number.isFinite(number) && number > 0 ? number : undefined
   }
 
   const totalCount = normalizeNumber(item.total_count ?? item.total_count_show)
-  if (totalCount)
-    return totalCount
+  if (totalCount) return totalCount
 
   if (Array.isArray(item.eps)) {
-    if (item.eps.length > 0)
-      return item.eps.length
-  }
-  else {
+    if (item.eps.length > 0) return item.eps.length
+  } else {
     const epsNumber = normalizeNumber(item.eps)
-    if (epsNumber)
-      return epsNumber
+    if (epsNumber) return epsNumber
   }
 
   const moduleEpisodes = Array.isArray(item.module_info?.episodes)
     ? item.module_info.episodes.length
     : undefined
-  if (moduleEpisodes)
-    return moduleEpisodes
+  if (moduleEpisodes) return moduleEpisodes
 
-  if (Array.isArray(item.episodes) && item.episodes.length > 0)
-    return item.episodes.length
+  if (Array.isArray(item.episodes) && item.episodes.length > 0) return item.episodes.length
 
   const indexShow = item.new_ep?.index_show || item.new_ep?.show || item.index_show
   if (typeof indexShow === 'string') {
     const match = indexShow.match(/(\d+)\s*$/)
     if (match) {
       const parsed = normalizeNumber(match[1])
-      if (parsed)
-        return parsed
+      if (parsed) return parsed
     }
   }
 
-  if (episodes.length > 0)
-    return episodes.length
+  if (episodes.length > 0) return episodes.length
 
   return undefined
 }
@@ -799,9 +801,12 @@ function resolveReportedBangumiEpisodeCount(item: any, episodes: BangumiEpisode[
  * 转换游戏卡片数据
  */
 export function convertWebGameData(game: any) {
-  const cover = typeof game.game_icon === 'string'
-    ? game.game_icon.startsWith('//') ? `https:${game.game_icon}` : game.game_icon
-    : undefined
+  const cover =
+    typeof game.game_icon === 'string'
+      ? game.game_icon.startsWith('//')
+        ? `https:${game.game_icon}`
+        : game.game_icon
+      : undefined
 
   const url = game.game_link || ''
 

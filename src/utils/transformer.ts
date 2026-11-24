@@ -23,20 +23,25 @@ export type TransformerHandle = Ref<MaybeElement> & {
  * @param trigger
  * @param transformer
  */
-export function createTransformer(trigger: Ref<MaybeElement>, transformer: Transformer): TransformerHandle {
+export function createTransformer(
+  trigger: Ref<MaybeElement>,
+  transformer: Transformer,
+): TransformerHandle {
   const target = ref<MaybeElement>()
   const style = ref<CSSProperties>({})
 
-  watch(() => trigger.value, (newVal) => {
-    if (transformer.notrigger && newVal) {
-      try {
-        target.value = unrefElement(trigger)
+  watch(
+    () => trigger.value,
+    (newVal) => {
+      if (transformer.notrigger && newVal) {
+        try {
+          target.value = unrefElement(trigger)
+        } catch (e) {
+          console.warn('Failed to unref element in transformer:', e)
+        }
       }
-      catch (e) {
-        console.warn('Failed to unref element in transformer:', e)
-      }
-    }
-  })
+    },
+  )
 
   function update() {
     // 添加安全检查
@@ -49,15 +54,13 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
 
     if (typeof transformer.x === 'number') {
       x = `${transformer.x}px`
-    }
-    else {
+    } else {
       x = transformer.x
     }
 
     if (typeof transformer.y === 'number') {
       y = `${transformer.y}px`
-    }
-    else {
+    } else {
       y = transformer.y
     }
 
@@ -66,8 +69,7 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
       const el = unrefElement(target.value)
       const triggerEl = unrefElement(trigger)
       // 触发器还不是 DOM 节点时不要写 left:0，否则弹层会贴按钮左缘往右伸。
-      if (!(el instanceof HTMLElement) || !triggerEl)
-        return
+      if (!(el instanceof HTMLElement) || !triggerEl) return
 
       // offsetWidth/Height 是布局盒（CSSOM View），不含 transform。
       const targetWidth = el.offsetWidth
@@ -99,8 +101,7 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
         // 应用偏移
         if (offset !== 0) {
           x = `calc(${transformer.x} - ${targetWidth / 2}px + ${offset}px)`
-        }
-        else {
+        } else {
           x = `calc(${transformer.x} - ${targetWidth / 2}px)`
         }
       }
@@ -121,7 +122,7 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     const s = (originStyle || '')
       .split(';')
       .map((item) => {
-        const [key, value] = item.split(':').map(item => item.trim())
+        const [key, value] = item.split(':').map((item) => item.trim())
 
         if (!key || !value) {
           return {}
@@ -139,35 +140,37 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
       }, {})
 
     for (const [key, value] of Object.entries(style.value)) {
-      if (value !== undefined)
-        s[key] = String(value)
+      if (value !== undefined) s[key] = String(value)
     }
 
-    return Object.keys(s).map(key => `${key}:${s[key]}`).join(';')
+    return Object.keys(s)
+      .map((key) => `${key}:${s[key]}`)
+      .join(';')
   }
 
   function applyPosition() {
     try {
       const element = unrefElement(target)
-      if (!(element instanceof HTMLElement))
-        return
+      if (!(element instanceof HTMLElement)) return
       // 未生成 CSS 布局盒时跳过（display:none 或不在文档中，CSSOM View getClientRects）。
-      if (element.getClientRects().length === 0)
-        return
+      if (element.getClientRects().length === 0) return
 
       update()
       element.setAttribute('style', generateStyle(element.getAttribute('style')))
-    }
-    catch (e) {
+    } catch (e) {
       console.warn('Failed to apply transformer position:', e)
     }
   }
 
   // IntersectionObserver 在绘制之后通知，只作 getClientRects 仍为空时的补写。
   const targetVisibility = useElementVisibility(target)
-  whenever(targetVisibility, () => {
-    applyPosition()
-  }, { flush: 'post' })
+  whenever(
+    targetVisibility,
+    () => {
+      applyPosition()
+    },
+    { flush: 'post' },
+  )
 
   const handle = target as TransformerHandle
   handle.applyPosition = applyPosition

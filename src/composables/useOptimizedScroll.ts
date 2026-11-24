@@ -48,8 +48,7 @@ export function useOptimizedScroll(
   // 批量读取 DOM 属性，避免 Forced Reflow
   function batchReadScrollInfo() {
     const element = scrollElement.value
-    if (!element)
-      return null
+    if (!element) return null
 
     // 一次性读取所有需要的布局属性
     const scrollTop = element.scrollTop
@@ -67,8 +66,7 @@ export function useOptimizedScroll(
   // 处理滚动逻辑
   function handleScrollLogic() {
     const scrollInfo = batchReadScrollInfo()
-    if (!scrollInfo)
-      return
+    if (!scrollInfo) return
 
     const { scrollTop, scrollHeight, clientHeight, percentage } = scrollInfo
 
@@ -127,8 +125,7 @@ export function useOptimizedScroll(
   // 挂载和卸载
   onMounted(() => {
     const element = scrollElement.value
-    if (!element)
-      return
+    if (!element) return
 
     element.addEventListener('scroll', onScroll, { passive: true })
 

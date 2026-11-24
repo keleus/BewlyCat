@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { onKeyStroke, useEventListener, useIntersectionObserver, useResizeObserver, useThrottleFn } from '@vueuse/core'
+import {
+  onKeyStroke,
+  useEventListener,
+  useIntersectionObserver,
+  useResizeObserver,
+  useThrottleFn,
+} from '@vueuse/core'
 import type { Ref } from 'vue'
 import { effectScope, onScopeDispose, provide, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -17,10 +23,23 @@ import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import { useConfirmDialogHost } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_SEARCH_NAVIGATION, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
+import {
+  BEWLY_MOUNTED,
+  DRAWER_VIDEO_ENTER_PAGE_FULL,
+  DRAWER_VIDEO_EXIT_PAGE_FULL,
+  IFRAME_PAGE_SWITCH_BEWLY,
+  IFRAME_PAGE_SWITCH_BILI,
+  IFRAME_SEARCH_NAVIGATION,
+  OVERLAY_SCROLL_BAR_SCROLL,
+  OVERLAY_SCROLL_STATE_CHANGE,
+} from '~/constants/globalEvents'
 import { isOriginalMomentsFeed } from '~/contentScripts/features/originalMomentsFeed'
 import { installScrollBridge } from '~/contentScripts/features/scrollBridge'
-import { openSettingsOverlay, settingsOverlayTarget, settingsOverlayVisible } from '~/contentScripts/features/settingsOverlay'
+import {
+  openSettingsOverlay,
+  settingsOverlayTarget,
+  settingsOverlayVisible,
+} from '~/contentScripts/features/settingsOverlay'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings, settingsReady } from '~/logic'
@@ -30,13 +49,34 @@ import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
-import { setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
+import {
+  setOriginalBilibiliTopBarScrolled,
+  shouldShowOriginalBilibiliTopBar,
+} from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
-import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
-import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, jumpScrollTo, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
+import {
+  SELECTION_FALLBACK_CLASS,
+  supportsHighlightInheritance,
+} from '~/utils/highlightInheritance'
+import {
+  isHomePage,
+  isInIframe,
+  isNotificationPage,
+  isSearchResultsPage,
+  isVideoOrBangumiPage,
+  jumpScrollTo,
+  openLinkToNewTab,
+  queryDomUntilFound,
+  scrollToTop,
+} from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
-import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
+import {
+  applyPendingSettingsMigrations,
+  formatSettingsMigrationConfirmMessage,
+  getPendingSettingsMigrationChoices,
+  hasPendingSettingsMigrations,
+} from '~/utils/settingsMigration'
 import { isComponentVisible } from '~/utils/topBarBadge'
 import { canOpenInVideoDialog } from '~/utils/videoDialog'
 import { isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
@@ -54,9 +94,13 @@ const { t } = useI18n()
 // Track overlay state on #bewly for shortcut isolation and to raise the fixed
 // homepage viewport host above the teleported native top bar; non-homepage
 // pages leave #bewly without a stacking context so video glass backgrounds stay behind native content.
-watch(settingsOverlayVisible, (visible) => {
-  document.getElementById('bewly')?.classList.toggle('settings-open', visible)
-}, { immediate: true })
+watch(
+  settingsOverlayVisible,
+  (visible) => {
+    document.getElementById('bewly')?.classList.toggle('settings-open', visible)
+  },
+  { immediate: true },
+)
 
 // Conditionally use dark mode. `useDark()` handles the video-page-only route gate;
 // lazily initialize in a persistent scope so toggling settings or SPA navigation takes effect immediately.
@@ -64,8 +108,8 @@ const currentPageUrl = ref(window.location.href)
 const isWidescreenActive = ref(isBewlyWidescreenActive())
 function readBrowserFullscreen() {
   return Boolean(
-    document.fullscreenElement
-    || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement,
+    document.fullscreenElement ||
+    (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement,
   )
 }
 const isBrowserFullscreen = ref(readBrowserFullscreen())
@@ -77,8 +121,7 @@ useEventListener(document, 'webkitfullscreenchange', syncBrowserFullscreen)
 let widescreenStateObserver: MutationObserver | undefined
 onMounted(() => {
   isWidescreenActive.value = isBewlyWidescreenActive()
-  if (!document.body)
-    return
+  if (!document.body) return
   widescreenStateObserver = new MutationObserver(() => {
     isWidescreenActive.value = isBewlyWidescreenActive()
   })
@@ -91,10 +134,11 @@ onUnmounted(() => {
   widescreenStateObserver?.disconnect()
   widescreenStateObserver = undefined
 })
-const shouldUseDark = computed(() =>
-  settings.value.adaptToOtherPageStyles
-  || settings.value.videoPageDarkMode
-  || isVideoPageGlassStyleEnabled(currentPageUrl.value),
+const shouldUseDark = computed(
+  () =>
+    settings.value.adaptToOtherPageStyles ||
+    settings.value.videoPageDarkMode ||
+    isVideoPageGlassStyleEnabled(currentPageUrl.value),
 )
 const darkIsDark = shallowRef<Ref<boolean>>()
 const darkScope = effectScope()
@@ -102,53 +146,55 @@ onScopeDispose(() => darkScope.stop())
 watch(
   shouldUseDark,
   (enabled) => {
-    if (enabled && !darkIsDark.value)
-      darkIsDark.value = darkScope.run(() => useDark().isDark)
+    if (enabled && !darkIsDark.value) darkIsDark.value = darkScope.run(() => useDark().isDark)
   },
   { immediate: true },
 )
-const isDark = computed(() => shouldUseDark.value ? (darkIsDark.value?.value ?? false) : false)
+const isDark = computed(() => (shouldUseDark.value ? (darkIsDark.value?.value ?? false) : false))
 const searchFocusOverlayActive = ref(false)
 const pageWallpaperReady = ref(false)
-const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
-  && settings.value.frostedGlassBlurIntensity > 0
-  && settings.value.enableBackground
-  && (pageWallpaperReady.value || (settings.value.useLinearGradientThemeColorBackground && isDark.value)))
+const useBlendedPageControls = computed(
+  () =>
+    settings.value.enableFrostedGlass &&
+    settings.value.frostedGlassBlurIntensity > 0 &&
+    settings.value.enableBackground &&
+    (pageWallpaperReady.value ||
+      (settings.value.useLinearGradientThemeColorBackground && isDark.value)),
+)
 
 // Registered before the layout-edit Escape handler: an open dialog consumes Escape first.
 const { activeConfirmDialog, showConfirmDialog, finishConfirmDialog } = useConfirmDialogHost()
 
-onKeyStroke('Escape', (e: KeyboardEvent) => {
-  if (!isLayoutEditing.value)
-    return
-  e.preventDefault()
-  e.stopPropagation()
-  e.stopImmediatePropagation()
-  exitLayoutEditMode()
-}, { dedupe: true })
+onKeyStroke(
+  'Escape',
+  (e: KeyboardEvent) => {
+    if (!isLayoutEditing.value) return
+    e.preventDefault()
+    e.stopPropagation()
+    e.stopImmediatePropagation()
+    exitLayoutEditMode()
+  },
+  { dedupe: true },
+)
 
 const SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY = 'bewlycat-settings-migration-prompt-dismissed'
 
 async function promptSettingsMigrationIfNeeded() {
-  if (isInIframe())
-    return
-  if (sessionStorage.getItem(SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY))
-    return
+  if (isInIframe()) return
+  if (sessionStorage.getItem(SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY)) return
 
   await settingsReady
   const record = settings.value as unknown as Record<string, unknown>
-  if (!hasPendingSettingsMigrations(record))
-    return
+  if (!hasPendingSettingsMigrations(record)) return
 
   const message = formatSettingsMigrationConfirmMessage(
     record,
     t,
     'settings.maintenance.migrate_legacy_settings_confirm',
   )
-  if (!message)
-    return
+  if (!message) return
 
-  const toggleFields = getPendingSettingsMigrationChoices(record).map(choice => ({
+  const toggleFields = getPendingSettingsMigrationChoices(record).map((choice) => ({
     id: choice.id,
     label: String(t(choice.titleKey)),
     value: choice.value,
@@ -165,31 +211,35 @@ async function promptSettingsMigrationIfNeeded() {
     return
   }
 
-  applyPendingSettingsMigrations(record, Object.fromEntries(
-    toggleFields.map(field => [field.id, field.value]),
-  ))
+  applyPendingSettingsMigrations(
+    record,
+    Object.fromEntries(toggleFields.map((field) => [field.id, field.value])),
+  )
 }
 
 // Get the 'page' query parameter from the URL
 function getPageParam(): AppPage | null {
   const urlParams = new URLSearchParams(window.location.search)
   const result = urlParams.get('page') as AppPage | null
-  if (result && Object.values(AppPage).includes(result))
-    return result
+  if (result && Object.values(AppPage).includes(result)) return result
   return null
 }
 
 function getDefaultAppPage(): AppPage {
-  return settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home
+  return settings.value.dockItemsConfig.find((e) => e.visible === true)?.page || AppPage.Home
 }
 
 const activatedPage = ref<AppPage>(getPageParam() || getDefaultAppPage())
 const pageControlWallpaperMask = computed(() => {
-  if (!pageWallpaperReady.value)
-    return '0%'
-  const separateSearchWallpaper = activatedPage.value === AppPage.Search && settings.value.individuallySetSearchPageWallpaper
-  const enabled = separateSearchWallpaper ? settings.value.searchPageEnableWallpaperMasking : settings.value.enableWallpaperMasking
-  const opacity = separateSearchWallpaper ? settings.value.searchPageWallpaperMaskOpacity : settings.value.wallpaperMaskOpacity
+  if (!pageWallpaperReady.value) return '0%'
+  const separateSearchWallpaper =
+    activatedPage.value === AppPage.Search && settings.value.individuallySetSearchPageWallpaper
+  const enabled = separateSearchWallpaper
+    ? settings.value.searchPageEnableWallpaperMasking
+    : settings.value.enableWallpaperMasking
+  const opacity = separateSearchWallpaper
+    ? settings.value.searchPageWallpaperMaskOpacity
+    : settings.value.wallpaperMaskOpacity
   return `${enabled && Number.isFinite(opacity) ? Math.min(100, Math.max(0, opacity)) : 0}%`
 })
 
@@ -201,14 +251,15 @@ function clearSearchParamsFromUrl() {
   }
 
   const urlParams = new URLSearchParams(window.location.search)
-  const hasSearchParams = urlParams.has('keyword')
-    || urlParams.has('category')
-    || urlParams.has('user_order')
-    || urlParams.has('user_type')
-    || urlParams.has('search_type')
-    || urlParams.has('live_room_order')
-    || urlParams.has('live_user_order')
-    || urlParams.has('pn')
+  const hasSearchParams =
+    urlParams.has('keyword') ||
+    urlParams.has('category') ||
+    urlParams.has('user_order') ||
+    urlParams.has('user_type') ||
+    urlParams.has('search_type') ||
+    urlParams.has('live_room_order') ||
+    urlParams.has('live_user_order') ||
+    urlParams.has('pn')
 
   if (hasSearchParams) {
     urlParams.delete('keyword')
@@ -226,34 +277,45 @@ function clearSearchParamsFromUrl() {
 }
 
 // 页面加载时，如果不是Search或SearchResults页面且在首页则清理搜索参数
-if (activatedPage.value !== AppPage.Search && activatedPage.value !== AppPage.SearchResults && isHomePage() && !isSearchResultsPage()) {
+if (
+  activatedPage.value !== AppPage.Search &&
+  activatedPage.value !== AppPage.SearchResults &&
+  isHomePage() &&
+  !isSearchResultsPage()
+) {
   clearSearchParamsFromUrl()
   topBarStore.searchKeyword = ''
 }
 
-function isFreshHomeTabConfig(tabConfig: { page: HomeSubPage, visible: boolean }[]): boolean {
-  return tabConfig.length === mainStore.homeTabs.length
-    && tabConfig.every(tab => mainStore.homeTabs.some(defaultTab => defaultTab.page === tab.page))
+function isFreshHomeTabConfig(tabConfig: { page: HomeSubPage; visible: boolean }[]): boolean {
+  return (
+    tabConfig.length === mainStore.homeTabs.length &&
+    tabConfig.every((tab) => mainStore.homeTabs.some((defaultTab) => defaultTab.page === tab.page))
+  )
 }
 
-function getDefaultHomeSubPage(tabConfig: { page: HomeSubPage, visible: boolean }[]): HomeSubPage {
+function getDefaultHomeSubPage(tabConfig: { page: HomeSubPage; visible: boolean }[]): HomeSubPage {
   if (isFreshHomeTabConfig(tabConfig))
-    return tabConfig.find(tab => tab.visible)?.page ?? HomeSubPage.ForYou
+    return tabConfig.find((tab) => tab.visible)?.page ?? HomeSubPage.ForYou
 
   return HomeSubPage.ForYou
 }
 
 function getHomeTabParam(url = new URL(window.location.href)): HomeSubPage | null {
   const tab = url.searchParams.get('tab') as HomeSubPage | null
-  return isHomePage(url.href) && url.searchParams.get('page') === AppPage.Home
-    && tab && Object.values(HomeSubPage).includes(tab)
+  return isHomePage(url.href) &&
+    url.searchParams.get('page') === AppPage.Home &&
+    tab &&
+    Object.values(HomeSubPage).includes(tab)
     ? tab
     : null
 }
 
 // URL 中的显式 tab 优先于设置中的默认首页标签。
 const initialHomeTab = getHomeTabParam()
-const homeActivatedPage = ref<HomeSubPage>(initialHomeTab ?? getDefaultHomeSubPage(settings.value.homePageTabVisibilityList))
+const homeActivatedPage = ref<HomeSubPage>(
+  initialHomeTab ?? getDefaultHomeSubPage(settings.value.homePageTabVisibilityList),
+)
 const homeActivatedPageTouched = ref<boolean>(initialHomeTab !== null)
 const isHomeTabSwitching = ref<boolean>(false)
 
@@ -262,11 +324,11 @@ function syncNavigationFromUrl() {
   queueMicrotask(() => {
     currentPageUrl.value = window.location.href
     const page = getPageParam()
-    if (page)
-      activatedPage.value = page
+    if (page) activatedPage.value = page
     if (page === AppPage.Home) {
       const tab = getHomeTabParam()
-      homeActivatedPage.value = tab ?? getDefaultHomeSubPage(settings.value.homePageTabVisibilityList)
+      homeActivatedPage.value =
+        tab ?? getDefaultHomeSubPage(settings.value.homePageTabVisibilityList)
       homeActivatedPageTouched.value = tab !== null
     }
   })
@@ -279,12 +341,10 @@ useEventListener(window, 'hashchange', syncNavigationFromUrl)
 watch(
   () => settings.value.homePageTabVisibilityList,
   (tabConfig) => {
-    if (homeActivatedPageTouched.value)
-      return
+    if (homeActivatedPageTouched.value) return
 
     const defaultHomeSubPage = getDefaultHomeSubPage(tabConfig)
-    if (homeActivatedPage.value !== defaultHomeSubPage)
-      homeActivatedPage.value = defaultHomeSubPage
+    if (homeActivatedPage.value !== defaultHomeSubPage) homeActivatedPage.value = defaultHomeSubPage
   },
   { deep: true, immediate: true },
 )
@@ -337,15 +397,25 @@ function clearExposedLayoutEditElements() {
 }
 
 function isLayoutEditCandidateVisible(element: HTMLElement) {
-  if (!element.isConnected || !element.getClientRects().length)
-    return false
+  if (!element.isConnected || !element.getClientRects().length) return false
 
   const rect = element.getBoundingClientRect()
-  if (rect.width < 4 || rect.height < 4 || rect.bottom <= 0 || rect.right <= 0 || rect.top >= window.innerHeight || rect.left >= window.innerWidth)
+  if (
+    rect.width < 4 ||
+    rect.height < 4 ||
+    rect.bottom <= 0 ||
+    rect.right <= 0 ||
+    rect.top >= window.innerHeight ||
+    rect.left >= window.innerWidth
+  )
     return false
 
   const style = window.getComputedStyle(element)
-  return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    Number.parseFloat(style.opacity || '1') > 0
+  )
 }
 
 function isOriginalMomentsFeedPage() {
@@ -367,18 +437,17 @@ function refreshLayoutEditTargets() {
   const nextTargets: LayoutEditTargetProxy[] = []
   const appendTarget = (element: HTMLElement, descriptor?: LayoutEditTargetDescriptor) => {
     const key = descriptor?.key ?? element.dataset.layoutEditTarget
-    const menu = descriptor?.menu
-      ?? element.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined
-    if (!key || !menu || seenKeys.has(key) || !isLayoutEditCandidateVisible(element))
-      return
+    const menu =
+      descriptor?.menu ??
+      (element.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined)
+    if (!key || !menu || seenKeys.has(key) || !isLayoutEditCandidateVisible(element)) return
 
     const rect = element.getBoundingClientRect()
     const left = Math.max(0, rect.left)
     const top = Math.max(0, rect.top)
     const right = Math.min(window.innerWidth, rect.right)
     const bottom = Math.min(window.innerHeight, rect.bottom)
-    if (right <= left || bottom <= top)
-      return
+    if (right <= left || bottom <= top) return
 
     seenKeys.add(key)
     element.classList.add('layout-edit-target--active')
@@ -399,18 +468,21 @@ function refreshLayoutEditTargets() {
 
   mainAppRef.value
     .querySelectorAll<HTMLElement>('[data-layout-edit-target]')
-    .forEach(element => appendTarget(element))
+    .forEach((element) => appendTarget(element))
 
   const momentsGrid = mainAppRef.value.querySelector<HTMLElement>('.moments-grid')
   const videoCardGrid = mainAppRef.value.querySelector<HTMLElement>('.video-card-grid-container')
-  layoutEditGridKind.value = momentsGrid && isLayoutEditCandidateVisible(momentsGrid)
-    ? 'moments'
-    : videoCardGrid && isLayoutEditCandidateVisible(videoCardGrid)
-      ? 'video-card'
-      : undefined
+  layoutEditGridKind.value =
+    momentsGrid && isLayoutEditCandidateVisible(momentsGrid)
+      ? 'moments'
+      : videoCardGrid && isLayoutEditCandidateVisible(videoCardGrid)
+        ? 'video-card'
+        : undefined
 
   if (isVideoOrBangumiPage()) {
-    const player = document.querySelector<HTMLElement>('.bpx-player-container, #bilibili-player, .bilibili-player, .squirtle-video-wrap')
+    const player = document.querySelector<HTMLElement>(
+      '.bpx-player-container, #bilibili-player, .bilibili-player, .squirtle-video-wrap',
+    )
     if (player) {
       appendTarget(player, {
         key: 'video-page-player',
@@ -432,23 +504,28 @@ function refreshLayoutEditTargets() {
   }
 
   // 原站新版评论内部使用 Shadow DOM；只对外层评论区提供一个整体入口。
-  const commentRegion = Array.from(document.querySelectorAll<HTMLElement>(
-    'bili-comments, #commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment',
-  )).find(isLayoutEditCandidateVisible)
+  const commentRegion = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      'bili-comments, #commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment',
+    ),
+  ).find(isLayoutEditCandidateVisible)
   if (commentRegion) {
     // 评论增强关闭时评论设置页被隐藏，改为定位到常规设置中的评论模块开关。
-    appendTarget(commentRegion, settings.value.enableCommentEnhancements
-      ? {
-          key: 'page-comments',
-          menu: 'Bilibili',
-          secondaryPage: 'comments',
-          targetTitleKey: 'settings.group_comments',
-        }
-      : {
-          key: 'page-comments',
-          menu: 'General',
-          targetTitleKey: 'settings.module_comments',
-        })
+    appendTarget(
+      commentRegion,
+      settings.value.enableCommentEnhancements
+        ? {
+            key: 'page-comments',
+            menu: 'Bilibili',
+            secondaryPage: 'comments',
+            targetTitleKey: 'settings.group_comments',
+          }
+        : {
+            key: 'page-comments',
+            menu: 'General',
+            targetTitleKey: 'settings.module_comments',
+          },
+    )
   }
 
   if (isOriginalMomentsFeedPage()) {
@@ -507,14 +584,12 @@ function refreshLayoutEditTargets() {
     ]
 
     originalMomentTargets.forEach((target) => {
-      if (!target.enabled)
-        return
+      if (!target.enabled) return
 
       const element = target.selectors
-        .map(selector => document.querySelector<HTMLElement>(selector))
-        .find(candidate => candidate && isLayoutEditCandidateVisible(candidate))
-      if (!element)
-        return
+        .map((selector) => document.querySelector<HTMLElement>(selector))
+        .find((candidate) => candidate && isLayoutEditCandidateVisible(candidate))
+      if (!element) return
 
       appendTarget(element, {
         key: target.key,
@@ -526,20 +601,18 @@ function refreshLayoutEditTargets() {
   }
 
   layoutEditTargets.value = nextTargets
-  layoutEditDockVisible.value = nextTargets.some(target => target.key === 'dock-component')
+  layoutEditDockVisible.value = nextTargets.some((target) => target.key === 'dock-component')
 }
 
 function scheduleLayoutEditTargetsRefresh() {
-  if (layoutEditTargetFrame !== undefined)
-    return
+  if (layoutEditTargetFrame !== undefined) return
   layoutEditTargetFrame = window.requestAnimationFrame(refreshLayoutEditTargets)
 }
 
 function stopLayoutEditTargetObserver() {
   layoutEditTargetObserver?.disconnect()
   layoutEditTargetObserver = undefined
-  if (layoutEditTargetFrame !== undefined)
-    window.cancelAnimationFrame(layoutEditTargetFrame)
+  if (layoutEditTargetFrame !== undefined) window.cancelAnimationFrame(layoutEditTargetFrame)
   layoutEditTargetFrame = undefined
   clearExposedLayoutEditElements()
   layoutEditTargets.value = []
@@ -550,8 +623,7 @@ function stopLayoutEditTargetObserver() {
 function startLayoutEditTargetObserver() {
   stopLayoutEditTargetObserver()
   nextTick(() => {
-    if (!isLayoutEditing.value || !mainAppRef.value)
-      return
+    if (!isLayoutEditing.value || !mainAppRef.value) return
 
     refreshLayoutEditTargets()
     layoutEditTargetObserver = new MutationObserver(scheduleLayoutEditTargetsRefresh)
@@ -562,26 +634,32 @@ function startLayoutEditTargetObserver() {
 
 function isLayoutEditControlEvent(event: Event) {
   return event.composedPath().some((target) => {
-    return target instanceof HTMLElement
-      && (target.hasAttribute('data-layout-edit-control') || target.classList.contains('bew-confirm-dialog'))
+    return (
+      target instanceof HTMLElement &&
+      (target.hasAttribute('data-layout-edit-control') ||
+        target.classList.contains('bew-confirm-dialog'))
+    )
   })
 }
 
 function getDirectLayoutEditTarget(event: Event) {
   return event.composedPath().find((target): target is HTMLElement => {
-    return target instanceof HTMLElement
-      && target.hasAttribute('data-layout-edit-target')
-      && target.hasAttribute('data-layout-edit-direct')
+    return (
+      target instanceof HTMLElement &&
+      target.hasAttribute('data-layout-edit-target') &&
+      target.hasAttribute('data-layout-edit-direct')
+    )
   })
 }
 
 function blockOriginalLayoutInteraction(event: Event) {
-  if (!isLayoutEditing.value || isLayoutEditControlEvent(event))
-    return
+  if (!isLayoutEditing.value || isLayoutEditControlEvent(event)) return
 
   const directTarget = getDirectLayoutEditTarget(event)
   if (event.type === 'click' && directTarget) {
-    const menu = directTarget.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined
+    const menu = directTarget.dataset.layoutSettingsMenu as
+      | SettingsNavigationTarget['menu']
+      | undefined
     if (menu) {
       openSettingsOverlay({
         menu,
@@ -591,8 +669,7 @@ function blockOriginalLayoutInteraction(event: Event) {
     }
   }
 
-  if (event.cancelable)
-    event.preventDefault()
+  if (event.cancelable) event.preventDefault()
   event.stopPropagation()
   event.stopImmediatePropagation()
 }
@@ -606,20 +683,19 @@ function openLayoutTargetSettings(target: LayoutEditTargetProxy) {
 }
 
 const layoutEditDockPage = computed(() => {
-  if (!isHomePage() || activatedPage.value === AppPage.SearchResults)
-    return undefined
+  if (!isHomePage() || activatedPage.value === AppPage.SearchResults) return undefined
   return mainStore.getDockItemByPage(activatedPage.value)
 })
 
 const layoutEditDockPageConfig = computed(() => {
-  return settings.value.dockItemsConfig.find(item => item.page === layoutEditDockPage.value?.page)
+  return settings.value.dockItemsConfig.find((item) => item.page === layoutEditDockPage.value?.page)
 })
 
 const showLayoutEditPageModeAction = computed(() => {
   return Boolean(
-    isLayoutEditing.value
-    && !settings.value.useOriginalBilibiliHomepage
-    && layoutEditDockPage.value?.hasBewlyPage,
+    isLayoutEditing.value &&
+    !settings.value.useOriginalBilibiliHomepage &&
+    layoutEditDockPage.value?.hasBewlyPage,
   )
 })
 
@@ -628,24 +704,19 @@ const showLayoutEditSearchResultsAction = computed(() => {
 })
 
 const layoutEditGridActionKind = computed<'video-card' | 'moments' | undefined>(() => {
-  if (!isLayoutEditing.value || settings.value.useOriginalBilibiliHomepage)
-    return undefined
+  if (!isLayoutEditing.value || settings.value.useOriginalBilibiliHomepage) return undefined
 
-  if (activatedPage.value === AppPage.SearchResults)
-    return 'video-card'
+  if (activatedPage.value === AppPage.SearchResults) return 'video-card'
 
   const showingPluginDockPage = !layoutEditDockPageConfig.value?.useOriginalBiliPage
-  if (showingPluginDockPage && activatedPage.value === AppPage.Home)
-    return 'video-card'
-  if (showingPluginDockPage && activatedPage.value === AppPage.Moments)
-    return 'moments'
+  if (showingPluginDockPage && activatedPage.value === AppPage.Home) return 'video-card'
+  if (showingPluginDockPage && activatedPage.value === AppPage.Moments) return 'moments'
 
   return layoutEditGridKind.value
 })
 
 const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() => {
-  if (!isLayoutEditing.value)
-    return []
+  if (!isLayoutEditing.value) return []
 
   if (isVideoOrBangumiPage()) {
     return [
@@ -673,15 +744,20 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
         secondaryPage: 'player',
         targetTitleKey: 'settings.external_watch_later_button',
       },
-      ...(settings.value.enableDock && settings.value.enableSideBar && !settings.value.useOriginalBilibiliHomepage && !settings.value.alwaysUseDock
-        ? [{
-            key: 'video-sidebar-position',
-            labelKey: 'layout_editor.video_sidebar_position',
-            icon: 'mingcute:navigation-line',
-            menu: 'BewlyComponents' as const,
-            secondaryPage: 'dock',
-            targetTitleKey: 'settings.sidebar_position',
-          }]
+      ...(settings.value.enableDock &&
+      settings.value.enableSideBar &&
+      !settings.value.useOriginalBilibiliHomepage &&
+      !settings.value.alwaysUseDock
+        ? [
+            {
+              key: 'video-sidebar-position',
+              labelKey: 'layout_editor.video_sidebar_position',
+              icon: 'mingcute:navigation-line',
+              menu: 'BewlyComponents' as const,
+              secondaryPage: 'dock',
+              targetTitleKey: 'settings.sidebar_position',
+            },
+          ]
         : []),
       {
         key: 'video-topbar-auto-hide',
@@ -703,8 +779,7 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
       icon: string,
       targetTitleKey: string,
     ) => {
-      if (visible)
-        return
+      if (visible) return
       actions.push({
         key,
         labelKey,
@@ -753,7 +828,10 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
     return actions
   }
 
-  if (activatedPage.value === AppPage.Moments && !layoutEditDockPageConfig.value?.useOriginalBiliPage) {
+  if (
+    activatedPage.value === AppPage.Moments &&
+    !layoutEditDockPageConfig.value?.useOriginalBiliPage
+  ) {
     return [
       {
         key: 'moments-content-filters',
@@ -876,8 +954,7 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
 
 function openLayoutEditPageModeSettings() {
   const dockPage = layoutEditDockPage.value
-  if (!dockPage)
-    return
+  if (!dockPage) return
 
   openSettingsOverlay({
     menu: 'BewlyComponents',
@@ -937,23 +1014,29 @@ function openLayoutEditContextSettings(action: LayoutEditQuickSettingsAction) {
   })
 }
 
-watch(isLayoutEditing, (editing) => {
-  if (editing) {
-    mainAppRef.value?.querySelector<HTMLElement>(':focus')?.blur()
-    startLayoutEditTargetObserver()
-    window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
-    window.setTimeout(scheduleLayoutEditTargetsRefresh, 1200)
-    window.setTimeout(scheduleLayoutEditTargetsRefresh, 2500)
-  }
-  else {
-    stopLayoutEditTargetObserver()
-  }
-}, { immediate: true })
+watch(
+  isLayoutEditing,
+  (editing) => {
+    if (editing) {
+      mainAppRef.value?.querySelector<HTMLElement>(':focus')?.blur()
+      startLayoutEditTargetObserver()
+      window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
+      window.setTimeout(scheduleLayoutEditTargetsRefresh, 1200)
+      window.setTimeout(scheduleLayoutEditTargetsRefresh, 2500)
+    } else {
+      stopLayoutEditTargetObserver()
+    }
+  },
+  { immediate: true },
+)
 
-watch(() => settings.value.dockPosition, () => {
-  nextTick(scheduleLayoutEditTargetsRefresh)
-  window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
-})
+watch(
+  () => settings.value.dockPosition,
+  () => {
+    nextTick(scheduleLayoutEditTargetsRefresh)
+    window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
+  },
+)
 
 watch(activatedPage, scheduleLayoutEditTargetsRefresh)
 
@@ -973,28 +1056,32 @@ useEventListener(window, 'scroll', scheduleLayoutEditTargetsRefresh, { passive: 
 onUnmounted(stopLayoutEditTargetObserver)
 const scrollViewportRef = ref<HTMLElement | null>(null)
 // Firefox 原生滚动条无法自定义外观，仅 Firefox 包提供可选的重绘滚动条
-const useFirefoxScrollbar = computed(() => isFirefoxBuild && settings.value.enableFirefoxScrollbarRepaint)
+const useFirefoxScrollbar = computed(
+  () => isFirefoxBuild && settings.value.enableFirefoxScrollbarRepaint,
+)
 // 首页由内部容器或 iframe 滚动，滚动条位于窗口右缘；顶栏和 Dock 让出这一列，
 // 与原版页面中 fixed 元素止于文档滚动条左侧的位置保持一致。
 const viewportScrollbarGutter = ref(0)
 const iframeScrollbarGutter = ref<number | null>(null)
 useResizeObserver(scrollViewportRef, ([entry]) => {
   const viewport = entry.target as HTMLElement
-  if (!viewport.isConnected || viewport.offsetWidth === 0)
-    return
+  if (!viewport.isConnected || viewport.offsetWidth === 0) return
   viewportScrollbarGutter.value = viewport.offsetWidth - viewport.clientWidth
 })
 
-watch(scrollViewportRef, (viewport, _previousViewport, onCleanup) => {
-  if (viewport && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
-    onCleanup(installScrollBridge(viewport))
-}, { flush: 'post' })
+watch(
+  scrollViewportRef,
+  (viewport, _previousViewport, onCleanup) => {
+    if (viewport && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
+      onCleanup(installScrollBridge(viewport))
+  },
+  { flush: 'post' },
+)
 
 function handlePageBackgroundMouseDown(event: MouseEvent) {
   // Only background elements bind this with .self. Avoid starting a native
   // selection across the feed from its gutters, while keeping card text selectable.
-  if (activatedPage.value === AppPage.Home && event.button === 0)
-    event.preventDefault()
+  if (activatedPage.value === AppPage.Home && event.button === 0) event.preventDefault()
 }
 const loadMoreSentinelRef = ref<HTMLElement>() // ✅ IntersectionObserver 哨兵元素
 const handlePageRefresh = ref<() => void>()
@@ -1005,7 +1092,11 @@ const canRefreshHomeSubPage = ref<boolean>(false)
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const canRefreshCurrentPage = computed((): boolean => {
-  return activatedPage.value !== AppPage.Home || homeActivatedPage.value !== HomeSubPage.Following || canRefreshHomeSubPage.value
+  return (
+    activatedPage.value !== AppPage.Home ||
+    homeActivatedPage.value !== HomeSubPage.Following ||
+    canRefreshHomeSubPage.value
+  )
 })
 let refreshScrollTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -1018,8 +1109,7 @@ onBeforeUnmount(cancelPendingPageRefresh)
 
 const handleThrottledPageRefresh = useThrottleFn(() => {
   cancelPendingPageRefresh()
-  if (!canRefreshCurrentPage.value)
-    return
+  if (!canRefreshCurrentPage.value) return
 
   const viewport = scrollViewportRef.value
   if (!viewport) {
@@ -1028,20 +1118,22 @@ const handleThrottledPageRefresh = useThrottleFn(() => {
   }
   if (viewport.scrollTop === 0) {
     handlePageRefresh.value?.()
-  }
-  else {
+  } else {
     handleBackToTop()
     const refresh = handlePageRefresh.value
     const deadline = performance.now() + 3000
     const checkScrollComplete = () => {
       refreshScrollTimer = undefined
-      if (!viewport.isConnected || viewport !== scrollViewportRef.value || refresh !== handlePageRefresh.value)
+      if (
+        !viewport.isConnected ||
+        viewport !== scrollViewportRef.value ||
+        refresh !== handlePageRefresh.value
+      )
         return
 
       if (viewport.scrollTop <= 1) {
         refresh?.()
-      }
-      else if (performance.now() < deadline) {
+      } else if (performance.now() < deadline) {
         refreshScrollTimer = setTimeout(checkScrollComplete, 50)
       }
     }
@@ -1057,8 +1149,7 @@ const reachTop = ref<boolean>(true)
 const scrollTop = ref<number>(0)
 
 watch(isHomeTabSwitching, (switching) => {
-  if (switching)
-    return
+  if (switching) return
 
   // IntersectionObserver may have reported an intersection while callbacks were
   // suspended. Recheck once after restoration so a genuinely short/bottom page
@@ -1066,8 +1157,7 @@ watch(isHomeTabSwitching, (switching) => {
   requestAnimationFrame(() => {
     const viewport = scrollViewportRef.value
     const sentinel = loadMoreSentinelRef.value
-    if (!viewport || !sentinel || isHomeTabSwitching.value)
-      return
+    if (!viewport || !sentinel || isHomeTabSwitching.value) return
 
     const viewportRect = viewport.getBoundingClientRect()
     const sentinelRect = sentinel.getBoundingClientRect()
@@ -1079,7 +1169,7 @@ watch(isHomeTabSwitching, (switching) => {
 const iframeDrawerURL = ref<string>('')
 const showIframeDrawer = ref<boolean>(false)
 // 每次打开分配新 id，替换已打开的弹窗时重新挂载 iframe
-const videoDialog = ref<{ id: number, url: string } | null>(null)
+const videoDialog = ref<{ id: number; url: string } | null>(null)
 let videoDialogId = 0
 
 // 添加活跃抽屉状态管理
@@ -1094,44 +1184,47 @@ const hideUIForIframePhotoViewer = ref<boolean>(false)
 const iframePageRef = ref()
 // 只接受当前 Bewly 界面持有的 iframe 请求；消息仅携带关键词，不接受任意跳转 URL。
 useEventListener(window, 'message', ({ data, source, origin }) => {
-  if (data?.type !== IFRAME_SEARCH_NAVIGATION || typeof data.keyword !== 'string' || !data.keyword.trim())
+  if (
+    data?.type !== IFRAME_SEARCH_NAVIGATION ||
+    typeof data.keyword !== 'string' ||
+    !data.keyword.trim()
+  )
     return
 
-  const frames = document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe')
-  const frame = Array.from(frames ?? []).find(iframe => iframe.contentWindow === source)
-  if (!frame)
-    return
+  const frames = document
+    .getElementById('bewly')
+    ?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe')
+  const frame = Array.from(frames ?? []).find((iframe) => iframe.contentWindow === source)
+  if (!frame) return
   try {
-    if (new URL(frame.src).origin !== origin || !/^https?:\/\/(?:[\w-]+\.)?bilibili\.com$/.test(origin))
+    if (
+      new URL(frame.src).origin !== origin ||
+      !/^https?:\/\/(?:[\w-]+\.)?bilibili\.com$/.test(origin)
+    )
       return
-  }
-  catch {
+  } catch {
     return
   }
 
   navigateToPluginSearchResults(data.keyword)
 })
 useEventListener(window, 'message', ({ data, source }) => {
-  if (typeof data !== 'string')
-    return
+  if (typeof data !== 'string') return
 
   const iframe = iframePageRef.value?.$el?.querySelector('iframe')
-  if (!iframe || source !== iframe.contentWindow)
-    return
+  if (!iframe || source !== iframe.contentWindow) return
 
   switch (data) {
     case IFRAME_PAGE_SWITCH_BEWLY:
       {
         const currentDockItemConfig = settingsStore.getDockItemConfigByPage(activatedPage.value)
-        if (currentDockItemConfig)
-          currentDockItemConfig.useOriginalBiliPage = false
+        if (currentDockItemConfig) currentDockItemConfig.useOriginalBiliPage = false
       }
       break
     case IFRAME_PAGE_SWITCH_BILI:
       {
         const currentDockItemConfig = settingsStore.getDockItemConfigByPage(activatedPage.value)
-        if (currentDockItemConfig)
-          currentDockItemConfig.useOriginalBiliPage = true
+        if (currentDockItemConfig) currentDockItemConfig.useOriginalBiliPage = true
       }
       break
   }
@@ -1140,8 +1233,7 @@ useEventListener(window, 'message', ({ data, source }) => {
 // 监听来自iframe的图片预览器状态
 useEventListener(window, 'message', ({ data, source }) => {
   // 确保消息来自iframe
-  if (!data || data.type !== 'IFRAME_PHOTO_VIEWER_STATE')
-    return
+  if (!data || data.type !== 'IFRAME_PHOTO_VIEWER_STATE') return
 
   // 检查消息来源是否是iframe
   const iframe = iframePageRef.value?.$el?.querySelector('iframe')
@@ -1152,17 +1244,25 @@ useEventListener(window, 'message', ({ data, source }) => {
 
 const iframePageURL = computed((): string => {
   // If the iframe is not the BiliBili homepage or in iframe, then don't show the iframe page
-  if (!isHomePage(window.self.location.href) || isInIframe() || settings.value.useOriginalBilibiliHomepage)
+  if (
+    !isHomePage(window.self.location.href) ||
+    isInIframe() ||
+    settings.value.useOriginalBilibiliHomepage
+  )
     return ''
-  const currentDockItemConfig = settings.value.dockItemsConfig.find(e => e.page === activatedPage.value)
+  const currentDockItemConfig = settings.value.dockItemsConfig.find(
+    (e) => e.page === activatedPage.value,
+  )
   if (currentDockItemConfig) {
-    return currentDockItemConfig.useOriginalBiliPage || !mainStore.getDockItemByPage(activatedPage.value)?.hasBewlyPage ? mainStore.getBiliWebPageURLByPage(activatedPage.value) : ''
+    return currentDockItemConfig.useOriginalBiliPage ||
+      !mainStore.getDockItemByPage(activatedPage.value)?.hasBewlyPage
+      ? mainStore.getBiliWebPageURLByPage(activatedPage.value)
+      : ''
   }
   return ''
 })
 const showBewlyPage = computed((): boolean => {
-  if (isInIframe())
-    return false
+  if (isInIframe()) return false
 
   // SearchResults 页面是虚拟页面，不在 dockItems 中，但应该显示
   if (activatedPage.value === AppPage.SearchResults) {
@@ -1170,31 +1270,33 @@ const showBewlyPage = computed((): boolean => {
   }
 
   const dockItem = mainStore.getDockItemByPage(activatedPage.value)
-  if (!dockItem?.hasBewlyPage)
-    return false
+  if (!dockItem?.hasBewlyPage) return false
 
-  if (iframePageURL.value)
-    return false
+  if (iframePageURL.value) return false
 
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
 })
 
-watch(iframePageURL, (url) => {
-  if (!url)
-    iframeScrollbarGutter.value = null
-}, { flush: 'sync' })
+watch(
+  iframePageURL,
+  (url) => {
+    if (!url) iframeScrollbarGutter.value = null
+  },
+  { flush: 'sync' },
+)
 
 const pageScrollbarGutter = computed(() => {
-  if (showBewlyPage.value)
-    return viewportScrollbarGutter.value
-  if (iframePageURL.value)
-    return iframeScrollbarGutter.value ?? viewportScrollbarGutter.value
+  if (showBewlyPage.value) return viewportScrollbarGutter.value
+  if (iframePageURL.value) return iframeScrollbarGutter.value ?? viewportScrollbarGutter.value
   return 0
 })
 // 原版页面的文档滚动条不需要让位，但 Dock 需要据此收紧与滚动条之间的边距。
 const documentScrollbarWidth = ref(0)
 function measureDocumentScrollbar() {
-  documentScrollbarWidth.value = Math.max(0, window.innerWidth - document.documentElement.clientWidth)
+  documentScrollbarWidth.value = Math.max(
+    0,
+    window.innerWidth - document.documentElement.clientWidth,
+  )
 }
 useResizeObserver(document.documentElement, measureDocumentScrollbar)
 useEventListener(window, 'resize', measureDocumentScrollbar, { passive: true })
@@ -1202,13 +1304,14 @@ const pageScrollbarSize = computed(() => pageScrollbarGutter.value || documentSc
 
 // Bewly 页面关闭时没有可切换的插件页，Dock 作为全站导航显示在所有页面。
 const showDock = computed((): boolean => {
-  if (!settings.value.enableDock)
-    return false
+  if (!settings.value.enableDock) return false
 
-  return settings.value.useOriginalBilibiliHomepage
-    || settings.value.alwaysUseDock
-    || showBewlyPage.value
-    || Boolean(iframePageURL.value)
+  return (
+    settings.value.useOriginalBilibiliHomepage ||
+    settings.value.alwaysUseDock ||
+    showBewlyPage.value ||
+    Boolean(iframePageURL.value)
+  )
 })
 
 const showSideBar = computed((): boolean => {
@@ -1218,22 +1321,29 @@ const showSideBar = computed((): boolean => {
 watch(
   () => settings.value.showLayoutEditButton && (showDock.value || showSideBar.value),
   (canEditLayout) => {
-    if (!canEditLayout && isLayoutEditing.value)
-      exitLayoutEditMode()
+    if (!canEditLayout && isLayoutEditing.value) exitLayoutEditMode()
   },
 )
 
 // App outlives page components. Drop outgoing closures before the next page
 // registers its actions so evicted KeepAlive pages and their lists can be collected.
-watch([activatedPage, () => activatedPage.value === AppPage.Home ? homeActivatedPage.value : undefined, showBewlyPage], () => {
-  cancelPendingPageRefresh()
-  handlePageRefresh.value = undefined
-  handleReachBottom.value = undefined
-  handleUndoRefresh.value = undefined
-  handleForwardRefresh.value = undefined
-  undoForwardState.value = UndoForwardState.Hidden
-  canRefreshHomeSubPage.value = false
-}, { flush: 'sync' })
+watch(
+  [
+    activatedPage,
+    () => (activatedPage.value === AppPage.Home ? homeActivatedPage.value : undefined),
+    showBewlyPage,
+  ],
+  () => {
+    cancelPendingPageRefresh()
+    handlePageRefresh.value = undefined
+    handleReachBottom.value = undefined
+    handleUndoRefresh.value = undefined
+    handleForwardRefresh.value = undefined
+    undoForwardState.value = UndoForwardState.Hidden
+    canRefreshHomeSubPage.value = false
+  },
+  { flush: 'sync' },
+)
 
 // Keep the browser tab title in sync with the page selected from the Dock.
 // Search results manages its own keyword-aware title in SearchResults.vue.
@@ -1241,38 +1351,40 @@ const dockPageTitle = computed<string | undefined>(() => {
   if (settings.value.useOriginalBilibiliHomepage || activatedPage.value === AppPage.SearchResults)
     return undefined
 
-  const titleKey = activatedPage.value === AppPage.Home
-    ? mainStore.homeTabs.find(tab => tab.page === homeActivatedPage.value)?.i18nKey
-    : mainStore.getDockItemByPage(activatedPage.value)?.i18nKey
+  const titleKey =
+    activatedPage.value === AppPage.Home
+      ? mainStore.homeTabs.find((tab) => tab.page === homeActivatedPage.value)?.i18nKey
+      : mainStore.getDockItemByPage(activatedPage.value)?.i18nKey
 
-  if (!titleKey)
-    return undefined
+  if (!titleKey) return undefined
 
-  if (activatedPage.value === AppPage.Home)
-    return `首页-${t(titleKey)}-哔哩哔哩`
+  if (activatedPage.value === AppPage.Home) return `首页-${t(titleKey)}-哔哩哔哩`
 
   return `${t(titleKey)} - 哔哩哔哩`
 })
 
-watch(dockPageTitle, (title) => {
-  if (title && isHomePage())
-    document.title = title
-}, { immediate: true })
+watch(
+  dockPageTitle,
+  (title) => {
+    if (title && isHomePage()) document.title = title
+  },
+  { immediate: true },
+)
 
-const isOriginalTopBarActive = computed(() => shouldShowOriginalBilibiliTopBar(
-  settings.value.enableTopBarModule,
-  settings.value.enableTopBar,
-  settings.value.useOriginalBilibiliTopBar,
-))
+const isOriginalTopBarActive = computed(() =>
+  shouldShowOriginalBilibiliTopBar(
+    settings.value.enableTopBarModule,
+    settings.value.enableTopBar,
+    settings.value.useOriginalBilibiliTopBar,
+  ),
+)
 
 const showTopBar = computed((): boolean => {
   // 模块关闭时不挂载顶栏组件，账号同步由 useAccountSync 继续负责。
-  if (!settings.value.enableTopBarModule)
-    return false
+  if (!settings.value.enableTopBarModule) return false
 
   // When using the open in drawer feature, the iframe inside the page will hide the top bar
-  if (isVideoOrBangumiPage() && isInIframe())
-    return false
+  if (isVideoOrBangumiPage() && isInIframe()) return false
 
   // when user open the notifications page as a drawer, don't show the top bar
   if (isNotificationPage() && settings.value.openNotificationsPageAsDrawer && isInIframe())
@@ -1280,17 +1392,18 @@ const showTopBar = computed((): boolean => {
 
   // Always show TopBar in the outer layer, never inside iframe
   // This ensures TopBar is always visible outside of iframe content
-  if (isInIframe())
-    return false
+  if (isInIframe()) return false
 
   // when using original bilibili homepage, show top bar
-  return settings.value.useOriginalBilibiliHomepage
-  // when on home page and not using original bilibili page, show top bar
-    || (isHomePage() && !settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value))
-  // when using original bilibili page on home page, show top bar in outer layer
-    || (isHomePage() && settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value))
-  // when not on home page, show top bar
-    || !isHomePage()
+  return (
+    settings.value.useOriginalBilibiliHomepage ||
+    // when on home page and not using original bilibili page, show top bar
+    (isHomePage() && !settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value)) ||
+    // when using original bilibili page on home page, show top bar in outer layer
+    (isHomePage() && settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value)) ||
+    // when not on home page, show top bar
+    !isHomePage()
+  )
 })
 
 function getActiveElement(): Element | null {
@@ -1299,19 +1412,24 @@ function getActiveElement(): Element | null {
 }
 
 function isEditableElement(element: Element | null): boolean {
-  return element instanceof HTMLInputElement
-    || element instanceof HTMLTextAreaElement
-    || element instanceof HTMLSelectElement
-    || (element instanceof HTMLElement && (element.isContentEditable || !!element.closest('[contenteditable="true"]')))
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    (element instanceof HTMLElement &&
+      (element.isContentEditable || !!element.closest('[contenteditable="true"]')))
+  )
 }
 
 function focusScrollViewport(options: { force?: boolean } = {}) {
   nextTick(() => {
     const viewport = scrollViewportRef.value
-    if (!viewport || !showBewlyPage.value)
-      return
+    if (!viewport || !showBewlyPage.value) return
 
-    if (!options.force && (activeDrawer.value !== DrawerType.None || isEditableElement(getActiveElement())))
+    if (
+      !options.force &&
+      (activeDrawer.value !== DrawerType.None || isEditableElement(getActiveElement()))
+    )
       return
 
     viewport.focus({ preventScroll: true })
@@ -1320,32 +1438,30 @@ function focusScrollViewport(options: { force?: boolean } = {}) {
 
 const isFirstTimeActivatedPageChange = ref<boolean>(true)
 function syncNavigationUrl() {
-  if (settings.value.useOriginalBilibiliHomepage)
-    return
+  if (settings.value.useOriginalBilibiliHomepage) return
 
   const url = new URL(window.location.href)
   // 停留在默认首页及默认标签时不写入参数，切换后再记录 page/tab。
-  const keepTab = activatedPage.value === AppPage.Home
-    && homeActivatedPage.value !== getDefaultHomeSubPage(settings.value.homePageTabVisibilityList)
-  const keepPage = keepTab
-    || activatedPage.value !== AppPage.Home
-    || getDefaultAppPage() !== AppPage.Home
-  if (keepPage)
-    url.searchParams.set('page', activatedPage.value)
-  else
-    url.searchParams.delete('page')
-  if (keepTab)
-    url.searchParams.set('tab', homeActivatedPage.value)
-  else
-    url.searchParams.delete('tab')
+  const keepTab =
+    activatedPage.value === AppPage.Home &&
+    homeActivatedPage.value !== getDefaultHomeSubPage(settings.value.homePageTabVisibilityList)
+  const keepPage =
+    keepTab || activatedPage.value !== AppPage.Home || getDefaultAppPage() !== AppPage.Home
+  if (keepPage) url.searchParams.set('page', activatedPage.value)
+  else url.searchParams.delete('page')
+  if (keepTab) url.searchParams.set('tab', homeActivatedPage.value)
+  else url.searchParams.delete('tab')
   if (url.href !== window.location.href)
     window.history.replaceState(window.history.state, '', url.href)
 }
 
-watch(homeActivatedPage, () => {
-  if (isHomePage() && activatedPage.value === AppPage.Home)
-    syncNavigationUrl()
-}, { immediate: true })
+watch(
+  homeActivatedPage,
+  () => {
+    if (isHomePage() && activatedPage.value === AppPage.Home) syncNavigationUrl()
+  },
+  { immediate: true },
+)
 
 watch(
   () => activatedPage.value,
@@ -1355,8 +1471,7 @@ watch(
     }
 
     const viewport = scrollViewportRef.value
-    if (viewport)
-      jumpScrollTo(viewport, 0)
+    if (viewport) jumpScrollTo(viewport, 0)
     focusScrollViewport()
     isFirstTimeActivatedPageChange.value = false
   },
@@ -1366,24 +1481,34 @@ watch(
 watch(
   () => showBewlyPage.value,
   (visible) => {
-    if (visible)
-      focusScrollViewport()
+    if (visible) focusScrollViewport()
   },
   { immediate: true, flush: 'post' },
 )
 
-watch([() => showTopBar.value, () => activatedPage.value, () => settings.value.useOriginalBilibiliHomepage], () => {
-  // Remove the original Bilibili top bar when using original bilibili page to avoid two top bars showing
-  const biliHeader = document.querySelector('.bili-header') as HTMLElement | null
-  if (biliHeader && isHomePage()) {
-    if (settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && !isInIframe() && !settings.value.useOriginalBilibiliHomepage) {
-      biliHeader.style.visibility = 'hidden'
+watch(
+  [
+    () => showTopBar.value,
+    () => activatedPage.value,
+    () => settings.value.useOriginalBilibiliHomepage,
+  ],
+  () => {
+    // Remove the original Bilibili top bar when using original bilibili page to avoid two top bars showing
+    const biliHeader = document.querySelector('.bili-header') as HTMLElement | null
+    if (biliHeader && isHomePage()) {
+      if (
+        settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) &&
+        !isInIframe() &&
+        !settings.value.useOriginalBilibiliHomepage
+      ) {
+        biliHeader.style.visibility = 'hidden'
+      } else {
+        biliHeader.style.visibility = 'visible'
+      }
     }
-    else {
-      biliHeader.style.visibility = 'visible'
-    }
-  }
-}, { immediate: true })
+  },
+  { immediate: true },
+)
 
 // Setup necessary settings watchers
 setupNecessarySettingsWatchers()
@@ -1401,8 +1526,7 @@ function handleMetaHomeKeydown(e: KeyboardEvent) {
 }
 
 function handleDocumentScroll() {
-  if (scrollViewportRef.value && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
-    return
+  if (scrollViewportRef.value && isHomePage() && !settings.value.useOriginalBilibiliHomepage) return
 
   scrollTop.value = window.scrollY
   reachTop.value = window.scrollY <= 0
@@ -1416,12 +1540,10 @@ onMounted(() => {
   // 避免在每次滚动时读取 scrollHeight/clientHeight
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     nextTick(() => {
-      if (!isAppMounted)
-        return
+      if (!isAppMounted) return
 
       const viewport = scrollViewportRef.value
-      if (!viewport)
-        return
+      if (!viewport) return
 
       stopLoadMoreIntersectionObserver?.()
       const { stop } = useIntersectionObserver(
@@ -1464,30 +1586,25 @@ onMounted(() => {
 function handleDockItemClick(dockItem: DockItem) {
   // Bewly 页面关闭时直接跳转原站页面，不经过 iframe。
   if (settings.value.useOriginalBilibiliHomepage) {
-    if (dockItem.openInNewTab)
-      openLinkToNewTab(dockItem.url)
-    else
-      location.href = dockItem.url
+    if (dockItem.openInNewTab) openLinkToNewTab(dockItem.url)
+    else location.href = dockItem.url
     return
   }
 
   // Opening in a new tab while still on the current tab doesn't require changing the `activatedPage`
   if (dockItem.openInNewTab) {
     openLinkToNewTab(`https://www.bilibili.com/?page=${dockItem.page}`)
-  }
-  else {
+  } else {
     if (dockItem.useOriginalBiliPage) {
       // It seem like the `activatedPage` watcher above will handle this, so no need to set iframePageURL.value here
       // iframePageURL.value = dockItem.url
       if (!isHomePage()) {
         location.href = `https://www.bilibili.com/?page=${dockItem.page}`
       }
-    }
-    else {
+    } else {
       if (isHomePage()) {
         changeActivatePage(dockItem.page)
-      }
-      else {
+      } else {
         location.href = `https://www.bilibili.com/?page=${dockItem.page}`
       }
     }
@@ -1516,10 +1633,8 @@ function changeActivatePage(pageName: AppPage) {
 
   if (activatedPage.value === pageName) {
     if (activatedPage.value !== AppPage.Search && activatedPage.value !== AppPage.SearchResults) {
-      if (scrollTop === 0)
-        handleThrottledPageRefresh()
-      else
-        handleThrottledBackToTop()
+      if (scrollTop === 0) handleThrottledPageRefresh()
+      else handleThrottledBackToTop()
     }
     return
   }
@@ -1556,8 +1671,7 @@ function handleOsScroll(_instance: any, event: Event) {
   latestScrollTop = (event.target as HTMLElement | null)?.scrollTop ?? 0
 
   // 如果已经有 RAF 在等待，跳过本次滚动事件
-  if (rafId !== null)
-    return
+  if (rafId !== null) return
 
   // 只在滚动开始时发出一次信号（避免额外的响应式开销）
   if (!scrollingEmitted) {
@@ -1651,7 +1765,9 @@ onUnmounted(() => {
 
 function openIframeDrawer(url: string) {
   const isSameOrigin = (origin: URL, destination: URL) =>
-    origin.protocol === destination.protocol && origin.host === destination.host && origin.port === destination.port
+    origin.protocol === destination.protocol &&
+    origin.host === destination.host &&
+    origin.port === destination.port
 
   const currentUrl = new URL(location.href)
   const destination = new URL(url)
@@ -1661,8 +1777,7 @@ function openIframeDrawer(url: string) {
       openLinkToNewTab(url)
       return
     }
-  }
-  catch {
+  } catch {
     openLinkToNewTab(url)
     return
   }
@@ -1692,41 +1807,40 @@ async function haveScrollbar() {
   // Hidden tabs do not run animation frames, so a timeout keeps loading going.
   await new Promise<void>((resolve) => {
     const fallback = window.setTimeout(resolve, 100)
-    requestAnimationFrame(() => setTimeout(() => {
-      window.clearTimeout(fallback)
-      resolve()
-    }, 0))
+    requestAnimationFrame(() =>
+      setTimeout(() => {
+        window.clearTimeout(fallback)
+        resolve()
+      }, 0),
+    )
   })
   const viewport = scrollViewportRef.value
-  if (!viewport)
-    return false
+  if (!viewport) return false
 
   return viewport.scrollHeight > viewport.clientHeight
 }
 
 // In drawer/dialog video, watch btn className changed and post message to parent
 watchEffect(async (onCleanUp) => {
-  if (!isInIframe())
-    return null
+  if (!isInIframe()) return null
 
-  const webFullscreenBtnSelector = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
+  const webFullscreenBtnSelector =
+    '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
 
   function notifyDrawerPageFullscreen(el: HTMLElement) {
-    const entered = el.classList.contains('bpx-state-entered')
-      || !!document.querySelector('[data-screen="web"]')
+    const entered =
+      el.classList.contains('bpx-state-entered') || !!document.querySelector('[data-screen="web"]')
     parent.postMessage(entered ? DRAWER_VIDEO_ENTER_PAGE_FULL : DRAWER_VIDEO_EXIT_PAGE_FULL)
   }
 
   const observer = new MutationObserver(([{ target: el }]) => {
-    if (!(el instanceof HTMLElement))
-      return
+    if (!(el instanceof HTMLElement)) return
     notifyDrawerPageFullscreen(el)
   })
 
   const abort = new AbortController()
   queryDomUntilFound(webFullscreenBtnSelector, 500, abort).then((openVideo2WebFullBtn) => {
-    if (!openVideo2WebFullBtn)
-      return
+    if (!openVideo2WebFullBtn) return
     notifyDrawerPageFullscreen(openVideo2WebFullBtn)
     observer.observe(openVideo2WebFullBtn, { attributes: true, attributeFilter: ['class'] })
   })
@@ -1796,13 +1910,7 @@ if (settings.value.cleanUrlArgument) {
     'broadcast_type',
     'trackid',
   ])
-  const VIDEO_ONLY_PARAMS_TO_REMOVE = new Set([
-    'buvid',
-    'mid',
-    'spmid',
-    'timestamp',
-    'up_id',
-  ])
+  const VIDEO_ONLY_PARAMS_TO_REMOVE = new Set(['buvid', 'mid', 'spmid', 'timestamp', 'up_id'])
 
   let isCleaningUrl = false // 防止重复执行
   let cleanupTimer: ReturnType<typeof setTimeout> | null = null
@@ -1822,15 +1930,17 @@ if (settings.value.cleanUrlArgument) {
       let hasChanged = false
 
       for (const param of BASE_PARAMS_TO_REMOVE) {
-        if (param === 'tab' && getHomeTabParam(currentUrl))
-          continue
+        if (param === 'tab' && getHomeTabParam(currentUrl)) continue
         if (currentUrl.searchParams.has(param)) {
           currentUrl.searchParams.delete(param)
           hasChanged = true
         }
       }
       const hostname = currentUrl.hostname
-      if ((hostname === 'bilibili.com' || hostname.endsWith('.bilibili.com')) && stripBilibiliLocalePathname(currentUrl.pathname).startsWith('/video/')) {
+      if (
+        (hostname === 'bilibili.com' || hostname.endsWith('.bilibili.com')) &&
+        stripBilibiliLocalePathname(currentUrl.pathname).startsWith('/video/')
+      ) {
         for (const param of VIDEO_ONLY_PARAMS_TO_REMOVE) {
           if (currentUrl.searchParams.has(param)) {
             currentUrl.searchParams.delete(param)
@@ -1840,7 +1950,8 @@ if (settings.value.cleanUrlArgument) {
       }
 
       if (hasChanged) {
-        const newUrl = currentUrl.toString()
+        const newUrl = currentUrl
+          .toString()
           .replace(/([^:])\/\/(?!\/)/g, '$1/') // 只替换中间的双斜杠，不处理末尾的斜杠
           .replace(/%3D/gi, '=')
           .replace(/%26/g, '&')
@@ -1852,22 +1963,18 @@ if (settings.value.cleanUrlArgument) {
             lastCleanedUrl = window.location.href
           }
           isCleaningUrl = false
-          if (window.location.href !== newUrl)
-            scheduleCleanup()
+          if (window.location.href !== newUrl) scheduleCleanup()
         }
         // 使用 requestIdleCallback 来避免阻塞页面加载
         if (window.requestIdleCallback) {
           window.requestIdleCallback(applyCleanUrl)
-        }
-        else {
+        } else {
           setTimeout(applyCleanUrl, 0)
         }
-      }
-      else {
+      } else {
         isCleaningUrl = false
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.warn('URL清理失败:', error)
       isCleaningUrl = false
     }
@@ -1888,22 +1995,19 @@ if (settings.value.cleanUrlArgument) {
   // 只在页面完全加载后执行清理
   if (document.readyState === 'complete') {
     scheduleCleanup(1000)
-  }
-  else {
+  } else {
     window.addEventListener('load', () => scheduleCleanup(1000), { once: true })
   }
 
   function syncUrlCleanupAfterNavigation() {
-    if (urlChangeSyncQueued)
-      return
+    if (urlChangeSyncQueued) return
 
     urlChangeSyncQueued = true
     // pushState/replaceState 通知在原生 history 方法执行前派发，等微任务
     // 再读取最终 URL，并合并同一轮中的重复路由事件。
     queueMicrotask(() => {
       urlChangeSyncQueued = false
-      if (window.location.href === lastCleanedUrl)
-        return
+      if (window.location.href === lastCleanedUrl) return
 
       lastCleanedUrl = window.location.href
       scheduleCleanup(2000)
@@ -1916,13 +2020,11 @@ if (settings.value.cleanUrlArgument) {
   useEventListener(window, 'hashchange', syncUrlCleanupAfterNavigation)
   useEventListener(window, 'pageshow', syncUrlCleanupAfterNavigation)
   useEventListener(document, 'visibilitychange', () => {
-    if (!document.hidden)
-      syncUrlCleanupAfterNavigation()
+    if (!document.hidden) syncUrlCleanupAfterNavigation()
   })
 
   onUnmounted(() => {
-    if (cleanupTimer)
-      clearTimeout(cleanupTimer)
+    if (cleanupTimer) clearTimeout(cleanupTimer)
   })
 }
 </script>
@@ -1933,7 +2035,7 @@ if (settings.value.cleanUrlArgument) {
     ref="mainAppRef"
     class="bewly-wrapper"
     :class="{
-      'dark': isDark,
+      dark: isDark,
       'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
       [SELECTION_FALLBACK_CLASS]: !supportsHighlightInheritance(),
     }"
@@ -1951,7 +2053,10 @@ if (settings.value.cleanUrlArgument) {
   >
     <!-- Background -->
     <template v-if="showBewlyPage && settings.enableBackground">
-      <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
+      <AppBackground
+        :activated-page="activatedPage"
+        @wallpaper-ready="pageWallpaperReady = $event"
+      />
     </template>
     <div
       v-else-if="isVideoPageGlassStyleEnabled(currentPageUrl)"
@@ -1998,11 +2103,7 @@ if (settings.value.cleanUrlArgument) {
       </svg>
     </Transition>
 
-    <div
-      v-if="isLayoutEditing"
-      class="layout-edit-target-layer"
-      data-layout-edit-control
-    >
+    <div v-if="isLayoutEditing" class="layout-edit-target-layer" data-layout-edit-control>
       <button
         v-for="target in layoutEditTargets"
         v-show="!target.direct"
@@ -2028,7 +2129,14 @@ if (settings.value.cleanUrlArgument) {
       data-layout-edit-control
     >
       <div
-        v-if="isLayoutEditing || showLayoutEditPageModeAction || showLayoutEditSearchResultsAction || layoutEditGridActionKind || layoutEditDockVisible || layoutEditContextActions.length"
+        v-if="
+          isLayoutEditing ||
+          showLayoutEditPageModeAction ||
+          showLayoutEditSearchResultsAction ||
+          layoutEditGridActionKind ||
+          layoutEditDockVisible ||
+          layoutEditContextActions.length
+        "
         class="layout-edit-quick-actions"
       >
         <button
@@ -2038,9 +2146,13 @@ if (settings.value.cleanUrlArgument) {
           @click="openLayoutEditTopBarModeSettings"
         >
           <Icon icon="mingcute:transfer-3-line" aria-hidden="true" />
-          <span>{{ $t(settings.useOriginalBilibiliTopBar
-            ? 'layout_editor.switch_to_bewly_topbar'
-            : 'layout_editor.switch_to_original_topbar') }}</span>
+          <span>{{
+            $t(
+              settings.useOriginalBilibiliTopBar
+                ? 'layout_editor.switch_to_bewly_topbar'
+                : 'layout_editor.switch_to_original_topbar',
+            )
+          }}</span>
         </button>
         <button
           v-if="showLayoutEditPageModeAction"
@@ -2049,9 +2161,13 @@ if (settings.value.cleanUrlArgument) {
           @click="openLayoutEditPageModeSettings"
         >
           <Icon icon="mingcute:transfer-3-line" aria-hidden="true" />
-          <span>{{ $t(layoutEditDockPageConfig?.useOriginalBiliPage
-            ? 'layout_editor.switch_to_plugin_page'
-            : 'layout_editor.switch_to_bilibili_page') }}</span>
+          <span>{{
+            $t(
+              layoutEditDockPageConfig?.useOriginalBiliPage
+                ? 'layout_editor.switch_to_plugin_page'
+                : 'layout_editor.switch_to_bilibili_page',
+            )
+          }}</span>
         </button>
         <button
           v-for="action in layoutEditContextActions"
@@ -2088,9 +2204,13 @@ if (settings.value.cleanUrlArgument) {
           @click="openLayoutEditGridSettings"
         >
           <Icon icon="mingcute:layout-grid-line" aria-hidden="true" />
-          <span>{{ $t(layoutEditGridActionKind === 'moments'
-            ? 'layout_editor.adjust_moments_grid_columns'
-            : 'layout_editor.adjust_video_grid_columns') }}</span>
+          <span>{{
+            $t(
+              layoutEditGridActionKind === 'moments'
+                ? 'layout_editor.adjust_moments_grid_columns'
+                : 'layout_editor.adjust_video_grid_columns',
+            )
+          }}</span>
         </button>
       </div>
 
@@ -2105,7 +2225,10 @@ if (settings.value.cleanUrlArgument) {
       v-if="!isInIframe()"
       class="dock-sidebar-host"
       :class="{ 'dock-sidebar-host--editing': isLayoutEditing }"
-      pos="absolute top-0 left-0" w-full h-full overflow-hidden
+      pos="absolute top-0 left-0"
+      w-full
+      h-full
+      overflow-hidden
       pointer-events-none
       :style="{
         opacity: hideUIForIframePhotoViewer ? 0 : 1,
@@ -2122,10 +2245,7 @@ if (settings.value.cleanUrlArgument) {
         @back-to-top="handleThrottledBackToTop"
         @dock-item-click="handleDockItemClick"
       />
-      <SideBar
-        v-else-if="showSideBar"
-        pointer-events-auto
-      />
+      <SideBar v-else-if="showSideBar" pointer-events-auto />
     </div>
 
     <!-- TopBar -->
@@ -2136,29 +2256,27 @@ if (settings.value.cleanUrlArgument) {
         'top-bar-host--behind-search-overlay': searchFocusOverlayActive,
         'top-bar-host--editing': isLayoutEditing,
       }"
-      m-auto max-w="$bew-page-max-width"
+      m-auto
+      max-w="$bew-page-max-width"
       :style="{
         opacity: hideUIForIframePhotoViewer ? 0 : 1,
         pointerEvents: hideUIForIframePhotoViewer ? 'none' : 'auto',
         transition: 'opacity 0.2s ease',
       }"
     >
-      <TopBar
-        class="top-bar-layer"
-        pos="top-0 left-0" w-full
-      />
+      <TopBar class="top-bar-layer" pos="top-0 left-0" w-full />
     </div>
 
     <TopBarModeSwitcher
-      v-if="isInIframe()
-        && isOriginalTopBarActive
-        && isComponentVisible('topBarSwitcher')"
+      v-if="isInIframe() && isOriginalTopBarActive && isComponentVisible('topBarSwitcher')"
       native
     />
 
     <div
       v-if="!settings.useOriginalBilibiliHomepage"
-      pos="absolute top-0 left-0" w-full h-full
+      pos="absolute top-0 left-0"
+      w-full
+      h-full
       :style="{
         height: showBewlyPage || iframePageURL ? '100dvh' : '0',
       }"
@@ -2175,21 +2293,30 @@ if (settings.value.cleanUrlArgument) {
             :style="{
               '--bew-control-wallpaper-mask': pageControlWallpaperMask,
               // 视频弹窗打开时锁定背后列表，避免弹窗内滚轮与方向键越界滚动
-              'overflowY': videoDialog ? 'hidden' : undefined,
+              overflowY: videoDialog ? 'hidden' : undefined,
             }"
-            h-inherit of-y-auto of-x-hidden
+            h-inherit
+            of-y-auto
+            of-x-hidden
             tabindex="-1"
-            style="overscroll-behavior: contain;"
+            style="overscroll-behavior: contain"
             @scroll.passive="handleNativeScroll"
             @mousedown.self="handlePageBackgroundMouseDown"
           >
-            <main m-auto max-w="$bew-page-max-width" @mousedown.self="handlePageBackgroundMouseDown">
+            <main
+              m-auto
+              max-w="$bew-page-max-width"
+              @mousedown.self="handlePageBackgroundMouseDown"
+            >
               <div
-                p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
+                p="t-[calc(var(--bew-top-bar-height)+10px)]"
+                m-auto
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
-                :style="isOriginalTopBarActive && !reachTop
-                  ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
-                  : undefined"
+                :style="
+                  isOriginalTopBarActive && !reachTop
+                    ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
+                    : undefined
+                "
                 @mousedown.self="handlePageBackgroundMouseDown"
               >
                 <Transition name="page-fade">
@@ -2237,7 +2364,7 @@ if (settings.value.cleanUrlArgument) {
     <KeepAlive>
       <SettingsOverlay
         v-if="settingsOverlayVisible"
-        style="z-index: var(--bew-z-settings);"
+        style="z-index: var(--bew-z-settings)"
         :pending-navigation="settingsOverlayTarget"
         @update:pending-navigation="settingsOverlayTarget = $event"
         @close="settingsOverlayVisible = false"
@@ -2386,20 +2513,22 @@ if (settings.value.cleanUrlArgument) {
   pointer-events: auto !important;
 }
 
-.dock-sidebar-host--editing :deep([data-layout-edit-target="dock-component"][data-layout-edit-active="true"]) {
+.dock-sidebar-host--editing
+  :deep([data-layout-edit-target='dock-component'][data-layout-edit-active='true']) {
   outline: 1px solid var(--bew-theme-color);
   outline-offset: 3px;
   border-radius: var(--bew-interactive-radius);
 }
 
-.top-bar-host--editing :deep([data-layout-edit-target="topbar-component"][data-layout-edit-active="true"]) {
+.top-bar-host--editing
+  :deep([data-layout-edit-target='topbar-component'][data-layout-edit-active='true']) {
   outline: 1px solid var(--bew-theme-color);
   outline-offset: -1px;
   box-shadow: inset 0 0 0 1px var(--bew-theme-color-20);
 }
 
-.dock-sidebar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active="true"])),
-.top-bar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active="true"])) {
+.dock-sidebar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active='true'])),
+.top-bar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active='true'])) {
   opacity: 0.12 !important;
 }
 
@@ -2436,10 +2565,14 @@ if (settings.value.cleanUrlArgument) {
   }
 
   &--overlay::after {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
-    background: color-mix(in oklab, var(--bew-bg) calc(var(--bew-content-opacity) * 74%), transparent);
+    background: color-mix(
+      in oklab,
+      var(--bew-bg) calc(var(--bew-content-opacity) * 74%),
+      transparent
+    );
     -webkit-backdrop-filter: var(--bew-filter-glass-2);
     backdrop-filter: var(--bew-filter-glass-2);
   }

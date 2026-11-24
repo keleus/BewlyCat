@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "semi": false,
+  "singleQuote": true,
+  "endOfLine": "lf",
+  "sortImports": {},
+  "ignorePatterns": [
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "assets/**",
+    "pnpm-lock.yaml",
+    "src/_locales/**",
+    "src/auto-imports.d.ts"
+  ]
+}

@@ -35,8 +35,7 @@ export const confirmDialogKey: InjectionKey<ConfirmDialogService> = Symbol('CONF
 export function useConfirmDialog(): ConfirmDialogService {
   const service = inject(confirmDialogKey)
 
-  if (!service)
-    throw new Error('ConfirmDialog service is not provided')
+  if (!service) throw new Error('ConfirmDialog service is not provided')
 
   return service
 }
@@ -57,7 +56,10 @@ export function useConfirmDialogHost() {
     activeConfirmDialog.value = confirmDialogQueue.shift()
   }
 
-  function showConfirmDialog(message: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
+  function showConfirmDialog(
+    message: string,
+    options: ConfirmDialogOptions = {},
+  ): Promise<boolean> {
     return new Promise((resolve) => {
       const request: ConfirmDialogRequest = {
         id: ++confirmDialogIdSeq,
@@ -69,17 +71,14 @@ export function useConfirmDialogHost() {
         settled: false,
       }
 
-      if (activeConfirmDialog.value || confirmDialogBusy)
-        confirmDialogQueue.push(request)
-      else
-        activeConfirmDialog.value = request
+      if (activeConfirmDialog.value || confirmDialogBusy) confirmDialogQueue.push(request)
+      else activeConfirmDialog.value = request
     })
   }
 
   function finishConfirmDialog(confirmed: boolean) {
     const request = activeConfirmDialog.value
-    if (!request || request.settled)
-      return
+    if (!request || request.settled) return
 
     request.settled = true
     confirmDialogBusy = true
@@ -94,25 +93,30 @@ export function useConfirmDialogHost() {
     })
   }
 
-  onKeyStroke('Escape', (e: KeyboardEvent) => {
-    if (!activeConfirmDialog.value)
-      return
-    e.preventDefault()
-    e.stopPropagation()
-    e.stopImmediatePropagation()
-    finishConfirmDialog(false)
-  }, { dedupe: true })
+  onKeyStroke(
+    'Escape',
+    (e: KeyboardEvent) => {
+      if (!activeConfirmDialog.value) return
+      e.preventDefault()
+      e.stopPropagation()
+      e.stopImmediatePropagation()
+      finishConfirmDialog(false)
+    },
+    { dedupe: true },
+  )
 
-  onKeyStroke('Enter', (e: KeyboardEvent) => {
-    if (!activeConfirmDialog.value)
-      return
-    const target = e.target as HTMLElement | null
-    if (target?.closest('.bew-confirm-dialog__field'))
-      return
-    e.preventDefault()
-    e.stopPropagation()
-    finishConfirmDialog(true)
-  }, { dedupe: true })
+  onKeyStroke(
+    'Enter',
+    (e: KeyboardEvent) => {
+      if (!activeConfirmDialog.value) return
+      const target = e.target as HTMLElement | null
+      if (target?.closest('.bew-confirm-dialog__field')) return
+      e.preventDefault()
+      e.stopPropagation()
+      finishConfirmDialog(true)
+    },
+    { dedupe: true },
+  )
 
   provide(confirmDialogKey, {
     confirm: showConfirmDialog,

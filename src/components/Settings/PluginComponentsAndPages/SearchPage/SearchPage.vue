@@ -18,7 +18,10 @@ const logoColorOptions = computed(() => [
 
 const paginationModeOptions = computed(() => [
   { label: t('settings.search_results_pagination_mode_opt.scroll'), value: 'scroll' as const },
-  { label: t('settings.search_results_pagination_mode_opt.pagination'), value: 'pagination' as const },
+  {
+    label: t('settings.search_results_pagination_mode_opt.pagination'),
+    value: 'pagination' as const,
+  },
 ])
 
 function changeSearchBarFocusCharacter(url: string) {
@@ -48,23 +51,41 @@ function changeSearchBarFocusCharacter(url: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_search_bar')">
-      <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.show_search_recommendation')"
+        :desc="$t('settings.show_search_recommendation_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.showSearchRecommendation" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.enable_search_history')" :desc="$t('settings.enable_search_history_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.enable_search_history')"
+        :desc="$t('settings.enable_search_history_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.enableSearchHistory" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.show_hot_search_in_top_bar')"
+        :desc="$t('settings.show_hot_search_in_top_bar_desc')"
+        right-width="auto"
+      >
         <Radio v-model="settings.showHotSearchInTopBar" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.bg_darkens_when_the_search_bar_is_focused')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.bg_darkens_when_the_search_bar_is_focused')"
+        right-width="auto"
+      >
         <Radio v-model="settings.searchPageDarkenOnSearchFocus" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.bg_blurs_when_the_search_bar_is_focused')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.bg_blurs_when_the_search_bar_is_focused')"
+        right-width="auto"
+      >
         <template #desc>
           <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
         </template>
@@ -77,26 +98,42 @@ function changeSearchBarFocusCharacter(url: string) {
           <div grid="~ xl:cols-8 lg:cols-6 cols-5 gap-4">
             <picture
               class="bew-settings-option--lift"
-              aspect-square bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
-              un-border="4 transparent" cursor-pointer
-              grid place-items-center
+              aspect-square
+              bg="$bew-fill-1"
+              rounded="$bew-radius"
+              overflow-hidden
+              un-border="4 transparent"
+              cursor-pointer
+              grid
+              place-items-center
               :class="{ 'selected-wallpaper': settings.searchPageSearchBarFocusCharacter === '' }"
               @click="changeSearchBarFocusCharacter('')"
             >
               <div i-tabler:photo-off text="size-$bew-icon-size-xl $bew-text-3" />
             </picture>
-            <Tooltip v-for="item in SEARCH_BAR_CHARACTERS" :key="item.url" placement="top" :content="item.name" aspect-square>
+            <Tooltip
+              v-for="item in SEARCH_BAR_CHARACTERS"
+              :key="item.url"
+              placement="top"
+              :content="item.name"
+              aspect-square
+            >
               <picture
                 class="bew-settings-option--lift"
-                aspect-square bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
-                un-border="4 transparent" w-full
-                :class="{ 'selected-wallpaper': resolveSearchBarCharacterUrl(settings.searchPageSearchBarFocusCharacter) === item.url }"
+                aspect-square
+                bg="$bew-fill-1"
+                rounded="$bew-radius"
+                overflow-hidden
+                un-border="4 transparent"
+                w-full
+                :class="{
+                  'selected-wallpaper':
+                    resolveSearchBarCharacterUrl(settings.searchPageSearchBarFocusCharacter) ===
+                    item.url,
+                }"
                 @click="changeSearchBarFocusCharacter(item.url)"
               >
-                <img
-                  :src="item.url" alt="" loading="lazy"
-                  w-full h-full object-contain
-                >
+                <img :src="item.url" alt="" loading="lazy" w-full h-full object-contain />
               </picture>
             </Tooltip>
           </div>
@@ -109,9 +146,7 @@ function changeSearchBarFocusCharacter(url: string) {
         <template #desc>
           <span>{{ $t('settings.use_plugin_search_results_page_desc') }}</span>
         </template>
-        <Radio
-          v-model="settings.usePluginSearchResultsPage"
-        />
+        <Radio v-model="settings.usePluginSearchResultsPage" />
       </SettingsItem>
 
       <SettingsItem
@@ -138,6 +173,6 @@ function changeSearchBarFocusCharacter(url: string) {
 
 <style scoped lang="scss">
 .selected-wallpaper {
-  --uno: "border-$bew-theme-color-60";
+  --uno: 'border-$bew-theme-color-60';
 }
 </style>

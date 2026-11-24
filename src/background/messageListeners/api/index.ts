@@ -49,8 +49,7 @@ export function setupApiMsgListeners() {
   })
 
   browser.runtime.onConnect.addListener((port) => {
-    if (port.name !== API_REQUEST_PORT)
-      return
+    if (port.name !== API_REQUEST_PORT) return
 
     const controller = new AbortController()
     let connected = true
@@ -61,42 +60,52 @@ export function setupApiMsgListeners() {
       port.onDisconnect.removeListener(onDisconnect)
     }
     const respond = (response: ApiPortResponse) => {
-      if (!connected)
-        return
+      if (!connected) return
       try {
         port.postMessage(response)
-      }
-      catch {
+      } catch {
         onDisconnect()
       }
     }
     function onRequest(message: any) {
       port.onMessage.removeListener(onRequest)
-      const definition = Object.hasOwn(FullAPI, message?.type ?? '') ? FullAPI[message.type] : undefined
+      const definition = Object.hasOwn(FullAPI, message?.type ?? '')
+        ? FullAPI[message.type]
+        : undefined
       // Port 取消只开放给读取，写操作继续走原有消息通道。
-      if (!definition || typeof definition === 'function' || definition._fetch.method.toLowerCase() !== 'get'
-        || message.data?.contentScriptQuery !== message.type) {
-        respond({ ok: false, error: { name: 'TypeError', message: 'Invalid cancellable API request' } })
+      if (
+        !definition ||
+        typeof definition === 'function' ||
+        definition._fetch.method.toLowerCase() !== 'get' ||
+        message.data?.contentScriptQuery !== message.type
+      ) {
+        respond({
+          ok: false,
+          error: { name: 'TypeError', message: 'Invalid cancellable API request' },
+        })
         return
       }
 
-      void handleMessage(message.data, port.sender, controller.signal).then(
-        data => respond({ ok: true, data }),
-        error => respond({
-          ok: false,
-          error: {
-            name: error?.name || 'Error',
-            message: error?.message || String(error),
-            code: error?.code,
-            isRiskControl: error?.isRiskControl,
-            isHostPermissionMissing: error?.isHostPermissionMissing,
-            missingHostOrigin: error?.missingHostOrigin,
-          },
-        }),
-      ).catch(() => {
-        // 页面可能在结果发送时关闭。
-        onDisconnect()
-      })
+      void handleMessage(message.data, port.sender, controller.signal)
+        .then(
+          (data) => respond({ ok: true, data }),
+          (error) =>
+            respond({
+              ok: false,
+              error: {
+                name: error?.name || 'Error',
+                message: error?.message || String(error),
+                code: error?.code,
+                isRiskControl: error?.isRiskControl,
+                isHostPermissionMissing: error?.isHostPermissionMissing,
+                missingHostOrigin: error?.missingHostOrigin,
+              },
+            }),
+        )
+        .catch(() => {
+          // 页面可能在结果发送时关闭。
+          onDisconnect()
+        })
     }
     port.onDisconnect.addListener(onDisconnect)
     port.onMessage.addListener(onRequest)

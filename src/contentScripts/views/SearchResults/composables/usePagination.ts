@@ -60,7 +60,9 @@ export function usePagination() {
       data?.pageinfo?.total,
       data?.page_info?.total,
       data?.total,
-    ].map(Number).find(value => Number.isFinite(value) && value >= 0)
+    ]
+      .map(Number)
+      .find((value) => Number.isFinite(value) && value >= 0)
 
     totalResults.value = totalResultsCandidate ?? fallbackLength
 
@@ -72,7 +74,9 @@ export function usePagination() {
       data?.pageinfo?.page_size,
       data?.page_info?.page_size,
       data?.page_info?.per_page,
-    ].map(Number).find(value => Number.isFinite(value) && value > 0)
+    ]
+      .map(Number)
+      .find((value) => Number.isFinite(value) && value > 0)
 
     const effectivePageSize = pageSizeCandidate || PAGE_SIZE
 
@@ -86,22 +90,21 @@ export function usePagination() {
       data?.pageinfo?.pages,
       data?.page_info?.total_page,
       data?.page_info?.num_page,
-    ].map(Number).find(value => Number.isFinite(value) && value > 0)
+    ]
+      .map(Number)
+      .find((value) => Number.isFinite(value) && value > 0)
 
     // 计算总页数
     if (totalPagesCandidate) {
       // 如果API返回了明确的总页数，使用它
       totalPages.value = totalPagesCandidate
-    }
-    else if (totalResults.value > 0 && effectivePageSize > 0) {
+    } else if (totalResults.value > 0 && effectivePageSize > 0) {
       // 基于总结果数和每页大小计算总页数
       totalPages.value = Math.ceil(totalResults.value / effectivePageSize)
-    }
-    else if (totalResults.value === 0) {
+    } else if (totalResults.value === 0) {
       // 如果没有结果，总页数应该是0或1
       totalPages.value = fallbackLength > 0 ? 1 : 0
-    }
-    else {
+    } else {
       // 其他情况默认为1
       totalPages.value = 1
     }
@@ -113,7 +116,7 @@ export function usePagination() {
       data?.page_info?.context,
       data?.page_info?.next?.context,
       data?.context,
-    ].find(value => typeof value === 'string' && value.length > 0)
+    ].find((value) => typeof value === 'string' && value.length > 0)
 
     context.value = typeof contextCandidate === 'string' ? contextCandidate : ''
   }
@@ -129,8 +132,7 @@ export function usePagination() {
    * 获取下一页页码
    */
   function getNextPage(isLoadMore: boolean) {
-    if (isLoadMore)
-      return currentPage.value + 1
+    if (isLoadMore) return currentPage.value + 1
     return 1
   }
 
@@ -138,8 +140,7 @@ export function usePagination() {
    * 是否还有更多数据
    */
   const hasMore = computed(() => {
-    if (totalPages.value > 0)
-      return currentPage.value < totalPages.value
+    if (totalPages.value > 0) return currentPage.value < totalPages.value
 
     return Boolean(context.value)
   })

@@ -9,7 +9,9 @@ import { isDev, isFirefox, isSafari, log, r } from './utils'
 
 const extensionDirectory = isFirefox
   ? 'extension-firefox'
-  : isSafari ? 'extension-safari' : 'extension'
+  : isSafari
+    ? 'extension-safari'
+    : 'extension'
 const contributorsImageUrl = 'https://contrib.rocks/image?repo=keleus/BewlyCat'
 const contributorsImageCachePath = r('.cache/bewlycat/contributors.svg')
 const contributorsImagePath = r(extensionDirectory, 'assets/contributors.svg')
@@ -22,8 +24,7 @@ async function hasUsableImage(path: string): Promise<boolean> {
   try {
     const stats = await fs.stat(path)
     return stats.isFile() && stats.size > 0
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -47,22 +48,21 @@ async function downloadContributorsImage() {
       throw new TypeError(`Unexpected contributor image content type: ${contentType ?? 'missing'}`)
 
     const image = new Uint8Array(await response.arrayBuffer())
-    if (image.length === 0)
-      throw new Error('Downloaded contributor image is empty')
+    if (image.length === 0) throw new Error('Downloaded contributor image is empty')
 
     await fs.ensureDir(r('.cache/bewlycat'))
     await fs.writeFile(temporaryPath, image)
     await fs.move(temporaryPath, contributorsImageCachePath, { overwrite: true })
     return true
-  }
-  catch (error) {
+  } catch (error) {
     await fs.remove(temporaryPath)
 
     const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[PRE] could not download contributors image; About page will use the cloud image: ${message}`)
+    console.warn(
+      `[PRE] could not download contributors image; About page will use the cloud image: ${message}`,
+    )
     return false
-  }
-  finally {
+  } finally {
     clearTimeout(timeout)
   }
 }
@@ -78,8 +78,7 @@ async function syncCompressedContributorsImage() {
         await fs.move(temporaryPath, contributorsImageCachePath, { overwrite: true })
         svg = compressed
       }
-    }
-    catch (error) {
+    } catch (error) {
       await fs.remove(temporaryPath)
       const message = error instanceof Error ? error.message : String(error)
       console.warn(`[PRE] could not compress contributors image, using original: ${message}`)
@@ -116,10 +115,9 @@ async function prepare() {
   writeManifest()
 
   if (isDev) {
-    chokidar.watch([r('src/manifest.ts'), r('package.json')])
-      .on('change', () => {
-        writeManifest()
-      })
+    chokidar.watch([r('src/manifest.ts'), r('package.json')]).on('change', () => {
+      writeManifest()
+    })
   }
 }
 

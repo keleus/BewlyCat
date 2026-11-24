@@ -13,8 +13,7 @@ let supported: boolean | undefined
  * recompute a selection style for each element.
  */
 export function supportsHighlightInheritance(): boolean {
-  if (supported !== undefined)
-    return supported
+  if (supported !== undefined) return supported
 
   const root = document.documentElement
   const style = document.createElement('style')

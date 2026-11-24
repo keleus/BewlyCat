@@ -30,13 +30,7 @@ const containerClass = computed(() => ({
   >
     <Transition name="fade-scale">
       <div v-if="!!show" flex="~ items-center" justify="center" class="loading-content">
-        <img
-          :src="imgURL"
-          alt="loading"
-          w="46px"
-          h="46px"
-          m="r-2"
-        >
+        <img :src="imgURL" alt="loading" w="46px" h="46px" m="r-2" />
         <span>{{ $t('common.loading') }}</span>
       </div>
     </Transition>

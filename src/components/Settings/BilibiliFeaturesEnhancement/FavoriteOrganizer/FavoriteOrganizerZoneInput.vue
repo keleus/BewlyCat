@@ -25,24 +25,29 @@ const query = ref('')
 const dropdown = useAnchoredDropdown(inputRef, listRef)
 const { open, activeIndex } = dropdown
 
-const allOptions: ZoneOption[] = VIDEO_ZONES.flatMap(zone => [
+const allOptions: ZoneOption[] = VIDEO_ZONES.flatMap((zone) => [
   { tid: zone.tid, name: zone.name, keywords: normalize(zone.name) },
-  ...zone.children.map(child => ({
+  ...zone.children.map((child) => ({
     tid: child.tid,
     name: child.name,
     parent: zone.name,
     keywords: normalize(`${zone.name}${child.name}`),
   })),
 ])
-const parentTidByChild = new Map(VIDEO_ZONES.flatMap(zone => zone.children.map(child => [child.tid, zone.tid] as const)))
+const parentTidByChild = new Map(
+  VIDEO_ZONES.flatMap((zone) => zone.children.map((child) => [child.tid, zone.tid] as const)),
+)
 
 const options = computed(() => {
   const selected = new Set(props.selected)
   const keyword = normalize(query.value)
   // 已选主分区覆盖其全部子分区，不再列出
-  return allOptions.filter(option => !selected.has(option.tid)
-    && !selected.has(parentTidByChild.get(option.tid) ?? 0)
-    && (!keyword || option.keywords.includes(keyword)))
+  return allOptions.filter(
+    (option) =>
+      !selected.has(option.tid) &&
+      !selected.has(parentTidByChild.get(option.tid) ?? 0) &&
+      (!keyword || option.keywords.includes(keyword)),
+  )
 })
 
 watch(options, () => {
@@ -62,12 +67,11 @@ function select(option: ZoneOption) {
 
 function confirmActive(event: KeyboardEvent) {
   // 输入法组字时的回车用于上屏，不选中分区
-  if (event.isComposing)
-    return
+  if (event.isComposing) return
   event.preventDefault()
-  const option = options.value[activeIndex.value] ?? (query.value.trim() ? options.value[0] : undefined)
-  if (option)
-    select(option)
+  const option =
+    options.value[activeIndex.value] ?? (query.value.trim() ? options.value[0] : undefined)
+  if (option) select(option)
 }
 </script>
 
@@ -93,7 +97,7 @@ function confirmActive(event: KeyboardEvent) {
       @keydown.up.prevent="dropdown.move(-1, options.length)"
       @keydown.enter="confirmActive"
       @keydown.esc="dropdown.hideOnEscape"
-    >
+    />
     <Teleport :to="mainAppRef" :disabled="!mainAppRef">
       <Transition name="zone-input-popover">
         <div

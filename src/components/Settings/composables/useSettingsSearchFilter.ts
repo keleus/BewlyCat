@@ -8,7 +8,8 @@ export interface SettingsSearchFilter {
   matchedTitles: ComputedRef<Set<string>>
 }
 
-export const settingsSearchFilterKey: InjectionKey<SettingsSearchFilter> = Symbol('settings-search-filter')
+export const settingsSearchFilterKey: InjectionKey<SettingsSearchFilter> =
+  Symbol('settings-search-filter')
 
 interface SettingsSearchNode extends SettingsSearchFilter {
   /** 祖先命中标题时，子项应一并保留，避免只显示标题而丢失控件。 */
@@ -17,7 +18,8 @@ interface SettingsSearchNode extends SettingsSearchFilter {
   unregisterChild: (visible: Ref<boolean>) => void
 }
 
-export const settingsSearchNodeKey: InjectionKey<SettingsSearchNode> = Symbol('settings-search-node')
+export const settingsSearchNodeKey: InjectionKey<SettingsSearchNode> =
+  Symbol('settings-search-node')
 
 export function provideSettingsSearchFilter(
   active: ComputedRef<boolean>,
@@ -44,20 +46,22 @@ export function useSettingsSearchNode(
   const children = shallowReactive(new Set<Ref<boolean>>())
   const hasVisibleChild = computed(() => {
     for (const child of children) {
-      if (child.value)
-        return true
+      if (child.value) return true
     }
     return false
   })
   const inheritedForceVisible = parent?.forceVisible ?? computed(() => false)
   const normalizedTitle = computed(() => title()?.trim() ?? '')
-  const selfMatch = computed(() =>
-    filter.active.value
-    && normalizedTitle.value.length > 0
-    && filter.matchedTitles.value.has(normalizedTitle.value),
+  const selfMatch = computed(
+    () =>
+      filter.active.value &&
+      normalizedTitle.value.length > 0 &&
+      filter.matchedTitles.value.has(normalizedTitle.value),
   )
   const forceVisible = computed(() => inheritedForceVisible.value || selfMatch.value)
-  const visible = computed(() => !filter.active.value || forceVisible.value || hasVisibleChild.value)
+  const visible = computed(
+    () => !filter.active.value || forceVisible.value || hasVisibleChild.value,
+  )
 
   if (parent) {
     parent.registerChild(visible)
@@ -67,8 +71,8 @@ export function useSettingsSearchNode(
   provide(settingsSearchNodeKey, {
     ...filter,
     forceVisible,
-    registerChild: visibleRef => children.add(visibleRef),
-    unregisterChild: visibleRef => children.delete(visibleRef),
+    registerChild: (visibleRef) => children.add(visibleRef),
+    unregisterChild: (visibleRef) => children.delete(visibleRef),
   })
 
   return { visible, selfMatch }

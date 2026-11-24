@@ -5,7 +5,10 @@ import { useToast } from 'vue-toastification'
 import Button from '~/components/Button.vue'
 import Dialog from '~/components/Dialog.vue'
 import type { Video } from '~/components/VideoCard/types'
-import type { FavoritesCategoryResult, List as FavoriteFolder } from '~/models/video/favoriteCategory'
+import type {
+  FavoritesCategoryResult,
+  List as FavoriteFolder,
+} from '~/models/video/favoriteCategory'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF, getUserID } from '~/utils/main'
@@ -38,8 +41,7 @@ function checkAccount() {
 }
 
 async function loadFolders() {
-  if (isLoading.value || isSaving.value || disposed)
-    return
+  if (isLoading.value || isSaving.value || disposed) return
 
   isLoading.value = true
   loaded.value = false
@@ -50,14 +52,11 @@ async function loadFolders() {
     aid = Number(props.video.aid || (!props.video.bvid ? props.video.id : 0))
     if (!aid && props.video.bvid) {
       const result = await api.video.getVideoInfo({ bvid: props.video.bvid })
-      if (result.code !== 0)
-        throw new Error(result.message || t('common.load_failed'))
+      if (result.code !== 0) throw new Error(result.message || t('common.load_failed'))
       aid = Number(result.data?.aid)
     }
-    if (!Number.isSafeInteger(aid) || aid <= 0)
-      throw new Error(t('common.load_failed'))
-    if (disposed)
-      return
+    if (!Number.isSafeInteger(aid) || aid <= 0) throw new Error(t('common.load_failed'))
+    if (disposed) return
 
     checkAccount()
     const result: FavoritesCategoryResult = await api.favorite.getFavoriteCategories({
@@ -65,21 +64,20 @@ async function loadFolders() {
       type: 2,
       rid: aid,
     })
-    if (disposed)
-      return
+    if (disposed) return
     checkAccount()
     if (result.code !== 0 || !result.data)
       throw new Error(result.message || t('common.load_failed'))
 
     folders.value = result.data.list ?? []
-    selectedIds.value = folders.value.filter(folder => folder.fav_state === 1).map(folder => folder.id)
+    selectedIds.value = folders.value
+      .filter((folder) => folder.fav_state === 1)
+      .map((folder) => folder.id)
     loaded.value = true
-  }
-  catch (error) {
+  } catch (error) {
     if (!disposed)
       errorMessage.value = error instanceof Error ? error.message : t('common.load_failed')
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
@@ -94,13 +92,17 @@ async function save() {
   try {
     checkAccount()
     const selected = new Set(selectedIds.value)
-    const added = folders.value.filter(folder => selected.has(folder.id) && folder.fav_state !== 1)
-    const removed = folders.value.filter(folder => !selected.has(folder.id) && folder.fav_state === 1)
+    const added = folders.value.filter(
+      (folder) => selected.has(folder.id) && folder.fav_state !== 1,
+    )
+    const removed = folders.value.filter(
+      (folder) => !selected.has(folder.id) && folder.fav_state === 1,
+    )
     if (added.length || removed.length) {
       const result = await api.favorite.updateVideoFavorites({
         rid: aid,
-        add_media_ids: added.map(folder => folder.id).join(','),
-        del_media_ids: removed.map(folder => folder.id).join(','),
+        add_media_ids: added.map((folder) => folder.id).join(','),
+        del_media_ids: removed.map((folder) => folder.id).join(','),
         csrf: getCSRF(),
       })
       if (result.code !== 0)
@@ -111,21 +113,18 @@ async function save() {
           console.error('通知顶栏收藏状态变化失败:', error)
         })
       }
-      if (!disposed)
-        toast.success(t('video_card.favorite_dialog.saved'))
+      if (!disposed) toast.success(t('video_card.favorite_dialog.saved'))
     }
     saved = true
-  }
-  catch (error) {
+  } catch (error) {
     if (!disposed)
-      errorMessage.value = error instanceof Error ? error.message : t('video_card.favorite_dialog.save_failed')
-  }
-  finally {
+      errorMessage.value =
+        error instanceof Error ? error.message : t('video_card.favorite_dialog.save_failed')
+  } finally {
     isSaving.value = false
   }
   // 等待 Dialog 的离场动画结束后再让父组件卸载菜单。
-  if (saved && !disposed)
-    dialog.value?.close()
+  if (saved && !disposed) dialog.value?.close()
 }
 </script>
 
@@ -154,7 +153,11 @@ async function save() {
       <p v-if="errorMessage" role="alert">
         {{ errorMessage }}
       </p>
-      <Button v-if="!isLoading && (!loaded || !folders.length)" type="secondary" @click="loadFolders">
+      <Button
+        v-if="!isLoading && (!loaded || !folders.length)"
+        type="secondary"
+        @click="loadFolders"
+      >
         {{ t('common.operation.refresh') }}
       </Button>
       <template v-if="loaded">
@@ -163,7 +166,7 @@ async function save() {
         </p>
         <div v-else class="favorite-video-dialog__folders">
           <label v-for="folder in folders" :key="folder.id" class="favorite-video-dialog__folder">
-            <input v-model="selectedIds" type="checkbox" :value="folder.id" :disabled="isSaving">
+            <input v-model="selectedIds" type="checkbox" :value="folder.id" :disabled="isSaving" />
             <span class="favorite-video-dialog__folder-name">{{ folder.title }}</span>
             <span class="favorite-video-dialog__count">{{ folder.media_count }}</span>
           </label>
@@ -173,7 +176,11 @@ async function save() {
         <Button type="tertiary" :disabled="isSaving" @click="dialog?.close()">
           {{ t('common.operation.cancel') }}
         </Button>
-        <Button type="primary" :disabled="!loaded || isLoading || isSaving || !folders.length" @click="save">
+        <Button
+          type="primary"
+          :disabled="!loaded || isLoading || isSaving || !folders.length"
+          @click="save"
+        >
           {{ t('common.operation.confirm') }}
         </Button>
       </div>

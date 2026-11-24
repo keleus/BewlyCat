@@ -48,42 +48,38 @@ const loadFailed = ref<boolean>(false)
 const livePage = ref<number>(1)
 const historysWrap = ref<HTMLElement>() as Ref<HTMLElement>
 
-watch(activatedTab, (newVal: number | undefined, oldVal: number | undefined) => {
-  if (newVal === oldVal)
-    return
+watch(
+  activatedTab,
+  (newVal: number | undefined, oldVal: number | undefined) => {
+    if (newVal === oldVal) return
 
-  historys.length = 0
-  if (historysWrap.value)
-    scrollToTop(historysWrap.value)
+    historys.length = 0
+    if (historysWrap.value) scrollToTop(historysWrap.value)
 
-  if (newVal === 0) {
-    getHistoryList(Business.ARCHIVE)
-  }
-  else if (newVal === 1) {
-    livePage.value = 1
-    getHistoryList(Business.LIVE)
-  }
-  else if (newVal === 2) {
-    getHistoryList(Business.ARTICLE)
-  }
-}, { immediate: true })
+    if (newVal === 0) {
+      getHistoryList(Business.ARCHIVE)
+    } else if (newVal === 1) {
+      livePage.value = 1
+      getHistoryList(Business.LIVE)
+    } else if (newVal === 2) {
+      getHistoryList(Business.ARTICLE)
+    }
+  },
+  { immediate: true },
+)
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
-  if (isLoading.value || noMoreContent.value || historys.length === 0)
-    return
+  if (isLoading.value || noMoreContent.value || historys.length === 0) return
 
   const lastViewAt = historys[historys.length - 1]?.view_at
-  if (!lastViewAt)
-    return
+  if (!lastViewAt) return
 
   if (activatedTab.value === 0) {
     getHistoryList(Business.ARCHIVE, lastViewAt)
-  }
-  else if (activatedTab.value === 1) {
+  } else if (activatedTab.value === 1) {
     getHistoryList(Business.LIVE, lastViewAt)
-  }
-  else if (activatedTab.value === 2) {
+  } else if (activatedTab.value === 2) {
     getHistoryList(Business.ARTICLE, lastViewAt)
   }
 }
@@ -94,11 +90,9 @@ function retryHistoryList() {
 
   if (activatedTab.value === 0) {
     getHistoryList(Business.ARCHIVE, lastViewAt)
-  }
-  else if (activatedTab.value === 1) {
+  } else if (activatedTab.value === 1) {
     getHistoryList(Business.LIVE, lastViewAt)
-  }
-  else if (activatedTab.value === 2) {
+  } else if (activatedTab.value === 2) {
     getHistoryList(Business.ARTICLE, lastViewAt)
   }
 }
@@ -111,8 +105,7 @@ useOptimizedScroll(
 
 function onClickTab(tabId: number) {
   // Prevent changing tab when loading, cuz it will cause a bug
-  if (isLoading.value)
-    return
+  if (isLoading.value) return
 
   noMoreContent.value = false
 
@@ -128,10 +121,8 @@ function onClickTab(tabId: number) {
  * @param view_at Last viewed timestamp
  */
 async function getHistoryList(type: Business, view_at = 0 as number) {
-  if (isLoading.value)
-    return
-  if (noMoreContent.value)
-    return
+  if (isLoading.value) return
+  if (noMoreContent.value) return
 
   isLoading.value = true
   loadFailed.value = false
@@ -153,19 +144,16 @@ async function getHistoryList(type: Business, view_at = 0 as number) {
       if (Array.isArray(res.data.list) && res.data.list.length > 0) {
         historys.push(...res.data.list)
       }
-    }
-    else {
+    } else {
       console.error('Failed to load history list:', res)
       loadFailed.value = true
       noMoreContent.value = false
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to load history list:', error)
     loadFailed.value = true
     noMoreContent.value = false
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
@@ -179,30 +167,27 @@ function getHistoryCover(historyItem: HistoryItem): string {
 }
 
 function deleteHistoryItem(index: number, historyItem: HistoryItem) {
-  api.history.deleteHistoryItem({
-    kid: `${historyItem.history.business}_${historyItem.history.oid}`,
-    csrf: getCSRF(),
-  })
+  api.history
+    .deleteHistoryItem({
+      kid: `${historyItem.history.business}_${historyItem.history.oid}`,
+      csrf: getCSRF(),
+    })
     .then((res) => {
-      if (res.code === 0)
-        historys.splice(index, 1)
+      if (res.code === 0) historys.splice(index, 1)
     })
 }
 
 function initData() {
   historys.length = 0
   noMoreContent.value = false
-  if (historysWrap.value)
-    scrollToTop(historysWrap.value)
+  if (historysWrap.value) scrollToTop(historysWrap.value)
 
   if (activatedTab.value === 0) {
     getHistoryList(Business.ARCHIVE)
-  }
-  else if (activatedTab.value === 1) {
+  } else if (activatedTab.value === 1) {
     livePage.value = 1
     getHistoryList(Business.LIVE)
-  }
-  else if (activatedTab.value === 2) {
+  } else if (activatedTab.value === 2) {
     getHistoryList(Business.ARTICLE)
   }
 }
@@ -214,7 +199,9 @@ defineExpose({
 
 <template>
   <div
-    h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
+    h="[calc(100vh-100px)]"
+    max-h-500px
+    important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
     pos="relative"
@@ -267,17 +254,15 @@ defineExpose({
       pos="relative"
     >
       <!-- loading -->
-      <Loading
-        v-if="isLoading && historys.length === 0"
-        h="full"
-        flex="~ items-center"
-      />
+      <Loading v-if="isLoading && historys.length === 0" h="full" flex="~ items-center" />
 
       <!-- empty -->
       <Empty
         v-if="!isLoading && !loadFailed && historys.length === 0"
         pos="absolute top-0 left-0"
-        z="0" w="full" h="full"
+        z="0"
+        w="full"
+        h="full"
         flex="~ items-center"
       />
 
@@ -286,7 +271,9 @@ defineExpose({
         v-if="!isLoading && loadFailed && historys.length === 0"
         :description="$t('common.load_failed')"
         pos="absolute top-0 left-0"
-        z="0" w="full" h="full"
+        z="0"
+        w="full"
+        h="full"
         flex="~ col items-center justify-center"
       >
         <Button type="secondary" size="small" @click="retryHistoryList">
@@ -295,7 +282,12 @@ defineExpose({
       </Empty>
 
       <!-- historys -->
-      <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col gap-2">
+      <TransitionGroup
+        name="removable-list"
+        tag="div"
+        class="removable-list-group"
+        flex="~ col gap-2"
+      >
         <ALink
           v-for="(historyItem, index) in historys"
           :key="historyItem.kid"
@@ -303,7 +295,8 @@ defineExpose({
           type="topBar"
           block
           class="group bew-content-card"
-          m="last:b-4" p="2"
+          m="last:b-4"
+          p="2"
           hover:bg="$bew-fill-2"
           duration-300
         >
@@ -384,9 +377,7 @@ defineExpose({
 
             <!-- Video: progress bar -->
             <template v-if="activatedTab === 0" #coverBelow>
-              <Progress
-                :percentage="(historyItem.progress / historyItem.duration) * 100"
-              />
+              <Progress :percentage="(historyItem.progress / historyItem.duration) * 100" />
             </template>
 
             <!-- Live status next to author -->
@@ -407,12 +398,7 @@ defineExpose({
             <!-- View time -->
             <template #meta>
               <p class="bew-top-bar-media-meta" text="$bew-text-2">
-                {{
-                  useDateFormat(
-                    historyItem.view_at * 1000,
-                    'YYYY-MM-DD HH:mm:ss',
-                  ).value
-                }}
+                {{ useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss').value }}
               </p>
             </template>
           </PopMediaCard>
@@ -439,21 +425,21 @@ defineExpose({
 
 <style lang="scss" scoped>
 .tab {
-  --uno: "relative text-$bew-text-2";
+  --uno: 'relative text-$bew-text-2';
   font-weight: var(--bew-font-weight-semibold);
 
   &::after {
-    --uno: "absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1";
-    --uno: "transition-colors duration-200";
-    content: "";
+    --uno: 'absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1';
+    --uno: 'transition-colors duration-200';
+    content: '';
   }
 }
 
 .tab-selected {
-  --uno: "text-$bew-text-1";
+  --uno: 'text-$bew-text-1';
 
   &::after {
-    --uno: "scale-x-80 opacity-40";
+    --uno: 'scale-x-80 opacity-40';
   }
 }
 </style>

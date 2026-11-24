@@ -40,7 +40,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const href = computed(() => forward.url || fallbackHref)
-const authorUrl = computed(() => getMomentAuthorUrl({ mid: forward.authorMid, url: forward.authorUrl }))
+const authorUrl = computed(() =>
+  getMomentAuthorUrl({ mid: forward.authorMid, url: forward.authorUrl }),
+)
 </script>
 
 <template>
@@ -72,7 +74,8 @@ const authorUrl = computed(() => getMomentAuthorUrl({ mid: forward.authorMid, ur
         class="moment-card__forward-author"
         rel="noopener noreferrer"
         @click="emit('authorClick', $event)"
-      >@{{ forward.author }}</a>
+        >@{{ forward.author }}</a
+      >
       <strong v-else>
         <a
           :href="href"
@@ -80,7 +83,8 @@ const authorUrl = computed(() => getMomentAuthorUrl({ mid: forward.authorMid, ur
           draggable="false"
           tabindex="-1"
           @click="emit('textClick', $event)"
-        >@{{ forward.author }}</a>
+          >@{{ forward.author }}</a
+        >
       </strong>
       <p>
         <MomentRichText
@@ -88,7 +92,7 @@ const authorUrl = computed(() => getMomentAuthorUrl({ mid: forward.authorMid, ur
           :segments="forward.richText"
           :href="href"
           @link-click="(event, url) => emit('linkClick', event, url)"
-          @text-click="event => emit('textClick', event)"
+          @text-click="(event) => emit('textClick', event)"
         />
         <a
           v-else
@@ -128,7 +132,7 @@ const authorUrl = computed(() => getMomentAuthorUrl({ mid: forward.authorMid, ur
 </template>
 
 <style lang="scss" scoped>
-@use "./styles/mixins";
+@use './styles/mixins';
 
 .moment-card__forward {
   @include mixins.interactive-layer;

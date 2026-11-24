@@ -28,12 +28,12 @@ const fpsOptions = computed(() => [
   { label: t('settings.ambilight.fps_30'), value: 30 },
 ])
 
-const diffusionOptions = computed<{ label: string, value: AmbilightDiffusionMode }[]>(() => [
+const diffusionOptions = computed<{ label: string; value: AmbilightDiffusionMode }[]>(() => [
   { label: t('settings.ambilight.diffusion_gaussian'), value: 'gaussian' },
   { label: t('settings.ambilight.diffusion_poisson'), value: 'poisson' },
 ])
 
-const qualityOptions = computed<{ label: string, value: AmbilightDiffusionQuality }[]>(() => [
+const qualityOptions = computed<{ label: string; value: AmbilightDiffusionQuality }[]>(() => [
   { label: t('settings.ambilight.diffusion_quality_ultra_low'), value: 'ultra-low' },
   { label: t('settings.ambilight.diffusion_quality_low'), value: 'low' },
   { label: t('settings.ambilight.diffusion_quality_medium'), value: 'medium' },
@@ -43,13 +43,16 @@ const qualityOptions = computed<{ label: string, value: AmbilightDiffusionQualit
 
 const isGaussian = computed(() => settings.value.ambilightDiffusion === 'gaussian')
 
-const PRESET_CONFIGS: Record<AmbilightPreset, {
-  ambilightStrength: number
-  ambilightSpread: number
-  ambilightSmoothing: number
-  ambilightBlur: number
-  ambilightSaturation: number
-}> = {
+const PRESET_CONFIGS: Record<
+  AmbilightPreset,
+  {
+    ambilightStrength: number
+    ambilightSpread: number
+    ambilightSmoothing: number
+    ambilightBlur: number
+    ambilightSaturation: number
+  }
+> = {
   soft: {
     ambilightStrength: 55,
     ambilightSpread: 75,
@@ -75,16 +78,16 @@ const PRESET_CONFIGS: Record<AmbilightPreset, {
 
 function matchesPreset(preset: AmbilightPreset): boolean {
   const config = PRESET_CONFIGS[preset]
-  return (Object.keys(config) as (keyof typeof config)[])
-    .every(key => settings.value[key] === config[key])
+  return (Object.keys(config) as (keyof typeof config)[]).every(
+    (key) => settings.value[key] === config[key],
+  )
 }
 
 // 手动调整参数后不再与任何预设一致时，不高亮预设
 const currentPreset = computed<AmbilightPreset | ''>({
-  get: () => matchesPreset(settings.value.ambilightPreset) ? settings.value.ambilightPreset : '',
+  get: () => (matchesPreset(settings.value.ambilightPreset) ? settings.value.ambilightPreset : ''),
   set: (val) => {
-    if (!val)
-      return
+    if (!val) return
     const preset = PRESET_CONFIGS[val]
 
     settings.value = {
@@ -117,11 +120,7 @@ function resetAmbilightSettings() {
 <template>
   <SettingsItemGroup :title="t('settings.ambilight.title')">
     <template #action>
-      <Button
-        size="small"
-        type="secondary"
-        @click="resetAmbilightSettings"
-      >
+      <Button size="small" type="secondary" @click="resetAmbilightSettings">
         <template #left>
           <div i-mingcute:back-line />
         </template>
@@ -155,27 +154,39 @@ function resetAmbilightSettings() {
 
       <SettingsItem :title="t('settings.ambilight.strength')">
         <div class="slider-control">
-          <Slider v-model="settings.ambilightStrength" :min="0" :max="150" :label="`${settings.ambilightStrength}%`" />
+          <Slider
+            v-model="settings.ambilightStrength"
+            :min="0"
+            :max="150"
+            :label="`${settings.ambilightStrength}%`"
+          />
         </div>
       </SettingsItem>
 
       <SettingsItem :title="t('settings.ambilight.smoothing')">
         <div class="slider-control">
-          <Slider v-model="settings.ambilightSmoothing" :min="0" :max="95" :label="`${settings.ambilightSmoothing}%`" />
+          <Slider
+            v-model="settings.ambilightSmoothing"
+            :min="0"
+            :max="95"
+            :label="`${settings.ambilightSmoothing}%`"
+          />
         </div>
       </SettingsItem>
 
       <SettingsItem :title="t('settings.ambilight.saturation')">
         <div class="slider-control">
-          <Slider v-model="settings.ambilightSaturation" :min="50" :max="200" :label="`${settings.ambilightSaturation}%`" />
+          <Slider
+            v-model="settings.ambilightSaturation"
+            :min="50"
+            :max="200"
+            :label="`${settings.ambilightSaturation}%`"
+          />
         </div>
       </SettingsItem>
 
       <SettingsItemSubgroup :title="t('settings.ambilight.subgroup_algorithm')">
-        <SettingsItem
-          :title="t('settings.ambilight.diffusion')"
-          right-width="auto"
-        >
+        <SettingsItem :title="t('settings.ambilight.diffusion')" right-width="auto">
           <Select v-model="settings.ambilightDiffusion" :options="diffusionOptions" w="240px" />
         </SettingsItem>
 
@@ -194,7 +205,12 @@ function resetAmbilightSettings() {
 
         <SettingsItem v-if="isGaussian" :title="t('settings.ambilight.blur')">
           <div class="slider-control">
-            <Slider v-model="settings.ambilightBlur" :min="20" :max="140" :label="`${settings.ambilightBlur}px`" />
+            <Slider
+              v-model="settings.ambilightBlur"
+              :min="20"
+              :max="140"
+              :label="`${settings.ambilightBlur}px`"
+            />
           </div>
         </SettingsItem>
 
@@ -219,7 +235,11 @@ function resetAmbilightSettings() {
             :desc="t('settings.ambilight.diffusion_quality_desc')"
             right-width="auto"
           >
-            <Select v-model="settings.ambilightDiffusionQuality" :options="qualityOptions" w="180px" />
+            <Select
+              v-model="settings.ambilightDiffusionQuality"
+              :options="qualityOptions"
+              w="180px"
+            />
           </SettingsItem>
 
           <SettingsItem

@@ -30,8 +30,7 @@ export function resetPlayerAdjustment() {
 
 export function syncPlayerAdjustmentVideo() {
   const key = getVideoKey()
-  if (key === currentVideoKey)
-    return
+  if (key === currentVideoKey) return
   currentVideoKey = key
   resetPlayerAdjustment()
 }

@@ -18,18 +18,18 @@ function isPhotoViewerElement(element: Element): boolean {
 function isRelevantMutation(mutation: MutationRecord): boolean {
   if (mutation.type === 'attributes') {
     const target = mutation.target
-    if (!(target instanceof Element))
-      return false
-    return isPhotoViewerElement(target) || (wasPhotoViewerOpen && (!activeViewer || target === activeViewer))
+    if (!(target instanceof Element)) return false
+    return (
+      isPhotoViewerElement(target) ||
+      (wasPhotoViewerOpen && (!activeViewer || target === activeViewer))
+    )
   }
 
   if (wasPhotoViewerOpen && mutation.removedNodes.length > 0) {
-    if (!activeViewer?.isConnected || !activeViewer.matches(PHOTO_VIEWER_OPEN_SELECTOR))
-      return true
+    if (!activeViewer?.isConnected || !activeViewer.matches(PHOTO_VIEWER_OPEN_SELECTOR)) return true
   }
 
-  if (mutation.addedNodes.length === 0)
-    return false
+  if (mutation.addedNodes.length === 0) return false
 
   // 播放器内部的弹幕与控件频繁增删，不会挂载图片查看器。
   if (mutation.target instanceof Element && mutation.target.closest(PLAYER_CONTAINER_SELECTOR))
@@ -37,24 +37,19 @@ function isRelevantMutation(mutation: MutationRecord): boolean {
 
   for (let i = 0; i < mutation.addedNodes.length; i++) {
     const node = mutation.addedNodes[i]
-    if (!(node instanceof Element))
-      continue
-    if (isPhotoViewerElement(node))
-      return true
-    if (node.childElementCount > 0 && findOpenPhotoViewer(node) !== null)
-      return true
+    if (!(node instanceof Element)) continue
+    if (isPhotoViewerElement(node)) return true
+    if (node.childElementCount > 0 && findOpenPhotoViewer(node) !== null) return true
   }
   return false
 }
 
 function scheduleCheckPhotoViewerState() {
-  if (checkScheduled)
-    return
+  if (checkScheduled) return
   checkScheduled = true
   queueMicrotask(() => {
     checkScheduled = false
-    if (observer)
-      checkPhotoViewerState()
+    if (observer) checkPhotoViewerState()
   })
 }
 
@@ -74,8 +69,7 @@ function clearDeferredSetup() {
 }
 
 function setupObserverWhenReady() {
-  if (observer)
-    return
+  if (observer) return
 
   const target = document.body ?? document.documentElement
   if (!target) {
@@ -87,8 +81,7 @@ function setupObserverWhenReady() {
         }
         document.addEventListener('DOMContentLoaded', domReadyListener, { once: true })
       }
-    }
-    else if (rootReadyRetryTimer === null) {
+    } else if (rootReadyRetryTimer === null) {
       rootReadyRetryTimer = window.setTimeout(() => {
         rootReadyRetryTimer = null
         setupObserverWhenReady()
@@ -98,8 +91,7 @@ function setupObserverWhenReady() {
   }
 
   observer = new MutationObserver((mutations) => {
-    if (mutations.some(isRelevantMutation))
-      scheduleCheckPhotoViewerState()
+    if (mutations.some(isRelevantMutation)) scheduleCheckPhotoViewerState()
   })
 
   observer.observe(target, {
@@ -119,12 +111,10 @@ function setupObserverWhenReady() {
  */
 export function setupIframePhotoViewerDetector() {
   // 只在 iframe 内运行
-  if (window.self === window.top)
-    return
+  if (window.self === window.top) return
 
   // 避免重复初始化
-  if (observer || idleSetup || domReadyListener || rootReadyRetryTimer !== null)
-    return
+  if (observer || idleSetup || domReadyListener || rootReadyRetryTimer !== null) return
 
   idleSetup = runWhenIdle(() => {
     idleSetup = null
@@ -133,9 +123,10 @@ export function setupIframePhotoViewerDetector() {
 }
 
 function checkPhotoViewerState() {
-  const openViewer = activeViewer?.isConnected && activeViewer.matches(PHOTO_VIEWER_OPEN_SELECTOR)
-    ? activeViewer
-    : findOpenPhotoViewer()
+  const openViewer =
+    activeViewer?.isConnected && activeViewer.matches(PHOTO_VIEWER_OPEN_SELECTOR)
+      ? activeViewer
+      : findOpenPhotoViewer()
   activeViewer = openViewer
   const isOpen = openViewer !== null
 
@@ -144,10 +135,13 @@ function checkPhotoViewerState() {
     wasPhotoViewerOpen = isOpen
 
     // 通知父页面 PhotoSwipe 的状态
-    window.parent.postMessage({
-      type: 'IFRAME_PHOTO_VIEWER_STATE',
-      isOpen,
-    }, '*')
+    window.parent.postMessage(
+      {
+        type: 'IFRAME_PHOTO_VIEWER_STATE',
+        isOpen,
+      },
+      '*',
+    )
   }
 }
 

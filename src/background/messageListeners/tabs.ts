@@ -48,6 +48,6 @@ export function setupTabMsgListeners() {
   onMessage(TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND, handleMessage)
   onMessage(TABS_MESSAGE.GET_OPEN_BILIBILI_TAB_URLS, async () => {
     const tabs = await browser.tabs.query({ url: '*://*.bilibili.com/*' })
-    return tabs.map(tab => tab.url).filter((url): url is string => Boolean(url))
+    return tabs.map((tab) => tab.url).filter((url): url is string => Boolean(url))
   })
 }

@@ -3,9 +3,10 @@
   display: none !important;
 }
 
-.bpx-player-container:is([data-screen="web"], [data-screen="full"], [data-screen="mini"]) .bewly-widescreen-control,
+.bpx-player-container:is([data-screen='web'], [data-screen='full'], [data-screen='mini'])
+  .bewly-widescreen-control,
 :fullscreen .bewly-widescreen-control,
-.bpx-player-container[data-screen="mini"] .bewly-video-screenshot-control {
+.bpx-player-container[data-screen='mini'] .bewly-video-screenshot-control {
   display: none !important;
 }
 

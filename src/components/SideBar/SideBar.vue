@@ -32,24 +32,24 @@ const hoveringDockItem = reactive<HoveringDockItem>({
   themeMode: false,
 })
 
-watch(() => settings.value.autoHideSidebar, (newValue) => {
-  if (newValue)
-    hideSidebar.value = true
-  else
-    hideSidebar.value = false
-}, {
-  immediate: true,
-})
+watch(
+  () => settings.value.autoHideSidebar,
+  (newValue) => {
+    if (newValue) hideSidebar.value = true
+    else hideSidebar.value = false
+  },
+  {
+    immediate: true,
+  },
+)
 
 function toggleHideSidebar(hide: boolean) {
   if (isLayoutEditing.value) {
     hideSidebar.value = false
     return
   }
-  if (settings.value.autoHideSidebar)
-    hideSidebar.value = hide
-  else
-    hideSidebar.value = false
+  if (settings.value.autoHideSidebar) hideSidebar.value = hide
+  else hideSidebar.value = false
 }
 </script>
 
@@ -58,10 +58,15 @@ function toggleHideSidebar(hide: boolean) {
     :class="{
       'left-side': settings.sidebarPosition === 'left',
       'right-side': settings.sidebarPosition === 'right',
-      'hide': hideSidebar && !isLayoutEditing,
+      hide: hideSidebar && !isLayoutEditing,
     }"
-    pos="fixed top-0" h-full flex items-center px-6px
-    z-10 pointer-events-none
+    pos="fixed top-0"
+    h-full
+    flex
+    items-center
+    px-6px
+    z-10
+    pointer-events-none
   >
     <!-- Edge Div -->
     <div
@@ -96,8 +101,10 @@ function toggleHideSidebar(hide: boolean) {
           data-layout-settings-menu="BewlyComponents"
           data-layout-settings-page="dock"
           data-layout-settings-title-key="settings.group_sidebar"
-          style="backdrop-filter: var(--bew-filter-glass-1);"
-          center size="small" round
+          style="backdrop-filter: var(--bew-filter-glass-1)"
+          center
+          size="small"
+          round
           @click="toggleDark"
           @mouseenter="hoveringDockItem.themeMode = true"
           @mouseleave="hoveringDockItem.themeMode = false"
@@ -123,13 +130,18 @@ function toggleHideSidebar(hide: boolean) {
           data-layout-settings-menu="BewlyComponents"
           data-layout-settings-page="dock"
           data-layout-settings-title-key="settings.group_sidebar"
-          style="backdrop-filter: var(--bew-filter-glass-1);"
-          center size="small" round
+          style="backdrop-filter: var(--bew-filter-glass-1)"
+          center
+          size="small"
+          round
           @click="openSettings()"
         >
           <div mt--2px>
             <i
-              i-mingcute:settings-3-line w-20px h-20px group-hover:rotate-180
+              i-mingcute:settings-3-line
+              w-20px
+              h-20px
+              group-hover:rotate-180
               transition="transform duration-400 ease-out"
             />
           </div>
@@ -145,8 +157,10 @@ function toggleHideSidebar(hide: boolean) {
           data-layout-edit-control
           :class="{ active: isLayoutEditing }"
           :aria-pressed="isLayoutEditing"
-          style="backdrop-filter: var(--bew-filter-glass-1);"
-          center size="small" round
+          style="backdrop-filter: var(--bew-filter-glass-1)"
+          center
+          size="small"
+          round
           @click="toggleLayoutEditMode('sidebar')"
         >
           <Icon :icon="isLayoutEditing ? 'mingcute:check-line' : 'mingcute:edit-3-line'" />
@@ -168,22 +182,22 @@ function toggleHideSidebar(hide: boolean) {
   --b-button-shadow-active: var(--bew-shadow-1);
 
   :deep(.bew-local-icon) {
-    --uno: "w-20px h-20px shrink-0";
+    --uno: 'w-20px h-20px shrink-0';
   }
 
   &::after {
     // safety area
-    --uno: "content-empty absolute w-[calc(100%+12px)] h-[calc(100%+12px)] left--6px right--6px z--1";
+    --uno: 'content-empty absolute w-[calc(100%+12px)] h-[calc(100%+12px)] left--6px right--6px z--1';
   }
 }
 
 .sidebar-edit-button.active {
   // 与首页 Dock 的完成态一致，并保持悬停时的高亮。
-  --uno: "important-bg-$bew-theme-color text-white !dark:bg-white !dark:text-black";
+  --uno: 'important-bg-$bew-theme-color text-white !dark:bg-white !dark:text-black';
 }
 
 .left-side {
-  --uno: "left-0";
+  --uno: 'left-0';
 }
 
 .right-side {
@@ -192,7 +206,7 @@ function toggleHideSidebar(hide: boolean) {
 }
 
 .sidebar-edge {
-  --uno: "absolute top-0 h-full duration-300";
+  --uno: 'absolute top-0 h-full duration-300';
   width: var(--bew-edge-hit-area);
 
   &:hover {
@@ -200,40 +214,40 @@ function toggleHideSidebar(hide: boolean) {
   }
 
   &-left {
-    --uno: "left-0";
+    --uno: 'left-0';
   }
 
   &-right {
-    --uno: "right-0";
+    --uno: 'right-0';
   }
 }
 
 .left-side .sidebar-content {
-  --uno: "translate-x-[calc(-50%-6px)] opacity-60";
+  --uno: 'translate-x-[calc(-50%-6px)] opacity-60';
 }
 
 .left-side .sidebar-content.hover {
-  --uno: "translate-x-0 opacity-100";
+  --uno: 'translate-x-0 opacity-100';
 }
 
 .hide.left-side .sidebar-content {
-  --uno: "translate-x--100% opacity-0 pointer-events-none";
+  --uno: 'translate-x--100% opacity-0 pointer-events-none';
 }
 
 .right-side .sidebar-content {
-  --uno: "translate-x-[calc(50%+6px)] opacity-60";
+  --uno: 'translate-x-[calc(50%+6px)] opacity-60';
 }
 
 .right-side .sidebar-content.hover {
-  --uno: "translate-x-0 opacity-100";
+  --uno: 'translate-x-0 opacity-100';
 }
 
 .left-side .sidebar-content.editing,
 .right-side .sidebar-content.editing {
-  --uno: "translate-x-0 opacity-100";
+  --uno: 'translate-x-0 opacity-100';
 }
 
 .hide.right-side .sidebar-content {
-  --uno: "translate-x-100% opacity-0 pointer-events-none";
+  --uno: 'translate-x-100% opacity-0 pointer-events-none';
 }
 </style>

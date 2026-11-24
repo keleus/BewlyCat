@@ -1,5 +1,14 @@
 import type { MaybeRef, Ref, WatchOptions } from 'vue'
-import { getCurrentScope, isProxy, onScopeDispose, ref, shallowRef, toRaw, toValue, watch } from 'vue'
+import {
+  getCurrentScope,
+  isProxy,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  toRaw,
+  toValue,
+  watch,
+} from 'vue'
 import browser from 'webextension-polyfill'
 
 type Awaitable<T> = T | Promise<T>
@@ -33,86 +42,75 @@ export type StorageRef<T> = Omit<Ref<T>, 'value'> & {
 
 const storageSerializers: Record<SerializerType, StorageSerializer<any>> = {
   boolean: {
-    read: raw => raw === 'true',
-    write: value => String(value),
+    read: (raw) => raw === 'true',
+    write: (value) => String(value),
   },
   object: {
-    read: raw => JSON.parse(raw),
-    write: value => JSON.stringify(value),
+    read: (raw) => JSON.parse(raw),
+    write: (value) => JSON.stringify(value),
   },
   number: {
-    read: raw => Number.parseFloat(raw),
-    write: value => String(value),
+    read: (raw) => Number.parseFloat(raw),
+    write: (value) => String(value),
   },
   any: {
-    read: raw => raw,
-    write: value => String(value),
+    read: (raw) => raw,
+    write: (value) => String(value),
   },
   string: {
-    read: raw => raw,
-    write: value => String(value),
+    read: (raw) => raw,
+    write: (value) => String(value),
   },
   map: {
-    read: raw => new Map(JSON.parse(raw)),
-    write: value => JSON.stringify(Array.from(value.entries())),
+    read: (raw) => new Map(JSON.parse(raw)),
+    write: (value) => JSON.stringify(Array.from(value.entries())),
   },
   set: {
-    read: raw => new Set(JSON.parse(raw)),
-    write: value => JSON.stringify(Array.from(value)),
+    read: (raw) => new Set(JSON.parse(raw)),
+    write: (value) => JSON.stringify(Array.from(value)),
   },
   date: {
-    read: raw => new Date(raw),
-    write: value => value.toISOString(),
+    read: (raw) => new Date(raw),
+    write: (value) => value.toISOString(),
   },
 }
 
 function guessSerializerType(value: unknown): SerializerType {
-  if (value == null)
-    return 'any'
+  if (value == null) return 'any'
 
-  if (value instanceof Set)
-    return 'set'
+  if (value instanceof Set) return 'set'
 
-  if (value instanceof Map)
-    return 'map'
+  if (value instanceof Map) return 'map'
 
-  if (value instanceof Date)
-    return 'date'
+  if (value instanceof Date) return 'date'
 
-  if (typeof value === 'boolean')
-    return 'boolean'
+  if (typeof value === 'boolean') return 'boolean'
 
-  if (typeof value === 'string')
-    return 'string'
+  if (typeof value === 'string') return 'string'
 
-  if (typeof value === 'object')
-    return 'object'
+  if (typeof value === 'object') return 'object'
 
-  if (!Number.isNaN(value))
-    return 'number'
+  if (!Number.isNaN(value)) return 'number'
 
   return 'any'
 }
 
 function cloneValue<T>(value: T): T {
-  if (typeof value !== 'object' || value == null)
-    return value
+  if (typeof value !== 'object' || value == null) return value
 
   const normalizedValue = isProxy(value) ? toRaw(value) : value
 
   if (typeof structuredClone === 'function') {
     try {
       return structuredClone(normalizedValue)
-    }
-    catch {
+    } catch {
       // Fall through to JSON cloning for reactive proxies and other non-cloneable values.
     }
   }
 
   try {
     return JSON.parse(JSON.stringify(normalizedValue)) as T
-  }
-  catch {
+  } catch {
     return normalizedValue
   }
 }
@@ -125,19 +123,23 @@ function createInitialValue<T>(value: MaybeRef<T>): T {
   return cloneValue(toValue(value))
 }
 
-async function deserializeStoredValue<T>(rawValue: unknown, serializer: StorageSerializer<T>): Promise<T> {
-  if (typeof rawValue === 'string')
-    return await serializer.read(rawValue)
+async function deserializeStoredValue<T>(
+  rawValue: unknown,
+  serializer: StorageSerializer<T>,
+): Promise<T> {
+  if (typeof rawValue === 'string') return await serializer.read(rawValue)
 
   return rawValue as T
 }
 
-function mergeStoredValue<T>(storedValue: T, defaults: T, mergeDefaults: UseStorageLocalOptions<T>['mergeDefaults']): T {
-  if (!mergeDefaults)
-    return storedValue
+function mergeStoredValue<T>(
+  storedValue: T,
+  defaults: T,
+  mergeDefaults: UseStorageLocalOptions<T>['mergeDefaults'],
+): T {
+  if (!mergeDefaults) return storedValue
 
-  if (typeof mergeDefaults === 'function')
-    return mergeDefaults(storedValue, defaults)
+  if (typeof mergeDefaults === 'function') return mergeDefaults(storedValue, defaults)
 
   if (isObjectLike(storedValue) && isObjectLike(defaults))
     return { ...defaults, ...storedValue } as T
@@ -149,7 +151,10 @@ function createStorageRef<T>(value: T, useShallow: boolean): StorageRef<T> {
   return (useShallow ? shallowRef(value) : ref(value)) as StorageRef<T>
 }
 
-function runWithFilter(eventFilter: StorageEventFilter | undefined, invoke: () => void | Promise<void>) {
+function runWithFilter(
+  eventFilter: StorageEventFilter | undefined,
+  invoke: () => void | Promise<void>,
+) {
   if (eventFilter) {
     void eventFilter(invoke)
     return
@@ -158,7 +163,11 @@ function runWithFilter(eventFilter: StorageEventFilter | undefined, invoke: () =
   void invoke()
 }
 
-export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, options?: UseStorageLocalOptions<T>): StorageRef<T> {
+export function useStorageLocal<T>(
+  key: string,
+  initialValue: MaybeRef<T>,
+  options?: UseStorageLocalOptions<T>,
+): StorageRef<T> {
   const ownerScope = getCurrentScope()
   const {
     flush = 'pre',
@@ -176,7 +185,8 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
   } = options ?? {}
 
   const initial = createInitialValue(initialValue)
-  const serializer = (customSerializer ?? storageSerializers[guessSerializerType(initial)]) as StorageSerializer<T>
+  const serializer = (customSerializer ??
+    storageSerializers[guessSerializerType(initial)]) as StorageSerializer<T>
   const data = createStorageRef(createInitialValue(initialValue), shallow)
 
   let ready = false
@@ -190,15 +200,15 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
 
   const enqueuePendingOwnStorageChange = (value: unknown) => {
     pendingOwnStorageChanges.push(normalizePendingStorageValue(value))
-    if (pendingOwnStorageChanges.length > 20)
-      pendingOwnStorageChanges.shift()
+    if (pendingOwnStorageChanges.length > 20) pendingOwnStorageChanges.shift()
   }
 
   const consumePendingOwnStorageChange = (value: unknown) => {
     const normalizedValue = normalizePendingStorageValue(value)
-    const index = pendingOwnStorageChanges.findIndex(pendingValue => Object.is(pendingValue, normalizedValue))
-    if (index === -1)
-      return false
+    const index = pendingOwnStorageChanges.findIndex((pendingValue) =>
+      Object.is(pendingValue, normalizedValue),
+    )
+    if (index === -1) return false
 
     pendingOwnStorageChanges.splice(index, 1)
     return true
@@ -207,8 +217,7 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
   const stopDirtyWatch = watch(
     data,
     () => {
-      if (!ready)
-        dirtyBeforeReady = true
+      if (!ready) dirtyBeforeReady = true
     },
     { deep, flush: 'sync' },
   )
@@ -218,19 +227,16 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
       enqueuePendingOwnStorageChange(null)
       try {
         await browser.storage.local.remove(key)
-      }
-      catch (error) {
+      } catch (error) {
         consumePendingOwnStorageChange(null)
         throw error
       }
-    }
-    else {
+    } else {
       const serializedValue = await serializer.write(data.value)
       enqueuePendingOwnStorageChange(serializedValue)
       try {
         await browser.storage.local.set({ [key]: serializedValue })
-      }
-      catch (error) {
+      } catch (error) {
         consumePendingOwnStorageChange(serializedValue)
         throw error
       }
@@ -238,8 +244,7 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
   }
 
   const startSync = () => {
-    if (syncStarted)
-      return
+    if (syncStarted) return
 
     syncStarted = true
 
@@ -247,8 +252,7 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
       watch(
         data,
         () => {
-          if (!ready)
-            return
+          if (!ready) return
 
           if (suppressedWriteCount > 0) {
             suppressedWriteCount = 0
@@ -258,8 +262,7 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
           runWithFilter(eventFilter, async () => {
             try {
               await persistValue()
-            }
-            catch (error) {
+            } catch (error) {
               onError(error)
             }
           })
@@ -268,47 +271,46 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
       )
 
       if (listenToStorageChanges) {
-        const onChanged = async (changes: Record<string, browser.Storage.StorageChange>, areaName: string) => {
-          if (areaName !== 'local' || !(key in changes))
-            return
+        const onChanged = async (
+          changes: Record<string, browser.Storage.StorageChange>,
+          areaName: string,
+        ) => {
+          if (areaName !== 'local' || !(key in changes)) return
 
           const change = changes[key]
 
           try {
-            if (consumePendingOwnStorageChange(change.newValue))
-              return
+            if (consumePendingOwnStorageChange(change.newValue)) return
 
-            const nextValue = change.newValue == null
-              ? createInitialValue(initialValue) as T
-              : cloneValue(mergeStoredValue(
-                  await deserializeStoredValue(change.newValue, serializer),
-                  createInitialValue(initialValue),
-                  mergeDefaults,
-                ))
-            if (Object.is(data.value, nextValue))
-              return
+            const nextValue =
+              change.newValue == null
+                ? (createInitialValue(initialValue) as T)
+                : cloneValue(
+                    mergeStoredValue(
+                      await deserializeStoredValue(change.newValue, serializer),
+                      createInitialValue(initialValue),
+                      mergeDefaults,
+                    ),
+                  )
+            if (Object.is(data.value, nextValue)) return
 
             // Deserialize first so malformed external data cannot leave a stale
             // suppression marker. Increment before assignment to also support
             // callers that explicitly request a synchronous watcher flush.
             suppressedWriteCount++
             data.value = nextValue
-          }
-          catch (error) {
+          } catch (error) {
             onError(error)
           }
         }
 
         browser.storage.onChanged.addListener(onChanged)
-        if (ownerScope)
-          onScopeDispose(() => browser.storage.onChanged.removeListener(onChanged))
+        if (ownerScope) onScopeDispose(() => browser.storage.onChanged.removeListener(onChanged))
       }
     }
 
-    if (!ownerScope)
-      registerSync()
-    else if (ownerScope.active)
-      ownerScope.run(registerSync)
+    if (!ownerScope) registerSync()
+    else if (ownerScope.active) ownerScope.run(registerSync)
   }
 
   void (async () => {
@@ -318,18 +320,16 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
       hasStoredValue = rawStoredValue != null
 
       if (rawStoredValue == null) {
-        if (!dirtyBeforeReady)
-          data.value = createInitialValue(initialValue) as T
-      }
-      else {
+        if (!dirtyBeforeReady) data.value = createInitialValue(initialValue) as T
+      } else {
         const storedValue = await deserializeStoredValue(rawStoredValue, serializer)
-        data.value = cloneValue(mergeStoredValue(storedValue, createInitialValue(initialValue), mergeDefaults))
+        data.value = cloneValue(
+          mergeStoredValue(storedValue, createInitialValue(initialValue), mergeDefaults),
+        )
       }
-    }
-    catch (error) {
+    } catch (error) {
       onError(error)
-    }
-    finally {
+    } finally {
       ready = true
       stopDirtyWatch()
     }
@@ -337,8 +337,7 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
     try {
       if (!hasStoredValue && (dirtyBeforeReady || writeDefaults) && data.value != null)
         await persistValue()
-    }
-    catch (error) {
+    } catch (error) {
       onError(error)
     }
 

@@ -10,7 +10,13 @@ import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
 const { t } = useI18n()
 
-const isBewlyTopBarEnabled = computed(() => shouldShowBewlyTopBar(settings.value.enableTopBarModule, settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar))
+const isBewlyTopBarEnabled = computed(() =>
+  shouldShowBewlyTopBar(
+    settings.value.enableTopBarModule,
+    settings.value.enableTopBar,
+    settings.value.useOriginalBilibiliTopBar,
+  ),
+)
 
 const openModeOptions = computed(() => {
   return [
@@ -90,11 +96,7 @@ const videoCardOpenModeOptions = computed(() => {
       :desc="$t('settings.link_opening_behavior_desc')"
       right-width="auto"
     >
-      <Select
-        v-model="settings.searchBarLinkOpenMode"
-        :options="openModeOptions"
-        w="160px"
-      />
+      <Select v-model="settings.searchBarLinkOpenMode" :options="openModeOptions" w="160px" />
     </SettingsItem>
   </SettingsItemGroup>
 </template>

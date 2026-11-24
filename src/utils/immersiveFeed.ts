@@ -56,18 +56,24 @@ export interface ImmersiveFeedMessage {
 
 export function isImmersiveFeedFrame(): boolean {
   // window.name 跨 iframe 内的导航保留，不受 B 站清理 URL 参数影响
-  return isInIframe()
-    && (window.name === IMMERSIVE_FEED_FRAME_NAME || window.name === IMMERSIVE_FEED_PRELOAD_FRAME_NAME)
+  return (
+    isInIframe() &&
+    (window.name === IMMERSIVE_FEED_FRAME_NAME || window.name === IMMERSIVE_FEED_PRELOAD_FRAME_NAME)
+  )
 }
 
 function isEditableElement(element: Element | null | undefined): boolean {
-  if (!(element instanceof HTMLElement))
-    return false
+  if (!(element instanceof HTMLElement)) return false
   const tagName = element.tagName.toLowerCase()
-  return element.isContentEditable
-    || tagName === 'textarea'
-    || tagName === 'select'
-    || (tagName === 'input' && !['button', 'checkbox', 'radio', 'range', 'submit', 'reset'].includes((element as HTMLInputElement).type))
+  return (
+    element.isContentEditable ||
+    tagName === 'textarea' ||
+    tagName === 'select' ||
+    (tagName === 'input' &&
+      !['button', 'checkbox', 'radio', 'range', 'submit', 'reset'].includes(
+        (element as HTMLInputElement).type,
+      ))
+  )
 }
 
 /**
@@ -75,23 +81,24 @@ function isEditableElement(element: Element | null | undefined): boolean {
  * 除事件路径外还要沿各层 shadowRoot 的焦点元素向下查找。
  */
 export function isTypingContext(event: KeyboardEvent): boolean {
-  if (event.isComposing || event.composedPath().some(node => isEditableElement(node as Element)))
+  if (event.isComposing || event.composedPath().some((node) => isEditableElement(node as Element)))
     return true
 
   let active: Element | null = document.activeElement
   while (active) {
-    if (isEditableElement(active))
-      return true
+    if (isEditableElement(active)) return true
     active = active.shadowRoot?.activeElement ?? null
   }
   return false
 }
 
 export function isImmersiveFeedMessage(data: unknown): data is ImmersiveFeedMessage {
-  return !!data
-    && typeof data === 'object'
-    && (data as ImmersiveFeedMessage).source === IMMERSIVE_FEED_MESSAGE_SOURCE
-    && Object.values(ImmersiveFeedMessageType).includes((data as ImmersiveFeedMessage).type)
+  return (
+    !!data &&
+    typeof data === 'object' &&
+    (data as ImmersiveFeedMessage).source === IMMERSIVE_FEED_MESSAGE_SOURCE &&
+    Object.values(ImmersiveFeedMessageType).includes((data as ImmersiveFeedMessage).type)
+  )
 }
 
 export function createImmersiveFeedMessage(

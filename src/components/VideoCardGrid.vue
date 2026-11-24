@@ -256,9 +256,10 @@ interface GridSnapshot {
 }
 const restoredGrid = tabState?.take<GridSnapshot | undefined>(gridStateKey, undefined)
 // Search page tab switches keep the current viewport instead of the old tab's anchor.
-const restoredWindow = restoredGrid?.window && tabState?.preserveScrollOnEntry
-  ? { ...restoredGrid.window, anchor: undefined }
-  : restoredGrid?.window
+const restoredWindow =
+  restoredGrid?.window && tabState?.preserveScrollOnEntry
+    ? { ...restoredGrid.window, anchor: undefined }
+    : restoredGrid?.window
 let detachGridSnapshot: (() => void) | undefined
 onBeforeUnmount(() => detachGridSnapshot?.())
 
@@ -281,10 +282,8 @@ const MAX_CONSECUTIVE_FAILURES = 3
 
 // 仅首屏空数据加载时显示骨架屏；滚动加载时直接追加真实卡片。
 const showInitialSkeleton = computed(() => {
-  if (props.needToLoginFirst)
-    return false
-  if (!props.loading)
-    return false
+  if (props.needToLoginFirst) return false
+  if (!props.loading) return false
   return props.items.length === 0
 })
 
@@ -299,23 +298,23 @@ function createSkeletonItem(index: number) {
 
 // 生成首屏骨架屏数据
 const initialSkeletonItems = computed(() => {
-  if (!showInitialSkeleton.value)
-    return []
+  if (!showInitialSkeleton.value) return []
 
   return Array.from({ length: dynamicSkeletonCount.value }, (_, i) => createSkeletonItem(i))
 })
 
 // 有真实数据时，用与视频卡片相同结构的骨架卡片表示下一批数据正在加载。
 const showLoadingMoreSkeletonItems = computed(() => {
-  return props.showLoadingMoreSkeleton
-    && props.loading
-    && props.items.length > 0
-    && !props.needToLoginFirst
+  return (
+    props.showLoadingMoreSkeleton &&
+    props.loading &&
+    props.items.length > 0 &&
+    !props.needToLoginFirst
+  )
 })
 
 const loadingMoreSkeletonItems = computed(() => {
-  if (!showLoadingMoreSkeletonItems.value)
-    return []
+  if (!showLoadingMoreSkeletonItems.value) return []
 
   const minimumSkeletonCount = normalizePositiveInt(props.loadingMoreSkeletonCount, 10)
   const columns = getRenderedColumnCount()
@@ -327,11 +326,9 @@ const loadingMoreSkeletonItems = computed(() => {
 
 // 合并实际数据和骨架屏
 const displayItems = computed(() => {
-  if (showInitialSkeleton.value)
-    return initialSkeletonItems.value
+  if (showInitialSkeleton.value) return initialSkeletonItems.value
 
-  if (showLoadingMoreSkeletonItems.value)
-    return [...props.items, ...loadingMoreSkeletonItems.value]
+  if (showLoadingMoreSkeletonItems.value) return [...props.items, ...loadingMoreSkeletonItems.value]
 
   return props.items
 })
@@ -356,8 +353,7 @@ function isDocumentVisible(): boolean {
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
   // 后台标签页里 IntersectionObserver 可能一直保持相交，不能继续预加载。
-  if (!isDocumentVisible())
-    return false
+  if (!isDocumentVisible()) return false
 
   // 连续请求失败次数超过限制时停止
   if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
@@ -377,28 +373,25 @@ const loadMoreRequested = ref(false)
 let loadMoreRequestTimeout: number | null = null
 
 function triggerLoadMore() {
-  if (bewlyApp?.isHomeTabSwitching.value)
-    return
+  if (bewlyApp?.isHomeTabSwitching.value) return
 
   if (canLoadMore()) {
-    if (loadMoreRequested.value)
-      return
+    if (loadMoreRequested.value) return
 
     loadMoreRequested.value = true
     emit('loadMore')
 
     // 防止父组件未及时更新 loading 导致的"卡死"
-    if (loadMoreRequestTimeout !== null)
-      window.clearTimeout(loadMoreRequestTimeout)
+    if (loadMoreRequestTimeout !== null) window.clearTimeout(loadMoreRequestTimeout)
     loadMoreRequestTimeout = window.setTimeout(() => {
-      if (!props.loading)
-        loadMoreRequested.value = false
+      if (!props.loading) loadMoreRequested.value = false
       loadMoreRequestTimeout = null
     }, 1500)
   }
 }
 
-const supportsIntersectionObserver = typeof window !== 'undefined' && 'IntersectionObserver' in window
+const supportsIntersectionObserver =
+  typeof window !== 'undefined' && 'IntersectionObserver' in window
 const isFirefox = typeof navigator !== 'undefined' && /\bFirefox\//.test(navigator.userAgent)
 let intersectionObserver: IntersectionObserver | null = null
 let cardExposureObserver: IntersectionObserver | null = null
@@ -410,7 +403,9 @@ const cardExposureItems = new WeakMap<HTMLElement, T>()
 const cardExposureKeys = new WeakMap<HTMLElement, string | number>()
 const exposedCardKeys = new Set<string | number>(restoredGrid?.exposedKeys)
 const mountedCards = new Map<string | number, { canRecycle?: boolean }>()
-const cardStates = new Map<string | number, VideoCardState>(restoredGrid?.cardStates.map(([key, state]) => [key, reactive(state)]))
+const cardStates = new Map<string | number, VideoCardState>(
+  restoredGrid?.cardStates.map(([key, state]) => [key, reactive(state)]),
+)
 
 interface CardBindings {
   item: T
@@ -439,23 +434,19 @@ function cleanupCardExposureObserver() {
 
 function setupCardExposureObserver() {
   cleanupCardExposureObserver()
-  if (!supportsIntersectionObserver || !isGridActive || !props.cardExposureHandler)
-    return
+  if (!supportsIntersectionObserver || !isGridActive || !props.cardExposureHandler) return
 
   cardExposureObserver = new IntersectionObserver(
     (entries) => {
-      if (!isGridActive || !isDocumentVisible())
-        return
+      if (!isGridActive || !isDocumentVisible()) return
 
       entries.forEach((entry) => {
-        if (!entry.isIntersecting)
-          return
+        if (!entry.isIntersecting) return
 
         const element = entry.target as HTMLElement
         const item = cardExposureItems.get(element)
         const key = cardExposureKeys.get(element)
-        if (item === undefined || key === undefined || exposedCardKeys.has(key))
-          return
+        if (item === undefined || key === undefined || exposedCardKeys.has(key)) return
 
         exposedCardKeys.add(key)
         cardExposureObserver?.unobserve(element)
@@ -469,17 +460,14 @@ function setupCardExposureObserver() {
   )
 
   cardExposureElements.forEach((element, key) => {
-    if (!exposedCardKeys.has(key))
-      cardExposureObserver?.observe(element)
+    if (!exposedCardKeys.has(key)) cardExposureObserver?.observe(element)
   })
 }
 
 // Function refs run on every grid patch, so an unchanged element is a no-op.
 function setVideoCardElement(key: string | number, item: T, component: unknown) {
-  if (component)
-    mountedCards.set(key, component as { canRecycle?: boolean })
-  else
-    mountedCards.delete(key)
+  if (component) mountedCards.set(key, component as { canRecycle?: boolean })
+  else mountedCards.delete(key)
 
   const rawElement = !props.cardExposureHandler
     ? undefined
@@ -498,42 +486,35 @@ function setVideoCardElement(key: string | number, item: T, component: unknown) 
     cardExposureElements.delete(key)
   }
 
-  if (!element)
-    return
+  if (!element) return
 
   cardExposureElements.set(key, element)
   cardExposureItems.set(element, item)
   cardExposureKeys.set(element, key)
-  if (!exposedCardKeys.has(key))
-    cardExposureObserver?.observe(element)
+  if (!exposedCardKeys.has(key)) cardExposureObserver?.observe(element)
 }
 
 function setupIntersectionObserver() {
-  if (!supportsIntersectionObserver || !isGridActive)
-    return
+  if (!supportsIntersectionObserver || !isGridActive) return
 
   cleanupIntersectionObserver()
 
   const sentinel = loadMoreSentinelRef.value
-  if (!sentinel)
-    return
+  if (!sentinel) return
 
   const scrollElement = findScrollElement()
   const preloadDistance = getPreloadDistance(scrollElement)
 
   intersectionObserver = new IntersectionObserver(
     (entries) => {
-      if (!isGridActive || !isDocumentVisible())
-        return
+      if (!isGridActive || !isDocumentVisible()) return
 
       const entry = entries[0]
-      if (!entry)
-        return
+      if (!entry) return
 
       isLoadMoreSentinelIntersecting.value = entry.isIntersecting
 
-      if (!entry.isIntersecting)
-        reachedLoadMoreDuringLoading.value = false
+      if (!entry.isIntersecting) reachedLoadMoreDuringLoading.value = false
 
       if (entry.isIntersecting) {
         // 进入预加载区间时触发加载
@@ -570,8 +551,7 @@ function afterNextFrame(callback: () => void) {
     task.frame = undefined
     task.timer = window.setTimeout(() => {
       postFrameTasks.delete(task)
-      if (isGridActive)
-        callback()
+      if (isGridActive) callback()
     }, 0)
   })
   postFrameTasks.add(task)
@@ -579,31 +559,25 @@ function afterNextFrame(callback: () => void) {
 
 function cancelPostFrameTasks() {
   for (const task of postFrameTasks) {
-    if (task.frame !== undefined)
-      cancelAnimationFrame(task.frame)
-    if (task.timer !== undefined)
-      window.clearTimeout(task.timer)
+    if (task.frame !== undefined) cancelAnimationFrame(task.frame)
+    if (task.timer !== undefined) window.clearTimeout(task.timer)
   }
   postFrameTasks.clear()
 }
 
 // 检查是否需要预加载
 function checkShouldPreload() {
-  if (!isGridActive || !isDocumentVisible())
-    return
+  if (!isGridActive || !isDocumentVisible()) return
 
   if (props.loading) {
-    if (isLoadMoreSentinelIntersecting.value)
-      reachedLoadMoreDuringLoading.value = true
+    if (isLoadMoreSentinelIntersecting.value) reachedLoadMoreDuringLoading.value = true
     return
   }
 
-  if (!canLoadMore())
-    return
+  if (!canLoadMore()) return
 
   // 关闭填满首屏时，短列表的哨兵会一直相交；不能据此把全部历史刷完。
-  if (!props.showLoadingMoreSkeleton && !isListOverflowing())
-    return
+  if (!props.showLoadingMoreSkeleton && !isListOverflowing()) return
 
   // 优先使用 IntersectionObserver 的结果。
   if (supportsIntersectionObserver && isLoadMoreSentinelIntersecting.value) {
@@ -612,17 +586,14 @@ function checkShouldPreload() {
   }
 
   // observer 回调可能滞后；用滚动几何位置兜底，保证至少提前一页加载。
-  if (checkPreloadRAF !== null)
-    return
+  if (checkPreloadRAF !== null) return
 
   checkPreloadRAF = requestAnimationFrame(() => {
     checkPreloadRAF = null
 
-    if (!isGridActive || !isDocumentVisible())
-      return
+    if (!isGridActive || !isDocumentVisible()) return
 
-    if (isWithinPreloadDistance())
-      triggerLoadMore()
+    if (isWithinPreloadDistance()) triggerLoadMore()
   })
 }
 
@@ -638,22 +609,19 @@ function handleScroll() {
 
 function handleResize() {
   const width = gridContainerRef.value?.clientWidth
-  if (width && Math.abs(width - gridContainerWidth.value) > 0.5)
-    gridContainerWidth.value = width
+  if (width && Math.abs(width - gridContainerWidth.value) > 0.5) gridContainerWidth.value = width
   debouncedCheck()
 }
 
 function setupScrollListeners() {
-  if (scrollListenersActive)
-    return
+  if (scrollListenersActive) return
 
   scrollListenersActive = true
 
   // Bewly 自己的页面都在内部滚动容器中，通过全局事件同步 scrollTop
   if (!settings.value.useOriginalBilibiliHomepage) {
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
-  }
-  else {
+  } else {
     window.addEventListener('scroll', handleScroll, { passive: true })
   }
 
@@ -661,8 +629,7 @@ function setupScrollListeners() {
 }
 
 function cleanupScrollListeners() {
-  if (!scrollListenersActive)
-    return
+  if (!scrollListenersActive) return
 
   scrollListenersActive = false
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
@@ -671,8 +638,8 @@ function cleanupScrollListeners() {
 }
 
 function getRenderedColumnCount(): number {
-  const containerWidth = gridContainerRef.value?.clientWidth
-    || (typeof window !== 'undefined' ? window.innerWidth : 0)
+  const containerWidth =
+    gridContainerRef.value?.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 0)
   return getCurrentColumnCount(props.gridLayout, containerWidth)
 }
 
@@ -683,115 +650,124 @@ function getMissingItemsInLastRow(): number {
 }
 
 // 监听 loading 结束后检查是否需要继续加载
-watch(() => props.loading, (newLoading, oldLoading) => {
-  if (newLoading && isLoadMoreSentinelIntersecting.value && props.items.length > 0)
-    reachedLoadMoreDuringLoading.value = true
+watch(
+  () => props.loading,
+  (newLoading, oldLoading) => {
+    if (newLoading && isLoadMoreSentinelIntersecting.value && props.items.length > 0)
+      reachedLoadMoreDuringLoading.value = true
 
-  if (!newLoading) {
-    loadMoreRequested.value = false
-    if (loadMoreRequestTimeout !== null) {
-      window.clearTimeout(loadMoreRequestTimeout)
-      loadMoreRequestTimeout = null
-    }
+    if (!newLoading) {
+      loadMoreRequested.value = false
+      if (loadMoreRequestTimeout !== null) {
+        window.clearTimeout(loadMoreRequestTimeout)
+        loadMoreRequestTimeout = null
+      }
 
-    // 跟踪连续请求失败
-    if (props.requestFailed) {
-      consecutiveFailures.value++
-      if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
-        console.warn(`[VideoCardGrid] 连续请求失败 ${consecutiveFailures.value} 次，停止加载`)
+      // 跟踪连续请求失败
+      if (props.requestFailed) {
+        consecutiveFailures.value++
+        if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
+          console.warn(`[VideoCardGrid] 连续请求失败 ${consecutiveFailures.value} 次，停止加载`)
+        }
+      }
+
+      // 检测空加载：loading 结束但 items 数量没变化
+      if (lastItemsCount.value > 0 && props.items.length === lastItemsCount.value) {
+        consecutiveEmptyLoads.value++
       }
     }
 
-    // 检测空加载：loading 结束但 items 数量没变化
-    if (lastItemsCount.value > 0 && props.items.length === lastItemsCount.value) {
-      consecutiveEmptyLoads.value++
-    }
-  }
+    if (oldLoading && !newLoading) {
+      const stayedInPreloadArea = reachedLoadMoreDuringLoading.value
+      reachedLoadMoreDuringLoading.value = false
 
-  if (oldLoading && !newLoading) {
-    const stayedInPreloadArea = reachedLoadMoreDuringLoading.value
-    reachedLoadMoreDuringLoading.value = false
-
-    // 加载完成后，等新内容完成布局再检查是否需要继续加载
-    afterNextFrame(() => {
-      // 用户可能在请求结束前刚好滚到底部。此时 sentinel 没有新的相交变化，
-      // 直接按滚动容器几何位置补触发，避免丢掉这次 loadMore。
-      if (isScrollAtBottom() && (props.showLoadingMoreSkeleton || isListOverflowing())) {
-        triggerLoadMore()
-        return
-      }
-
-      // 首页保留一页预加载缓冲。上一批结束后仍处于缓冲区时继续预取，
-      // 直到新内容把列表底部推出这一页范围。
-      if (stayedInPreloadArea && props.showLoadingMoreSkeleton && isWithinPreloadDistance()) {
-        checkShouldPreload()
-        return
-      }
-
-      // sentinel 在整个请求期间都处于相交状态时，IntersectionObserver 不会再次回调。
-      // 只在末行差 1-2 张卡片时主动补查，避免恢复无条件递归加载。
-      if (stayedInPreloadArea) {
-        const missingItems = getMissingItemsInLastRow()
-        if (missingItems === 0 || missingItems > 2)
+      // 加载完成后，等新内容完成布局再检查是否需要继续加载
+      afterNextFrame(() => {
+        // 用户可能在请求结束前刚好滚到底部。此时 sentinel 没有新的相交变化，
+        // 直接按滚动容器几何位置补触发，避免丢掉这次 loadMore。
+        if (isScrollAtBottom() && (props.showLoadingMoreSkeleton || isListOverflowing())) {
+          triggerLoadMore()
           return
-      }
+        }
 
-      checkShouldPreload()
-    })
-  }
-})
+        // 首页保留一页预加载缓冲。上一批结束后仍处于缓冲区时继续预取，
+        // 直到新内容把列表底部推出这一页范围。
+        if (stayedInPreloadArea && props.showLoadingMoreSkeleton && isWithinPreloadDistance()) {
+          checkShouldPreload()
+          return
+        }
+
+        // sentinel 在整个请求期间都处于相交状态时，IntersectionObserver 不会再次回调。
+        // 只在末行差 1-2 张卡片时主动补查，避免恢复无条件递归加载。
+        if (stayedInPreloadArea) {
+          const missingItems = getMissingItemsInLastRow()
+          if (missingItems === 0 || missingItems > 2) return
+        }
+
+        checkShouldPreload()
+      })
+    }
+  },
+)
 
 // 监听 items 变化后检查（处理初次加载不足的情况）
-watch(() => props.items.length, (newCount, oldCount) => {
-  // items 被清空，重置状态（用户刷新了页面）
-  if (newCount === 0 && oldCount > 0) {
-    consecutiveEmptyLoads.value = 0
-    consecutiveFailures.value = 0
-    lastItemsCount.value = 0
-    reachedLoadMoreDuringLoading.value = false
-    exposedCardKeys.clear()
-    return
-  }
+watch(
+  () => props.items.length,
+  (newCount, oldCount) => {
+    // items 被清空，重置状态（用户刷新了页面）
+    if (newCount === 0 && oldCount > 0) {
+      consecutiveEmptyLoads.value = 0
+      consecutiveFailures.value = 0
+      lastItemsCount.value = 0
+      reachedLoadMoreDuringLoading.value = false
+      exposedCardKeys.clear()
+      return
+    }
 
-  // 成功加载了新数据，重置空加载计数和失败计数
-  if (newCount > lastItemsCount.value) {
-    consecutiveEmptyLoads.value = 0
-    consecutiveFailures.value = 0
-  }
-  lastItemsCount.value = newCount
+    // 成功加载了新数据，重置空加载计数和失败计数
+    if (newCount > lastItemsCount.value) {
+      consecutiveEmptyLoads.value = 0
+      consecutiveFailures.value = 0
+    }
+    lastItemsCount.value = newCount
 
-  // items 更新通常意味着加载已完成或数据发生变化，允许下一次 loadMore
-  loadMoreRequested.value = false
+    // items 更新通常意味着加载已完成或数据发生变化，允许下一次 loadMore
+    loadMoreRequested.value = false
 
-  if (props.loading || reachedLoadMoreDuringLoading.value)
-    return
+    if (props.loading || reachedLoadMoreDuringLoading.value) return
 
-  afterNextFrame(checkShouldPreload)
-})
+    afterNextFrame(checkShouldPreload)
+  },
+)
 
 // 监听 noMoreContent 重置（用户切换模式或刷新时）
-watch(() => props.noMoreContent, (newVal, oldVal) => {
-  if (oldVal && !newVal) {
-    consecutiveEmptyLoads.value = 0
-    consecutiveFailures.value = 0
-  }
-})
+watch(
+  () => props.noMoreContent,
+  (newVal, oldVal) => {
+    if (oldVal && !newVal) {
+      consecutiveEmptyLoads.value = 0
+      consecutiveFailures.value = 0
+    }
+  },
+)
 
 watch(loadMoreSentinelRef, () => {
   setupIntersectionObserver()
 })
 
-watch(() => bewlyApp?.isHomeTabSwitching.value, (switching) => {
-  if (!switching && isGridActive) {
-    nextTick(() => {
-      checkShouldPreload()
-    })
-  }
-})
+watch(
+  () => bewlyApp?.isHomeTabSwitching.value,
+  (switching) => {
+    if (!switching && isGridActive) {
+      nextTick(() => {
+        checkShouldPreload()
+      })
+    }
+  },
+)
 
 function activateGrid() {
-  if (isGridActive)
-    return
+  if (isGridActive) return
 
   isGridActive = true
   cachedScrollElement = null
@@ -800,8 +776,7 @@ function activateGrid() {
   document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
 
   nextTick(() => {
-    if (!isGridActive)
-      return
+    if (!isGridActive) return
 
     setupIntersectionObserver()
     setupCardExposureObserver()
@@ -810,8 +785,7 @@ function activateGrid() {
 }
 
 function deactivateGrid() {
-  if (!isGridActive)
-    return
+  if (!isGridActive) return
 
   isGridActive = false
   document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
@@ -863,19 +837,19 @@ const isHorizontal = computed(() => {
 // A configurable breakpoint cannot be expressed with a CSS container query
 // value, so the measured container width toggles the single-column class.
 const isAutoSwitchSingleColumn = computed(() => {
-  if (props.gridLayout !== 'twoColumns' || !settings.value.autoSwitchListLayout)
-    return false
+  if (props.gridLayout !== 'twoColumns' || !settings.value.autoSwitchListLayout) return false
 
   const width = gridContainerWidth.value || gridContainerRef.value?.clientWidth || 0
-  if (!width)
-    return false
+  if (!width) return false
 
-  return getListGridColumnCount(
-    props.gridLayout,
-    width,
-    true,
-    settings.value.autoSwitchListLayoutBreakpoint,
-  ) === 1
+  return (
+    getListGridColumnCount(
+      props.gridLayout,
+      width,
+      true,
+      settings.value.autoSwitchListLayoutBreakpoint,
+    ) === 1
+  )
 })
 
 const horizontalCoverRatio = computed(() => {
@@ -904,36 +878,40 @@ const renderedGridClass = computed(() => [
 
 // 判断是否应该显示空状态（确认无更多内容或请求失败，且数据为空）
 const showEmptyState = computed(() => {
-  return !props.loading
-    && (props.noMoreContent || props.requestFailed)
-    && props.items.length === 0
-    && !props.needToLoginFirst
+  return (
+    !props.loading &&
+    (props.noMoreContent || props.requestFailed) &&
+    props.items.length === 0 &&
+    !props.needToLoginFirst
+  )
 })
 
 // 列表底部的结束提示；请求失败时即使还有下一页也要给出说明和重试入口。
 const showListEndState = computed(() => {
-  return props.showNoMoreContent
-    && (props.noMoreContent || (props.requestFailed && !props.loading))
-    && props.items.length > 0
-    && !props.needToLoginFirst
+  return (
+    props.showNoMoreContent &&
+    (props.noMoreContent || (props.requestFailed && !props.loading)) &&
+    props.items.length > 0 &&
+    !props.needToLoginFirst
+  )
 })
 
 const hasHostPermissionFailure = computed(() => {
-  return props.requestFailed
-    && Boolean(props.errorReportSource)
-    && hasMissingHostPermissionFailure(props.errorReportSource?.queries)
+  return (
+    props.requestFailed &&
+    Boolean(props.errorReportSource) &&
+    hasMissingHostPermissionFailure(props.errorReportSource?.queries)
+  )
 })
 
 function normalizePositiveInt(value: unknown, fallback: number): number {
   const normalized = Number(value)
-  if (!Number.isFinite(normalized) || normalized <= 0)
-    return fallback
+  if (!Number.isFinite(normalized) || normalized <= 0) return fallback
   return Math.max(1, Math.round(normalized))
 }
 
 function getCurrentColumnCount(layout: GridLayoutType, width: number): number {
-  if (layout === 'adaptive')
-    return getAdaptiveGridColumnCount(width, settings.value.gridColumns)
+  if (layout === 'adaptive') return getAdaptiveGridColumnCount(width, settings.value.gridColumns)
   return getListGridColumnCount(
     layout,
     width,
@@ -947,8 +925,7 @@ function findScrollElement(): HTMLElement | null {
     return document.scrollingElement as HTMLElement | null
 
   const container = gridContainerRef.value
-  if (!container)
-    return null
+  if (!container) return null
 
   // getComputedStyle on each ancestor forces a style recalculation when this
   // runs right after cards are inserted. Reuse the result while the grid stays
@@ -959,7 +936,10 @@ function findScrollElement(): HTMLElement | null {
   const viewport = bewlyApp?.scrollViewportRef.value
   let element = container.parentElement
   while (element) {
-    if (element === viewport || /auto|scroll|overlay/.test(window.getComputedStyle(element).overflowY)) {
+    if (
+      element === viewport ||
+      /auto|scroll|overlay/.test(window.getComputedStyle(element).overflowY)
+    ) {
       cachedScrollElement = element
       return element
     }
@@ -971,7 +951,10 @@ function findScrollElement(): HTMLElement | null {
 }
 
 function getPreloadDistance(scrollElement: HTMLElement | null = findScrollElement()): number {
-  return Math.max(1, scrollElement?.clientHeight || (typeof window !== 'undefined' ? window.innerHeight : 0))
+  return Math.max(
+    1,
+    scrollElement?.clientHeight || (typeof window !== 'undefined' ? window.innerHeight : 0),
+  )
 }
 
 function getRemainingScroll(scrollElement: HTMLElement): number {
@@ -984,23 +967,20 @@ function isUsableScrollElement(scrollElement: HTMLElement | null): scrollElement
 
 function isListOverflowing(): boolean {
   const scrollElement = findScrollElement()
-  if (!isUsableScrollElement(scrollElement))
-    return false
+  if (!isUsableScrollElement(scrollElement)) return false
   return scrollElement.scrollHeight > scrollElement.clientHeight + 1
 }
 
 function isWithinPreloadDistance(): boolean {
   const scrollElement = findScrollElement()
-  if (!isUsableScrollElement(scrollElement))
-    return false
+  if (!isUsableScrollElement(scrollElement)) return false
 
   return getRemainingScroll(scrollElement) <= getPreloadDistance(scrollElement)
 }
 
 function isScrollAtBottom(): boolean {
   const scrollElement = findScrollElement()
-  if (!isUsableScrollElement(scrollElement))
-    return false
+  if (!isUsableScrollElement(scrollElement)) return false
 
   return getRemainingScroll(scrollElement) <= 2
 }
@@ -1012,12 +992,10 @@ function handleDocumentVisibilityChange() {
     return
   }
 
-  if (!isGridActive)
-    return
+  if (!isGridActive) return
 
   nextTick(() => {
-    if (!isGridActive || !isDocumentVisible())
-      return
+    if (!isGridActive || !isDocumentVisible()) return
     setupIntersectionObserver()
     checkShouldPreload()
   })
@@ -1032,21 +1010,17 @@ function cleanupGridResizeObserver() {
 
 function setupGridResizeObserver() {
   cleanupGridResizeObserver()
-  if (!isGridActive)
-    return
+  if (!isGridActive) return
 
   const container = gridContainerRef.value
-  if (!container)
-    return
+  if (!container) return
 
   gridContainerWidth.value = Math.max(1, container.clientWidth || window.innerWidth)
-  if (typeof ResizeObserver === 'undefined')
-    return
+  if (typeof ResizeObserver === 'undefined') return
 
   gridResizeObserver = new ResizeObserver((entries) => {
     const width = entries[0]?.contentRect.width
-    if (!width || Math.abs(width - gridContainerWidth.value) <= 0.5)
-      return
+    if (!width || Math.abs(width - gridContainerWidth.value) <= 0.5) return
     gridContainerWidth.value = width
   })
   gridResizeObserver.observe(container)
@@ -1067,14 +1041,13 @@ interface VideoCardRenderItem {
 }
 
 // 辅助函数：从 video 对象推断类型
-function inferVideoTypeFromVideo(video: Video | undefined): 'rcmd' | 'appRcmd' | 'bangumi' | 'common' {
-  if (!video)
-    return props.videoType || 'common'
+function inferVideoTypeFromVideo(
+  video: Video | undefined,
+): 'rcmd' | 'appRcmd' | 'bangumi' | 'common' {
+  if (!video) return props.videoType || 'common'
   // 推荐流中的番剧、课程等卡片仍需保留推荐类型，才能提供不感兴趣等推荐操作
-  if (props.videoType === 'rcmd' || props.videoType === 'appRcmd')
-    return props.videoType
-  if (isBangumiVideo(video))
-    return 'bangumi'
+  if (props.videoType === 'rcmd' || props.videoType === 'appRcmd') return props.videoType
+  if (isBangumiVideo(video)) return 'bangumi'
   return props.videoType || 'common'
 }
 
@@ -1107,8 +1080,7 @@ function createRenderItem(item: T, index: number): VideoCardRenderItem {
           video: undefined,
         }
       }
-    }
-    catch {
+    } catch {
       // ignore
     }
   }
@@ -1128,33 +1100,37 @@ const cardWindowRoot = computed(() => {
 // Homepage tabs always restore through the card window; other lists keep the
 // small-list fast path.
 const recycleCards = computed(() => !!tabState?.enabled || props.items.length > 80)
-const cardColumns = computed(() => getCurrentColumnCount(props.gridLayout, gridContainerWidth.value || 1200))
-const cardGap = computed(() => isHorizontal.value ? 16 : 20)
+const cardColumns = computed(() =>
+  getCurrentColumnCount(props.gridLayout, gridContainerWidth.value || 1200),
+)
+const cardGap = computed(() => (isHorizontal.value ? 16 : 20))
 const estimatedCardHeight = computed(() => {
   const width = gridContainerWidth.value || 1200
   const columns = cardColumns.value
   const cardWidth = Math.max(1, (width - (columns - 1) * cardGap.value) / columns)
   const coverHeight = isHorizontal.value
-    ? Math.max(1, cardWidth - 24) * horizontalCoverRatio.value / 100 * 9 / 16
-    : cardWidth * 9 / 16
+    ? (((Math.max(1, cardWidth - 24) * horizontalCoverRatio.value) / 100) * 9) / 16
+    : (cardWidth * 9) / 16
   return isHorizontal.value ? Math.max(coverHeight, 130) + 16 : coverHeight + 110
 })
-const cardLayoutKey = computed(() => [
-  props.gridLayout,
-  settings.value.videoCardLayout,
-  settings.value.videoCardTitleFontSize,
-  settings.value.videoCardAuthorFontSize,
-  settings.value.videoCardMetaFontSize,
-  settings.value.showVideoCardAuthorAvatar,
-  settings.value.showVideoCardAuthorName,
-  settings.value.showVideoCardCategory,
-  settings.value.showVideoCardVideoTag,
-  settings.value.showVideoCardRecommendTag,
-  settings.value.showVideoCardPublishTime,
-  settings.value.showVideoCardViewCount,
-  settings.value.showVideoCardDanmakuCount,
-  props.hideAuthor,
-].join(':'))
+const cardLayoutKey = computed(() =>
+  [
+    props.gridLayout,
+    settings.value.videoCardLayout,
+    settings.value.videoCardTitleFontSize,
+    settings.value.videoCardAuthorFontSize,
+    settings.value.videoCardMetaFontSize,
+    settings.value.showVideoCardAuthorAvatar,
+    settings.value.showVideoCardAuthorName,
+    settings.value.showVideoCardCategory,
+    settings.value.showVideoCardVideoTag,
+    settings.value.showVideoCardRecommendTag,
+    settings.value.showVideoCardPublishTime,
+    settings.value.showVideoCardViewCount,
+    settings.value.showVideoCardDanmakuCount,
+    props.hideAuthor,
+  ].join(':'),
+)
 const cardWindow = useCardWindow({
   root: cardWindowRoot,
   container: gridContainerRef,
@@ -1164,7 +1140,7 @@ const cardWindow = useCardWindow({
   enabled: recycleCards,
   estimatedHeight: estimatedCardHeight,
   layout: cardLayoutKey,
-  canRelease: key => mountedCards.get(key)?.canRecycle !== false,
+  canRelease: (key) => mountedCards.get(key)?.canRecycle !== false,
   snapshot: restoredWindow,
   restoreScroll: tabState?.restoreScroll,
   afterAnchorRestore: tabState?.keepContentInView,
@@ -1177,7 +1153,7 @@ detachGridSnapshot = tabState?.capture(gridStateKey, (): GridSnapshot => ({
 
 // Skipped rows use full-width spacers, so both slot DOM and VNodes stay bounded.
 const renderItems = computed(() => {
-  const result: { key: string, height?: number, card?: VideoCardRenderItem }[] = []
+  const result: { key: string; height?: number; card?: VideoCardRenderItem }[] = []
   for (const range of cardWindow.ranges.value) {
     if (range.height !== undefined) {
       result.push({ key: `spacer:${range.start}`, height: range.height })
@@ -1204,9 +1180,9 @@ function getCardBindings(key: string | number, item: T) {
   let bindings = cardBindings.get(key)
   if (!bindings) {
     const record = { item } as CardBindings
-    record.ref = component => setVideoCardElement(key, record.item, component)
-    record.click = event => props.cardClickHandler?.(record.item, event)
-    record.observe = event => props.cardClickObserver?.(record.item, event)
+    record.ref = (component) => setVideoCardElement(key, record.item, component)
+    record.click = (event) => props.cardClickHandler?.(record.item, event)
+    record.observe = (event) => props.cardClickObserver?.(record.item, event)
     bindings = record
     cardBindings.set(key, bindings)
   }
@@ -1217,24 +1193,24 @@ function getCardBindings(key: string | number, item: T) {
 function getVideoCardProps(card: VideoCardRenderItem) {
   const bindings = getCardBindings(card.key, card.item)
   return {
-    'ref': bindings.ref,
+    ref: bindings.ref,
     'data-index': card.index,
-    'skeleton': card.skeleton,
-    'type': card.type,
-    'video': card.video,
-    'persistentState': getCardState(card.key),
-    'removedState': card.skeleton ? undefined : props.getRemovedState?.(card.item),
-    'showPreview': props.showPreview,
-    'showWatcherLater': props.showWatchLater,
-    'horizontal': isHorizontal.value,
-    'moreBtn': props.moreBtn,
-    'hideAuthor': props.hideAuthor,
-    'hideWatchedBadge': props.hideWatchedBadge,
-    'disableContentVisibility': props.disableContentVisibility || recycleCards.value,
-    'isFollowingPage': props.isFollowingPage,
-    'customClickHandler': props.cardClickHandler ? bindings.click : undefined,
-    'primaryClickObserver': props.cardClickObserver ? bindings.observe : undefined,
-    'coverTopLeftAlwaysVisible': props.coverTopLeftAlwaysVisible,
+    skeleton: card.skeleton,
+    type: card.type,
+    video: card.video,
+    persistentState: getCardState(card.key),
+    removedState: card.skeleton ? undefined : props.getRemovedState?.(card.item),
+    showPreview: props.showPreview,
+    showWatcherLater: props.showWatchLater,
+    horizontal: isHorizontal.value,
+    moreBtn: props.moreBtn,
+    hideAuthor: props.hideAuthor,
+    hideWatchedBadge: props.hideWatchedBadge,
+    disableContentVisibility: props.disableContentVisibility || recycleCards.value,
+    isFollowingPage: props.isFollowingPage,
+    customClickHandler: props.cardClickHandler ? bindings.click : undefined,
+    primaryClickObserver: props.cardClickObserver ? bindings.observe : undefined,
+    coverTopLeftAlwaysVisible: props.coverTopLeftAlwaysVisible,
   }
 }
 
@@ -1243,21 +1219,22 @@ function getVideoCardProps(card: VideoCardRenderItem) {
 const slots = useSlots()
 const hasCardSlots = () => Object.keys(slots).length > 0
 
-watch(cardKeys, (keys) => {
-  const validKeys = new Set(keys)
-  for (const key of cardStates.keys()) {
-    if (!validKeys.has(key))
-      cardStates.delete(key)
-  }
-  for (const key of cardBindings.keys()) {
-    if (!validKeys.has(key))
-      cardBindings.delete(key)
-  }
-  for (const key of exposedCardKeys) {
-    if (!validKeys.has(key))
-      exposedCardKeys.delete(key)
-  }
-}, { immediate: true })
+watch(
+  cardKeys,
+  (keys) => {
+    const validKeys = new Set(keys)
+    for (const key of cardStates.keys()) {
+      if (!validKeys.has(key)) cardStates.delete(key)
+    }
+    for (const key of cardBindings.keys()) {
+      if (!validKeys.has(key)) cardBindings.delete(key)
+    }
+    for (const key of exposedCardKeys) {
+      if (!validKeys.has(key)) exposedCardKeys.delete(key)
+    }
+  },
+  { immediate: true },
+)
 
 interface VideoTransformCacheEntry<T = any> {
   item: T
@@ -1270,58 +1247,61 @@ function resetTransformCaches() {
   videoTransformCache = new Map()
 }
 
-watch(() => props.transformItem, () => {
-  resetTransformCaches()
-})
+watch(
+  () => props.transformItem,
+  () => {
+    resetTransformCaches()
+  },
+)
 
 watch(
-  () => renderItems.value.flatMap(item => item.card ? [item.card.key] : []),
+  () => renderItems.value.flatMap((item) => (item.card ? [item.card.key] : [])),
   (activeKeys) => {
     const activeKeySet = new Set(activeKeys)
 
     for (const key of videoTransformCache.keys()) {
-      if (!activeKeySet.has(key))
-        videoTransformCache.delete(key)
+      if (!activeKeySet.has(key)) videoTransformCache.delete(key)
     }
   },
   { flush: 'post' },
 )
 
 function getTransformedVideo(item: T, key: string | number): Video | undefined {
-  if (!item)
-    return undefined
+  if (!item) return undefined
 
   // 检查是否为骨架屏占位，骨架屏不需要转换
-  if ((item as any)?._isSkeleton)
-    return undefined
+  if ((item as any)?._isSkeleton) return undefined
 
   try {
     const cached = videoTransformCache.get(key)
-    if (cached && cached.item === item)
-      return cached.video
+    if (cached && cached.item === item) return cached.video
 
     const video = props.transformItem(item)
     videoTransformCache.set(key, { item, video })
     return video
-  }
-  catch {
+  } catch {
     return undefined
   }
 }
 
 const relationQueryMids = computed(() => {
   const accountMid = userRelationStore.accountMid
-  if (!accountMid || !props.moreBtn || !settings.value.showVideoCardMoreButton
-    || props.isFollowingPage || bewlyApp?.isHomeTabSwitching.value
-    || (tabState && !tabState.isCurrent())) {
+  if (
+    !accountMid ||
+    !props.moreBtn ||
+    !settings.value.showVideoCardMoreButton ||
+    props.isFollowingPage ||
+    bewlyApp?.isHomeTabSwitching.value ||
+    (tabState && !tabState.isCurrent())
+  ) {
     return []
   }
 
-  const needsRelationships = ['followUser', 'blockUser'].some(key =>
-    settings.value.videoCardContextMenuConfig.find(item => item.key === key)?.visible ?? true,
+  const needsRelationships = ['followUser', 'blockUser'].some(
+    (key) =>
+      settings.value.videoCardContextMenuConfig.find((item) => item.key === key)?.visible ?? true,
   )
-  if (!needsRelationships)
-    return []
+  if (!needsRelationships) return []
 
   const mids = new Set<number>()
   const { start, end } = cardWindow.loadingRange.value
@@ -1331,8 +1311,13 @@ const relationQueryMids = computed(() => {
       continue
     const author = Array.isArray(card.video?.author) ? card.video.author[0] : card.video?.author
     const mid = author?.mid
-    if (typeof mid !== 'number' || !Number.isSafeInteger(mid) || mid <= 0
-      || mid === accountMid || typeof author?.followed === 'boolean') {
+    if (
+      typeof mid !== 'number' ||
+      !Number.isSafeInteger(mid) ||
+      mid <= 0 ||
+      mid === accountMid ||
+      typeof author?.followed === 'boolean'
+    ) {
       continue
     }
     mids.add(mid)
@@ -1355,18 +1340,15 @@ function handleRefresh() {
 // 生成唯一 key
 function getUniqueKey(item: T, index: number): string | number {
   // 如果是骨架屏占位，使用骨架屏 ID
-  if ((item as any)?._skeletonId)
-    return (item as any)._skeletonId
+  if ((item as any)?._skeletonId) return (item as any)._skeletonId
 
   // 如果 item 为空或无效，使用稳定的 index 作为 key（避免随机值破坏 v-memo）
-  if (!item)
-    return `empty-${index}`
+  if (!item) return `empty-${index}`
 
   try {
     // 否则使用正常的 key
     return props.getItemKey(item, index)
-  }
-  catch {
+  } catch {
     // 如果获取 key 失败，使用稳定的 index 作为 key
     return `error-${index}`
   }
@@ -1386,13 +1368,27 @@ function getUniqueKey(item: T, index: number): string | number {
     <Empty
       v-else-if="showEmptyState"
       mt-6
-      :description="emptyDescription || (requestFailed ? requestFailedDescription || $t(hasHostPermissionFailure ? 'common.api_error.host_permission_denied' : 'common.api_error.request_failed') : $t('common.no_more_content'))"
+      :description="
+        emptyDescription ||
+        (requestFailed
+          ? requestFailedDescription ||
+            $t(
+              hasHostPermissionFailure
+                ? 'common.api_error.host_permission_denied'
+                : 'common.api_error.request_failed',
+            )
+          : $t('common.no_more_content'))
+      "
     >
       <div class="grid-state-actions">
         <Button type="primary" @click="handleRefresh">
           {{ refreshButtonText || $t('common.operation.refresh') }}
         </Button>
-        <Button v-if="requestFailed && errorReportSource" type="secondary" @click="openApiErrorDetails(errorReportSource)">
+        <Button
+          v-if="requestFailed && errorReportSource"
+          type="secondary"
+          @click="openApiErrorDetails(errorReportSource)"
+        >
           {{ $t('common.api_error.details') }}
         </Button>
       </div>
@@ -1403,11 +1399,10 @@ function getUniqueKey(item: T, index: number): string | number {
       v-else
       ref="gridContainerRef"
       class="video-card-grid-container"
-      :class="[
-        renderedGridClass,
-        { 'is-firefox': isFirefox },
-      ]"
-      m="b-0 t-0" relative w-full
+      :class="[renderedGridClass, { 'is-firefox': isFirefox }]"
+      m="b-0 t-0"
+      relative
+      w-full
       :style="gridContainerStyle"
     >
       <div
@@ -1423,10 +1418,7 @@ function getUniqueKey(item: T, index: number): string | number {
           v-if="renderItem.card && !hasCardSlots()"
           v-bind="getVideoCardProps(renderItem.card)"
         />
-        <VideoCard
-          v-else-if="renderItem.card"
-          v-bind="getVideoCardProps(renderItem.card)"
-        >
+        <VideoCard v-else-if="renderItem.card" v-bind="getVideoCardProps(renderItem.card)">
           <template v-for="(_, name) in $slots" #[name]>
             <slot :name="name" :item="renderItem.card.item" />
           </template>
@@ -1445,12 +1437,29 @@ function getUniqueKey(item: T, index: number): string | number {
     />
 
     <!-- 无更多内容或请求失败提示（仅在有数据时显示，避免与空列表提示重复） -->
-    <Empty v-if="showListEndState" class="pb-4" :description="requestFailed ? requestFailedDescription || $t(hasHostPermissionFailure ? 'common.api_error.host_permission_denied' : 'common.api_error.request_failed') : $t('common.no_more_content')">
+    <Empty
+      v-if="showListEndState"
+      class="pb-4"
+      :description="
+        requestFailed
+          ? requestFailedDescription ||
+            $t(
+              hasHostPermissionFailure
+                ? 'common.api_error.host_permission_denied'
+                : 'common.api_error.request_failed',
+            )
+          : $t('common.no_more_content')
+      "
+    >
       <div class="grid-state-actions">
         <Button type="primary" @click="handleRefresh">
           {{ refreshButtonText || $t('common.operation.refresh') }}
         </Button>
-        <Button v-if="requestFailed && errorReportSource" type="secondary" @click="openApiErrorDetails(errorReportSource)">
+        <Button
+          v-if="requestFailed && errorReportSource"
+          type="secondary"
+          @click="openApiErrorDetails(errorReportSource)"
+        >
           {{ $t('common.api_error.details') }}
         </Button>
       </div>

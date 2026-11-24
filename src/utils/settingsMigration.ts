@@ -44,8 +44,8 @@ const SETTINGS_MIGRATIONS: SettingsMigration[] = [
 ]
 
 function collectPendingSettingsMigrations(record: Record<string, unknown>): SettingsMigration[] {
-  return SETTINGS_MIGRATIONS.filter(migration =>
-    migration.legacyFields.some(field => hasOwn(record, field)),
+  return SETTINGS_MIGRATIONS.filter((migration) =>
+    migration.legacyFields.some((field) => hasOwn(record, field)),
   )
 }
 
@@ -53,8 +53,10 @@ export function hasPendingSettingsMigrations(record: Record<string, unknown>): b
   return collectPendingSettingsMigrations(record).length > 0
 }
 
-export function getPendingSettingsMigrationChoices(record: Record<string, unknown>): PendingSettingsMigrationChoice[] {
-  return collectPendingSettingsMigrations(record).map(migration => ({
+export function getPendingSettingsMigrationChoices(
+  record: Record<string, unknown>,
+): PendingSettingsMigrationChoice[] {
+  return collectPendingSettingsMigrations(record).map((migration) => ({
     id: migration.id,
     titleKey: migration.titleKey,
     value: migration.resolveValue(record),
@@ -62,20 +64,21 @@ export function getPendingSettingsMigrationChoices(record: Record<string, unknow
 }
 
 export function getPendingSettingsMigrationTitleKeys(record: Record<string, unknown>): string[] {
-  return collectPendingSettingsMigrations(record).map(migration => migration.titleKey)
+  return collectPendingSettingsMigrations(record).map((migration) => migration.titleKey)
 }
 
 export function formatSettingsMigrationConfirmMessage(
   record: Record<string, unknown>,
   t: Translate,
-  templateKey: 'settings.maintenance.migrate_legacy_settings_confirm' | 'settings.maintenance.migrate_legacy_import_confirm',
+  templateKey:
+    | 'settings.maintenance.migrate_legacy_settings_confirm'
+    | 'settings.maintenance.migrate_legacy_import_confirm',
 ): string | null {
   const titleKeys = getPendingSettingsMigrationTitleKeys(record)
-  if (!titleKeys.length)
-    return null
+  if (!titleKeys.length) return null
 
   const items = titleKeys
-    .map(key => String(t('settings.maintenance.migrate_legacy_item', { name: String(t(key)) })))
+    .map((key) => String(t('settings.maintenance.migrate_legacy_item', { name: String(t(key)) })))
     .join('\n')
 
   return String(t(templateKey, { items }))
@@ -86,14 +89,14 @@ export function applyPendingSettingsMigrations(
   values: SettingsMigrationValueMap = {},
 ): boolean {
   const pending = collectPendingSettingsMigrations(record)
-  if (!pending.length)
-    return false
+  if (!pending.length) return false
 
   for (const migration of pending) {
     const selectedValue = values[migration.id]
-    const value = hasOwn(values, migration.id) && typeof selectedValue === 'boolean'
-      ? selectedValue
-      : migration.resolveValue(record)
+    const value =
+      hasOwn(values, migration.id) && typeof selectedValue === 'boolean'
+        ? selectedValue
+        : migration.resolveValue(record)
     migration.apply(record, value)
   }
 

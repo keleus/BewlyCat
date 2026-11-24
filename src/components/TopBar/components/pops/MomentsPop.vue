@@ -13,7 +13,10 @@ import { scrollToTop } from '~/utils/main'
 import PopMediaCard from './PopMediaCard.vue'
 
 type MomentType = 'video' | 'live' | 'article'
-interface MomentTab { type: MomentType, name: any }
+interface MomentTab {
+  type: MomentType
+  name: any
+}
 
 const topBarStore = useTopBarStore()
 
@@ -33,33 +36,31 @@ const momentTabs = computed((): MomentTab[] => {
       name: t('topbar.moments_dropdown.tabs.live'),
     },
   ]
-},
-)
+})
 const selectedMomentTab = ref<MomentTab>(momentTabs.value[0])
 
 const momentsWrap = ref<HTMLElement>()
 
-watch(() => selectedMomentTab.value.type, (newVal, oldVal) => {
-  if (newVal === oldVal)
-    return
+watch(
+  () => selectedMomentTab.value.type,
+  (newVal, oldVal) => {
+    if (newVal === oldVal) return
 
-  if (momentsWrap.value)
-    scrollToTop(momentsWrap.value)
+    if (momentsWrap.value) scrollToTop(momentsWrap.value)
 
-  initData()
-})
+    initData()
+  },
+)
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
-  if (topBarStore.isLoadingMoments || topBarStore.moments.length === 0)
-    return
+  if (topBarStore.isLoadingMoments || topBarStore.moments.length === 0) return
 
   getData()
 }
 
 function handleReachTop() {
-  if (topBarStore.isLoadingMoments || topBarStore.moments.length === 0)
-    return
+  if (topBarStore.isLoadingMoments || topBarStore.moments.length === 0) return
 
   void getNewerData()
 }
@@ -72,8 +73,7 @@ useOptimizedScroll(
 
 function onClickTab(tab: MomentTab) {
   // Prevent changing tab when loading, cuz it will cause a bug
-  if (topBarStore.isLoadingMoments || tab.type === selectedMomentTab.value.type)
-    return
+  if (topBarStore.isLoadingMoments || tab.type === selectedMomentTab.value.type) return
 
   selectedMomentTab.value = tab
   // 移除这里的 initData() 调用，因为 watch 已经会处理
@@ -81,23 +81,20 @@ function onClickTab(tab: MomentTab) {
 
 async function initData() {
   void ensureWatchLaterState()
-  await loadFromStart(type => topBarStore.initMomentsData(type))
+  await loadFromStart((type) => topBarStore.initMomentsData(type))
 }
 
 async function jumpToLastSeen() {
-  if (topBarStore.isLoadingMoments)
-    return
-  await loadFromStart(type => topBarStore.jumpToLastSeenMoment(type))
+  if (topBarStore.isLoadingMoments) return
+  await loadFromStart((type) => topBarStore.jumpToLastSeenMoment(type))
 }
 
 async function loadFromStart(load: (type: MomentType) => Promise<void>) {
-  if (momentsWrap.value)
-    momentsWrap.value.scrollTop = 0
+  if (momentsWrap.value) momentsWrap.value.scrollTop = 0
   const type = selectedMomentTab.value.type
   await load(type)
   // 从上次看到的位置开始时先向上预取一批：列表在顶部时无法再触发向上滚动
-  if (type === selectedMomentTab.value.type && topBarStore.hasNewerMoments)
-    await getNewerData()
+  if (type === selectedMomentTab.value.type && topBarStore.hasNewerMoments) await getNewerData()
 }
 
 function getData() {
@@ -107,14 +104,12 @@ function getData() {
 /** 向上插入更新的动态，并按新增高度下移滚动位置，保持当前阅读位置不动 */
 async function getNewerData() {
   const wrap = momentsWrap.value
-  if (!wrap || !topBarStore.hasNewerMoments || topBarStore.isLoadingNewerMoments)
-    return
+  if (!wrap || !topBarStore.hasNewerMoments || topBarStore.isLoadingNewerMoments) return
 
   const type = selectedMomentTab.value.type
   const previousHeight = wrap.scrollHeight
   await topBarStore.getNewerTopBarMoments(type)
-  if (type !== selectedMomentTab.value.type)
-    return
+  if (type !== selectedMomentTab.value.type) return
   await nextTick()
   wrap.scrollTop += wrap.scrollHeight - previousHeight
 }
@@ -133,7 +128,8 @@ defineExpose({
 
 <template>
   <div
-    h="[calc(100vh-100px)]" max-h-500px
+    h="[calc(100vh-100px)]"
+    max-h-500px
     important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
@@ -211,7 +207,9 @@ defineExpose({
       <Empty
         v-else-if="!topBarStore.isLoadingMoments && topBarStore.moments.length === 0"
         pos="absolute top-0 left-0"
-        z="0" w="full" h="full"
+        z="0"
+        w="full"
+        h="full"
         flex="~ items-center"
       />
 
@@ -230,7 +228,8 @@ defineExpose({
             type="topBar"
             block
             class="group bew-content-card"
-            m="last:b-4" p="2"
+            m="last:b-4"
+            p="2"
             hover:bg="$bew-fill-2"
             duration-300
             pos="relative"
@@ -262,23 +261,16 @@ defineExpose({
                     type="topBar"
                     :stop-propagation="true"
                     rounded="1/2"
-                    w="24px" h="24px"
+                    w="24px"
+                    h="24px"
                     bg="$bew-skeleton"
                     flex="~ items-center justify-center"
                     shrink-0
                   >
-                    <img
-                      :src="`${moment.authorFace}@48w_48h_1c`"
-                      rounded="1/2"
-                      w="20px" h="20px"
-                    >
+                    <img :src="`${moment.authorFace}@48w_48h_1c`" rounded="1/2" w="20px" h="20px" />
                   </ALink>
 
-                  <div
-                    class="bew-top-bar-media-author--compact moments-pop__author"
-                    min-w-0
-                    flex-1
-                  >
+                  <div class="bew-top-bar-media-author--compact moments-pop__author" min-w-0 flex-1>
                     <!-- 联合投稿显示多个作者 -->
                     <template v-if="moment.isCollaborative && moment.authors">
                       <template v-for="(author, idx) in moment.authors" :key="author.jump_url">
@@ -290,7 +282,9 @@ defineExpose({
                         >
                           {{ author.name }}
                         </ALink>
-                        <span v-if="Number(idx) < moment.authors.length - 1" text="$bew-text-2">/</span>
+                        <span v-if="Number(idx) < moment.authors.length - 1" text="$bew-text-2"
+                          >/</span
+                        >
                       </template>
                     </template>
                     <!-- 单个作者 -->
@@ -305,23 +299,14 @@ defineExpose({
                     </ALink>
                   </div>
 
-                  <div
-                    class="bew-top-bar-media-meta"
-                    shrink-0
-                    whitespace-nowrap
-                  >
+                  <div class="bew-top-bar-media-meta" shrink-0 whitespace-nowrap>
                     <!-- publish time -->
                     <span v-if="selectedMomentTab.type !== 'live'" text="$bew-text-2">
                       {{ moment.pubTime }}
                     </span>
 
                     <!-- Live -->
-                    <span
-                      v-else
-                      text="$bew-theme-color"
-                      font="semibold"
-                      flex="~ items-center"
-                    >
+                    <span v-else text="$bew-theme-color" font="semibold" flex="~ items-center">
                       <span i-fluent:live-24-filled m="r-1" />
                       {{ $t('topbar.moments_dropdown.live_status') }}
                     </span>
@@ -351,21 +336,21 @@ defineExpose({
 
 <style lang="scss" scoped>
 .tab {
-  --uno: "relative text-$bew-text-2";
+  --uno: 'relative text-$bew-text-2';
   font-weight: var(--bew-font-weight-semibold);
 
   &::after {
-    --uno: "absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1";
-    --uno: "transition-colors duration-200";
-    content: "";
+    --uno: 'absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1';
+    --uno: 'transition-colors duration-200';
+    content: '';
   }
 }
 
 .tab-selected {
-  --uno: "text-$bew-text-1";
+  --uno: 'text-$bew-text-1';
 
   &::after {
-    --uno: "scale-x-80 opacity-40";
+    --uno: 'scale-x-80 opacity-40';
   }
 }
 
@@ -413,7 +398,7 @@ defineExpose({
     flex: 1;
     height: 1px;
     background: var(--bew-border-color);
-    content: "";
+    content: '';
   }
 }
 

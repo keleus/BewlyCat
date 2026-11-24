@@ -18,7 +18,13 @@ export function createInjectConfig(): UserConfig {
       thirdPartyLicensesVitePlugin('inject'),
     ],
     build: {
-      outDir: r(isFirefox ? 'extension-firefox/dist/contentScripts' : isSafari ? 'extension-safari/dist/contentScripts' : 'extension/dist/contentScripts'),
+      outDir: r(
+        isFirefox
+          ? 'extension-firefox/dist/contentScripts'
+          : isSafari
+            ? 'extension-safari/dist/contentScripts'
+            : 'extension/dist/contentScripts',
+      ),
       cssCodeSplit: false,
       emptyOutDir: false,
       sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35

@@ -6,24 +6,27 @@ import type { BewlyAppProvider } from '~/composables/useAppProvider'
 
 type Placement = 'left' | 'right' | 'top' | 'bottom' | 'bottom-left' | 'bottom-right'
 
-const props = withDefaults(defineProps<{
-  content: string
-  placement?: Placement
-  type?: 'default' | 'dark' | 'white'
-  /**
-   * 浮层模式：将提示传送至 shadow root 顶层并以 fixed 定位，
-   * 用于触发器处在 overflow:hidden 容器（如视频/动态封面）内的场景。
-   * 默认关闭，保持原位纯 CSS 浮层行为不变；找不到顶层容器时也自动回退原位模式。
-   */
-  floating?: boolean
-  /** 浮层模式下的层级；处于设置窗口等高层容器内时可上调，避免提示被容器背景遮挡。 */
-  floatingZIndex?: CSSProperties['zIndex']
-}>(), {
-  placement: 'top',
-  type: 'default',
-  floating: false,
-  floatingZIndex: 9999,
-})
+const props = withDefaults(
+  defineProps<{
+    content: string
+    placement?: Placement
+    type?: 'default' | 'dark' | 'white'
+    /**
+     * 浮层模式：将提示传送至 shadow root 顶层并以 fixed 定位，
+     * 用于触发器处在 overflow:hidden 容器（如视频/动态封面）内的场景。
+     * 默认关闭，保持原位纯 CSS 浮层行为不变；找不到顶层容器时也自动回退原位模式。
+     */
+    floating?: boolean
+    /** 浮层模式下的层级；处于设置窗口等高层容器内时可上调，避免提示被容器背景遮挡。 */
+    floatingZIndex?: CSSProperties['zIndex']
+  }>(),
+  {
+    placement: 'top',
+    type: 'default',
+    floating: false,
+    floatingZIndex: 9999,
+  },
+)
 
 // 通用组件不能假设一定挂在 Bewly App 树内（useBewlyApp 在 dev 下无 provider 会抛错），
 // 这里用安全 inject；仅 floating 模式需要它。
@@ -51,8 +54,7 @@ function clamp(value: number, min: number, max: number) {
 function place() {
   const anchorRect = anchorRef.value?.getBoundingClientRect()
   const tip = tipRef.value
-  if (!anchorRect || !tip)
-    return
+  if (!anchorRect || !tip) return
 
   const { width, height } = tip.getBoundingClientRect()
   const viewportWidth = window.innerWidth
@@ -69,27 +71,23 @@ function place() {
     // 首选方向放不下、对侧放得下时才翻转，避免临界宽度来回抖动
     const openRight = preferRight
       ? !(spaceRight < width + GAP + INSET && fits(spaceLeft, width))
-      : (!fits(spaceLeft, width) && fits(spaceRight, width))
+      : !fits(spaceLeft, width) && fits(spaceRight, width)
 
     left = openRight ? anchorRect.right + GAP : anchorRect.left - width - GAP
     top = anchorRect.top + anchorRect.height / 2 - height / 2
-  }
-  else {
+  } else {
     const spaceBelow = viewportHeight - anchorRect.bottom
     const spaceAbove = anchorRect.top
     const preferBelow = props.placement !== 'top'
     const openBelow = preferBelow
       ? !(spaceBelow < height + GAP + INSET && fits(spaceAbove, height))
-      : (!fits(spaceAbove, height) && fits(spaceBelow, height))
+      : !fits(spaceAbove, height) && fits(spaceBelow, height)
 
     top = openBelow ? anchorRect.bottom + GAP : anchorRect.top - height - GAP
 
-    if (props.placement === 'bottom-left')
-      left = anchorRect.left
-    else if (props.placement === 'bottom-right')
-      left = anchorRect.right - width
-    else
-      left = anchorRect.left + anchorRect.width / 2 - width / 2
+    if (props.placement === 'bottom-left') left = anchorRect.left
+    else if (props.placement === 'bottom-right') left = anchorRect.right - width
+    else left = anchorRect.left + anchorRect.width / 2 - width / 2
   }
 
   tipStyles.value = {
@@ -104,8 +102,7 @@ function schedulePlace() {
 }
 
 function bindRepositionListeners() {
-  if (listenersBound)
-    return
+  if (listenersBound) return
   // 元素 scroll 不跨越 Shadow DOM 边界；同时监听组件所在根与外部页面。
   const root = anchorRef.value?.getRootNode()
   scrollRoot = root instanceof ShadowRoot ? root : undefined
@@ -116,8 +113,7 @@ function bindRepositionListeners() {
 }
 
 function unbindRepositionListeners() {
-  if (!listenersBound)
-    return
+  if (!listenersBound) return
   scrollRoot?.removeEventListener('scroll', schedulePlace, { capture: true })
   scrollRoot = undefined
   window.removeEventListener('scroll', schedulePlace, { capture: true })
@@ -126,8 +122,7 @@ function unbindRepositionListeners() {
 }
 
 function showTip() {
-  if (floatingEnabled.value && props.content)
-    visible.value = true
+  if (floatingEnabled.value && props.content) visible.value = true
 }
 
 function hideTip() {
@@ -137,8 +132,7 @@ function hideTip() {
 // 仅键盘聚焦时显示：鼠标点击过的触发元素（如打开新标签页的链接）在切回标签页/窗口时
 // 会被浏览器重新聚焦，此时不匹配 :focus-visible，不应重新弹出提示。
 function handleFocusIn(event: FocusEvent) {
-  if (event.target instanceof Element && event.target.matches(':focus-visible'))
-    showTip()
+  if (event.target instanceof Element && event.target.matches(':focus-visible')) showTip()
 }
 
 // 显隐切换（含首次定位）与文案变化（加入/移除稍后再看会改变浮层宽度）共用一次重算
@@ -150,8 +144,7 @@ watch([visible, () => props.content, floatingEnabled], async ([isVisible, conten
   }
   await nextTick()
   // nextTick 期间提示可能关闭或组件卸载，不能重新挂上全局监听。
-  if (disposed || !visible.value || !props.content || !floatingEnabled.value)
-    return
+  if (disposed || !visible.value || !props.content || !floatingEnabled.value) return
   place()
   bindRepositionListeners()
 })

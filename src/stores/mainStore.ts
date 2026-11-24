@@ -96,50 +96,48 @@ export const useMainStore = defineStore('main', () => {
     ]
   })
 
-  const homeTabs = shallowReadonly<HomeTab[]>(
-    [
-      {
-        i18nKey: 'home.for_you',
-        page: HomeSubPage.ForYou,
-      },
-      {
-        i18nKey: 'home.following',
-        page: HomeSubPage.Following,
-      },
-      {
-        i18nKey: 'home.subscribed_series',
-        page: HomeSubPage.SubscribedSeries,
-      },
-      {
-        i18nKey: 'home.trending',
-        page: HomeSubPage.Trending,
-      },
-      {
-        i18nKey: 'home.weekly',
-        page: HomeSubPage.Weekly,
-      },
-      {
-        i18nKey: 'home.precious',
-        page: HomeSubPage.Precious,
-      },
-      {
-        i18nKey: 'home.ranking',
-        page: HomeSubPage.Ranking,
-      },
-      {
-        i18nKey: 'home.live',
-        page: HomeSubPage.Live,
-      },
-    ],
-  )
+  const homeTabs = shallowReadonly<HomeTab[]>([
+    {
+      i18nKey: 'home.for_you',
+      page: HomeSubPage.ForYou,
+    },
+    {
+      i18nKey: 'home.following',
+      page: HomeSubPage.Following,
+    },
+    {
+      i18nKey: 'home.subscribed_series',
+      page: HomeSubPage.SubscribedSeries,
+    },
+    {
+      i18nKey: 'home.trending',
+      page: HomeSubPage.Trending,
+    },
+    {
+      i18nKey: 'home.weekly',
+      page: HomeSubPage.Weekly,
+    },
+    {
+      i18nKey: 'home.precious',
+      page: HomeSubPage.Precious,
+    },
+    {
+      i18nKey: 'home.ranking',
+      page: HomeSubPage.Ranking,
+    },
+    {
+      i18nKey: 'home.live',
+      page: HomeSubPage.Live,
+    },
+  ])
 
   function getBiliWebPageURLByPage(page: AppPage): string {
-    const dockItem = dockItems.value.find(e => e.page === page)
+    const dockItem = dockItems.value.find((e) => e.page === page)
     return dockItem?.url || ''
   }
 
   function getDockItemByPage(page: AppPage): DockItem | undefined {
-    return dockItems.value.find(e => e.page === page)
+    return dockItems.value.find((e) => e.page === page)
   }
 
   return { dockItems, homeTabs, getBiliWebPageURLByPage, getDockItemByPage }

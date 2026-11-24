@@ -20,32 +20,25 @@ function parsePositiveInt(value: unknown): number | undefined {
 
 function normalizeMomentJumpUrl(rawUrl?: string): string {
   const trimmed = (rawUrl || '').trim()
-  if (!trimmed)
-    return ''
-  if (trimmed.startsWith('//'))
-    return localizeBilibiliUrl(`https:${trimmed}`)
+  if (!trimmed) return ''
+  if (trimmed.startsWith('//')) return localizeBilibiliUrl(`https:${trimmed}`)
   if (/^http:\/\//i.test(trimmed))
     return localizeBilibiliUrl(trimmed.replace(/^http:\/\//i, 'https://'))
-  if (/^https:\/\//i.test(trimmed))
-    return localizeBilibiliUrl(trimmed)
+  if (/^https:\/\//i.test(trimmed)) return localizeBilibiliUrl(trimmed)
   return ''
 }
 
 function isInvalidNonUserSpaceUrl(url: string, entityId?: number): boolean {
-  if (!url || !entityId)
-    return false
+  if (!url || !entityId) return false
   try {
     const parsed = new URL(url)
-    if (parsed.hostname !== 'space.bilibili.com')
-      return false
+    if (parsed.hostname !== 'space.bilibili.com') return false
     // 合法的合集地址可能在 space.bilibili.com/{upMid}/lists/{seasonId}?type=season
     // 或 space.bilibili.com/{upMid}/channel/collectiondetail?sid={seasonId}，
     // 仅拦截把合集/剧集 ID 直接当作个人空间 UID 的裸空间链接。
-    if (parsed.searchParams.has('sid') || parsed.searchParams.has('fid'))
-      return false
+    if (parsed.searchParams.has('sid') || parsed.searchParams.has('fid')) return false
     return new RegExp(`^/${entityId}(?:/dynamic)?/?$`).test(parsed.pathname)
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -54,27 +47,23 @@ function getMomentAuthorKind(item?: Partial<DataItem>): MomentAuthorKind {
   const author = item?.modules?.module_author as Partial<ModuleAuthor> | undefined
   const major = item?.modules?.module_dynamic?.major
 
-  if (author?.type === ModuleAuthorType.AuthorTypeNormal)
-    return 'user'
-  if (author?.type === ModuleAuthorType.AuthorTypeUgcSeason)
-    return 'ugc_season'
-  if (author?.type === ModuleAuthorType.AuthorTypePgc)
-    return 'pgc'
-  if (author?.type)
-    return 'other'
+  if (author?.type === ModuleAuthorType.AuthorTypeNormal) return 'user'
+  if (author?.type === ModuleAuthorType.AuthorTypeUgcSeason) return 'ugc_season'
+  if (author?.type === ModuleAuthorType.AuthorTypePgc) return 'pgc'
+  if (author?.type) return 'other'
 
   if (
-    item?.type === ItemType.DynamicTypeUgcSeason
-    || major?.type === MajorType.MajorTypeUgcSeason
-    || Boolean(major?.ugc_season)
+    item?.type === ItemType.DynamicTypeUgcSeason ||
+    major?.type === MajorType.MajorTypeUgcSeason ||
+    Boolean(major?.ugc_season)
   ) {
     return 'ugc_season'
   }
 
   if (
-    item?.type === ItemType.DynamicTypePgcUnion
-    || major?.type === MajorType.MajorTypePgc
-    || Boolean(major?.pgc)
+    item?.type === ItemType.DynamicTypePgcUnion ||
+    major?.type === MajorType.MajorTypePgc ||
+    Boolean(major?.pgc)
   ) {
     return 'pgc'
   }
@@ -97,9 +86,7 @@ export function resolveMomentAuthor(item?: Partial<DataItem>): ResolvedMomentAut
     }
   }
 
-  const safeJumpUrl = rawJumpUrl && !isInvalidNonUserSpaceUrl(rawJumpUrl, rawMid)
-    ? rawJumpUrl
-    : ''
+  const safeJumpUrl = rawJumpUrl && !isInvalidNonUserSpaceUrl(rawJumpUrl, rawMid) ? rawJumpUrl : ''
 
   if (kind === 'pgc') {
     const seasonId = parsePositiveInt(major?.pgc?.season_id) ?? rawMid

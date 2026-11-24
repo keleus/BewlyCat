@@ -3,7 +3,14 @@ import { createApp, watch } from 'vue'
 import PlayerLoudnessControl from '~/components/PlayerLoudnessControl.vue'
 import { settings, settingsReady } from '~/logic'
 import { i18n } from '~/utils/i18n'
-import { applyPictureAdjustment, loudnessTemporarilyOff, playerAdjustment, resetPictureAdjustment, resetPlayerAdjustment, syncPlayerAdjustmentVideo } from '~/utils/playerAdjustment'
+import {
+  applyPictureAdjustment,
+  loudnessTemporarilyOff,
+  playerAdjustment,
+  resetPictureAdjustment,
+  resetPlayerAdjustment,
+  syncPlayerAdjustmentVideo,
+} from '~/utils/playerAdjustment'
 
 import { schedulePlayerControlFit } from './playerControlFit'
 
@@ -11,14 +18,15 @@ let initialized = false
 
 // 画面、音画同步、音量均衡（且允许显示控制项）任一项开启才显示按钮
 function isAdjustmentButtonVisible() {
-  return settings.value.playerPictureAdjustmentEnabled
-    || settings.value.playerAudioDelayEnabled
-    || (settings.value.localLoudnessEnabled && settings.value.showLocalLoudnessControl)
+  return (
+    settings.value.playerPictureAdjustmentEnabled ||
+    settings.value.playerAudioDelayEnabled ||
+    (settings.value.localLoudnessEnabled && settings.value.showLocalLoudnessControl)
+  )
 }
 
 export function initLocalLoudnessControl() {
-  if (initialized || location.hostname === 'live.bilibili.com')
-    return
+  if (initialized || location.hostname === 'live.bilibili.com') return
   initialized = true
   const lifetime = new AbortController()
   let disposeControl: (() => void) | undefined
@@ -42,25 +50,21 @@ export function initLocalLoudnessControl() {
   }
 
   function cancelRetry() {
-    if (retry)
-      clearTimeout(retry)
+    if (retry) clearTimeout(retry)
     retry = undefined
   }
 
   function schedule() {
-    if (queued || stopped || suspended)
-      return
+    if (queued || stopped || suspended) return
     queued = true
     queueMicrotask(() => {
       queued = false
-      if (!stopped && !suspended)
-        sync()
+      if (!stopped && !suspended) sync()
     })
   }
 
   function discover() {
-    if (isAdjustmentButtonVisible())
-      syncPlayerAdjustmentVideo()
+    if (isAdjustmentButtonVisible()) syncPlayerAdjustmentVideo()
     deadline = Date.now() + 15_000
     schedule()
   }
@@ -70,22 +74,19 @@ export function initLocalLoudnessControl() {
     if (!isAdjustmentButtonVisible()) {
       // 隐藏按钮后无处还原，画面与音画调整随之重置；组件卸载前先把画面复原到视频上。
       resetPlayerAdjustment()
-      if (media)
-        applyPictureAdjustment(media)
+      if (media) applyPictureAdjustment(media)
       clearControl()
       return
     }
     const bar = document.querySelector<HTMLElement>('.bpx-player-control-bottom-right')
     const player = bar?.closest('.bpx-player-container')
     const video = player?.querySelector<HTMLVideoElement>('.bpx-player-video-wrap video')
-    if (host?.isConnected && host.parentElement === bar && media === video)
-      return
+    if (host?.isConnected && host.parentElement === bar && media === video) return
     clearControl()
     const anchor = bar?.querySelector('.bpx-player-ctrl-volume')
     // Match the widescreen control: wait for the native icon wrapper before mounting.
     if (!bar || !video || !anchor?.querySelector('.bpx-player-ctrl-btn-icon')) {
-      if (Date.now() < deadline)
-        retry = setTimeout(schedule, 500)
+      if (Date.now() < deadline) retry = setTimeout(schedule, 500)
       return
     }
     host = document.createElement('div')
@@ -104,50 +105,67 @@ export function initLocalLoudnessControl() {
       ancestor = ancestor.parentNode
     }
     const wrap = video.parentElement
-    if (wrap)
-      observer.observe(wrap, { childList: true })
+    if (wrap) observer.observe(wrap, { childList: true })
   }
 
-  window.addEventListener('pageshow', () => {
-    suspended = false
-    discover()
-  }, { signal: lifetime.signal })
-  window.addEventListener('pagehide', (event) => {
-    suspended = true
-    cancelRetry()
-    clearControl()
-    if (!event.persisted) {
-      stopped = true
-      unwatch?.()
-      lifetime.abort()
-    }
-  }, { signal: lifetime.signal })
+  window.addEventListener(
+    'pageshow',
+    () => {
+      suspended = false
+      discover()
+    },
+    { signal: lifetime.signal },
+  )
+  window.addEventListener(
+    'pagehide',
+    (event) => {
+      suspended = true
+      cancelRetry()
+      clearControl()
+      if (!event.persisted) {
+        stopped = true
+        unwatch?.()
+        lifetime.abort()
+      }
+    },
+    { signal: lifetime.signal },
+  )
 
   void settingsReady.then(() => {
-    if (stopped)
-      return
+    if (stopped) return
     // 设置页切换总开关后以设置为准，清除本页的临时关闭；隐藏音量均衡控制项后无处恢复，同样清除。
-    const stopLoudnessWatch = watch(() => settings.value.localLoudnessEnabled, () => {
-      loudnessTemporarilyOff.value = false
-    })
-    const stopLoudnessControlWatch = watch(() => settings.value.showLocalLoudnessControl, (visible) => {
-      if (!visible)
+    const stopLoudnessWatch = watch(
+      () => settings.value.localLoudnessEnabled,
+      () => {
         loudnessTemporarilyOff.value = false
-    })
+      },
+    )
+    const stopLoudnessControlWatch = watch(
+      () => settings.value.showLocalLoudnessControl,
+      (visible) => {
+        if (!visible) loudnessTemporarilyOff.value = false
+      },
+    )
     const stopTemporaryOffWatch = watch(loudnessTemporarilyOff, (off) => {
       window.postMessage({ type: 'BEWLY_LOUDNESS_TEMPORARY_OFF', off }, location.origin)
     })
     const stopVisibilityWatch = watch(isAdjustmentButtonVisible, discover, { immediate: true })
     // 单项关闭后面板里不再有入口还原，对应调整随之重置。
-    const stopItemWatch = watch(() => [settings.value.playerPictureAdjustmentEnabled, settings.value.playerAudioDelayEnabled] as const, ([picture, audioDelay]) => {
-      if (!picture) {
-        resetPictureAdjustment()
-        if (media)
-          applyPictureAdjustment(media)
-      }
-      if (!audioDelay)
-        playerAdjustment.audioDelay = 0
-    }, { immediate: true })
+    const stopItemWatch = watch(
+      () =>
+        [
+          settings.value.playerPictureAdjustmentEnabled,
+          settings.value.playerAudioDelayEnabled,
+        ] as const,
+      ([picture, audioDelay]) => {
+        if (!picture) {
+          resetPictureAdjustment()
+          if (media) applyPictureAdjustment(media)
+        }
+        if (!audioDelay) playerAdjustment.audioDelay = 0
+      },
+      { immediate: true },
+    )
     unwatch = () => {
       stopLoudnessWatch()
       stopLoudnessControlWatch()
@@ -159,9 +177,12 @@ export function initLocalLoudnessControl() {
       window.addEventListener(name, discover, { signal: lifetime.signal })
     for (const name of ['play', 'loadedmetadata'])
       document.addEventListener(name, discover, { capture: true, signal: lifetime.signal })
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible')
-        discover()
-    }, { signal: lifetime.signal })
+    document.addEventListener(
+      'visibilitychange',
+      () => {
+        if (document.visibilityState === 'visible') discover()
+      },
+      { signal: lifetime.signal },
+    )
   })
 }

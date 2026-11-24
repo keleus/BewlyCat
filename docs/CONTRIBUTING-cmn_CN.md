@@ -43,13 +43,13 @@ pnpm start:chromium
 
 1. 运行 pnpm 命令
 
-  ```bash
-  # 安装依赖
-  pnpm install
+```bash
+# 安装依赖
+pnpm install
 
-  # 运行项目
-  pnpm dev
-  ```
+# 运行项目
+pnpm dev
+```
 
 2. 在地址栏输入 `chrome://extensions/` (Chrome), `edge://extensions/` (Edge) 并按回车
 
@@ -164,11 +164,11 @@ pnpm build-firefox
 - `chore`：构建过程或工具链的变更
 - `perf`：性能改进
 - `ci`：持续集成/交付的变更
-也欢迎增加 scope 和 footer
-例如:
-`fix(dock): xxx`
-`变更描述`
-`相关 PR: url`
+  也欢迎增加 scope 和 footer
+  例如:
+  `fix(dock): xxx`
+  `变更描述`
+  `相关 PR: url`
 
 ### I18n
 

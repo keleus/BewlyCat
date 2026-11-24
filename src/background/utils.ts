@@ -12,7 +12,16 @@ import { captureApiResponse, isApiResponseFailure, reportApiFailure } from './ap
 import { createApiResponseCache } from './apiResponseCache'
 import { ApiHostPermissionError, getMissingHostPermissionOrigin } from './hostPermissions'
 import { withRequestTimeout } from './requestTimeout'
-import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, parseBilibiliApiUrl, storeWbiKeys } from './wbiSign'
+import {
+  addWbiSign,
+  clearWbiKeys,
+  getWbiKeys,
+  initWbiKeys,
+  isBilibiliNavUrl,
+  needsWbiSign,
+  parseBilibiliApiUrl,
+  storeWbiKeys,
+} from './wbiSign'
 
 const cacheApiResponse = createApiResponseCache()
 
@@ -43,8 +52,7 @@ async function toJsonHandler(data: Response): Promise<any> {
 
   // 检测是否返回了HTML（风控页面）
   if (contentType && contentType.includes('text/html')) {
-    if (isServerError)
-      throw new ApiInvalidResponseError(data.status)
+    if (isServerError) throw new ApiInvalidResponseError(data.status)
     throw new ApiRiskControlError()
   }
 
@@ -54,11 +62,13 @@ async function toJsonHandler(data: Response): Promise<any> {
 
   try {
     return await data.json()
-  }
-  catch {
+  } catch {
     // 如果JSON解析失败，可能也是风控页面
     const text = await fallbackResponse.text()
-    if (!isServerError && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html'))) {
+    if (
+      !isServerError &&
+      (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html'))
+    ) {
       throw new ApiRiskControlError()
     }
     throw new ApiInvalidResponseError(data.status)
@@ -120,7 +130,6 @@ function apiListenerFactory(API_MAP: APIMAP) {
 
     const api = API_MAP[contentScriptQuery] as API
 
-    // eslint-disable-next-line node/prefer-global/process
     if (process.env.FIREFOX && sender && sender.tab?.id) {
       if (api._fetch.credentials === 'omit' || typedMessage.bewlyNoCookie === true)
         return await doCachedRequest(typedMessage, api, sender, sender.tab, undefined, signal)
@@ -133,8 +142,7 @@ function apiListenerFactory(API_MAP: APIMAP) {
       let cookies: Browser.Cookies.Cookie[]
       try {
         cookies = await browser.cookies.getAll({ url: api.url, storeId })
-      }
-      catch (error) {
+      } catch (error) {
         const missingOrigin = await getMissingHostPermissionOrigin(api.url)
         if (missingOrigin) {
           const permissionError = new ApiHostPermissionError(missingOrigin)
@@ -163,11 +171,17 @@ function apiListenerFactory(API_MAP: APIMAP) {
   }
 }
 
-async function doCachedRequest(message: Message, api: API, sender?: Browser.Runtime.MessageSender, tab?: Browser.Tabs.Tab, cookies?: Browser.Cookies.Cookie[], signal?: AbortSignal) {
+async function doCachedRequest(
+  message: Message,
+  api: API,
+  sender?: Browser.Runtime.MessageSender,
+  tab?: Browser.Tabs.Tab,
+  cookies?: Browser.Cookies.Cookie[],
+  signal?: AbortSignal,
+) {
   signal?.throwIfAborted()
   const request = () => doRequest(message, api, sender, cookies, signal)
-  if (!api.cacheMaxAge || api._fetch.method.toLowerCase() !== 'get')
-    return request()
+  if (!api.cacheMaxAge || api._fetch.method.toLowerCase() !== 'get') return request()
 
   const noCookie = api._fetch.credentials === 'omit' || message.bewlyNoCookie === true
   let accountId = ''
@@ -175,11 +189,10 @@ async function doCachedRequest(message: Message, api: API, sender?: Browser.Runt
     try {
       // Firefox 使用实际请求的容器 Cookie；其他浏览器与后台 fetch 的默认 Cookie 保持一致。
       const accountCookie = cookies
-        ? cookies.find(cookie => cookie.name === 'DedeUserID')
+        ? cookies.find((cookie) => cookie.name === 'DedeUserID')
         : await browser.cookies.get({ url: api.url, name: 'DedeUserID' })
       accountId = accountCookie?.value ?? ''
-    }
-    catch {
+    } catch {
       // 无法确认账号时直接请求，避免误用其他账号的推荐。
       return request()
     }
@@ -195,22 +208,39 @@ async function doCachedRequest(message: Message, api: API, sender?: Browser.Runt
   ])
   // 缓存中的网络请求由所有等待者共享；一个页面取消只退出自己的等待。
   signal?.throwIfAborted()
-  return waitWithSignal(cacheApiResponse(key, api.cacheMaxAge, () => doRequest(message, api, sender, cookies)), signal)
+  return waitWithSignal(
+    cacheApiResponse(key, api.cacheMaxAge, () => doRequest(message, api, sender, cookies)),
+    signal,
+  )
 }
 
-function doRequest(message: Message, api: API, sender?: Browser.Runtime.MessageSender, cookies?: Browser.Cookies.Cookie[], signal?: AbortSignal) {
+function doRequest(
+  message: Message,
+  api: API,
+  sender?: Browser.Runtime.MessageSender,
+  cookies?: Browser.Cookies.Cookie[],
+  signal?: AbortSignal,
+) {
   if (api._fetch.method.toLowerCase() === 'get')
-    return withRequestTimeout(requestSignal => performApiRequest(message, api, sender, cookies, requestSignal), signal)
+    return withRequestTimeout(
+      (requestSignal) => performApiRequest(message, api, sender, cookies, requestSignal),
+      signal,
+    )
   return performApiRequest(message, api, sender, cookies)
 }
 
-async function performApiRequest(message: Message, api: API, sender?: Browser.Runtime.MessageSender, cookies?: Browser.Cookies.Cookie[], signal?: AbortSignal) {
+async function performApiRequest(
+  message: Message,
+  api: API,
+  sender?: Browser.Runtime.MessageSender,
+  cookies?: Browser.Cookies.Cookie[],
+  signal?: AbortSignal,
+) {
   const startedAt = Date.now()
   const attempt: ApiRequestAttempt = { url: api.url, method: api._fetch.method }
   let hasReportedFailure = false
-  const reportFailure = (failure: { response?: unknown, error?: unknown }) => {
-    if (hasReportedFailure)
-      return
+  const reportFailure = (failure: { response?: unknown; error?: unknown }) => {
+    if (hasReportedFailure) return
     // 主动取消不是接口故障；超时同样经 signal 结束，但仍需要记录。
     if (!signal?.aborted || signal.reason?.name === 'TimeoutError') {
       hasReportedFailure = true
@@ -224,7 +254,14 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
     rest = rest || {}
 
     const { _fetch, url, params = {}, afterHandle } = api
-    const { method, headers = {}, body, bodySerializer, querySerializer, credentials: configuredCredentials = 'include' } = _fetch as _FETCH
+    const {
+      method,
+      headers = {},
+      body,
+      bodySerializer,
+      querySerializer,
+      credentials: configuredCredentials = 'include',
+    } = _fetch as _FETCH
     const credentials: RequestCredentials = bewlyNoCookie ? 'omit' : configuredCredentials
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
@@ -233,14 +270,10 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
     Object.keys(rest).forEach((key) => {
       // Chrome 消息经 JSON 序列化会丢弃 undefined，Firefox 的结构化克隆会保留；
       // 统一视为未传，避免覆盖默认值或被序列化成 "undefined"。
-      if (rest[key] === undefined)
-        return
-      if (body && body[key] !== undefined)
-        targetBody[key] = rest[key]
-      if (params[key] !== undefined)
-        targetParams[key] = rest[key]
-      else if (!body || body[key] === undefined)
-        targetParams[key] = rest[key]
+      if (rest[key] === undefined) return
+      if (body && body[key] !== undefined) targetBody[key] = rest[key]
+      if (params[key] !== undefined) targetParams[key] = rest[key]
+      else if (!body || body[key] === undefined) targetParams[key] = rest[key]
     })
 
     // 与 B 站网页一致：内容接口按该参数返回 translated_title，WBI 接口需一并签名，nav 不携带。
@@ -251,15 +284,13 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
     const needsWbi = needsWbiSign(url)
     const wbiKeyOptions = { noCookie: credentials === 'omit' }
     attempt.credentials = credentials
-    if (needsWbi)
-      attempt.wbi = { signed: false, refreshedKeys: false, fellBackToUnsigned: false }
+    if (needsWbi) attempt.wbi = { signed: false, refreshedKeys: false, fellBackToUnsigned: false }
 
     // 如果需要WBI签名但没有密钥，主动获取密钥
     if (needsWbi && !getWbiKeys(wbiKeyOptions)) {
       try {
         await waitWithSignal(initWbiKeys(wbiKeyOptions), signal)
-      }
-      catch (error) {
+      } catch (error) {
         signal?.throwIfAborted()
         // 获取密钥失败，继续执行（降级到无签名请求）
         console.error('[doRequest] Failed to fetch WBI keys:', error)
@@ -295,15 +326,17 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
       if (!isGET) {
         requestBody = bodySerializer
           ? bodySerializer(targetBody)
-          : (headers && headers['Content-Type'] && headers['Content-Type'].includes('application/x-www-form-urlencoded'))
-              ? new URLSearchParams(targetBody)
-              : JSON.stringify(targetBody)
+          : headers &&
+              headers['Content-Type'] &&
+              headers['Content-Type'].includes('application/x-www-form-urlencoded')
+            ? new URLSearchParams(targetBody)
+            : JSON.stringify(targetBody)
       }
 
       // generate cookies
       const requestHeaders = { ...headers }
       if (cookies && credentials !== 'omit') {
-        const cookieStr = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
+        const cookieStr = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ')
         requestHeaders['firefox-multi-account-cookie'] = cookieStr
       }
 
@@ -324,8 +357,7 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
         credentials,
         signal,
       }
-      if (!isGET)
-        fetchOpt.body = requestBody
+      if (!isGET) fetchOpt.body = requestBody
 
       // 只记录地址和请求体；请求头含 Firefox 多账户 Cookie，不进入诊断记录。
       attempt.url = requestUrl
@@ -333,8 +365,7 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
       attempt.status = undefined
       attempt.contentType = undefined
       attempt.preview = undefined
-      if (attempt.wbi)
-        attempt.wbi.signed = useWbi
+      if (attempt.wbi) attempt.wbi.signed = useWbi
 
       return fetch(requestUrl, fetchOpt)
     }
@@ -345,10 +376,7 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
 
     function isWbiSignatureRejected(response: unknown): boolean {
       return Boolean(
-        response
-        && typeof response === 'object'
-        && 'code' in response
-        && response.code === -403,
+        response && typeof response === 'object' && 'code' in response && response.code === -403,
       )
     }
 
@@ -370,15 +398,13 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
               storeWbiKeys(img_url, sub_url, wbiKeyOptions)
             }
           }
-        }
-        catch {
+        } catch {
           // 忽略错误
         }
       }
 
       // 执行 afterHandle 处理
-      for (const func of afterHandle)
-        response = await func(response as any)
+      for (const func of afterHandle) response = await func(response as any)
 
       return response
     }
@@ -393,8 +419,7 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
         // 避免把签名失效误判成业务侧的访问权限不足。
         if (needsWbi && !hasRefreshedWbiKeys && isWbiSignatureRejected(response)) {
           hasRefreshedWbiKeys = true
-          if (attempt.wbi)
-            attempt.wbi.refreshedKeys = true
+          if (attempt.wbi) attempt.wbi.refreshedKeys = true
           console.warn('[BewlyCat][WBI] 签名被接口拒绝，刷新密钥后重试', {
             url: baseUrl,
             noCookie: wbiKeyOptions.noCookie,
@@ -411,8 +436,7 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
                 code: -403,
               })
             }
-          }
-          else {
+          } else {
             console.error('[BewlyCat][WBI] 签名被接口拒绝且密钥刷新失败', {
               url: baseUrl,
               noCookie: wbiKeyOptions.noCookie,
@@ -422,12 +446,10 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
         }
 
         return response
-      }
-      catch (error) {
+      } catch (error) {
         // 用户取消和总超时不能触发无签名重试。
         signal?.throwIfAborted()
-        if (error instanceof ApiHostPermissionError)
-          throw error
+        if (error instanceof ApiHostPermissionError) throw error
 
         const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
         if (missingOrigin) {
@@ -439,11 +461,9 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
         // 如果使用了 WBI 签名且失败，尝试不带 WBI 签名重试
         if (needsWbi && !hasTriedWithoutWbi) {
           hasTriedWithoutWbi = true
-          if (attempt.wbi)
-            attempt.wbi.fellBackToUnsigned = true
-          const errorRecord = error && typeof error === 'object'
-            ? error as Record<string, unknown>
-            : undefined
+          if (attempt.wbi) attempt.wbi.fellBackToUnsigned = true
+          const errorRecord =
+            error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined
           console.warn('[BewlyCat][WBI] 带签名请求异常，降级为无签名请求', {
             url: baseUrl,
             noCookie: wbiKeyOptions.noCookie,
@@ -458,57 +478,58 @@ async function performApiRequest(message: Message, api: API, sender?: Browser.Ru
     }
 
     // 执行请求并进行统一错误处理
-    return executeRequestWithRetry().then(async (response) => {
-      if (isApiResponseFailure(response)) {
-        const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
-        if (missingOrigin) {
-          attempt.missingHostPermission = true
-          attempt.missingHostOrigin = missingOrigin
-          const permissionError = new ApiHostPermissionError(missingOrigin)
-          reportFailure({ response, error: permissionError })
-          throw permissionError
+    return executeRequestWithRetry()
+      .then(async (response) => {
+        if (isApiResponseFailure(response)) {
+          const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+          if (missingOrigin) {
+            attempt.missingHostPermission = true
+            attempt.missingHostOrigin = missingOrigin
+            const permissionError = new ApiHostPermissionError(missingOrigin)
+            reportFailure({ response, error: permissionError })
+            throw permissionError
+          }
+          reportFailure({ response })
         }
-        reportFailure({ response })
-      }
-      return response
-    }).catch(async (error) => {
-      let resolvedError = error
-      if (
-        !(resolvedError instanceof ApiHostPermissionError)
-        && attempt.missingHostPermission === undefined
-        && !signal?.aborted
-      ) {
-        const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
-        if (missingOrigin) {
-          attempt.missingHostPermission = true
-          attempt.missingHostOrigin = missingOrigin
-          resolvedError = new ApiHostPermissionError(missingOrigin)
-        }
-      }
-      reportFailure({ error: resolvedError })
-      signal?.throwIfAborted()
-      if (resolvedError instanceof ApiHostPermissionError) {
-        throw resolvedError
-      }
-      if (resolvedError instanceof ApiRiskControlError) {
-        // 返回统一的风控错误格式
-        const riskError = new Error(resolvedError.message)
-        Object.assign(riskError, {
-          code: -412,
-          isRiskControl: true,
-        })
-        throw riskError
-      }
-      // 其他错误也返回统一格式
-      const apiError = new Error(resolvedError.message || '请求失败')
-      Object.assign(apiError, {
-        code: -1,
-        originalError: resolvedError.toString(),
+        return response
       })
-      throw apiError
-    })
-  }
-  catch (e) {
+      .catch(async (error) => {
+        let resolvedError = error
+        if (
+          !(resolvedError instanceof ApiHostPermissionError) &&
+          attempt.missingHostPermission === undefined &&
+          !signal?.aborted
+        ) {
+          const missingOrigin = await getMissingHostPermissionOrigin(attempt.url)
+          if (missingOrigin) {
+            attempt.missingHostPermission = true
+            attempt.missingHostOrigin = missingOrigin
+            resolvedError = new ApiHostPermissionError(missingOrigin)
+          }
+        }
+        reportFailure({ error: resolvedError })
+        signal?.throwIfAborted()
+        if (resolvedError instanceof ApiHostPermissionError) {
+          throw resolvedError
+        }
+        if (resolvedError instanceof ApiRiskControlError) {
+          // 返回统一的风控错误格式
+          const riskError = new Error(resolvedError.message)
+          Object.assign(riskError, {
+            code: -412,
+            isRiskControl: true,
+          })
+          throw riskError
+        }
+        // 其他错误也返回统一格式
+        const apiError = new Error(resolvedError.message || '请求失败')
+        Object.assign(apiError, {
+          code: -1,
+          originalError: resolvedError.toString(),
+        })
+        throw apiError
+      })
+  } catch (e) {
     reportFailure({ error: e })
     signal?.throwIfAborted()
     const initError = new Error(e instanceof Error ? e.message : '请求初始化失败')

@@ -17,8 +17,7 @@ const props = withDefaults(defineProps<Props>(), {
     :style="{
       width: `${percentage}%`,
       backgroundColor: props.color,
-      height:
-        typeof props.height === 'number' ? `${props.height}px` : props.height,
+      height: typeof props.height === 'number' ? `${props.height}px` : props.height,
     }"
   />
 </template>

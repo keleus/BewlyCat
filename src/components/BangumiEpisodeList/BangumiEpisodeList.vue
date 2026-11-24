@@ -47,16 +47,15 @@ const BUTTON_GAP = 8
 const MIN_BUTTONS = 6
 const DEFAULT_MAX_BUTTONS = 12
 
-const normalizedEpisodes = computed(() => Array.isArray(props.episodes) ? props.episodes : [])
+const normalizedEpisodes = computed(() => (Array.isArray(props.episodes) ? props.episodes : []))
 
 const episodeMap = computed(() => {
   const map = new Map<number, Episode>()
   // 有正片序号时跳过没有序号的特殊集；全部没有序号（如上/下篇）时按顺序编号
-  const hasNumberedEpisode = normalizedEpisodes.value.some(episode => episode.number)
+  const hasNumberedEpisode = normalizedEpisodes.value.some((episode) => episode.number)
   normalizedEpisodes.value.forEach((episode, index) => {
     const resolvedNumber = hasNumberedEpisode ? episode.number : index + 1
-    if (resolvedNumber && !map.has(resolvedNumber))
-      map.set(resolvedNumber, episode)
+    if (resolvedNumber && !map.has(resolvedNumber)) map.set(resolvedNumber, episode)
   })
   return map
 })
@@ -67,15 +66,13 @@ const episodeNumbers = computed(() => {
   const total = Number.isFinite(provided) && provided > 0 ? provided : knownNumbers.length
 
   // 列表已覆盖全部集数时用真实序号，兼容跨季连续编号（13~24）和缺集；否则按总数补齐
-  if (knownNumbers.length >= total)
-    return knownNumbers
+  if (knownNumbers.length >= total) return knownNumbers
   return Array.from({ length: total }, (_, index) => index + 1)
 })
 
 const maxVisibleButtons = computed(() => {
   const width = containerWidth.value
-  if (!width || !Number.isFinite(width))
-    return DEFAULT_MAX_BUTTONS
+  if (!width || !Number.isFinite(width)) return DEFAULT_MAX_BUTTONS
 
   const estimated = Math.floor((width + BUTTON_GAP) / (BUTTON_BASE_WIDTH + BUTTON_GAP))
   return Math.min(Math.max(estimated, MIN_BUTTONS), DEFAULT_MAX_BUTTONS)
@@ -85,8 +82,7 @@ const entries = computed<Entry[]>(() => {
   const numbers = episodeNumbers.value
   const limit = Math.max(maxVisibleButtons.value, MIN_BUTTONS)
 
-  if (numbers.length <= limit)
-    return numbers.map(createEpisodeEntry)
+  if (numbers.length <= limit) return numbers.map(createEpisodeEntry)
 
   return [
     ...numbers.slice(0, limit - 2).map(createEpisodeEntry),
@@ -114,11 +110,7 @@ function createEpisodeEntry(number: number): EpisodeEntry {
 </script>
 
 <template>
-  <div
-    v-if="entries.length"
-    ref="containerRef"
-    class="bangumi-episode-buttons"
-  >
+  <div v-if="entries.length" ref="containerRef" class="bangumi-episode-buttons">
     <template v-for="entry in entries" :key="entry.key">
       <a
         v-if="entry.type === 'episode' && !entry.disabled"
@@ -138,12 +130,7 @@ function createEpisodeEntry(number: number): EpisodeEntry {
       >
         {{ entry.number }}
       </span>
-      <span
-        v-else
-        class="episode-ellipsis"
-      >
-        …
-      </span>
+      <span v-else class="episode-ellipsis"> … </span>
     </template>
   </div>
 </template>

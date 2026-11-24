@@ -166,11 +166,13 @@
   --bew-segment-item-hover-color: var(--bew-text-1);
   --bew-segment-item-active-bg: var(--bew-theme-color-20);
   --bew-segment-item-active-color: var(--bew-theme-color);
-  --bew-segment-item-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px var(--bew-theme-color-10);
+  --bew-segment-item-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px var(--bew-theme-color-10);
   --bew-segment-item-hover-bg-white: rgba(255, 255, 255, 0.16);
   --bew-segment-item-active-bg-white: color-mix(in oklab, var(--bew-theme-color), transparent 55%);
   --bew-segment-item-active-shadow-white:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 6px color-mix(in oklab, var(--bew-theme-color), transparent 55%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 2px 6px color-mix(in oklab, var(--bew-theme-color), transparent 55%);
   --bew-liquid-indicator-bg: var(--bew-segment-item-active-bg);
   --bew-liquid-indicator-shadow: var(--bew-segment-item-active-shadow);
   --bew-liquid-indicator-radius: var(--bew-control-item-radius);
@@ -211,17 +213,18 @@
 
   // Only used in the dialog
   --bew-shadow-4:
-    0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.1), 0 30px 40px -8px rgb(0 0 0 / 0.12);
+    0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.1),
+    0 30px 40px -8px rgb(0 0 0 / 0.12);
 
   // Use this to imitate the frosted glass edge effect in components with a frosted glass design (except dialogs)
   --bew-shadow-edge-glow-1:
-    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14),
-    inset 0 0 10px rgba(255, 255, 255, 0.6);
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14), inset 0 0 10px rgba(255, 255, 255, 0.6);
 
   // Use this for dialogs with the frosted glass effect
   --bew-shadow-edge-glow-2:
-    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14),
-    inset 0 0 14px rgba(255, 255, 255, 0.62);
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14), inset 0 0 14px rgba(255, 255, 255, 0.62);
 
   // #endregion
 
@@ -322,7 +325,11 @@
 
   --bew-content-opacity: 0.68;
   // Wallpaper-facing panels keep more of the page's color than floating Pop surfaces.
-  --bew-popover-wallpaper-background: color-mix(in oklab, var(--bew-elevated-solid) 40%, transparent);
+  --bew-popover-wallpaper-background: color-mix(
+    in oklab,
+    var(--bew-elevated-solid) 40%,
+    transparent
+  );
 
   // #region Content colors, used to buttons, cards, popover and so on
   // Variable names that don't contain `solid` are used to frosted glass effect elements
@@ -405,14 +412,15 @@
   --bew-shadow-2: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.08);
   --bew-shadow-3: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --bew-shadow-4:
-    0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.12), 0 30px 40px -8px rgb(0 0 0 / 0.14);
+    0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.12),
+    0 30px 40px -8px rgb(0 0 0 / 0.14);
 
   --bew-shadow-edge-glow-1:
-    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03),
-    inset 0 0 10px rgba(255, 255, 255, 0.02);
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03), inset 0 0 10px rgba(255, 255, 255, 0.02);
   --bew-shadow-edge-glow-2:
-    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03),
-    inset 0 0 14px rgba(255, 255, 255, 0.03);
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03), inset 0 0 14px rgba(255, 255, 255, 0.03);
   // #endregion
 
   --bew-logo-color: var(--bew-text-1);
@@ -430,15 +438,21 @@
   --bew-homepage-bg-mask-opacity: 0;
   --bew-homepage-bg-mask: hsl(210 8% 16% / var(--bew-homepage-bg-mask-opacity));
 
-  --bew-content: rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 3%) r g b / var(--bew-content-opacity));
+  --bew-content: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 3%) r g b /
+      var(--bew-content-opacity)
+  );
   --bew-content-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b /
+      var(--bew-content-opacity)
   );
   --bew-content-alt: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 5%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-dark-base-color), white 5%) r g b /
+      var(--bew-content-opacity)
   );
   --bew-content-alt-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 10%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-dark-base-color), white 10%) r g b /
+      var(--bew-content-opacity)
   );
 
   --bew-content-solid: color-mix(in oklab, var(--bew-dark-base-color), white 3%);
@@ -447,10 +461,12 @@
   --bew-content-alt-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 10%);
 
   --bew-elevated: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 6%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-dark-base-color), white 6%) r g b /
+      var(--bew-content-opacity)
   );
   --bew-elevated-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 11%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-dark-base-color), white 11%) r g b /
+      var(--bew-content-opacity)
   );
   --bew-elevated-alt: var(--bew-elevated);
   --bew-elevated-alt-hover: var(--bew-elevated-hover);
@@ -523,7 +539,11 @@
     var(--bew-control-surface-tint) var(--bew-control-surface-opacity),
     transparent
   );
-  --bew-control-surface-hover: color-mix(in oklab, var(--bew-control-surface-background) 92%, var(--bew-text-1));
+  --bew-control-surface-hover: color-mix(
+    in oklab,
+    var(--bew-control-surface-background) 92%,
+    var(--bew-text-1)
+  );
   --bew-control-surface-border: color-mix(in oklab, var(--bew-text-1) 12%, transparent);
   --bew-control-surface-edge: inset 0 0 0 1px var(--bew-control-surface-border);
   --bew-control-surface-filter: none;
@@ -533,7 +553,11 @@
 .bew-page-controls--blend {
   // 壁纸遮罩越强，控件需要额外叠加的底色越少，避免浅背景上出现一整块白色。
   --bew-control-surface-opacity: calc(64% - var(--bew-control-wallpaper-mask, 0%) * 0.4);
-  --bew-control-surface-tint: color-mix(in oklab, var(--bew-content-alt-solid) 94%, var(--bew-theme-color));
+  --bew-control-surface-tint: color-mix(
+    in oklab,
+    var(--bew-content-alt-solid) 94%,
+    var(--bew-theme-color)
+  );
   --bew-control-surface-filter: var(--bew-filter-glass-1);
 }
 

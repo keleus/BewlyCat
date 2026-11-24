@@ -6,7 +6,11 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
-import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
+import type {
+  GridColumnsConfig,
+  VideoCardFontSizeSetting,
+  VideoCardLayoutSetting,
+} from '~/logic/storage'
 import {
   defaultGridColumns,
   GRID_BREAKPOINTS,
@@ -26,18 +30,22 @@ const { t } = useI18n()
 const fontSizeOptionValues: VideoCardFontSizeSetting[] = ['xs', 'sm', 'base', 'lg']
 const videoCardLayoutOptionValues: VideoCardLayoutSetting[] = ['modern', 'old']
 
-const videoCardFontSizeOptions = computed(() => fontSizeOptionValues.map(value => ({
-  label: t(`settings.font_size_option.${value}`),
-  value,
-})))
+const videoCardFontSizeOptions = computed(() =>
+  fontSizeOptionValues.map((value) => ({
+    label: t(`settings.font_size_option.${value}`),
+    value,
+  })),
+)
 
-const videoCardLayoutOptions = computed(() => videoCardLayoutOptionValues.map(value => ({
-  label: t(`settings.video_card_layout_option.${value}`),
-  value,
-})))
+const videoCardLayoutOptions = computed(() =>
+  videoCardLayoutOptionValues.map((value) => ({
+    label: t(`settings.video_card_layout_option.${value}`),
+    value,
+  })),
+)
 
 // Grid columns management - 固定断点，只修改列数
-const breakpointLabels: { key: keyof GridColumnsConfig, label: string }[] = [
+const breakpointLabels: { key: keyof GridColumnsConfig; label: string }[] = [
   { key: 'base', label: '< 640px' },
   { key: 'sm', label: `≥ ${GRID_BREAKPOINTS.sm}px` },
   { key: 'md', label: `≥ ${GRID_BREAKPOINTS.md}px` },
@@ -50,15 +58,18 @@ const gridColumnsDraft = ref<Record<keyof GridColumnsConfig, string | number>>({
   ...settings.value.gridColumns,
 })
 
-watch(() => settings.value.gridColumns, (value) => {
-  gridColumnsDraft.value = { ...value }
-}, { deep: true })
+watch(
+  () => settings.value.gridColumns,
+  (value) => {
+    gridColumnsDraft.value = { ...value }
+  },
+  { deep: true },
+)
 
 function confirmColumn(key: keyof GridColumnsConfig) {
   const value = Math.min(12, Math.max(1, Math.round(Number(gridColumnsDraft.value[key]) || 1)))
   gridColumnsDraft.value[key] = value
-  if (settings.value.gridColumns[key] === value)
-    return
+  if (settings.value.gridColumns[key] === value) return
   settings.value.gridColumns = { ...settings.value.gridColumns, [key]: value }
 }
 
@@ -68,11 +79,16 @@ function resetColumns() {
   settings.value.gridColumns = columns
 }
 
-const listLayoutBreakpointInput = ref<string | number>(settings.value.autoSwitchListLayoutBreakpoint)
+const listLayoutBreakpointInput = ref<string | number>(
+  settings.value.autoSwitchListLayoutBreakpoint,
+)
 
-watch(() => settings.value.autoSwitchListLayoutBreakpoint, (value) => {
-  listLayoutBreakpointInput.value = value
-})
+watch(
+  () => settings.value.autoSwitchListLayoutBreakpoint,
+  (value) => {
+    listLayoutBreakpointInput.value = value
+  },
+)
 
 function confirmListLayoutBreakpoint() {
   const normalizedValue = normalizeListLayoutBreakpoint(listLayoutBreakpointInput.value)
@@ -81,17 +97,14 @@ function confirmListLayoutBreakpoint() {
 }
 
 function getCoverRatioProgress(value: number) {
-  return `${(value - VIDEO_CARD_COVER_RATIO_MIN) / (VIDEO_CARD_COVER_RATIO_MAX - VIDEO_CARD_COVER_RATIO_MIN) * 100}%`
+  return `${((value - VIDEO_CARD_COVER_RATIO_MIN) / (VIDEO_CARD_COVER_RATIO_MAX - VIDEO_CARD_COVER_RATIO_MIN)) * 100}%`
 }
 </script>
 
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_video_card_display')">
-      <SettingsItem
-        :title="$t('settings.video_card_layout')"
-        right-width="auto"
-      >
+      <SettingsItem :title="$t('settings.video_card_layout')" right-width="auto">
         <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
       </SettingsItem>
 
@@ -100,7 +113,10 @@ function getCoverRatioProgress(value: number) {
       </SettingsItem>
 
       <template v-if="settings.enableVideoPreview">
-        <SettingsItem :title="$t('settings.enable_video_ctrl_bar_on_video_card')" right-width="auto">
+        <SettingsItem
+          :title="$t('settings.enable_video_ctrl_bar_on_video_card')"
+          right-width="auto"
+        >
           <Radio v-model="settings.enableVideoCtrlBarOnVideoCard" />
         </SettingsItem>
 
@@ -131,9 +147,7 @@ function getCoverRatioProgress(value: number) {
     </SettingsItemGroup>
 
     <!-- 视频卡片网格：打开设置时直接展示断点配置 -->
-    <SettingsItemGroup
-      :title="$t('settings.group_video_card_grid')"
-    >
+    <SettingsItemGroup :title="$t('settings.group_video_card_grid')">
       <SettingsItem
         :title="$t('settings.auto_switch_list_layout')"
         :desc="$t('settings.auto_switch_list_layout_desc')"
@@ -147,7 +161,11 @@ function getCoverRatioProgress(value: number) {
             @blur="confirmListLayoutBreakpoint"
           >
             <template #prefix>
-              <span class="list-layout-control__label" :data-settings-title="$t('settings.auto_switch_list_layout_breakpoint')">{{ $t('settings.auto_switch_list_layout_breakpoint') }}</span>
+              <span
+                class="list-layout-control__label"
+                :data-settings-title="$t('settings.auto_switch_list_layout_breakpoint')"
+                >{{ $t('settings.auto_switch_list_layout_breakpoint') }}</span
+              >
             </template>
             <template #suffix>
               <span class="list-layout-control__unit">px</span>
@@ -164,7 +182,11 @@ function getCoverRatioProgress(value: number) {
       >
         <div class="cover-ratio-controls">
           <label class="cover-ratio-control">
-            <span class="cover-ratio-control__label" :data-settings-title="$t('settings.video_card_cover_ratio_one_column')">{{ $t('settings.video_card_cover_ratio_one_column') }}</span>
+            <span
+              class="cover-ratio-control__label"
+              :data-settings-title="$t('settings.video_card_cover_ratio_one_column')"
+              >{{ $t('settings.video_card_cover_ratio_one_column') }}</span
+            >
             <input
               v-model.number="settings.videoCardCoverRatioOneColumn"
               type="range"
@@ -172,12 +194,22 @@ function getCoverRatioProgress(value: number) {
               :max="VIDEO_CARD_COVER_RATIO_MAX"
               :step="VIDEO_CARD_COVER_RATIO_STEP"
               class="cover-ratio-control__slider"
-              :style="{ '--cover-ratio-progress': getCoverRatioProgress(settings.videoCardCoverRatioOneColumn) }"
+              :style="{
+                '--cover-ratio-progress': getCoverRatioProgress(
+                  settings.videoCardCoverRatioOneColumn,
+                ),
+              }"
+            />
+            <span class="cover-ratio-control__value"
+              >{{ settings.videoCardCoverRatioOneColumn }}%</span
             >
-            <span class="cover-ratio-control__value">{{ settings.videoCardCoverRatioOneColumn }}%</span>
           </label>
           <label class="cover-ratio-control">
-            <span class="cover-ratio-control__label" :data-settings-title="$t('settings.video_card_cover_ratio_two_columns')">{{ $t('settings.video_card_cover_ratio_two_columns') }}</span>
+            <span
+              class="cover-ratio-control__label"
+              :data-settings-title="$t('settings.video_card_cover_ratio_two_columns')"
+              >{{ $t('settings.video_card_cover_ratio_two_columns') }}</span
+            >
             <input
               v-model.number="settings.videoCardCoverRatioTwoColumns"
               type="range"
@@ -185,21 +217,27 @@ function getCoverRatioProgress(value: number) {
               :max="VIDEO_CARD_COVER_RATIO_MAX"
               :step="VIDEO_CARD_COVER_RATIO_STEP"
               class="cover-ratio-control__slider"
-              :style="{ '--cover-ratio-progress': getCoverRatioProgress(settings.videoCardCoverRatioTwoColumns) }"
+              :style="{
+                '--cover-ratio-progress': getCoverRatioProgress(
+                  settings.videoCardCoverRatioTwoColumns,
+                ),
+              }"
+            />
+            <span class="cover-ratio-control__value"
+              >{{ settings.videoCardCoverRatioTwoColumns }}%</span
             >
-            <span class="cover-ratio-control__value">{{ settings.videoCardCoverRatioTwoColumns }}%</span>
           </label>
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.grid_breakpoints')"
+        :desc="$t('settings.grid_breakpoints_desc')"
+        right-width="auto"
+      >
         <template #bottom>
           <div class="grid-breakpoints">
-            <div
-              v-for="bp in breakpointLabels"
-              :key="bp.key"
-              class="grid-breakpoints__item"
-            >
+            <div v-for="bp in breakpointLabels" :key="bp.key" class="grid-breakpoints__item">
               <span class="grid-breakpoints__label">{{ bp.label }}</span>
               <Input
                 v-model="gridColumnsDraft[bp.key]"
@@ -227,25 +265,28 @@ function getCoverRatioProgress(value: number) {
     >
       <VideoCardContentEditor />
 
-      <SettingsItem
-        :title="$t('settings.video_card_title_font_size')"
-        right-width="auto"
-      >
-        <Select v-model="settings.videoCardTitleFontSize" :options="videoCardFontSizeOptions" w="160px" />
+      <SettingsItem :title="$t('settings.video_card_title_font_size')" right-width="auto">
+        <Select
+          v-model="settings.videoCardTitleFontSize"
+          :options="videoCardFontSizeOptions"
+          w="160px"
+        />
       </SettingsItem>
 
-      <SettingsItem
-        :title="$t('settings.video_card_author_font_size')"
-        right-width="auto"
-      >
-        <Select v-model="settings.videoCardAuthorFontSize" :options="videoCardFontSizeOptions" w="160px" />
+      <SettingsItem :title="$t('settings.video_card_author_font_size')" right-width="auto">
+        <Select
+          v-model="settings.videoCardAuthorFontSize"
+          :options="videoCardFontSizeOptions"
+          w="160px"
+        />
       </SettingsItem>
 
-      <SettingsItem
-        :title="$t('settings.video_card_meta_font_size')"
-        right-width="auto"
-      >
-        <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="160px" />
+      <SettingsItem :title="$t('settings.video_card_meta_font_size')" right-width="auto">
+        <Select
+          v-model="settings.videoCardMetaFontSize"
+          :options="videoCardFontSizeOptions"
+          w="160px"
+        />
       </SettingsItem>
     </SettingsItemGroup>
 
@@ -287,7 +328,7 @@ function getCoverRatioProgress(value: number) {
     border: 1px solid color-mix(in oklab, var(--bew-border-color), var(--bew-fill-2) 60%);
     background: var(--bew-fill-1);
 
-    :deep(input[type="number"]) {
+    :deep(input[type='number']) {
       appearance: textfield;
       background: transparent;
       color: var(--bew-text-1);

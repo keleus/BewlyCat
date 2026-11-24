@@ -16,8 +16,7 @@ const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
 }
 
 export function shouldUsePluginSearchResultsPage(): boolean {
-  return settings.value.usePluginSearchResultsPage
-    && !settings.value.useOriginalBilibiliHomepage
+  return settings.value.usePluginSearchResultsPage && !settings.value.useOriginalBilibiliHomepage
 }
 
 /**
@@ -30,8 +29,7 @@ export function buildNativeSearchUrl(keyword: string): string {
   const normalized = keyword.trim()
   const targetUrl = new URL('https://search.bilibili.com/all')
 
-  if (normalized)
-    targetUrl.searchParams.set('keyword', normalized)
+  if (normalized) targetUrl.searchParams.set('keyword', normalized)
 
   return targetUrl.toString()
 }
@@ -64,12 +62,10 @@ const PLUGIN_SEARCH_RESET_PARAMS = [
  * 或从其他 B 站页面跳到插件搜索结果。返回 true 表示已接管导航。
  */
 export function navigateToPluginSearchResults(keyword: string): boolean {
-  if (!shouldUsePluginSearchResultsPage())
-    return false
+  if (!shouldUsePluginSearchResultsPage()) return false
 
   const normalized = keyword.trim()
-  if (!normalized)
-    return false
+  if (!normalized) return false
 
   const targetUrl = `https://www.bilibili.com/?page=SearchResults&keyword=${encodeURIComponent(normalized)}`
 
@@ -87,8 +83,7 @@ export function navigateToPluginSearchResults(keyword: string): boolean {
   const params = new URLSearchParams(window.location.search)
   params.set('page', 'SearchResults')
   params.set('keyword', normalized)
-  for (const key of PLUGIN_SEARCH_RESET_PARAMS)
-    params.delete(key)
+  for (const key of PLUGIN_SEARCH_RESET_PARAMS) params.delete(key)
 
   window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`)
   window.dispatchEvent(new Event('pushstate'))
@@ -110,12 +105,9 @@ export function openSearchResults(keyword: string): void {
   }
 
   let target = '_blank'
-  if (mode === 'currentTabIfNotHomepage')
-    target = isActualHomepage() ? '_blank' : '_self'
-  else if (mode === 'currentTabIfHomepage')
-    target = isActualHomepage() ? '_self' : '_blank'
-  else if (mode === 'currentTab')
-    target = '_self'
+  if (mode === 'currentTabIfNotHomepage') target = isActualHomepage() ? '_blank' : '_self'
+  else if (mode === 'currentTabIfHomepage') target = isActualHomepage() ? '_self' : '_blank'
+  else if (mode === 'currentTab') target = '_self'
 
   window.open(searchUrl, target)
 }
@@ -128,10 +120,10 @@ export function openSearchResults(keyword: string): void {
 export function navigateToPluginSearchResultsInPlace(keyword: string): boolean {
   const mode = settings.value.searchBarLinkOpenMode
   if (
-    mode === 'newTab'
-    || mode === 'background'
-    || (mode === 'currentTabIfNotHomepage' && isActualHomepage())
-    || (mode === 'currentTabIfHomepage' && !isActualHomepage())
+    mode === 'newTab' ||
+    mode === 'background' ||
+    (mode === 'currentTabIfNotHomepage' && isActualHomepage()) ||
+    (mode === 'currentTabIfHomepage' && !isActualHomepage())
   ) {
     return false
   }
@@ -147,15 +139,14 @@ export function getPluginSearchResultsUrl(value: string): string | null {
   try {
     const sourceUrl = new URL(value)
     if (
-      (sourceUrl.protocol !== 'http:' && sourceUrl.protocol !== 'https:')
-      || sourceUrl.hostname !== 'search.bilibili.com'
+      (sourceUrl.protocol !== 'http:' && sourceUrl.protocol !== 'https:') ||
+      sourceUrl.hostname !== 'search.bilibili.com'
     ) {
       return null
     }
 
     const keyword = sourceUrl.searchParams.get('keyword')?.trim()
-    if (!keyword)
-      return null
+    if (!keyword) return null
 
     const targetUrl = new URL('https://www.bilibili.com/')
     targetUrl.searchParams.set('page', 'SearchResults')
@@ -163,12 +154,10 @@ export function getPluginSearchResultsUrl(value: string): string | null {
 
     const nativeCategory = sourceUrl.pathname.split('/').filter(Boolean)[0]?.toLowerCase()
     const pluginCategory = nativeCategory && NATIVE_SEARCH_CATEGORY_BY_PATH[nativeCategory]
-    if (pluginCategory)
-      targetUrl.searchParams.set('category', pluginCategory)
+    if (pluginCategory) targetUrl.searchParams.set('category', pluginCategory)
 
     return targetUrl.toString()
-  }
-  catch {
+  } catch {
     return null
   }
 }

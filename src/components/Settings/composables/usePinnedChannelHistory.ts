@@ -11,15 +11,13 @@ export function createPinnedChannelHistory(selection: Ref<string[]>) {
     writing = true
     try {
       selection.value = [...keys]
-    }
-    finally {
+    } finally {
       writing = false
     }
   }
 
   function save(keys: string[]) {
-    if (JSON.stringify(keys) === JSON.stringify(selection.value))
-      return
+    if (JSON.stringify(keys) === JSON.stringify(selection.value)) return
     history.value.push([...selection.value])
     triggerRef(history)
     externalChange.value = false
@@ -28,20 +26,22 @@ export function createPinnedChannelHistory(selection: Ref<string[]>) {
 
   function undo() {
     const previous = history.value.pop()
-    if (!previous)
-      return
+    if (!previous) return
     triggerRef(history)
     externalChange.value = false
     write(previous)
   }
 
   // Ignore equal storage echoes, but do not overwrite changes from another tab/import.
-  watch(() => JSON.stringify(selection.value), () => {
-    if (writing)
-      return
-    history.value = []
-    externalChange.value = true
-  }, { flush: 'sync' })
+  watch(
+    () => JSON.stringify(selection.value),
+    () => {
+      if (writing) return
+      history.value = []
+      externalChange.value = true
+    },
+    { flush: 'sync' },
+  )
 
   function reset() {
     history.value = []
@@ -53,4 +53,5 @@ export function createPinnedChannelHistory(selection: Ref<string[]>) {
   return { save, undo, reset, externalChange, canUndo: computed(() => history.value.length > 0) }
 }
 
-export const pinnedChannelHistoryKey: InjectionKey<ReturnType<typeof createPinnedChannelHistory>> = Symbol('pinnedChannelHistory')
+export const pinnedChannelHistoryKey: InjectionKey<ReturnType<typeof createPinnedChannelHistory>> =
+  Symbol('pinnedChannelHistory')

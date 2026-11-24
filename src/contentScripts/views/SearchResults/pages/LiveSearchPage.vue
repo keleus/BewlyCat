@@ -84,25 +84,26 @@ const {
   setHasMore,
   setExhausted,
   reset: resetLoadMore,
-} = useLoadMore(async () => {
-  const success = await performSearch(true)
-  const itemsCount = getCurrentResultLength()
-  return { success, itemsCount }
-}, {
-  isLoading: () => isLoading.value,
-})
+} = useLoadMore(
+  async () => {
+    const success = await performSearch(true)
+    const itemsCount = getCurrentResultLength()
+    return { success, itemsCount }
+  },
+  {
+    isLoading: () => isLoading.value,
+  },
+)
 
 // 获取直播间列表
 const liveRoomList = computed(() => {
-  if (!results.value?.result)
-    return []
+  if (!results.value?.result) return []
   return Array.isArray(results.value.result.live_room) ? results.value.result.live_room : []
 })
 
 // 获取主播列表
 const liveUserList = computed(() => {
-  if (!results.value?.result)
-    return []
+  if (!results.value?.result) return []
   return Array.isArray(results.value.result.live_user) ? results.value.result.live_user : []
 })
 
@@ -121,11 +122,9 @@ const isInPaginationNonFirstPage = computed(() => {
 
 // 是否显示空状态（仅在 live_user 子分类或 all 子分类下两个列表都为空时）
 const showEmptyState = computed(() => {
-  if (isLoading.value)
-    return false
+  if (isLoading.value) return false
 
-  if (props.filters.subCategory === 'live_user')
-    return liveUserList.value.length === 0
+  if (props.filters.subCategory === 'live_user') return liveUserList.value.length === 0
 
   if (props.filters.subCategory === 'all')
     return liveUserList.value.length === 0 && liveRoomList.value.length === 0
@@ -149,21 +148,24 @@ function getCurrentResultLength(): number {
 }
 
 // 监听关键词变化
-watch(() => props.keyword, async (newKeyword, oldKeyword) => {
-  const normalizedNew = (newKeyword || '').trim()
-  const normalizedOld = (oldKeyword || '').trim()
+watch(
+  () => props.keyword,
+  async (newKeyword, oldKeyword) => {
+    const normalizedNew = (newKeyword || '').trim()
+    const normalizedOld = (oldKeyword || '').trim()
 
-  if (!normalizedNew) {
-    resetAll()
-    return
-  }
+    if (!normalizedNew) {
+      resetAll()
+      return
+    }
 
-  // 关键词变化时才执行
-  if (normalizedNew !== normalizedOld) {
-    resetAll()
-    await performSearch(false)
-  }
-})
+    // 关键词变化时才执行
+    if (normalizedNew !== normalizedOld) {
+      resetAll()
+      await performSearch(false)
+    }
+  },
+)
 
 // 组件挂载时立即执行搜索
 onMounted(() => {
@@ -178,42 +180,46 @@ onMounted(() => {
 })
 
 // 监听筛选条件变化
-watch(() => props.filters, (newFilters, oldFilters) => {
-  if (!props.keyword.trim())
-    return
+watch(
+  () => props.filters,
+  (newFilters, oldFilters) => {
+    if (!props.keyword.trim()) return
 
-  // 如果只是排序变化，特殊处理
-  if (newFilters.subCategory === oldFilters?.subCategory) {
-    // 只刷新对应的部分
-    if (newFilters.subCategory === 'all' && newFilters.roomOrder !== oldFilters?.roomOrder) {
-      // 全部模式下，只刷新直播间排序
-      void refreshLiveRoomsOnly()
-      return
+    // 如果只是排序变化，特殊处理
+    if (newFilters.subCategory === oldFilters?.subCategory) {
+      // 只刷新对应的部分
+      if (newFilters.subCategory === 'all' && newFilters.roomOrder !== oldFilters?.roomOrder) {
+        // 全部模式下，只刷新直播间排序
+        void refreshLiveRoomsOnly()
+        return
+      }
     }
-  }
 
-  // 其他情况完全重新搜索
-  resetAll()
-  void performSearch(false)
-}, { deep: true })
+    // 其他情况完全重新搜索
+    resetAll()
+    void performSearch(false)
+  },
+  { deep: true },
+)
 
 async function performSearch(loadMore: boolean): Promise<boolean> {
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return false
+  if (!keyword) return false
 
   // 分页模式下不支持 loadMore
   const isLoadMore = paginationMode.value === 'scroll' && loadMore
 
-  if (isLoadMore && (isLoading.value || exhausted.value))
-    return false
+  if (isLoadMore && (isLoading.value || exhausted.value)) return false
 
-  if (!isLoadMore)
-    setExhausted(false)
+  if (!isLoadMore) setExhausted(false)
 
   // 滚动模式下：loadMore 使用 getNextPage，否则从第1页开始
   // 翻页模式下：使用 currentPage（如果有设置）或从第1页开始
-  const targetPage = isLoadMore ? getNextPage(true) : (currentPage.value > 0 ? currentPage.value : getNextPage(false))
+  const targetPage = isLoadMore
+    ? getNextPage(true)
+    : currentPage.value > 0
+      ? currentPage.value
+      : getNextPage(false)
   const previousLength = getCurrentResultLength()
 
   let success = false
@@ -230,8 +236,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
         order: props.filters.roomOrder || 'online',
       },
     )
-  }
-  else if (props.filters.subCategory === 'live_user') {
+  } else if (props.filters.subCategory === 'live_user') {
     // 仅搜索主播
     success = await search(
       keyword,
@@ -242,22 +247,16 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
         order: props.filters.userOrder || 'online',
       },
     )
-  }
-  else {
+  } else {
     // 全部（默认使用live类型，包含直播间和主播）
-    success = await search(
-      keyword,
-      (params, request) => api.search.searchLive(params, request),
-      {
-        page: targetPage,
-        page_size: SEARCH_PAGE_SIZES.live,
-        order: props.filters.roomOrder || 'online',
-      },
-    )
+    success = await search(keyword, (params, request) => api.search.searchLive(params, request), {
+      page: targetPage,
+      page_size: SEARCH_PAGE_SIZES.live,
+      order: props.filters.roomOrder || 'online',
+    })
   }
 
-  if (!success || !lastResponse.value?.data)
-    return false
+  if (!success || !lastResponse.value?.data) return false
 
   const rawData = lastResponse.value.data
 
@@ -267,11 +266,17 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     // 主播搜索：尝试嵌套结构和扁平结构
     const incomingList = Array.isArray(rawData?.result?.live_user)
       ? rawData.result.live_user
-      : (Array.isArray(rawData?.result) ? rawData.result : [])
-    const prevUsers = Array.isArray(results.value?.result?.live_user) ? results.value.result.live_user : []
+      : Array.isArray(rawData?.result)
+        ? rawData.result
+        : []
+    const prevUsers = Array.isArray(results.value?.result?.live_user)
+      ? results.value.result.live_user
+      : []
 
     const mergedUsers = isLoadMore
-      ? dedupeByKey([...prevUsers, ...incomingList], item => String(item?.mid ?? JSON.stringify(item)))
+      ? dedupeByKey([...prevUsers, ...incomingList], (item) =>
+          String(item?.mid ?? JSON.stringify(item)),
+        )
       : incomingList
 
     results.value = {
@@ -288,17 +293,22 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     // 提取分页信息
     extractPagination(rawData, incomingList.length)
     liveUserTotalResults.value = totalResults.value
-  }
-  else if (props.filters.subCategory === 'live_room') {
+  } else if (props.filters.subCategory === 'live_room') {
     resetUserRelations()
     // 直播间搜索：尝试嵌套结构和扁平结构
     const incomingList = Array.isArray(rawData?.result?.live_room)
       ? rawData.result.live_room
-      : (Array.isArray(rawData?.result) ? rawData.result : [])
-    const prevRooms = Array.isArray(results.value?.result?.live_room) ? results.value.result.live_room : []
+      : Array.isArray(rawData?.result)
+        ? rawData.result
+        : []
+    const prevRooms = Array.isArray(results.value?.result?.live_room)
+      ? results.value.result.live_room
+      : []
 
     const mergedRooms = isLoadMore
-      ? dedupeByKey([...prevRooms, ...incomingList], item => String(item?.roomid ?? item?.id ?? JSON.stringify(item)))
+      ? dedupeByKey([...prevRooms, ...incomingList], (item) =>
+          String(item?.roomid ?? item?.id ?? JSON.stringify(item)),
+        )
       : incomingList
 
     results.value = {
@@ -311,22 +321,25 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     // 提取分页信息
     extractPagination(rawData, incomingList.length)
     liveRoomTotalResults.value = totalResults.value
-  }
-  else {
+  } else {
     // 全部模式：包含直播间和主播
     const incomingRooms = Array.isArray(rawData?.result?.live_room) ? rawData.result.live_room : []
     const incomingUsers = Array.isArray(rawData?.result?.live_user) ? rawData.result.live_user : []
 
-    const prevRooms = Array.isArray(results.value?.result?.live_room) ? results.value.result.live_room : []
-    const prevUsers = Array.isArray(results.value?.result?.live_user) ? results.value.result.live_user : []
+    const prevRooms = Array.isArray(results.value?.result?.live_room)
+      ? results.value.result.live_room
+      : []
+    const prevUsers = Array.isArray(results.value?.result?.live_user)
+      ? results.value.result.live_user
+      : []
 
     const mergedRooms = isLoadMore
-      ? dedupeByKey([...prevRooms, ...incomingRooms], item => String(item?.roomid ?? item?.id ?? JSON.stringify(item)))
+      ? dedupeByKey([...prevRooms, ...incomingRooms], (item) =>
+          String(item?.roomid ?? item?.id ?? JSON.stringify(item)),
+        )
       : incomingRooms
 
-    const mergedUsers = isLoadMore
-      ? prevUsers
-      : incomingUsers
+    const mergedUsers = isLoadMore ? prevUsers : incomingUsers
 
     results.value = {
       result: {
@@ -340,27 +353,32 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     await batchQueryUserRelations(mids)
 
     // 提取分页信息（基于直播间）
-    const liveRoomTotal = Number(rawData?.pageinfo?.live_room?.total)
-      || Number(rawData?.pageinfo?.live_room?.numResults)
-      || incomingRooms.length
-      || 0
+    const liveRoomTotal =
+      Number(rawData?.pageinfo?.live_room?.total) ||
+      Number(rawData?.pageinfo?.live_room?.numResults) ||
+      incomingRooms.length ||
+      0
 
-    const liveUserTotal = Number(rawData?.pageinfo?.live_user?.total)
-      || Number(rawData?.pageinfo?.live_user?.numResults)
-      || incomingUsers.length
-      || 0
+    const liveUserTotal =
+      Number(rawData?.pageinfo?.live_user?.total) ||
+      Number(rawData?.pageinfo?.live_user?.numResults) ||
+      incomingUsers.length ||
+      0
 
     liveRoomTotalResults.value = liveRoomTotal
     liveUserTotalResults.value = liveUserTotal
 
     // 使用直播间的分页信息
     // 注意：只传递直播间相关的分页信息，避免使用原始数据中可能包含的错误总页数
-    extractPagination({
-      total: liveRoomTotal,
-      numResults: liveRoomTotal,
-      pagesize: rawData?.pagesize || SEARCH_PAGE_SIZES.live,
-      pageinfo: rawData?.pageinfo?.live_room,
-    }, incomingRooms.length)
+    extractPagination(
+      {
+        total: liveRoomTotal,
+        numResults: liveRoomTotal,
+        pagesize: rawData?.pagesize || SEARCH_PAGE_SIZES.live,
+        pageinfo: rawData?.pageinfo?.live_room,
+      },
+      incomingRooms.length,
+    )
   }
 
   updatePage(targetPage)
@@ -371,20 +389,23 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     const finalLength = getCurrentResultLength()
     const newItems = Math.max(finalLength - previousLength, 0)
 
-    const incomingLength = props.filters.subCategory === 'all'
-      ? (Array.isArray(rawData?.result?.live_room) ? rawData.result.live_room.length : 0)
-      : (Array.isArray(rawData?.result) ? rawData.result.length : 0)
+    const incomingLength =
+      props.filters.subCategory === 'all'
+        ? Array.isArray(rawData?.result?.live_room)
+          ? rawData.result.live_room.length
+          : 0
+        : Array.isArray(rawData?.result)
+          ? rawData.result.length
+          : 0
 
     if (incomingLength === 0) {
       setExhausted(true)
-    }
-    else if (newItems <= 0 && targetPage >= totalPages.value) {
+    } else if (newItems <= 0 && targetPage >= totalPages.value) {
       setExhausted(true)
     }
 
     // 处理加载完成
-    if (isLoadMore)
-      await handleLoadMoreCompletion(haveScrollbar)
+    if (isLoadMore) await handleLoadMoreCompletion(haveScrollbar)
   }
 
   return true
@@ -392,12 +413,10 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
 // 翻页模式的页码切换
 async function handlePageChange(page: number) {
-  if (paginationMode.value !== 'pagination')
-    return
+  if (paginationMode.value !== 'pagination') return
 
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return
+  if (!keyword) return
 
   // 先滚动到顶部
   handleBackToTop()
@@ -419,8 +438,7 @@ async function handlePageChange(page: number) {
         order: props.filters.roomOrder || 'online',
       },
     )
-  }
-  else if (props.filters.subCategory === 'live_user') {
+  } else if (props.filters.subCategory === 'live_user') {
     // 仅搜索主播
     success = await search(
       keyword,
@@ -431,18 +449,13 @@ async function handlePageChange(page: number) {
         order: props.filters.userOrder || 'online',
       },
     )
-  }
-  else {
+  } else {
     // 全部（默认使用live类型，包含直播间和主播）
-    success = await search(
-      keyword,
-      (params, request) => api.search.searchLive(params, request),
-      {
-        page,
-        page_size: SEARCH_PAGE_SIZES.live,
-        order: props.filters.roomOrder || 'online',
-      },
-    )
+    success = await search(keyword, (params, request) => api.search.searchLive(params, request), {
+      page,
+      page_size: SEARCH_PAGE_SIZES.live,
+      order: props.filters.roomOrder || 'online',
+    })
   }
 
   if (!success || !lastResponse.value?.data) {
@@ -458,7 +471,9 @@ async function handlePageChange(page: number) {
     // 主播搜索：尝试嵌套结构和扁平结构
     const incomingList = Array.isArray(rawData?.result?.live_user)
       ? rawData.result.live_user
-      : (Array.isArray(rawData?.result) ? rawData.result : [])
+      : Array.isArray(rawData?.result)
+        ? rawData.result
+        : []
 
     results.value = {
       result: {
@@ -474,13 +489,14 @@ async function handlePageChange(page: number) {
     // 提取分页信息
     extractPagination(rawData, incomingList.length)
     liveUserTotalResults.value = totalResults.value
-  }
-  else if (props.filters.subCategory === 'live_room') {
+  } else if (props.filters.subCategory === 'live_room') {
     resetUserRelations()
     // 直播间搜索：尝试嵌套结构和扁平结构
     const incomingList = Array.isArray(rawData?.result?.live_room)
       ? rawData.result.live_room
-      : (Array.isArray(rawData?.result) ? rawData.result : [])
+      : Array.isArray(rawData?.result)
+        ? rawData.result
+        : []
 
     results.value = {
       result: {
@@ -492,8 +508,7 @@ async function handlePageChange(page: number) {
     // 提取分页信息
     extractPagination(rawData, incomingList.length)
     liveRoomTotalResults.value = totalResults.value
-  }
-  else {
+  } else {
     // 全部模式：包含直播间和主播
     const incomingRooms = Array.isArray(rawData?.result?.live_room) ? rawData.result.live_room : []
     const incomingUsers = Array.isArray(rawData?.result?.live_user) ? rawData.result.live_user : []
@@ -510,27 +525,32 @@ async function handlePageChange(page: number) {
     await batchQueryUserRelations(mids)
 
     // 提取分页信息（基于直播间）
-    const liveRoomTotal = Number(rawData?.pageinfo?.live_room?.total)
-      || Number(rawData?.pageinfo?.live_room?.numResults)
-      || incomingRooms.length
-      || 0
+    const liveRoomTotal =
+      Number(rawData?.pageinfo?.live_room?.total) ||
+      Number(rawData?.pageinfo?.live_room?.numResults) ||
+      incomingRooms.length ||
+      0
 
-    const liveUserTotal = Number(rawData?.pageinfo?.live_user?.total)
-      || Number(rawData?.pageinfo?.live_user?.numResults)
-      || incomingUsers.length
-      || 0
+    const liveUserTotal =
+      Number(rawData?.pageinfo?.live_user?.total) ||
+      Number(rawData?.pageinfo?.live_user?.numResults) ||
+      incomingUsers.length ||
+      0
 
     liveRoomTotalResults.value = liveRoomTotal
     liveUserTotalResults.value = liveUserTotal
 
     // 使用直播间的分页信息
     // 注意：只传递直播间相关的分页信息，避免使用原始数据中可能包含的错误总页数
-    extractPagination({
-      total: liveRoomTotal,
-      numResults: liveRoomTotal,
-      pagesize: rawData?.pagesize || SEARCH_PAGE_SIZES.live,
-      pageinfo: rawData?.pageinfo?.live_room,
-    }, incomingRooms.length)
+    extractPagination(
+      {
+        total: liveRoomTotal,
+        numResults: liveRoomTotal,
+        pagesize: rawData?.pagesize || SEARCH_PAGE_SIZES.live,
+        pageinfo: rawData?.pageinfo?.live_room,
+      },
+      incomingRooms.length,
+    )
   }
 
   updatePage(page)
@@ -545,8 +565,7 @@ async function handlePageChange(page: number) {
 // 只刷新直播间数据（用于"全部"模式下改变排序）
 async function refreshLiveRoomsOnly() {
   const keyword = props.keyword.trim()
-  if (!keyword)
-    return
+  if (!keyword) return
 
   isLoading.value = true
 
@@ -558,8 +577,7 @@ async function refreshLiveRoomsOnly() {
       order: props.filters.roomOrder || 'online',
     })
 
-    if (!response || response.code !== 0)
-      return
+    if (!response || response.code !== 0) return
 
     const newLiveRooms = Array.isArray(response.data?.result?.live_room)
       ? response.data.result.live_room
@@ -576,16 +594,15 @@ async function refreshLiveRoomsOnly() {
     }
 
     // 更新直播间相关的分页信息
-    const liveRoomTotal = Number(response.data?.pageinfo?.live_room?.total)
-      || Number(response.data?.pageinfo?.live_room?.numResults)
-      || newLiveRooms.length
-      || 0
+    const liveRoomTotal =
+      Number(response.data?.pageinfo?.live_room?.total) ||
+      Number(response.data?.pageinfo?.live_room?.numResults) ||
+      newLiveRooms.length ||
+      0
     liveRoomTotalResults.value = liveRoomTotal
-  }
-  catch (err) {
+  } catch (err) {
     console.error('Refresh live rooms error:', err)
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
@@ -600,7 +617,7 @@ function resetAll() {
   liveUserTotalResults.value = 0
 }
 
-function handleFollowStateChanged(data: { mid: number, isFollowing: boolean }) {
+function handleFollowStateChanged(data: { mid: number; isFollowing: boolean }) {
   updateUserRelation(data.mid, data.isFollowing)
 }
 
@@ -612,10 +629,8 @@ function handleSwitchToLiveUser() {
 
 // 预加载更多直播间
 function handleLoadMore() {
-  if (paginationMode.value !== 'scroll')
-    return
-  if (isLoading.value || exhausted.value)
-    return
+  if (paginationMode.value !== 'scroll') return
+  if (isLoading.value || exhausted.value) return
 
   requestLoadMore()
 }
@@ -656,46 +671,68 @@ function getLiveRoomKey(room: any) {
       <template v-else>
         <!-- 主播 (上面) -->
         <div
-          v-if="!isInPaginationNonFirstPage
-            && liveUserList.length > 0
-            && (filters.subCategory === 'all' || filters.subCategory === 'live_user')"
+          v-if="
+            !isInPaginationNonFirstPage &&
+            liveUserList.length > 0 &&
+            (filters.subCategory === 'all' || filters.subCategory === 'live_user')
+          "
         >
           <div flex items-center gap-3 mb-3>
             <h3 class="bew-section-heading" text="$bew-text-1">
               {{ t('search.streamers') }}
             </h3>
             <span text="sm $bew-text-3">
-              {{ t('search.results_count', { count: formatResultCount(filters.subCategory === 'live_user' ? totalResults : (liveUserTotalResults || liveUserList.length)) }) }}
+              {{
+                t('search.results_count', {
+                  count: formatResultCount(
+                    filters.subCategory === 'live_user'
+                      ? totalResults
+                      : liveUserTotalResults || liveUserList.length,
+                  ),
+                })
+              }}
             </span>
           </div>
           <div grid="~ cols-3 gap-4">
             <UserCard
-              v-for="user in (filters.subCategory === 'all'
+              v-for="user in filters.subCategory === 'all'
                 ? liveUserList.slice(0, 6)
-                : liveUserList)"
+                : liveUserList"
               :key="user.mid || user.uid"
               v-bind="{
                 ...convertUserCardData(user),
                 isFollowed: userRelations[user.mid || user.uid]?.isFollowing ? 1 : 0,
               }"
               :compact="true"
-              @follow-state-changed="(mid: number, isFollowing: boolean) => handleFollowStateChanged({ mid, isFollowing })"
+              @follow-state-changed="
+                (mid: number, isFollowing: boolean) =>
+                  handleFollowStateChanged({ mid, isFollowing })
+              "
             />
           </div>
           <!-- 查看更多按钮 (仅在全部模式下且主播总数>6时显示) -->
           <div
             v-if="filters.subCategory === 'all' && (liveUserTotalResults || 0) > 6"
-            mt-4 flex justify-center
+            mt-4
+            flex
+            justify-center
           >
             <button
               class="view-more-btn"
-              px-6 py-2 rounded="$bew-radius-half"
+              px-6
+              py-2
+              rounded="$bew-radius-half"
               bg="$bew-fill-1 hover:$bew-fill-2"
               text="sm $bew-text-1"
-              transition-colors duration-200
+              transition-colors
+              duration-200
               @click="handleSwitchToLiveUser"
             >
-              {{ t('search.view_more_streamers', { count: Math.max((liveUserTotalResults || 0) - 6, 0) }) }}
+              {{
+                t('search.view_more_streamers', {
+                  count: Math.max((liveUserTotalResults || 0) - 6, 0),
+                })
+              }}
             </button>
           </div>
         </div>
@@ -707,7 +744,15 @@ function getLiveRoomKey(room: any) {
               {{ t('search.live_rooms') }}
             </h3>
             <span text="sm $bew-text-3">
-              {{ t('search.results_count', { count: formatResultCount(filters.subCategory === 'live_room' ? totalResults : (liveRoomTotalResults || liveRoomList.length)) }) }}
+              {{
+                t('search.results_count', {
+                  count: formatResultCount(
+                    filters.subCategory === 'live_room'
+                      ? totalResults
+                      : liveRoomTotalResults || liveRoomList.length,
+                  ),
+                })
+              }}
             </span>
           </div>
           <VideoCardGrid
@@ -721,7 +766,9 @@ function getLiveRoomKey(room: any) {
             :show-watcher-later="false"
             :empty-description="t('common.no_data')"
             :show-loading-more-skeleton="false"
-            :show-load-more-indicator="paginationMode === 'scroll' && transformedLiveRoomList.length > 0 && hasMore"
+            :show-load-more-indicator="
+              paginationMode === 'scroll' && transformedLiveRoomList.length > 0 && hasMore
+            "
             enable-row-padding
             show-preview
             @load-more="handleLoadMore"
@@ -731,10 +778,7 @@ function getLiveRoomKey(room: any) {
 
       <!-- 滚动加载模式：主播列表没有更多时显示提示（主播不用 VideoCardGrid） -->
       <template v-if="paginationMode === 'scroll' && filters.subCategory === 'live_user'">
-        <SmoothLoading
-          :show="isLoading && liveUserList.length > 0"
-          :keep-space="true"
-        />
+        <SmoothLoading :show="isLoading && liveUserList.length > 0" :keep-space="true" />
 
         <Empty
           v-if="!isLoading && liveUserList.length > 0 && !hasMore"

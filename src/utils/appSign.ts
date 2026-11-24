@@ -31,8 +31,7 @@ type AppSignParamValue = string | number | boolean | null | undefined
 export function signAppParams(params: Record<string, AppSignParamValue>): Record<string, string> {
   const payload: Record<string, string> = {}
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '')
-      payload[key] = String(value)
+    if (value !== undefined && value !== null && value !== '') payload[key] = String(value)
   }
   payload.ts ||= Math.floor(Date.now() / 1000).toString()
   const sign = appSign(payload, HDAppKey.appkey, HDAppKey.appsec)

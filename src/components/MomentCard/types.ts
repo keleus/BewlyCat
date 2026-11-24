@@ -45,7 +45,7 @@ export interface DisplayAdditional {
 export interface DisplayMoment {
   id: string
   /** 非用户作者（合集/番剧等）的 mid 为空串，跳转链接通过 url（来自接口 jump_url）提供 */
-  author: { mid: string, name: string, face: string, url?: string }
+  author: { mid: string; name: string; face: string; url?: string }
   publishedAt: number
   title: string
   text: string
@@ -71,7 +71,7 @@ export interface DisplayMoment {
   /** 接口三点菜单是否提供举报 */
   canReport?: boolean
   /** 使用当前动态的 basic 字段定位评论区，转发不能继承原动态的评论区。 */
-  commentTarget?: { oid: string, type: number }
+  commentTarget?: { oid: string; type: number }
   /** 动态列表接口附带的评论互动摘要（type = 1） */
   hotComment?: {
     text: string

@@ -35,14 +35,15 @@ const dialogRef = ref<InstanceType<typeof Dialog> | null>(null)
 const selected = ref<number | null>(null)
 const remark = ref('')
 const submitting = ref(false)
-const reasons = computed(() => REPORT_REASONS.map(reason => ({
-  value: reason.value,
-  label: t(`moment_card.report_reasons.${reason.key}`),
-})))
+const reasons = computed(() =>
+  REPORT_REASONS.map((reason) => ({
+    value: reason.value,
+    label: t(`moment_card.report_reasons.${reason.key}`),
+  })),
+)
 
 async function submit() {
-  if (submitting.value)
-    return
+  if (submitting.value) return
   if (selected.value === null) {
     toast.warning(t('moment_card.report_select_reason'))
     return
@@ -68,15 +69,12 @@ async function submit() {
       reason_desc: selected.value === 0 ? description : null,
       csrf,
     })
-    if (response?.code !== 0)
-      throw new Error(response?.message || t('moment_card.report_failed'))
+    if (response?.code !== 0) throw new Error(response?.message || t('moment_card.report_failed'))
     toast.success(response.data?.message || t('moment_card.report_success'))
     succeeded = true
-  }
-  catch (error) {
+  } catch (error) {
     toast.error(error instanceof Error ? error.message : t('moment_card.report_failed'))
-  }
-  finally {
+  } finally {
     submitting.value = false
   }
   // Dialog 在 loading 期间拒绝关闭，等 loading 回传后再关闭。
@@ -116,7 +114,7 @@ async function submit() {
             type="radio"
             :name="radioName"
             :value="reason.value"
-          >
+          />
           <span>{{ reason.label }}</span>
         </label>
       </div>
@@ -130,7 +128,9 @@ async function submit() {
           :aria-label="t('moment_card.report_remark_placeholder')"
           @keydown.enter.stop
         />
-        <span class="moment-report__count" aria-hidden="true">{{ remark.length }}/{{ REMARK_MAX_LENGTH }}</span>
+        <span class="moment-report__count" aria-hidden="true"
+          >{{ remark.length }}/{{ REMARK_MAX_LENGTH }}</span
+        >
       </div>
     </fieldset>
   </Dialog>

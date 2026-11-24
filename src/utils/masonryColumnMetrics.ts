@@ -9,7 +9,7 @@ export class MasonryColumnMetrics {
   reset(heights: number[], gap: number) {
     this.count = heights.length
     this.gap = gap
-    this.metrics.reset(heights.map(height => height + gap))
+    this.metrics.reset(heights.map((height) => height + gap))
   }
 
   set(index: number, height: number) {
@@ -27,25 +27,33 @@ export class MasonryColumnMetrics {
   }
 
   /** Inclusive viewport edges match the card intersection test, excluding gaps. */
-  getWindow(viewStart: number, viewEnd: number, retention?: {
-    start: number
-    end: number
-    isMounted: (index: number) => boolean
-  }) {
+  getWindow(
+    viewStart: number,
+    viewEnd: number,
+    retention?: {
+      start: number
+      end: number
+      isMounted: (index: number) => boolean
+    },
+  ) {
     let start = this.count ? this.metrics.rowAt(Math.max(0, viewStart)) : 0
-    if (start > 0 && this.metrics.offset(start) - this.gap >= viewStart)
-      start--
-    if (start < this.count && this.metrics.offset(start + 1) - this.gap < viewStart)
-      start++
-    let end = viewEnd < 0 || !this.count
-      ? 0
-      : Math.min(this.count, this.metrics.rowAt(viewEnd) + 1)
+    if (start > 0 && this.metrics.offset(start) - this.gap >= viewStart) start--
+    if (start < this.count && this.metrics.offset(start + 1) - this.gap < viewStart) start++
+    let end = viewEnd < 0 || !this.count ? 0 : Math.min(this.count, this.metrics.rowAt(viewEnd) + 1)
 
     // Keep adjacent mounted cards in a wider band so a small reversal does not reload them.
     if (retention) {
-      while (start > 0 && this.metrics.offset(start) - this.gap >= retention.start && retention.isMounted(start - 1))
+      while (
+        start > 0 &&
+        this.metrics.offset(start) - this.gap >= retention.start &&
+        retention.isMounted(start - 1)
+      )
         start--
-      while (end < this.count && this.metrics.offset(end) <= retention.end && retention.isMounted(end))
+      while (
+        end < this.count &&
+        this.metrics.offset(end) <= retention.end &&
+        retention.isMounted(end)
+      )
         end++
     }
 

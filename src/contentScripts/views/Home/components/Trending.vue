@@ -38,15 +38,12 @@ let requestVersion = 0
 
 onMounted(() => {
   initPageAction()
-  if (!tabState.restored)
-    void initData()
-  else if (!hasLoaded.value)
-    void getData()
+  if (!tabState.restored) void initData()
+  else if (!hasLoaded.value) void getData()
 })
 
 async function initData() {
-  if (!tabState.isCurrent())
-    return
+  if (!tabState.isCurrent()) return
 
   const version = ++requestVersion
   noMoreContent.value = false
@@ -63,8 +60,7 @@ function isRequestCurrent(version: number) {
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
 function transformTrendingVideo(item: VideoElement): Video | undefined {
-  if (!item.item)
-    return undefined
+  if (!item.item) return undefined
 
   const videoItem = item.item
   return {
@@ -78,9 +74,14 @@ function transformTrendingVideo(item: VideoElement): Video | undefined {
       authorFace: videoItem.owner.face,
       mid: videoItem.owner.mid,
     },
-    view: typeof videoItem.stat.view === 'number' ? videoItem.stat.view : Number(videoItem.stat.view),
-    danmaku: typeof videoItem.stat.danmaku === 'number' ? videoItem.stat.danmaku : Number(videoItem.stat.danmaku),
-    like: typeof videoItem.stat.like === 'number' ? videoItem.stat.like : Number(videoItem.stat.like),
+    view:
+      typeof videoItem.stat.view === 'number' ? videoItem.stat.view : Number(videoItem.stat.view),
+    danmaku:
+      typeof videoItem.stat.danmaku === 'number'
+        ? videoItem.stat.danmaku
+        : Number(videoItem.stat.danmaku),
+    like:
+      typeof videoItem.stat.like === 'number' ? videoItem.stat.like : Number(videoItem.stat.like),
     likeStr: (videoItem.stat as any)?.like_str ?? videoItem.stat.like,
     publishedTimestamp: videoItem.pubdate,
     bvid: videoItem.bvid,
@@ -92,8 +93,7 @@ function transformTrendingVideo(item: VideoElement): Video | undefined {
 }
 
 async function getData(version = requestVersion) {
-  if (!isRequestCurrent(version))
-    return
+  if (!isRequestCurrent(version)) return
 
   emit('beforeLoading')
   isLoading.value = true
@@ -103,8 +103,7 @@ async function getData(version = requestVersion) {
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  finally {
+  } finally {
     if (isRequestCurrent(version)) {
       isLoading.value = false
       emit('afterLoading')
@@ -113,8 +112,7 @@ async function getData(version = requestVersion) {
 }
 
 async function reachBottomHandler() {
-  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value) return
 
   await handleLoadMore()
 }
@@ -129,8 +127,7 @@ function initPageAction() {
 }
 
 async function getTrendingVideos(version: number): Promise<boolean> {
-  if (noMoreContent.value)
-    return true
+  if (noMoreContent.value) return true
 
   const requestPage = pn.value
 
@@ -140,39 +137,37 @@ async function getTrendingVideos(version: number): Promise<boolean> {
       ps: 30,
     })
 
-    if (!isRequestCurrent(version) || response.code !== 0)
-      return false
+    if (!isRequestCurrent(version) || response.code !== 0) return false
 
     noMoreContent.value = response.data.no_more
     pn.value = requestPage + 1
 
     // 热门榜单在翻页间会变动，同一视频可能出现在相邻两页；卡片 key 必须唯一。
-    const seenIds = new Set(videoList.value.map(video => video.uniqueId))
+    const seenIds = new Set(videoList.value.map((video) => video.uniqueId))
     const newItems = response.data.list.flatMap((item: VideoItem) => {
       const uniqueId = `${item.aid}`
-      if (seenIds.has(uniqueId))
-        return []
+      if (seenIds.has(uniqueId)) return []
       seenIds.add(uniqueId)
-      return [{
-        uniqueId,
-        item,
-        displayData: transformTrendingVideo({ uniqueId, item }),
-      }]
+      return [
+        {
+          uniqueId,
+          item,
+          displayData: transformTrendingVideo({ uniqueId, item }),
+        },
+      ]
     })
 
     videoList.value = [...videoList.value, ...newItems]
 
     // 初次加载且数据不足时继续加载
     if (videoList.value.length < 30 && !noMoreContent.value) {
-      if (!isRequestCurrent(version))
-        return true
+      if (!isRequestCurrent(version)) return true
 
       return await getTrendingVideos(version)
     }
 
     return true
-  }
-  catch {
+  } catch {
     // 忽略错误
     return false
   }
@@ -180,8 +175,7 @@ async function getTrendingVideos(version: number): Promise<boolean> {
 
 // 供 VideoCardGrid 预加载调用的函数
 async function handleLoadMore() {
-  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
-    return
+  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value) return
 
   const version = requestVersion
   isLoading.value = true
@@ -191,18 +185,14 @@ async function handleLoadMore() {
       requestFailed.value = !loaded
       hasLoaded.value ||= loaded
     }
-  }
-  finally {
-    if (isRequestCurrent(version))
-      isLoading.value = false
+  } finally {
+    if (isRequestCurrent(version)) isLoading.value = false
   }
 }
 
 onBeforeUnmount(() => {
-  if (handleReachBottom.value === reachBottomHandler)
-    handleReachBottom.value = undefined
-  if (handlePageRefresh.value === refreshHandler)
-    handlePageRefresh.value = undefined
+  if (handleReachBottom.value === reachBottomHandler) handleReachBottom.value = undefined
+  if (handlePageRefresh.value === refreshHandler) handlePageRefresh.value = undefined
 })
 
 defineExpose({ initData })

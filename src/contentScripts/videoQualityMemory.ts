@@ -15,8 +15,7 @@ let hasInitialized = false
 
 function qualityOf(item: HTMLElement): number | null {
   const value = item.dataset.value
-  if (!value || !/^\d+$/.test(value))
-    return null
+  if (!value || !/^\d+$/.test(value)) return null
   const quality = Number(value)
   return Number.isSafeInteger(quality) ? quality : null
 }
@@ -26,8 +25,7 @@ function isDisabled(item: HTMLElement) {
 }
 
 export function initVideoQualityMemory() {
-  if (hasInitialized || location.hostname === 'live.bilibili.com')
-    return
+  if (hasInitialized || location.hostname === 'live.bilibili.com') return
   hasInitialized = true
 
   void settingsReady.then(() => {
@@ -35,39 +33,34 @@ export function initVideoQualityMemory() {
     let contextMenu: HTMLElement | null = null
     let contextUrl = ''
     let attemptedQualities = new Set<string>()
-    let pending: { quality: number, expires: number } | null = null
+    let pending: { quality: number; expires: number } | null = null
     // 按账号缓存大会员状态；未知时先查询，结果返回后再重新同步。
-    let vipState: { mid: string, isVip: boolean } | null = null
+    let vipState: { mid: string; isVip: boolean } | null = null
     let vipCheckingMid: string | null = null
     let vipCheckRetryAt = 0
     let scheduleSync = () => {}
 
     function canUsePremiumQuality(): boolean {
       const mid = getUserID()
-      if (!mid)
-        return false
-      if (vipState?.mid === mid)
-        return vipState.isVip
-      if (vipCheckingMid === mid || Date.now() < vipCheckRetryAt)
-        return false
+      if (!mid) return false
+      if (vipState?.mid === mid) return vipState.isVip
+      if (vipCheckingMid === mid || Date.now() < vipCheckRetryAt) return false
 
       vipCheckingMid = mid
-      void api.user.getUserInfo()
+      void api.user
+        .getUserInfo()
         .then((res: any) => {
           if (res?.code === 0 && String(res.data?.mid) === mid)
             vipState = { mid, isVip: res.data.vipStatus === 1 || res.data.vip?.status === 1 }
-          else if (res?.code === -101)
-            vipState = { mid, isVip: false }
-          else
-            vipCheckRetryAt = Date.now() + VIP_CHECK_RETRY_DELAY
+          else if (res?.code === -101) vipState = { mid, isVip: false }
+          else vipCheckRetryAt = Date.now() + VIP_CHECK_RETRY_DELAY
         })
         .catch(() => {
           vipCheckRetryAt = Date.now() + VIP_CHECK_RETRY_DELAY
         })
         .finally(() => {
           vipCheckingMid = null
-          if (vipState?.mid === mid && vipState.isVip)
-            scheduleSync()
+          if (vipState?.mid === mid && vipState.isVip) scheduleSync()
         })
       return false
     }
@@ -84,20 +77,17 @@ export function initVideoQualityMemory() {
       const menu = items[0]?.parentElement ?? null
       if (video !== contextVideo || menu !== contextMenu || location.href !== contextUrl) {
         // 清晰度切换也可能重建菜单，不能因此丢掉待确认的手动选择。
-        if (location.href !== contextUrl)
-          pending = null
+        if (location.href !== contextUrl) pending = null
         contextVideo = video
         contextMenu = menu
         contextUrl = location.href
         attemptedQualities = new Set()
       }
-      if (!video || !menu)
-        return
+      if (!video || !menu) return
 
-      const selected = items.find(item => item.classList.contains(ACTIVE_CLASS))
+      const selected = items.find((item) => item.classList.contains(ACTIVE_CLASS))
       const currentQuality = selected ? qualityOf(selected) : null
-      if (currentQuality === null)
-        return
+      if (currentQuality === null) return
 
       // 只记住已生效的手动选择；试看、自动降档和恢复操作都不能覆盖偏好。
       if (pending) {
@@ -105,11 +95,9 @@ export function initVideoQualityMemory() {
           settings.value.savedVideoQuality = pending.quality
           pending = null
           attemptedQualities.clear()
-        }
-        else if (Date.now() < pending.expires) {
+        } else if (Date.now() < pending.expires) {
           return
-        }
-        else {
+        } else {
           pending = null
         }
       }
@@ -124,18 +112,15 @@ export function initVideoQualityMemory() {
         return
       }
 
-      const target = items.find(item => qualityOf(item) === savedQuality)
-      if (!target || isDisabled(target))
-        return
+      const target = items.find((item) => qualityOf(item) === savedQuality)
+      if (!target || isDisabled(target)) return
       // 非大会员时交给 B 站自身记忆降级，不主动点击大会员清晰度。
-      if (savedQuality >= PREMIUM_QUALITY_MIN && !canUsePremiumQuality())
-        return
+      if (savedQuality >= PREMIUM_QUALITY_MIN && !canUsePremiumQuality()) return
 
       // 恢复成功前每种偏离只尝试一次，防止权限受限时重复弹窗。
       // 不以 currentSrc 识别新视频，因为切换清晰度本身也会更换媒体资源。
       const attempt = `${currentQuality}:${savedQuality}`
-      if (attemptedQualities.has(attempt))
-        return
+      if (attemptedQualities.has(attempt)) return
       attemptedQualities.add(attempt)
       target.click()
     }
@@ -153,21 +138,27 @@ export function initVideoQualityMemory() {
     })
     scheduleSync = syncController.schedule
 
-    document.addEventListener('click', (event) => {
-      if (!event.isTrusted || !settings.value.rememberVideoQuality || !(event.target instanceof Element))
-        return
-      const item = event.target.closest<HTMLElement>(QUALITY_ITEM_SELECTOR)
-      if (!item || isDisabled(item))
-        return
-      const quality = qualityOf(item)
-      if (quality === null)
-        return
-      // 先同步播放上下文，再等待播放器确认这次选择，兼容异步加载。
-      contextVideo = getVideoElement()
-      contextMenu = item.parentElement
-      contextUrl = location.href
-      pending = { quality, expires: Date.now() + 10000 }
-      syncController.schedule()
-    }, { capture: true, signal: syncController.signal })
+    document.addEventListener(
+      'click',
+      (event) => {
+        if (
+          !event.isTrusted ||
+          !settings.value.rememberVideoQuality ||
+          !(event.target instanceof Element)
+        )
+          return
+        const item = event.target.closest<HTMLElement>(QUALITY_ITEM_SELECTOR)
+        if (!item || isDisabled(item)) return
+        const quality = qualityOf(item)
+        if (quality === null) return
+        // 先同步播放上下文，再等待播放器确认这次选择，兼容异步加载。
+        contextVideo = getVideoElement()
+        contextMenu = item.parentElement
+        contextUrl = location.href
+        pending = { quality, expires: Date.now() + 10000 }
+        syncController.schedule()
+      },
+      { capture: true, signal: syncController.signal },
+    )
   })
 }

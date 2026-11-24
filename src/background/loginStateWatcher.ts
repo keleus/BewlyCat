@@ -23,10 +23,10 @@ let broadcastTimer: ReturnType<typeof setTimeout> | null = null
 export function setupLoginStateWatcher() {
   browser.cookies.onChanged.addListener(({ cookie }) => {
     const normalizedDomain = cookie.domain.trim().toLowerCase().replace(/^\.+/, '')
-    const isBilibiliDomain = normalizedDomain === 'bilibili.com' || normalizedDomain.endsWith('.bilibili.com')
+    const isBilibiliDomain =
+      normalizedDomain === 'bilibili.com' || normalizedDomain.endsWith('.bilibili.com')
 
-    if (!WATCHED_COOKIE_NAMES.has(cookie.name) || !isBilibiliDomain)
-      return
+    if (!WATCHED_COOKIE_NAMES.has(cookie.name) || !isBilibiliDomain) return
 
     scheduleBroadcastLoginStateChanged()
   })
@@ -35,8 +35,7 @@ export function setupLoginStateWatcher() {
 function scheduleBroadcastLoginStateChanged() {
   // 延后到最后一次 Cookie 变更后再广播，避免在 DedeUserID/SESSDATA
   // 尚未同时更新时触发中间态校正。
-  if (broadcastTimer !== null)
-    clearTimeout(broadcastTimer)
+  if (broadcastTimer !== null) clearTimeout(broadcastTimer)
 
   broadcastTimer = setTimeout(() => {
     broadcastTimer = null
@@ -49,11 +48,12 @@ async function broadcastLoginStateChanged() {
     const tabs = await browser.tabs.query({ url: [...CONTENT_SCRIPT_MATCHES] })
     await Promise.allSettled(
       tabs
-        .filter(tab => tab.id !== undefined)
-        .map(tab => browser.tabs.sendMessage(tab.id!, { type: TOP_BAR_STATE_MESSAGE.LOGIN_STATE_CHANGED })),
+        .filter((tab) => tab.id !== undefined)
+        .map((tab) =>
+          browser.tabs.sendMessage(tab.id!, { type: TOP_BAR_STATE_MESSAGE.LOGIN_STATE_CHANGED }),
+        ),
     )
-  }
-  catch {
+  } catch {
     // 没有匹配的标签页或查询失败时静默：下次变化会再次广播
   }
 }

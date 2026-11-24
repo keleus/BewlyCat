@@ -177,7 +177,7 @@ const SEARCH_RESULT_API_PATH_PREFIXES = [
 ] as const
 
 export function isSearchResultApiPath(pathname: string): boolean {
-  return SEARCH_RESULT_API_PATH_PREFIXES.some(prefix => (
-    pathname === prefix || pathname.startsWith(`${prefix}/`)
-  ))
+  return SEARCH_RESULT_API_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
 }

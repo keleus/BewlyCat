@@ -25,7 +25,15 @@ function getKeywordFromUrl(): string {
 const keyword = ref<string>(getKeywordFromUrl())
 const { t } = useI18n()
 const normalizedKeyword = computed(() => (keyword.value || '').trim())
-const CATEGORY_KEYS: SearchCategory[] = ['all', 'video', 'bangumi', 'media_ft', 'user', 'live', 'article']
+const CATEGORY_KEYS: SearchCategory[] = [
+  'all',
+  'video',
+  'bangumi',
+  'media_ft',
+  'user',
+  'live',
+  'article',
+]
 
 // 设置页面标题
 const pageTitle = computed(() => {
@@ -71,10 +79,16 @@ function updateUrlParams(params: Record<string, string | number | undefined | nu
 
   Object.entries(params).forEach(([key, value]) => {
     // pn=1 时删除参数，其他默认值也删除
-    if (value === undefined || value === null || value === '' || value === 0 || value === 'all' || (key === 'pn' && value === 1)) {
+    if (
+      value === undefined ||
+      value === null ||
+      value === '' ||
+      value === 0 ||
+      value === 'all' ||
+      (key === 'pn' && value === 1)
+    ) {
       urlParams.delete(key)
-    }
-    else {
+    } else {
       urlParams.set(key, String(value))
     }
   })
@@ -180,7 +194,7 @@ const categories = computed<ReadonlyArray<SearchCategoryOption>>(() => [
 ])
 
 // 游客态即去个性化搜索：请求仍经 WBI 签名，只省略登录 Cookie。
-const identityOptions = computed<{ label: string, value: boolean }[]>(() => [
+const identityOptions = computed<{ label: string; value: boolean }[]>(() => [
   { label: t('search.identity_login'), value: false },
   { label: t('search.identity_guest'), value: true },
 ])
@@ -232,44 +246,51 @@ useEventListener(window, 'popstate', handleUrlChange)
 useEventListener(window, 'pushstate', handleUrlChange)
 
 // 监听关键词变化
-watch(() => keyword.value, async (newKeyword, oldKeyword) => {
-  const normalizedNew = (newKeyword || '').trim()
-  const normalizedOld = (oldKeyword || '').trim()
+watch(
+  () => keyword.value,
+  async (newKeyword, oldKeyword) => {
+    const normalizedNew = (newKeyword || '').trim()
+    const normalizedOld = (oldKeyword || '').trim()
 
-  if (!normalizedNew)
-    return
+    if (!normalizedNew) return
 
-  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
-    return
+    if (normalizedNew === normalizedOld && newKeyword === oldKeyword) return
 
-  handleUrlChange()
-})
+    handleUrlChange()
+  },
+)
 
 // 同步搜索关键词到 topBar
-watch(normalizedKeyword, (value) => {
-  topBarSearchKeyword.value = value
-}, { immediate: true })
+watch(
+  normalizedKeyword,
+  (value) => {
+    topBarSearchKeyword.value = value
+  },
+  { immediate: true },
+)
 
 // 监听用户筛选条件变化
-watch([currentUserOrder, currentUserType], () => {
-  if (!normalizedKeyword.value)
-    return
+watch(
+  [currentUserOrder, currentUserType],
+  () => {
+    if (!normalizedKeyword.value) return
 
-  // 筛选条件变化时重置页码
-  currentPage.value = 1
+    // 筛选条件变化时重置页码
+    currentPage.value = 1
 
-  // 更新URL参数（筛选条件变化时回到第一页）
-  updateUrlParams({
-    user_order: currentUserOrder.value,
-    user_type: currentUserType.value,
-    pn: 1,
-  })
-}, { deep: false })
+    // 更新URL参数（筛选条件变化时回到第一页）
+    updateUrlParams({
+      user_order: currentUserOrder.value,
+      user_type: currentUserType.value,
+      pn: 1,
+    })
+  },
+  { deep: false },
+)
 
 // 监听直播子分类变化
 watch(currentLiveSubCategory, () => {
-  if (!normalizedKeyword.value)
-    return
+  if (!normalizedKeyword.value) return
 
   // 筛选条件变化时重置页码
   currentPage.value = 1
@@ -283,8 +304,7 @@ watch(currentLiveSubCategory, () => {
 
 // 监听直播间排序变化
 watch(currentLiveRoomOrder, () => {
-  if (!normalizedKeyword.value)
-    return
+  if (!normalizedKeyword.value) return
 
   // 筛选条件变化时重置页码
   currentPage.value = 1
@@ -298,8 +318,7 @@ watch(currentLiveRoomOrder, () => {
 
 // 监听主播排序变化
 watch(currentLiveUserOrder, () => {
-  if (!normalizedKeyword.value)
-    return
+  if (!normalizedKeyword.value) return
 
   // 筛选条件变化时重置页码
   currentPage.value = 1
@@ -312,8 +331,7 @@ watch(currentLiveUserOrder, () => {
 })
 
 function switchCategory(category: SearchCategory) {
-  if (currentCategory.value === category)
-    return
+  if (currentCategory.value === category) return
 
   currentCategory.value = category
 
@@ -344,12 +362,10 @@ function switchCategory(category: SearchCategory) {
 
 function initPageAction() {
   handleReachBottom.value = () => {
-    if (!normalizedKeyword.value)
-      return
+    if (!normalizedKeyword.value) return
 
     // 翻页模式下不触发滚动加载
-    if (settings.value.searchResultsPaginationMode === 'pagination')
-      return
+    if (settings.value.searchResultsPaginationMode === 'pagination') return
 
     if (searchResultsPanelRef.value?.handleReachBottom) {
       searchResultsPanelRef.value.handleReachBottom()
@@ -363,8 +379,7 @@ function initPageAction() {
     if (keyword) {
       // 触发 pushstate 事件通知组件重新加载
       window.dispatchEvent(new Event('pushstate'))
-    }
-    else {
+    } else {
       window.location.reload()
     }
   }

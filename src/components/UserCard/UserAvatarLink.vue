@@ -11,9 +11,11 @@ const props = defineProps<{
   roomid?: number
 }>()
 const { t } = useI18n()
-const href = computed(() => props.liveStatus === 1 && props.roomid && props.roomid > 0
-  ? `https://live.bilibili.com/${props.roomid}`
-  : `https://space.bilibili.com/${props.mid}`)
+const href = computed(() =>
+  props.liveStatus === 1 && props.roomid && props.roomid > 0
+    ? `https://live.bilibili.com/${props.roomid}`
+    : `https://space.bilibili.com/${props.mid}`,
+)
 </script>
 
 <template>
@@ -41,7 +43,7 @@ const href = computed(() => props.liveStatus === 1 && props.roomid && props.room
 
   &.is-live::before,
   &.is-live::after {
-    content: "";
+    content: '';
     position: absolute;
     inset: calc(-1 * var(--bew-space-1));
     border: 2px solid var(--bew-theme-color);

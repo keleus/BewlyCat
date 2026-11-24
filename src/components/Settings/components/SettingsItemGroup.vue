@@ -20,7 +20,12 @@ const { visible } = useSettingsSearchNode(() => undefined)
             <i v-if="icon" :class="icon" />
             {{ title }}
           </p>
-          <p v-if="desc" class="group-desc" text="$bew-text-2" :class="{ 'warning-desc': warningDesc }">
+          <p
+            v-if="desc"
+            class="group-desc"
+            text="$bew-text-2"
+            :class="{ 'warning-desc': warningDesc }"
+          >
             {{ desc }}
           </p>
         </div>
@@ -31,8 +36,11 @@ const { visible } = useSettingsSearchNode(() => undefined)
     </template>
 
     <main
-      style="box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
-      mt-2 px-4 mx--4 rounded="$bew-radius"
+      style="box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1)"
+      mt-2
+      px-4
+      mx--4
+      rounded="$bew-radius"
       bg="$bew-fill-alt"
       shadow="$bew-shadow-edge-glow-1"
     >
@@ -43,7 +51,7 @@ const { visible } = useSettingsSearchNode(() => undefined)
 
 <style lang="scss" scoped>
 .b-settings-item-group + .b-settings-item-group {
-  --uno: "mt-6";
+  --uno: 'mt-6';
 }
 
 .group-heading {
