@@ -8,6 +8,17 @@ import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import type { AmbilightDiffusionMode, AmbilightDiffusionQuality } from '~/utils/ambilight/types'
+import type {
+  CommentAiFilterDimension,
+  CommentAiFilterDisplayMode,
+} from '~/utils/commentAiFilter'
+import {
+  COMMENT_AI_FILTER_BATCH_SIZE_DEFAULT,
+  COMMENT_AI_FILTER_DEFAULT_DIMENSIONS,
+  normalizeCommentAiFilterBatchSize,
+  normalizeCommentAiFilterDimensions,
+  normalizeCommentAiFilterDisplayMode,
+} from '~/utils/commentAiFilter'
 import {
   MOBILE_LIST_LAYOUT_BREAKPOINT,
   normalizeListLayoutBreakpoint,
@@ -333,6 +344,13 @@ export interface Settings {
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   hideCommentImageScrollbar: boolean // 评论区图片预览时隐藏页面滚动条
   imageViewerCloseAtBottom: boolean // 图片查看器的关闭按钮放在底部居中
+  enableCommentAiFilter: boolean // 启用 AI 评论质量过滤
+  commentAiFilterAutoScan: boolean // 自动批量检测页面新加载的评论
+  commentAiFilterDisplayMode: CommentAiFilterDisplayMode // 低质量评论展示方式
+  commentAiFilterIncludeReplies: boolean // 是否同时检测楼中楼子回复
+  commentAiFilterDimensions: CommentAiFilterDimension[] // 启用的低质量判定维度
+  commentAiFilterCustomPrompt: string // 附加筛选提示词
+  commentAiFilterBatchSize: number // 单批送审评论条数
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   enableSidebarCoverBlur: boolean // 页面侧栏封面高斯渐变背景
   externalWatchLaterButton: boolean // 稍后再看按钮外置
@@ -730,6 +748,13 @@ export const originalSettings: Settings = {
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   hideCommentImageScrollbar: false, // 默认不隐藏评论图片预览时的页面滚动条
   imageViewerCloseAtBottom: false, // 默认保留图片查看器顶部的关闭按钮
+  enableCommentAiFilter: false, // 默认关闭 AI 评论过滤，由用户按需启用
+  commentAiFilterAutoScan: true, // 启用后默认自动批量检测新加载评论
+  commentAiFilterDisplayMode: 'collapse', // 默认淡化折叠低质量评论，点击可展开
+  commentAiFilterIncludeReplies: true, // 默认同时检测楼中楼子回复
+  commentAiFilterDimensions: [...COMMENT_AI_FILTER_DEFAULT_DIMENSIONS],
+  commentAiFilterCustomPrompt: '',
+  commentAiFilterBatchSize: COMMENT_AI_FILTER_BATCH_SIZE_DEFAULT,
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   enableSidebarCoverBlur: true, // 默认启用页面侧栏封面高斯渐变背景
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
@@ -1632,6 +1657,16 @@ export const settings = useSettingsStorage(originalSettings, {
 
     if (!['1', '2', '3', '4'].includes(record.momentsGridColumns))
       record.momentsGridColumns = '2'
+
+    record.commentAiFilterDisplayMode = normalizeCommentAiFilterDisplayMode(record.commentAiFilterDisplayMode)
+    record.commentAiFilterDimensions = normalizeCommentAiFilterDimensions(record.commentAiFilterDimensions)
+    record.commentAiFilterBatchSize = normalizeCommentAiFilterBatchSize(record.commentAiFilterBatchSize)
+    if (typeof record.commentAiFilterCustomPrompt !== 'string')
+      record.commentAiFilterCustomPrompt = ''
+    Reflect.deleteProperty(record, 'commentAiFilterProvider')
+    Reflect.deleteProperty(record, 'commentAiFilterIndexTranslateModel')
+    Reflect.deleteProperty(record, 'commentAiFilterCustomBaseUrl')
+    Reflect.deleteProperty(record, 'commentAiFilterCustomModel')
 
     // 清理已移除的 NVIDIA RTX 视频增强兼容设置
     Reflect.deleteProperty(record, 'nvidiaRtxVideoEnhancementCompatibility')

@@ -12,6 +12,7 @@ import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsSearchContainer from '../../components/SettingsSearchContainer.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
+import CommentAiFilterSettings from './CommentAiFilterSettings.vue'
 
 const { t } = useI18n()
 
@@ -160,6 +161,8 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
       <Radio v-model="settings.imageViewerCloseAtBottom" />
     </SettingsItem>
   </SettingsItemGroup>
+
+  <CommentAiFilterSettings />
 </template>
 
 <style lang="scss" scoped>

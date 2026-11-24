@@ -1282,6 +1282,45 @@ settings:
   hide_comment_image_scrollbar_desc: 避免頁面滾動條顯示喺預覽遮罩右側。
   image_viewer_close_at_bottom: 圖片檢視器閂制擺喺底部中間
   image_viewer_close_at_bottom_desc: 作用於留言區同動態圖片檢視器。
+  comment_ai_filter:
+    group_title: AI 留言過濾
+    group_desc: 使用 B 站內建免費 Index-Translate-2B 介面批次檢查同標記留言區入面嘅低質素留言，支援原站留言區同 Bewly 動態留言區。
+    enable: 啟用 AI 留言過濾
+    enable_desc: 開啟後會將目前可視範圍入面嘅留言文字分批傳送到 B 站 Index-Translate-2B 介面做質素篩選。
+    auto_scan: 自動批次篩選
+    auto_scan_desc: 開啟後自動檢查新載入嘅留言；關閉後只會喺你撳留言區按鈕嗰陣手動篩選。
+    include_replies: 包含樓中樓子回覆
+    include_replies_desc: 一齊檢查展開咗嘅樓中樓子回覆，會增加 API 請求次數。
+    display_mode:
+      title: 低質素留言顯示方式
+      desc: 揀選被 AI 標記為低質素留言之後點樣顯示。
+      collapse: 淡化摺起（撳一下可以展開原文）
+      mark: 只顯示低質素標記同原因
+      hide: 直接隱藏（可以喺留言區切換顯示）
+    dimensions:
+      title: 預設判定維度
+      desc: 揀選要標記嘅低質素留言類型，可以配合下面嘅自訂提示詞微調。
+      spam: 廣告引流 / 詐騙推銷
+      spam_desc: 廣告、假福利、QR Code 私訊引流或者詐騙推銷
+      low_effort: 無意義水評 / 洗版複讀
+      low_effort_desc: 純打卡搶頭位、洗版複讀或者湊字數水評
+      toxic: 引戰嘲諷 / 人身攻擊
+      toxic_desc: 惡意帶風向、引戰嘲諷或者人身攻擊
+      spoiler_or_bait: 劇透 / 釣魚 / 情緒謾罵
+      spoiler_or_bait_desc: 惡意劇透、釣魚引流或者情緒化謾罵
+      ai_slop: AI 生成低質素留言
+      ai_slop_desc: 模板化套話、機械總結或者 AI 水軍留言
+    batch_size: 每批檢查條數
+    batch_size_desc: 每次請求送審嘅留言數量（3–5 條）。
+    custom_prompt: 附加篩選規則（選填）
+    custom_prompt_desc: 補充個人化判斷標準，會附加喺系統提示詞入面傳俾模型。
+    custom_prompt_placeholder: 例如：保留劇情討論唔好當劇透過濾；重點標記複製貼上嘅洗版留言
+    test_connection: 連線測試
+    test_connection_desc: 傳送兩條示範留言驗證而家嘅模型同介面係咪用到。
+    test_btn: 測試介面連線
+    testing: 測試緊…
+    test_success: '連線成功（{model}，用咗 {ms}ms，認到 {flagged} 條低質素示範）'
+    test_failed: '連線失敗：{error}'
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
   video_player_scroll_desc: 啓用後，調整顯示模式時會自動轆到揀選嘅位置。
   video_player_scroll_mode:
@@ -2036,3 +2075,23 @@ inject:
   load_more: 載入更多
   expand_all_replies: 載入全部
   load_reply_pages: '載入 {count} 頁'
+  ai_filter_label: AI 過濾
+  ai_filter_paused: AI 過濾已暫停
+  ai_filter_scanning: AI 篩選緊…
+  ai_filter_scan_now: 'AI 篩選 ({count})'
+  ai_filter_rescan: 重掃
+  ai_filter_retry: AI 篩選失敗 · 重試
+  ai_filter_error: AI 留言篩選請求失敗
+  ai_filter_flagged_count: '已標記 {count} 條'
+  ai_filter_show_hidden: '顯示已隱藏 ({count})'
+  ai_filter_hide_filtered: '隱藏已過濾 ({count})'
+  ai_filter_badge: AI 低質素
+  ai_filter_badge_with_category: 'AI 低質素 · {category}'
+  ai_filter_default_reason: 疑似低質素留言
+  ai_filter_expand: 展開原文
+  ai_filter_collapse: 收起
+  ai_filter_dismiss: 誤判
+  ai_filter_item_analyzing: AI 分析緊…
+  ai_filter_item_passed: AI 已分析：正常留言
+  ai_filter_item_flagged: AI 已標記為低質素留言
+  ai_filter_item_error: AI 分析失敗，撳一下重試

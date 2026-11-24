@@ -20,6 +20,12 @@ import { createPageSettingsPayload, readPageBootSnapshot } from '~/utils/pageSet
 
 import { version } from '../../package.json'
 import { createLocalLoudnessController } from './audio/localLoudness'
+import {
+  COMMENT_AI_FILTER_HEADER_CSS,
+  COMMENT_AI_FILTER_RENDERER_CSS,
+  COMMENT_AI_FILTER_THREAD_CSS,
+  createNativeCommentAiFilterController,
+} from './commentAiFilter'
 
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
@@ -442,6 +448,8 @@ else if (shouldInitializePageScript) {
           border-radius: var(--bew-comment-bottom-fixed-active-radius, var(--bew-comment-bottom-fixed-radius, 0));
           box-shadow: var(--bew-comment-bottom-fixed-active-shadow, var(--bew-comment-bottom-fixed-shadow, none)) !important;
         }
+
+        ${COMMENT_AI_FILTER_HEADER_CSS}
       `,
     },
     'bili-comment-thread-renderer': {
@@ -460,6 +468,7 @@ else if (shouldInitializePageScript) {
         }
 
         ${COMMENT_REPLY_TREE_GUIDES_CSS}
+        ${COMMENT_AI_FILTER_THREAD_CSS}
       `,
     },
     'bili-comment-replies-renderer': {
@@ -722,11 +731,16 @@ else if (shouldInitializePageScript) {
         #body .tag:empty {
           display: none !important;
         }
+
+        ${COMMENT_AI_FILTER_RENDERER_CSS}
       `,
     },
     'bili-comment-reply-renderer': {
       id: 'bewly-comment-reply-renderer-style',
-      css: COMMENT_WIDESCREEN_COMPACT_METADATA_CSS,
+      css: `
+        ${COMMENT_WIDESCREEN_COMPACT_METADATA_CSS}
+        ${COMMENT_AI_FILTER_RENDERER_CSS}
+      `,
     },
     'bili-comment-action-buttons-renderer': {
       id: 'bewly-comment-action-buttons-style',
@@ -3273,13 +3287,14 @@ else if (shouldInitializePageScript) {
       const hiddenByAncestor = depth === 0
         ? rootBranchCollapsed
         : hideDescendantsAtDepth[depth - 1] === true
+      const hiddenByAi = node.renderer.hasAttribute('data-bewly-ai-hidden')
       const hidden = hiddenByAncestor || hiddenByTail.has(node.renderer)
       const branchCollapsed = state.collapsedNodeKeys.has(getCommentReplyTreeNodeKey(node))
-      const collapsedBody = !hidden && collapseParentBody && branchCollapsed
+      const collapsedBody = !hidden && !hiddenByAi && collapseParentBody && branchCollapsed
       node.renderer.toggleAttribute('data-bewly-comment-reply-hidden', hidden)
       node.renderer.toggleAttribute('data-bewly-comment-reply-collapsed', collapsedBody)
-      // 任一模式下父分支收起都隐藏子树；父本体是否折叠由 collapseParentBody 决定
-      hideDescendantsAtDepth[depth] = hidden || branchCollapsed
+      // 父分支收起或父回复被 AI 隐藏时一并隐藏子树，避免子回复浮空或残留引导线
+      hideDescendantsAtDepth[depth] = hidden || hiddenByAi || branchCollapsed
       hideDescendantsAtDepth.length = depth + 1
     })
   }
@@ -3528,6 +3543,7 @@ else if (shouldInitializePageScript) {
 
   function isCommentReplyTreeNodeVisible(node: CommentReplyTreeNode): boolean {
     return !node.renderer.hasAttribute('data-bewly-comment-reply-hidden')
+      && !node.renderer.hasAttribute('data-bewly-ai-hidden')
   }
 
   function renderCommentReplyTreeGuides(
@@ -3539,6 +3555,10 @@ else if (shouldInitializePageScript) {
     collapseParentBody: boolean,
   ) {
     const threadRoot = getCommentReplyTreeThreadRoot(component)
+    if (threadRoot?.host instanceof HTMLElement && threadRoot.host.hasAttribute('data-bewly-ai-hidden')) {
+      removeCommentReplyTreeGuides(component, replyContainer)
+      return
+    }
     // 属性挂在回复渲染器 host 上（CSS 用 :host([...]) 匹配），不是 #expander-contents
     const containerEnabled = component.hasAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE)
     const replyRect = replyContainer.getBoundingClientRect()
@@ -3623,16 +3643,16 @@ else if (shouldInitializePageScript) {
     const threadRootAnchor = containerEnabled
       ? null
       : (threadRootRenderer ? getCommentReplyAvatarAnchor(threadRootRenderer, origin) : null)
-    // 分支收起后即使子回复全隐藏，也保留控件以便展开
-    if (threadRootAnchor && (rootNodes.length > 0 || rootBranchCollapsed)) {
+    // 分支收起后即使子回复全隐藏，也保留控件以便展开；若所有子回复均被 AI 隐藏则不再画空线
+    if (threadRootAnchor && (visibleRootNodes.length > 0 || rootBranchCollapsed)) {
       let rootTrunkExtendY: number | undefined
-      // 父分支未收起时，才在同级回复间提供「收起后续」
-      if (!rootBranchCollapsed) {
+      // 父分支未收起时，才在可见同级回复间提供「收起后续」
+      if (!rootBranchCollapsed && visibleRootNodes.length > 1) {
         const rootTails = buildCommentReplyTreeTailCollapses(
           state,
           COMMENT_REPLY_TREE_ROOT_KEY,
           threadRootAnchor,
-          rootNodes,
+          visibleRootNodes,
           avatarAnchorByNode,
           toggleHitRadius,
         )
@@ -3672,14 +3692,16 @@ else if (shouldInitializePageScript) {
 
       const nodeBranchCollapsed = state.collapsedNodeKeys.has(getCommentReplyTreeNodeKey(node))
       const visibleChildren = node.children.filter(isCommentReplyTreeNodeVisible)
+      if (visibleChildren.length === 0 && !nodeBranchCollapsed)
+        return
 
       let nodeTrunkExtendY: number | undefined
-      if (!nodeBranchCollapsed && node.children.length > 1) {
+      if (!nodeBranchCollapsed && visibleChildren.length > 1) {
         const nodeTails = buildCommentReplyTreeTailCollapses(
           state,
           getCommentReplyTreeNodeKey(node),
           parentAnchor,
-          node.children,
+          visibleChildren,
           avatarAnchorByNode,
           toggleHitRadius,
         )
@@ -4965,6 +4987,52 @@ else if (shouldInitializePageScript) {
     return element
   }
 
+  const commentAiFilter = createNativeCommentAiFilterController({
+    pageT,
+    onLayoutChanged: (renderer) => {
+      const repliesRenderer = findCommentRepliesRendererHost(renderer) ?? findCommentThreadRepliesRenderer(renderer)
+      if (repliesRenderer)
+        scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
+    },
+  })
+
+  function extractNativeCommentMeta(component: HTMLElement, isReplyHint: boolean) {
+    const data = getCommentReplyData(component)
+    const rpid = getReplyRpid(data)
+    if (!rpid)
+      return null
+
+    const text = getReplyMessageText(data) ?? getCommentRendererMessageText(component) ?? ''
+    if (!text.trim())
+      return null
+
+    const isReply = isReplyHint || Boolean(findCommentRepliesRendererHost(component))
+    const hasPictures = Boolean(
+      (Array.isArray(data?.content?.pictures) && data.content.pictures.length > 0)
+      || component.shadowRoot?.querySelector('bili-comment-pictures-renderer'),
+    )
+    return {
+      rpid,
+      text,
+      author: getReplyAuthorName(data) ?? getCommentRendererAuthorName(component) ?? undefined,
+      isReply,
+      likeCount: typeof data?.like === 'number' ? data.like : undefined,
+      hasPictures,
+    }
+  }
+
+  let lastAiFilterPath = `${location.pathname}${location.search}`
+  const handleAiFilterRouteCheck = () => {
+    const nextPath = `${location.pathname}${location.search}`
+    if (nextPath !== lastAiFilterPath) {
+      lastAiFilterPath = nextPath
+      commentAiFilter.onNavigation()
+    }
+  }
+  window.addEventListener('pushstate', handleAiFilterRouteCheck)
+  window.addEventListener('replacestate', handleAiFilterRouteCheck)
+  window.addEventListener('popstate', handleAiFilterRouteCheck)
+
   if (window.customElements) {
     const patchCommentCustomElement = (name: string, classConstructor: unknown) => {
       if (typeof classConstructor !== 'function')
@@ -5000,6 +5068,9 @@ else if (shouldInitializePageScript) {
               return
 
             ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
+            if (name === 'bili-comments-header-renderer') {
+              commentAiFilter.observeHeader(component)
+            }
             if (name === 'bili-comment-box') {
               const checkboxPatch = COMMENT_SHADOW_STYLE_PATCHES['bili-checkbox']
               if (checkboxPatch) {
@@ -5009,7 +5080,13 @@ else if (shouldInitializePageScript) {
                 })
               }
             }
+            if (name === 'bili-comment-renderer') {
+              commentAiFilter.observeRenderer(component, extractNativeCommentMeta(component, false))
+            }
             if (name === 'bili-comment-thread-renderer') {
+              const rootComment = root.querySelector('#comment, bili-comment-renderer') as HTMLElement | null
+              if (rootComment)
+                commentAiFilter.observeRenderer(rootComment, extractNativeCommentMeta(rootComment, false))
               // 删除/屏蔽回复可能让楼层组件整体重绘，之前挂在其 shadow root
               // 内的 SVG 线条会随渲染结果一并被移除；重绘完成后从当前回复容器恢复。
               const repliesRenderer = root.querySelector('bili-comment-replies-renderer') as HTMLElement | null
@@ -5029,6 +5106,7 @@ else if (shouldInitializePageScript) {
               updateWidescreenCommentEmojiOverflow(component, root)
             }
             else if (name === 'bili-comment-reply-renderer') {
+              commentAiFilter.observeRenderer(component, extractNativeCommentMeta(component, true))
               const rootNode = component.getRootNode?.()
               const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
               if (repliesRenderer?.localName === 'bili-comment-replies-renderer') {
@@ -5118,6 +5196,17 @@ else if (shouldInitializePageScript) {
             const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
             const locationAnchor = hostEl ?? sexEl ?? userNameEl
             updateInfoElement(root, 'location', shouldShowLocation, locationString, locationAnchor)
+
+            // user-info 晚于父级 comment-renderer 拿到 data 时补触发一次 AI 评论注册。
+            const hostRoot = component.getRootNode?.()
+            const hostRenderer = hostRoot instanceof ShadowRoot ? hostRoot.host : null
+            if (hostRenderer instanceof HTMLElement
+              && (hostRenderer.localName === 'bili-comment-renderer' || hostRenderer.localName === 'bili-comment-reply-renderer')) {
+              commentAiFilter.observeRenderer(
+                hostRenderer,
+                extractNativeCommentMeta(hostRenderer, hostRenderer.localName === 'bili-comment-reply-renderer'),
+              )
+            }
           })
         }
         catch (error) {
@@ -5189,6 +5278,13 @@ else if (shouldInitializePageScript) {
       if (pageSettings.observeTripleRequests)
         installTripleRequestHooks()
       settingsReady = true
+      commentAiFilter.updateSettings({
+        enabled: pageSettings.enableCommentAiFilter,
+        autoScan: pageSettings.commentAiFilterAutoScan,
+        displayMode: pageSettings.commentAiFilterDisplayMode,
+        includeReplies: pageSettings.commentAiFilterIncludeReplies,
+        batchSize: pageSettings.commentAiFilterBatchSize,
+      })
       refreshCommentReplyTrees()
       if (getCommentReplyTreeMode() === null)
         clearCommentReplyDeepLinkSettlement()

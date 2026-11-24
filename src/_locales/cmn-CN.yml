@@ -1289,6 +1289,45 @@ settings:
   hide_comment_image_scrollbar_desc: 避免页面滚动条显示在预览遮罩右侧。
   image_viewer_close_at_bottom: 图片查看器关闭按钮置于底部居中
   image_viewer_close_at_bottom_desc: 作用于评论区和动态图片查看器。
+  comment_ai_filter:
+    group_title: AI 评论过滤
+    group_desc: 使用 B 站内置免费 Index-Translate-2B 接口批量检测并标记评论区中的低质量评论，支持原站评论区与 Bewly 动态评论区。
+    enable: 启用 AI 评论过滤
+    enable_desc: 开启后将当前可视范围内的评论文本分批发送到 B 站 Index-Translate-2B 接口进行质量筛选。
+    auto_scan: 自动批量筛选
+    auto_scan_desc: 开启后自动检测新加载的评论；关闭后仅在点击评论区按钮时手动筛选。
+    include_replies: 包含楼中楼子回复
+    include_replies_desc: 一并检测展开的楼中楼子回复，会增加 API 请求量。
+    display_mode:
+      title: 低质量评论展示方式
+      desc: 选择被 AI 标记为低质量评论后的呈现方式。
+      collapse: 淡化折叠（点击可展开原文）
+      mark: 仅显示低质量标记与原因
+      hide: 直接隐藏（可在评论区切换显示）
+    dimensions:
+      title: 默认判定维度
+      desc: 选择需要标记的低质量评论类型，可结合下方自定义提示词进一步微调。
+      spam: 广告引流 / 诈骗推销
+      spam_desc: 广告、假福利、二维码私信引流或诈骗推销
+      low_effort: 无意义水评 / 刷屏复读
+      low_effort_desc: 纯打卡抢沙发、刷屏复读或凑字数水评
+      toxic: 引战嘲讽 / 人身攻击
+      toxic_desc: 恶意带节奏、引战嘲讽或人身攻击
+      spoiler_or_bait: 剧透 / 钓鱼 / 情绪谩骂
+      spoiler_or_bait_desc: 恶意剧透、钓鱼引流或情绪化谩骂
+      ai_slop: AI 生成低质量评论
+      ai_slop_desc: 模板化套话、机械总结或 AI 水军评论
+    batch_size: 单批检测条数
+    batch_size_desc: 每次请求送审的评论数量（3–5 条）。
+    custom_prompt: 附加筛选规则（可选）
+    custom_prompt_desc: 补充个性化判断标准，会附加到系统提示词中发送给模型。
+    custom_prompt_placeholder: 例如：保留剧情讨论不要按剧透过滤；重点标记复制粘贴的玩烂梗评论
+    test_connection: 连接测试
+    test_connection_desc: 发送两条示例评论验证当前模型与接口是否可用。
+    test_btn: 测试接口连接
+    testing: 测试中…
+    test_success: '连接成功（{model}，耗时 {ms}ms，识别到 {flagged} 条低质量示例）'
+    test_failed: '连接失败：{error}'
   group_fonts: 字体
   group_visual_effects: 视觉效果
 auth:
@@ -2021,3 +2060,23 @@ inject:
   load_more: 加载更多
   expand_all_replies: 加载全部
   load_reply_pages: '加载 {count} 页'
+  ai_filter_label: AI 过滤
+  ai_filter_paused: AI 过滤已暂停
+  ai_filter_scanning: AI 筛选中…
+  ai_filter_scan_now: 'AI 筛选 ({count})'
+  ai_filter_rescan: 重扫
+  ai_filter_retry: AI 筛选失败 · 重试
+  ai_filter_error: AI 评论筛选请求失败
+  ai_filter_flagged_count: '已标记 {count} 条'
+  ai_filter_show_hidden: '显示已隐藏 ({count})'
+  ai_filter_hide_filtered: '隐藏已过滤 ({count})'
+  ai_filter_badge: AI 低质量
+  ai_filter_badge_with_category: 'AI 低质量 · {category}'
+  ai_filter_default_reason: 疑似低质量评论
+  ai_filter_expand: 展开原文
+  ai_filter_collapse: 收起
+  ai_filter_dismiss: 误判
+  ai_filter_item_analyzing: AI 分析中…
+  ai_filter_item_passed: AI 已分析：正常评论
+  ai_filter_item_flagged: AI 已标记为低质量评论
+  ai_filter_item_error: AI 分析失败，点击重试

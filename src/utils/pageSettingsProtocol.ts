@@ -1,3 +1,9 @@
+import type { CommentAiFilterDisplayMode } from '~/utils/commentAiFilter'
+import {
+  normalizeCommentAiFilterBatchSize,
+  normalizeCommentAiFilterDisplayMode,
+} from '~/utils/commentAiFilter'
+
 export type PageCommentReplyTreeMode = 'lineCollapseMain' | 'lineKeepMain' | 'indentOnly'
 export type PageCommentReplyPaginationMode = 'loadMore' | 'pagination'
 
@@ -13,11 +19,16 @@ export interface PageSettingsPayload {
   adjustCommentImageHeight: boolean
   cleanShareLinkIncludeTitle: boolean
   cleanShareLinkRemoveTrackingParams: boolean
+  commentAiFilterAutoScan: boolean
+  commentAiFilterBatchSize: number
+  commentAiFilterDisplayMode: CommentAiFilterDisplayMode
+  commentAiFilterIncludeReplies: boolean
   commentReplyPaginationMode: PageCommentReplyPaginationMode
   commentReplyTreeContainerHeight: number
   commentReplyTreeMode: PageCommentReplyTreeMode
   depersonalizeSearchResults: boolean
   enableCleanShareLink: boolean
+  enableCommentAiFilter: boolean
   enableCommentReplyTreeContainer: boolean
   enableCommentReplyTreeDisplay: boolean
   language: string
@@ -85,11 +96,16 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     adjustCommentImageHeight: commentsEnabled && value.adjustCommentImageHeight,
     cleanShareLinkIncludeTitle: value.cleanShareLinkIncludeTitle,
     cleanShareLinkRemoveTrackingParams: value.cleanShareLinkRemoveTrackingParams,
+    commentAiFilterAutoScan: value.commentAiFilterAutoScan !== false,
+    commentAiFilterBatchSize: normalizeCommentAiFilterBatchSize(value.commentAiFilterBatchSize),
+    commentAiFilterDisplayMode: normalizeCommentAiFilterDisplayMode(value.commentAiFilterDisplayMode),
+    commentAiFilterIncludeReplies: value.commentAiFilterIncludeReplies !== false,
     commentReplyPaginationMode: value.commentReplyPaginationMode,
     commentReplyTreeContainerHeight: value.commentReplyTreeContainerHeight,
     commentReplyTreeMode: value.commentReplyTreeMode,
     depersonalizeSearchResults: value.depersonalizeSearchResults,
     enableCleanShareLink: value.enableCleanShareLink,
+    enableCommentAiFilter: commentsEnabled && value.enableCommentAiFilter === true,
     enableCommentReplyTreeContainer: commentsEnabled && value.enableCommentReplyTreeContainer,
     enableCommentReplyTreeDisplay: commentsEnabled && value.enableCommentReplyTreeDisplay,
     language: value.language,

@@ -6,6 +6,7 @@ import { GET_BROWSER_INFO_MESSAGE, getExtensionBrowserInfo } from '~/utils/brows
 import { onMessage } from '~/utils/messaging'
 
 import { isAppClientRequestUrl, setupAppClient } from './appClient'
+import { setupCommentAiFilter } from './commentAiFilter'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupHostPermissionsDiagnostics } from './hostPermissions'
 import { setupLoginStateWatcher } from './loginStateWatcher'
@@ -185,6 +186,7 @@ setupSettingsPage()
 setupSettingsStorageCoordinator()
 setupSettingsCloudSync()
 setupApiMsgListeners()
+setupCommentAiFilter()
 setupAppClient()
 setupTabMsgListeners()
 setupTopBarStateBroker()

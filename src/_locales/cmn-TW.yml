@@ -1232,6 +1232,45 @@ settings:
   hide_comment_image_scrollbar_desc: 避免頁面滾動條顯示在預覽遮罩右側。
   image_viewer_close_at_bottom: 圖片檢視器關閉按鈕置於底部居中
   image_viewer_close_at_bottom_desc: 作用於評論區和動態圖片檢視器。
+  comment_ai_filter:
+    group_title: AI 評論過濾
+    group_desc: 使用 B 站內建免費 Index-Translate-2B 介面批次偵測並標記評論區中的低品質評論，支援原站評論區與 Bewly 動態評論區。
+    enable: 啟用 AI 評論過濾
+    enable_desc: 開啟後將目前可視範圍內的評論文字分批傳送至 B 站 Index-Translate-2B 介面進行品質篩選。
+    auto_scan: 自動批次篩選
+    auto_scan_desc: 開啟後自動偵測新載入的評論；關閉後僅在點擊評論區按鈕時手動篩選。
+    include_replies: 包含樓中樓子回覆
+    include_replies_desc: 一併偵測展開的樓中樓子回覆，會增加 API 請求量。
+    display_mode:
+      title: 低品質評論顯示方式
+      desc: 選擇被 AI 標記為低品質評論後的呈現方式。
+      collapse: 淡化摺疊（點擊可展開原文）
+      mark: 僅顯示低品質標記與原因
+      hide: 直接隱藏（可在評論區切換顯示）
+    dimensions:
+      title: 預設判定維度
+      desc: 選擇需要標記的低品質評論類型，可搭配下方自訂提示詞進一步微調。
+      spam: 廣告引流 / 詐騙推銷
+      spam_desc: 廣告、假福利、QR Code 私訊引流或詐騙推銷
+      low_effort: 無意義水評 / 洗版複讀
+      low_effort_desc: 純打卡搶頭香、洗版複讀或湊字數水評
+      toxic: 引戰嘲諷 / 人身攻擊
+      toxic_desc: 惡意帶風向、引戰嘲諷或人身攻擊
+      spoiler_or_bait: 劇透 / 釣魚 / 情緒謾罵
+      spoiler_or_bait_desc: 惡意劇透、釣魚引流或情緒化謾罵
+      ai_slop: AI 生成低品質評論
+      ai_slop_desc: 模板化套話、機械總結或 AI 水軍評論
+    batch_size: 單批偵測條數
+    batch_size_desc: 每次請求送審的評論數量（3–5 條）。
+    custom_prompt: 附加篩選規則（選填）
+    custom_prompt_desc: 補充個人化判斷標準，會附加到系統提示詞中傳送給模型。
+    custom_prompt_placeholder: 例如：保留劇情討論不要按劇透過濾；重點標記複製貼上的洗版評論
+    test_connection: 連線測試
+    test_connection_desc: 傳送兩條範例評論驗證目前模型與介面是否可用。
+    test_btn: 測試介面連線
+    testing: 測試中…
+    test_success: '連線成功（{model}，耗時 {ms}ms，識別到 {flagged} 條低品質範例）'
+    test_failed: '連線失敗：{error}'
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，調整顯示模式時會自動捲動到所選位置。
   video_player_scroll_mode:
@@ -2036,3 +2075,23 @@ inject:
   load_more: 載入更多
   expand_all_replies: 載入全部
   load_reply_pages: '載入 {count} 頁'
+  ai_filter_label: AI 過濾
+  ai_filter_paused: AI 過濾已暫停
+  ai_filter_scanning: AI 篩選中…
+  ai_filter_scan_now: 'AI 篩選 ({count})'
+  ai_filter_rescan: 重掃
+  ai_filter_retry: AI 篩選失敗 · 重試
+  ai_filter_error: AI 評論篩選請求失敗
+  ai_filter_flagged_count: '已標記 {count} 條'
+  ai_filter_show_hidden: '顯示已隱藏 ({count})'
+  ai_filter_hide_filtered: '隱藏已過濾 ({count})'
+  ai_filter_badge: AI 低品質
+  ai_filter_badge_with_category: 'AI 低品質 · {category}'
+  ai_filter_default_reason: 疑似低品質評論
+  ai_filter_expand: 展開原文
+  ai_filter_collapse: 收起
+  ai_filter_dismiss: 誤判
+  ai_filter_item_analyzing: AI 分析中…
+  ai_filter_item_passed: AI 已分析：正常評論
+  ai_filter_item_flagged: AI 已標記為低品質評論
+  ai_filter_item_error: AI 分析失敗，點擊重試

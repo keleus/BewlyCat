@@ -1341,6 +1341,45 @@ settings:
   hide_comment_image_scrollbar_desc: Prevent the page scrollbar from appearing beside the preview overlay.
   image_viewer_close_at_bottom: Move the image viewer close button to the bottom center
   image_viewer_close_at_bottom_desc: Applies to comment and moments image viewers.
+  comment_ai_filter:
+    group_title: AI Comment Filter
+    group_desc: Batch-evaluate visible comments with Bilibili's built-in free Index-Translate-2B endpoint on native Bilibili pages and Bewly Moments.
+    enable: Enable AI comment filter
+    enable_desc: Send visible comment text in batches to Bilibili's Index-Translate-2B API for quality screening.
+    auto_scan: Auto-scan new comments
+    auto_scan_desc: Automatically inspect newly loaded comments; when off, only scan when you click the button in the comment header.
+    include_replies: Include nested replies
+    include_replies_desc: Also screen expanded sub-replies. Increases API requests.
+    display_mode:
+      title: Low-quality display mode
+      desc: Choose how comments flagged by AI are presented.
+      collapse: Dim & collapse (click to expand)
+      mark: Mark with badge and reason only
+      hide: Hide (toggleable in comment header)
+    dimensions:
+      title: Default screening criteria
+      desc: Select the types of low-quality comments to flag. You can refine them with a custom prompt below.
+      spam: Spam / Ads / Scams
+      spam_desc: Promotional ads, fake giveaways, phishing, or spam links
+      low_effort: Low-effort / Repetitive
+      low_effort_desc: Meaningless filler, copy-pasta spam, or "first" check-ins
+      toxic: Toxic / Personal attacks
+      toxic_desc: Harassment, flamebait, hostility, or personal attacks
+      spoiler_or_bait: Spoilers / Rage-bait
+      spoiler_or_bait_desc: Malicious spoilers, trolling, or emotional abuse
+      ai_slop: AI-generated low-quality comments
+      ai_slop_desc: Templated AI boilerplate, robotic summaries, or AI bot spam
+    batch_size: Batch size
+    batch_size_desc: Number of comments per API request (3–5 comments).
+    custom_prompt: Additional screening rules (optional)
+    custom_prompt_desc: Extra instructions appended to the system prompt for customized filtering.
+    custom_prompt_placeholder: 'Example: Keep normal plot discussion; focus on flagging copy-pasted meme spam.'
+    test_connection: Connection test
+    test_connection_desc: Send two sample comments to verify your API and model configuration.
+    test_btn: Test connection
+    testing: Testing…
+    test_success: 'Connected ({model}, {ms}ms, flagged {flagged} low-quality sample)'
+    test_failed: 'Connection failed: {error}'
   video_player_scroll: Scroll after adjusting the display mode
   video_player_scroll_desc: Automatically scroll to the selected position after adjusting the display mode.
   video_player_scroll_mode:
@@ -2099,3 +2138,23 @@ inject:
   load_more: Load more
   expand_all_replies: Load all
   load_reply_pages: 'Load {count} pages'
+  ai_filter_label: AI Filter
+  ai_filter_paused: AI Filter Paused
+  ai_filter_scanning: Scanning…
+  ai_filter_scan_now: 'AI Scan ({count})'
+  ai_filter_rescan: Rescan
+  ai_filter_retry: AI Filter Failed · Retry
+  ai_filter_error: AI comment filter request failed
+  ai_filter_flagged_count: '{count} flagged'
+  ai_filter_show_hidden: 'Show hidden ({count})'
+  ai_filter_hide_filtered: 'Hide filtered ({count})'
+  ai_filter_badge: Low Quality
+  ai_filter_badge_with_category: 'Low Quality · {category}'
+  ai_filter_default_reason: Flagged as low quality
+  ai_filter_expand: Show original
+  ai_filter_collapse: Collapse
+  ai_filter_dismiss: Keep
+  ai_filter_item_analyzing: AI analyzing…
+  ai_filter_item_passed: 'AI checked: looks fine'
+  ai_filter_item_flagged: Flagged as low quality by AI
+  ai_filter_item_error: AI analysis failed, click to retry

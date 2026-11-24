@@ -13,6 +13,7 @@ import { getCommentRows } from './commentPreview'
 import MomentCommentComposer from './MomentCommentComposer.vue'
 import MomentCommentTree from './MomentCommentTree.vue'
 import type { DisplayMoment } from './types'
+import { useMomentCommentAiFilter } from './useMomentCommentAiFilter'
 import { useMomentComments } from './useMomentComments'
 import { formatCount, getAuthorSpaceUrl } from './utils'
 
@@ -39,6 +40,7 @@ const {
   saveScrollPosition,
 } = useMomentComments(moment, state, delta => emit('countChange', delta), () => emit('reposted'))
 const scroller = ref<HTMLElement>()
+const aiFilter = useMomentCommentAiFilter(moment, state, scroller)
 const { reset: checkScroll } = useInfiniteScroll(scroller, loadComments, {
   distance: 80,
   canLoadMore: () => state.expanded && !state.loading && !state.done && !state.error,
@@ -58,10 +60,46 @@ function selectSort(sort: CommentSort) {
 
 const treeEnabled = computed(() => settings.value.enableCommentReplyTreeDisplay)
 const treeMode = computed(() => settings.value.commentReplyTreeMode)
-const groups = computed(() => state.comments.map(root => ({
-  root,
-  rows: getCommentRows(root, treeEnabled.value, treeMode.value),
-})))
+const groups = computed(() => state.comments
+  .filter(root => !aiFilter.isCommentHidden(root.id))
+  .map((root) => {
+    const rawRows = getCommentRows(root, treeEnabled.value, treeMode.value)
+    // 子回复被 AI 隐藏时一并隐藏其后代，并重算 hasChildren，避免残留悬空引导线。
+    const hiddenSubtreeIds = new Set<string>()
+    const visibleRows = rawRows.filter((row) => {
+      if (row.parentId && hiddenSubtreeIds.has(row.parentId)) {
+        hiddenSubtreeIds.add(row.comment.id)
+        return false
+      }
+      if (!row.comment.missing && aiFilter.isCommentHidden(row.comment.id)) {
+        hiddenSubtreeIds.add(row.comment.id)
+        return false
+      }
+      return true
+    })
+    const parentIdsWithVisibleChild = new Set(
+      visibleRows.map(row => row.parentId).filter((id): id is string => Boolean(id)),
+    )
+    const rows = visibleRows.map(row => ({
+      ...row,
+      hasChildren: row.collapsed
+        ? row.hasChildren
+        : parentIdsWithVisibleChild.has(row.comment.id),
+    }))
+    return { root, rows }
+  }))
+
+function handleAiToolbarClick() {
+  if (!aiFilter.paused.value && !aiFilter.scanning.value && aiFilter.error.value) {
+    void aiFilter.scanNow(false)
+    return
+  }
+  if (!aiFilter.paused.value && !aiFilter.autoScan.value && aiFilter.unscannedComments.value.length > 0) {
+    void aiFilter.scanNow(false)
+    return
+  }
+  aiFilter.togglePaused()
+}
 
 const userId = computed(() => account.isLogin ? String(getUserID() || '') : '')
 const draftPrefix = computed(() => `${userId.value}:${moment.id}`)
@@ -324,6 +362,27 @@ onBeforeUnmount(() => {
           {{ t(option.label) }}
         </button>
       </div>
+      <div v-if="aiFilter.enabled.value" class="moment-comments__ai-toolbar">
+        <button
+          type="button"
+          class="moment-comments__ai-chip"
+          :class="{
+            'is-error': !aiFilter.paused.value && !aiFilter.scanning.value && Boolean(aiFilter.error.value),
+            'is-active': !aiFilter.paused.value && (aiFilter.scanning.value || !aiFilter.error.value),
+          }"
+          :aria-pressed="!aiFilter.paused.value"
+          :title="aiFilter.error.value || undefined"
+          @click="handleAiToolbarClick"
+        >
+          <span v-if="!aiFilter.paused.value && aiFilter.scanning.value" i-svg-spinners:ring-resize aria-hidden="true" />
+          <span v-else i-tabler-sparkles aria-hidden="true" />
+          {{ aiFilter.paused.value
+            ? t('inject.ai_filter_paused')
+            : (!aiFilter.scanning.value && aiFilter.error.value)
+              ? t('inject.ai_filter_retry')
+              : t('inject.ai_filter_label') }}
+        </button>
+      </div>
     </header>
     <div
       ref="scroller"
@@ -360,7 +419,12 @@ onBeforeUnmount(() => {
           v-for="row in group.rows"
           :key="row.comment.id"
           class="moment-comments__comment"
-          :class="{ 'is-collapsed-body': row.hideBody, 'is-located': row.comment.id === locatedCommentId }"
+          :class="{
+            'is-collapsed-body': row.hideBody,
+            'is-located': row.comment.id === locatedCommentId,
+            'is-ai-collapsed': !row.comment.missing && aiFilter.isCommentCollapsed(row.comment.id),
+            'is-ai-marked': !row.comment.missing && Boolean(aiFilter.getFlaggedVerdict(row.comment.id)) && !aiFilter.isCommentCollapsed(row.comment.id),
+          }"
           :data-comment-id="row.comment.id"
           :style="{ '--comment-depth': Math.min(row.depth, 10) }"
         >
@@ -412,82 +476,146 @@ onBeforeUnmount(() => {
                 v-if="settings.showIPLocation && row.comment.location && !row.hideBody"
                 class="moment-comments__location"
               >{{ row.comment.location }}</span>
+              <button
+                v-if="!row.hideBody && aiFilter.getCommentAiStatus(row.comment.id) === 'error'"
+                type="button"
+                class="moment-comments__ai-status is-error"
+                :title="aiFilter.getCommentError(row.comment.id)
+                  ? `${t('inject.ai_filter_item_error')} (${aiFilter.getCommentError(row.comment.id)})`
+                  : t('inject.ai_filter_item_error')"
+                :aria-label="t('inject.ai_filter_item_error')"
+                @click="aiFilter.retryComment(row.comment.id)"
+              >
+                <span i-tabler-refresh aria-hidden="true" />
+              </button>
+              <span
+                v-else-if="!row.hideBody && aiFilter.getCommentAiStatus(row.comment.id)"
+                class="moment-comments__ai-status"
+                :class="`is-${aiFilter.getCommentAiStatus(row.comment.id)}`"
+                :title="t(`inject.ai_filter_item_${aiFilter.getCommentAiStatus(row.comment.id)}`)"
+                :aria-label="t(`inject.ai_filter_item_${aiFilter.getCommentAiStatus(row.comment.id)}`)"
+              >
+                <span
+                  :class="aiFilter.getCommentAiStatus(row.comment.id) === 'flagged' ? 'i-tabler-filter' : 'i-tabler-sparkles'"
+                  aria-hidden="true"
+                />
+              </span>
             </header>
             <template v-if="!row.hideBody">
-              <p class="moment-comments__content">
-                <template v-for="(part, index) in row.comment.content" :key="index">
-                  <img
-                    v-if="part.image" :src="part.image" :alt="part.text" :title="part.text" class="moment-comments__emoji"
-                    loading="lazy"
-                  >
-                  <a
-                    v-else-if="part.url"
-                    class="moment-comments__link"
-                    :href="part.url"
-                    :title="part.title"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >{{ part.text }}</a>
-                  <template v-else>
-                    {{ part.text }}
-                  </template>
-                </template>
-              </p>
-              <div v-if="row.comment.pictures.length" class="moment-comments__pictures">
-                <button
-                  v-for="(picture, index) in row.comment.pictures"
-                  :key="picture"
-                  type="button"
-                  class="bew-ghost-button bew-ghost-button--theme"
-                  :aria-label="t('moment_card.comment_image', { index: index + 1 })"
-                  @click="openPicture($event, row.comment.pictures, index)"
+              <div
+                v-if="aiFilter.getFlaggedVerdict(row.comment.id)"
+                class="moment-comments__ai-banner"
+              >
+                <span class="moment-comments__ai-banner-icon" i-tabler-filter aria-hidden="true" />
+                <span
+                  class="moment-comments__ai-banner-summary"
+                  :title="`${aiFilter.getFlaggedVerdict(row.comment.id)?.category
+                    ? t('inject.ai_filter_badge_with_category', { category: aiFilter.getFlaggedVerdict(row.comment.id)?.category })
+                    : t('inject.ai_filter_badge')} · ${aiFilter.getFlaggedVerdict(row.comment.id)?.reason || t('inject.ai_filter_default_reason')}`"
                 >
-                  <img :src="picture" alt="" loading="lazy" decoding="async">
-                </button>
-              </div>
-              <footer class="moment-comments__meta">
-                <time v-if="row.comment.time" :datetime="new Date(row.comment.time * 1000).toISOString()">
-                  {{ new Date(row.comment.time * 1000).toLocaleString() }}
-                </time>
-                <span class="moment-comments__actions">
+                  <span class="moment-comments__ai-banner-tag">
+                    {{ aiFilter.getFlaggedVerdict(row.comment.id)?.category
+                      ? t('inject.ai_filter_badge_with_category', { category: aiFilter.getFlaggedVerdict(row.comment.id)?.category })
+                      : t('inject.ai_filter_badge') }}
+                  </span>
+                  <span class="moment-comments__ai-banner-reason">
+                    {{ aiFilter.getFlaggedVerdict(row.comment.id)?.reason || t('inject.ai_filter_default_reason') }}
+                  </span>
+                </span>
+                <span class="moment-comments__ai-banner-actions">
                   <button
+                    v-if="aiFilter.displayMode.value === 'collapse'"
                     type="button"
-                    class="bew-ghost-button bew-ghost-button--theme"
-                    :aria-label="t(row.comment.liked ? 'moment_card.unlike' : 'moment_card.like')"
-                    :aria-pressed="row.comment.liked"
-                    :aria-busy="row.comment.liking"
-                    :aria-disabled="row.comment.liking"
-                    @click="toggleLike(row.comment)"
+                    class="moment-comments__ai-banner-btn"
+                    @click="aiFilter.toggleExpand(row.comment.id)"
                   >
-                    <span v-if="row.comment.liking" i-svg-spinners:ring-resize aria-hidden="true" />
-                    <span v-else :class="row.comment.liked ? 'i-tabler-thumb-up-filled' : 'i-tabler-thumb-up'" aria-hidden="true" />
-                    {{ formatCount(row.comment.likeCount) }}
+                    {{ aiFilter.isCommentExpanded(row.comment.id) ? t('inject.ai_filter_collapse') : t('inject.ai_filter_expand') }}
                   </button>
                   <button
-                    v-if="userId && !state.inputDisabled"
                     type="button"
-                    class="bew-ghost-button bew-ghost-button--theme"
-                    :aria-expanded="state.replyTarget?.comment === row.comment"
-                    @click="replyTo(group.root, row.comment)"
+                    class="moment-comments__ai-banner-btn is-muted"
+                    @click="aiFilter.dismissComment(row.comment.id)"
                   >
-                    <span i-tabler-message-circle aria-hidden="true" />
-                    {{ t('moment_card.comment_reply') }}
-                  </button>
-                  <button
-                    v-if="userId && row.comment.mid === userId"
-                    type="button"
-                    class="bew-ghost-button bew-ghost-button--theme"
-                    :class="{ 'is-danger': pendingDeleteId === row.comment.id }"
-                    :aria-busy="row.comment.deleting"
-                    :aria-disabled="row.comment.deleting"
-                    @click="!row.comment.deleting && requestDelete(row.comment, group.root)"
-                  >
-                    <span v-if="row.comment.deleting" i-svg-spinners:ring-resize aria-hidden="true" />
-                    <span v-else i-tabler-trash aria-hidden="true" />
-                    {{ t(pendingDeleteId === row.comment.id ? 'moment_card.comment_delete_confirm' : 'common.operation.delete') }}
+                    {{ t('inject.ai_filter_dismiss') }}
                   </button>
                 </span>
-              </footer>
+              </div>
+              <template v-if="!aiFilter.isCommentCollapsed(row.comment.id)">
+                <p class="moment-comments__content">
+                  <template v-for="(part, index) in row.comment.content" :key="index">
+                    <img
+                      v-if="part.image" :src="part.image" :alt="part.text" :title="part.text" class="moment-comments__emoji"
+                      loading="lazy"
+                    >
+                    <a
+                      v-else-if="part.url"
+                      class="moment-comments__link"
+                      :href="part.url"
+                      :title="part.title"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >{{ part.text }}</a>
+                    <template v-else>
+                      {{ part.text }}
+                    </template>
+                  </template>
+                </p>
+                <div v-if="row.comment.pictures.length" class="moment-comments__pictures">
+                  <button
+                    v-for="(picture, index) in row.comment.pictures"
+                    :key="picture"
+                    type="button"
+                    class="bew-ghost-button bew-ghost-button--theme"
+                    :aria-label="t('moment_card.comment_image', { index: index + 1 })"
+                    @click="openPicture($event, row.comment.pictures, index)"
+                  >
+                    <img :src="picture" alt="" loading="lazy" decoding="async">
+                  </button>
+                </div>
+                <footer class="moment-comments__meta">
+                  <time v-if="row.comment.time" :datetime="new Date(row.comment.time * 1000).toISOString()">
+                    {{ new Date(row.comment.time * 1000).toLocaleString() }}
+                  </time>
+                  <span class="moment-comments__actions">
+                    <button
+                      type="button"
+                      class="bew-ghost-button bew-ghost-button--theme"
+                      :aria-label="t(row.comment.liked ? 'moment_card.unlike' : 'moment_card.like')"
+                      :aria-pressed="row.comment.liked"
+                      :aria-busy="row.comment.liking"
+                      :aria-disabled="row.comment.liking"
+                      @click="toggleLike(row.comment)"
+                    >
+                      <span v-if="row.comment.liking" i-svg-spinners:ring-resize aria-hidden="true" />
+                      <span v-else :class="row.comment.liked ? 'i-tabler-thumb-up-filled' : 'i-tabler-thumb-up'" aria-hidden="true" />
+                      {{ formatCount(row.comment.likeCount) }}
+                    </button>
+                    <button
+                      v-if="userId && !state.inputDisabled"
+                      type="button"
+                      class="bew-ghost-button bew-ghost-button--theme"
+                      :aria-expanded="state.replyTarget?.comment === row.comment"
+                      @click="replyTo(group.root, row.comment)"
+                    >
+                      <span i-tabler-message-circle aria-hidden="true" />
+                      {{ t('moment_card.comment_reply') }}
+                    </button>
+                    <button
+                      v-if="userId && row.comment.mid === userId"
+                      type="button"
+                      class="bew-ghost-button bew-ghost-button--theme"
+                      :class="{ 'is-danger': pendingDeleteId === row.comment.id }"
+                      :aria-busy="row.comment.deleting"
+                      :aria-disabled="row.comment.deleting"
+                      @click="!row.comment.deleting && requestDelete(row.comment, group.root)"
+                    >
+                      <span v-if="row.comment.deleting" i-svg-spinners:ring-resize aria-hidden="true" />
+                      <span v-else i-tabler-trash aria-hidden="true" />
+                      {{ t(pendingDeleteId === row.comment.id ? 'moment_card.comment_delete_confirm' : 'common.operation.delete') }}
+                    </button>
+                  </span>
+                </footer>
+              </template>
             </template>
           </template>
         </article>
@@ -561,7 +689,238 @@ onBeforeUnmount(() => {
 .moment-comments__toolbar {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-2);
   padding: var(--bew-space-2) var(--bew-space-3);
+}
+
+.moment-comments__ai-toolbar {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--bew-space-1);
+}
+
+.moment-comments__ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+  min-height: 26px;
+  padding: 0 var(--bew-space-2);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-badge-radius);
+  background: var(--bew-fill-1);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-caption);
+  cursor: pointer;
+  transition:
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    border-color var(--bew-duration-fast) var(--bew-ease-standard),
+    color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--bew-fill-2);
+    color: var(--bew-text-1);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
+
+  &.is-active {
+    color: var(--bew-theme-color);
+    background: var(--bew-theme-color-10);
+    border-color: var(--bew-theme-color-30);
+  }
+
+  &.is-warning {
+    color: var(--bew-text-2);
+    background: var(--bew-fill-1);
+    border-color: var(--bew-border-color);
+  }
+
+  &.is-error {
+    color: var(--bew-error-color);
+    background: var(--bew-error-color-10);
+    border-color: var(--bew-error-color-30);
+  }
+}
+
+.moment-comments__ai-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 var(--bew-space-2);
+  border-radius: var(--bew-badge-radius);
+  background: var(--bew-fill-1);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-caption);
+}
+
+.moment-comments__comment.is-ai-collapsed .moment-comments__author {
+  opacity: 0.45;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.moment-comments__comment.is-ai-collapsed:hover .moment-comments__author {
+  opacity: 0.72;
+}
+
+.moment-comments__comment.is-ai-marked {
+  opacity: 0.68;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.moment-comments__ai-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--bew-space-2);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: var(--bew-space-1) 0;
+  padding: var(--bew-space-0-5) var(--bew-space-2);
+  border-radius: var(--bew-radius-sm);
+  background: var(--bew-fill-1);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  opacity: 0.78;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.moment-comments__ai-banner-icon {
+  flex: none;
+  color: var(--bew-text-3);
+}
+
+.moment-comments__ai-banner-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moment-comments__ai-banner-tag {
+  color: var(--bew-text-3);
+  font-weight: var(--bew-font-weight-medium);
+}
+
+.moment-comments__ai-banner-reason {
+  margin-inline-start: var(--bew-space-1);
+}
+
+.moment-comments__ai-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.moment-comments__ai-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--bew-space-1);
+  border: none;
+  border-radius: var(--bew-radius-sm);
+  background: transparent;
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-caption);
+  cursor: pointer;
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    color: var(--bew-text-2);
+    background: var(--bew-fill-1);
+  }
+
+  &.is-muted {
+    color: var(--bew-text-4);
+  }
+}
+
+.moment-comments__ai-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0 3px;
+  min-height: 18px;
+  border: none;
+  border-radius: var(--bew-radius-sm);
+  background: transparent;
+  color: var(--bew-text-3);
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &.is-analyzing {
+    color: var(--bew-theme-color);
+    opacity: 0.72;
+    animation: moment-ai-pulse 1.2s ease-in-out infinite;
+  }
+
+  &.is-passed {
+    opacity: 0.28;
+
+    &:hover {
+      opacity: 0.72;
+    }
+  }
+
+  &.is-flagged {
+    opacity: 0.55;
+  }
+
+  &.is-error {
+    color: var(--bew-error-color);
+    opacity: 0.72;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 1;
+      background: var(--bew-error-color-10);
+    }
+  }
+}
+
+@keyframes moment-ai-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 0.92;
+    transform: scale(1.06);
+  }
 }
 
 .moment-comments__scroller {

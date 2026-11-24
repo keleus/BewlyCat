@@ -49,6 +49,7 @@ import { LOCAL_WALLPAPER_SLOT_KEYS, WALLPAPER_SETTING_KEYS } from '~/utils/wallp
 import { version } from '../../package.json'
 import { initAmbilightControl } from './ambilightControl'
 import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
+import { setupCommentAiFilterBridge } from './features/commentAiFilterBridge'
 import { setupFavoriteOrganizerTripleSync } from './features/favoriteOrganizerTripleSync'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
@@ -294,6 +295,7 @@ else if (shouldInitializeContentScript) {
   setupNativeHomeFeedHistory()
   setupWatchLaterAutoRemove()
   setupFavoriteOrganizerTripleSync()
+  setupCommentAiFilterBridge()
   setupVideoWatchProgress()
   setupSettingsPageBridge()
   // Fix `OverlayScrollbars` not working in Firefox
