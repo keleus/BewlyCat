@@ -6,7 +6,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, OVERLAY_SCROLL_BAR_REBASE, OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
-import { VideoPageTopBarConfig } from '~/enums/appEnums'
+import { AppPage, VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
@@ -21,7 +21,7 @@ import TopBarHeader from './components/TopBarHeader.vue'
 import TopBarModeSwitcher from './components/TopBarModeSwitcher.vue'
 import { useTopBarInteraction } from './composables/useTopBarInteraction'
 
-const { reachTop } = useBewlyApp()
+const { activatedPage, reachTop } = useBewlyApp()
 // 顶栏状态管理
 const topBarStore = useTopBarStore()
 const { forceWhiteIcon } = useTopBarInteraction()
@@ -67,10 +67,26 @@ function checkUrlChange() {
   }
 }
 
-// 延迟隐藏计时器
+// 延迟显示/隐藏计时器
+const TOP_AREA_COMPACT_SHOW_DELAY = 120
+let showTimer: number | null = null
 let hideTimer: number | null = null
 let urlChangeCheckQueued = false
 let topBarUnmounted = false
+
+function clearShowTimer() {
+  if (showTimer) {
+    clearTimeout(showTimer)
+    showTimer = null
+  }
+}
+
+function clearHideTimer() {
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
+}
 
 function scheduleUrlChangeCheck() {
   if (urlChangeCheckQueued || topBarUnmounted)
@@ -131,29 +147,57 @@ const isShowOnMouseActive = computed(() => {
   return config === VideoPageTopBarConfig.ShowOnMouse
 })
 
+// 首页启用固定标签栏时，隐藏顶栏后标签栏会自动上移到视口顶部附近；
+// 此时缩小顶部鼠标感应区高度并增加短暂停留确认，避免遮挡标签栏点击或在滑向标签栏时误触顶栏。
+const isCompactTopAreaListener = computed(() => {
+  void currentUrl.value
+  return isHomePage()
+    && !settings.value.useOriginalBilibiliHomepage
+    && activatedPage.value === AppPage.Home
+    && settings.value.fixedHomeTabsOnHomePage
+})
+
 // 处理顶栏显示/隐藏逻辑的函数
 function handleTopBarVisibility() {
   if (bewlyWidescreenActive.value)
     return
 
   if (isShowOnMouseActive.value) {
-    // 清除之前的计时器
-    if (hideTimer) {
-      clearTimeout(hideTimer)
-      hideTimer = null
+    // 清除之前的隐藏计时器
+    clearHideTimer()
+
+    // 鼠标已在顶栏区域内或有弹窗激活时立即显示
+    if (!isOutsideTopBar.value || hasActivePopup.value) {
+      clearShowTimer()
+      toggleTopBarVisible(true)
+      return
     }
 
-    // 如果鼠标在顶栏区域或顶部监听区域，或者有任何弹窗激活，则显示顶栏
-    if (!isOutsideTopBar.value || !isOutsideTopArea.value || hasActivePopup.value) {
-      toggleTopBarVisible(true)
+    // 鼠标进入顶部感应区
+    if (!isOutsideTopArea.value) {
+      if (!hideTopBar.value || !isCompactTopAreaListener.value) {
+        clearShowTimer()
+        toggleTopBarVisible(true)
+      }
+      else if (!showTimer) {
+        showTimer = window.setTimeout(() => {
+          showTimer = null
+          if (!bewlyWidescreenActive.value && isShowOnMouseActive.value && !isOutsideTopArea.value)
+            toggleTopBarVisible(true)
+        }, TOP_AREA_COMPACT_SHOW_DELAY)
+      }
+      return
     }
-    else {
+
+    clearShowTimer()
+    if (!hideTopBar.value) {
       // 延迟隐藏顶栏
       hideTimer = window.setTimeout(() => {
+        hideTimer = null
         // 再次检查是否有弹窗激活，防止在延迟期间有弹窗打开
         const hasActivePopupNow = hasActivePopup.value
         // 在鼠标显示模式下，如果所有弹窗都关闭且鼠标不在检测区域，则隐藏顶栏
-        if (!hasActivePopupNow) {
+        if (!hasActivePopupNow && isOutsideTopBar.value && isOutsideTopArea.value) {
           toggleTopBarVisible(false)
         }
       }, 500) // 500ms 延迟
@@ -162,7 +206,7 @@ function handleTopBarVisibility() {
 }
 
 // 监听鼠标位置变化和相关状态
-watch([isOutsideTopBar, isOutsideTopArea], handleTopBarVisibility)
+watch([isOutsideTopBar, isOutsideTopArea, isCompactTopAreaListener], handleTopBarVisibility)
 
 // 监听弹窗状态变化
 watch(hasActivePopup, () => {
@@ -338,11 +382,9 @@ function setupScrollListeners() {
     return
   }
 
-  // 切换页面或设置后丢弃上一种模式遗留的延迟隐藏
-  if (hideTimer) {
-    clearTimeout(hideTimer)
-    hideTimer = null
-  }
+  // 切换页面或设置后丢弃上一种模式遗留的延迟显示/隐藏
+  clearShowTimer()
+  clearHideTimer()
 
   // 根据页面配置设置初始显示状态
   toggleTopBarVisible(!isShowOnMouseActive.value
@@ -654,10 +696,8 @@ function handleVisibilityChange() {
 
 onUnmounted(() => {
   topBarUnmounted = true
-  if (hideTimer) {
-    clearTimeout(hideTimer)
-    hideTimer = null
-  }
+  clearShowTimer()
+  clearHideTimer()
 
   conflictingHeaderObserver?.disconnect()
   widescreenStateObserver?.disconnect()
@@ -697,6 +737,8 @@ onKeyStroke('/', (event: KeyboardEvent) => {
     return
 
   event.preventDefault()
+  clearShowTimer()
+  clearHideTimer()
   toggleTopBarVisible(true)
 })
 
@@ -718,9 +760,10 @@ defineExpose({
   <div class="top-bar-container">
     <!-- 顶部监听区域 -->
     <div
-      v-if="!bewlyWidescreenActive && isShowOnMouseActive"
+      v-if="!bewlyWidescreenActive && isShowOnMouseActive && !isLayoutEditing"
       ref="topAreaTarget"
       class="top-area-listener"
+      :class="{ 'top-area-listener--compact': isCompactTopAreaListener }"
       @pointerenter="isOutsideTopArea = false"
       @pointerleave="isOutsideTopArea = true"
     />
@@ -790,10 +833,14 @@ defineExpose({
 .top-area-listener {
   cursor: default;
   position: fixed;
-  z-index: 1000;
+  z-index: 998;
   top: 0;
   left: 0;
   right: var(--bew-page-scrollbar-gutter, 0px);
-  height: 20px;
+  height: var(--bew-space-5);
+
+  &--compact {
+    height: var(--bew-space-3);
+  }
 }
 </style>

@@ -8,7 +8,8 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { provideHomeTabCache } from '~/composables/useHomeTabState'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
+import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { gridLayout, settings } from '~/logic'
 import { parseDedeUserID } from '~/logic/loginStatus'
 import type { ForYouState } from '~/stores/forYouStore'
@@ -84,7 +85,18 @@ const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreT
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
-const topBarVisibility = ref<boolean>(true)
+const isTopBarAutoHidden = computed(() =>
+  topBarStore.showTopBar
+  && !isLayoutEditing.value
+  && settings.value.otherPageTopBarConfig !== VideoPageTopBarConfig.AlwaysShow
+  && !topBarStore.topBarVisible,
+)
+const topBarVisibility = computed(() => !isTopBarAutoHidden.value)
+const shouldPinHomeHeaderToTop = computed(() => settings.value.fixedHomeTabsOnHomePage && isTopBarAutoHidden.value)
+const isShowOnMouseTopBar = computed(() =>
+  topBarStore.showTopBar
+  && settings.value.otherPageTopBarConfig === VideoPageTopBarConfig.ShowOnMouse,
+)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
 const shouldShowRecommendationModeSwitcher = computed(() => (isLayoutEditing.value || settings.value.showRecommendationModeSwitcher) && activatedPage.value === HomeSubPage.ForYou)
 const shouldShowImmersiveModeEntry = computed(() => (isLayoutEditing.value || settings.value.showImmersiveModeEntry) && activatedPage.value === HomeSubPage.ForYou)
@@ -209,10 +221,6 @@ function handleOverlayScroll(scrollTop: number) {
   cachedScrollTop.value = scrollTop
 }
 
-function handleTopBarVisibilityChange(visible: boolean) {
-  topBarVisibility.value = visible
-}
-
 function computeTabs(): HomeTab[] {
   // if homePageTabVisibilityList not fresh , set it to default
   if (!settings.value.homePageTabVisibilityList.length || settings.value.homePageTabVisibilityList.length !== mainStore.homeTabs.length)
@@ -246,7 +254,6 @@ function syncCurrentTabs() {
 onMounted(() => {
   // ✅ 性能优化：订阅滚动事件以缓存 scrollTop，避免后续 DOM 读取
   emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleOverlayScroll)
-  emitter.on(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
 
   syncCurrentTabs()
 })
@@ -254,7 +261,6 @@ onMounted(() => {
 onUnmounted(() => {
   preserveInactiveForYouState()
   tabCache.clear()
-  emitter.off(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleOverlayScroll)
   isHomeTabSwitching.value = false
 })
@@ -361,7 +367,15 @@ function toggleTabContentLoading(loading: boolean) {
 </script>
 
 <template>
-  <div pos="relative">
+  <div
+    class="home-page"
+    :class="{
+      'home-page--search-mode': settings.fixedHomeTabsOnHomePage && settings.useSearchPageModeOnHomePage,
+      'home-page--top-bar-hidden': shouldPinHomeHeaderToTop,
+      'home-page--top-bar-mouse': shouldPinHomeHeaderToTop && isShowOnMouseTopBar,
+    }"
+    pos="relative"
+  >
     <!-- Home search page mode background -->
     <Transition name="bg">
       <div
@@ -435,7 +449,6 @@ function toggleTabContentLoading(loading: boolean) {
           'home-header--tabs-center': settings.homeTabsPosition === 'center',
           'home-header--recommendation-switcher': shouldShowRecommendationModeSwitcher,
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
-          'home-header-fixed--search': settings.fixedHomeTabsOnHomePage && settings.useSearchPageModeOnHomePage,
         }"
         w-full z-9
       >
@@ -711,12 +724,27 @@ function toggleTabContentLoading(loading: boolean) {
   gap: var(--bew-control-gap);
 }
 
-.home-header-fixed {
-  --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
+.home-page {
+  --home-header-sticky-top: calc(var(--bew-top-bar-height) + 10px);
 }
 
-.home-header-fixed--search {
-  top: calc(var(--bew-top-bar-height) + var(--bew-space-4));
+.home-page--search-mode {
+  --home-header-sticky-top: calc(var(--bew-top-bar-height) + var(--bew-space-4));
+}
+
+.home-page--top-bar-hidden {
+  --home-header-sticky-top: var(--bew-space-3);
+}
+
+.home-page--top-bar-hidden.home-page--top-bar-mouse {
+  // 鼠标显示顶栏时在顶部留出 12px 感应区 + 4px 缓冲，避免遮挡或误触顶栏。
+  --home-header-sticky-top: var(--bew-space-4);
+}
+
+.home-header-fixed {
+  position: sticky;
+  top: var(--home-header-sticky-top);
+  transition: top var(--bew-duration-moderate) var(--bew-ease-standard);
 }
 
 @media (max-width: 1000px) {
@@ -754,6 +782,10 @@ function toggleTabContentLoading(loading: boolean) {
   .home-tab-enter-active,
   .home-tab-leave-active {
     transition: opacity 1ms linear;
+  }
+
+  .home-header-fixed {
+    transition: none;
   }
 }
 </style>

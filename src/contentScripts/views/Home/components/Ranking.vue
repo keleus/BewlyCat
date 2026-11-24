@@ -75,7 +75,15 @@ const activatedRankingType = computed<RankingType>({
 })
 const videoList = tabState.ref<RankingVideoElement[]>('videoList', [])
 const PgcList = tabState.ref<RankingPgcItem[]>('pgcList', [])
-const shouldMoveAsideUp = ref<boolean>(false)
+// Allow moving sidebar up only when the Bewly top bar is enabled and auto-hidden (on scroll or on hover).
+// When the Bewly top bar is disabled (e.g. for Bilibili Evolved) or using the original top bar, keep it below the top bar.
+const shouldMoveAsideUp = computed(() =>
+  settings.value.enableTopBarModule
+  && settings.value.enableTopBar
+  && !settings.value.useOriginalBilibiliTopBar
+  && settings.value.otherPageTopBarConfig !== VideoPageTopBarConfig.AlwaysShow
+  && !props.topBarVisibility,
+)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 排行榜没有分页
 const requestFailed = tabState.ref<boolean>('requestFailed', false)
 const errorReportSource: ApiErrorReportSource = { scene: '排行', queries: ['getRankingVideos', 'getRankingPgc'] }
@@ -155,21 +163,6 @@ watch(() => activatedRankingType.value.id, () => {
   handleScrollJump(getHomeContentScrollTop())
 
   initData()
-})
-
-watch(() => props.topBarVisibility, () => {
-  shouldMoveAsideUp.value = false
-
-  // Allow moving tabs up only when the top bar is not hidden & is set to auto-hide (on scroll or on hover)
-  // This feature is primarily designed to compatible with the Bilibili Evolved's top bar
-  // Even when the BewlyBewly top bar is hidden, the Bilibili Evolved top bar still exists, so not moving up
-  if (settings.value.otherPageTopBarConfig !== VideoPageTopBarConfig.AlwaysShow && settings.value.enableTopBar) {
-    if (props.topBarVisibility)
-      shouldMoveAsideUp.value = false
-
-    else
-      shouldMoveAsideUp.value = true
-  }
 })
 
 onMounted(() => {

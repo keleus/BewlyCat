@@ -1509,7 +1509,6 @@ function getItemKey(item: VideoElement) {
     <!-- Left Panel: Uploader List -->
     <aside
       class="uploader-sidebar"
-      :class="{ 'uploader-sidebar--search-page': settings.fixedHomeTabsOnHomePage && settings.useSearchPageModeOnHomePage }"
       w-200px shrink-0
     >
       <div class="uploader-scroll bew-page-sidebar">
@@ -1802,19 +1801,24 @@ function getItemKey(item: VideoElement) {
 
 .uploader-sidebar {
   // sticky 顶部偏移与高度使用同一基准，避免侧栏底部越出视口后被回顶/焦点滚动纠正。
-  // 与首页固定标签栏的 10px 顶部偏移一致，并在标签栏下保留标准区块间距。
-  --following-sidebar-top: calc(var(--bew-top-bar-height) + 10px + var(--bew-control-height) + var(--bew-space-4));
+  // 跟随首页固定标签栏的顶部偏移（含顶栏隐藏后的置顶状态），并在标签栏下保留标准区块间距。
+  --following-sidebar-top: calc(
+    var(--home-header-sticky-top, calc(var(--bew-top-bar-height) + 10px)) + var(--bew-control-height) +
+      var(--bew-space-4)
+  );
   position: sticky;
   top: var(--following-sidebar-top);
   align-self: flex-start;
   height: calc(100vh - var(--following-sidebar-top) - var(--bew-space-2));
+  transition:
+    top var(--bew-duration-moderate) var(--bew-ease-standard),
+    height var(--bew-duration-moderate) var(--bew-ease-standard);
 }
 
-.uploader-sidebar--search-page {
-  // 搜索页模式的固定标签栏顶部偏移为 16px，侧栏使用相同基准。
-  --following-sidebar-top: calc(
-    var(--bew-top-bar-height) + var(--bew-space-4) + var(--bew-control-height) + var(--bew-space-4)
-  );
+@media (prefers-reduced-motion: reduce) {
+  .uploader-sidebar {
+    transition: none;
+  }
 }
 
 .uploader-scroll {
