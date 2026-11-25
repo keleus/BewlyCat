@@ -290,7 +290,8 @@ export function setupNecessarySettingsWatchers() {
   watch(
     [
       () => settings.value.adaptToOtherPageStyles,
-      () => settings.value.videoPageDarkMode,
+      () => settings.value.videoPageFollowGlobalTheme,
+      () => settings.value.videoPageTheme,
       () => settings.value.videoPageGlassStyle,
       () => settings.value.videoPageGlassStyleOverlay,
       () => settings.value.roundedVideoPlayer,

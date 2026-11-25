@@ -111,7 +111,11 @@ import { installShortcutListener, setupShortcutHandlers } from '~/utils/shortcut
 import { loadSvgIcons } from '~/utils/svgIconsLoader'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
-import { applyBewlyDesignClasses, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
+import {
+  applyBewlyDesignClasses,
+  hasVideoPageThemeOverride,
+  isVideoPageGlassStyleEnabled,
+} from '~/utils/videoPageDesign'
 import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
@@ -328,26 +332,73 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 } else if (shouldInitializeContentScript) {
   function ensureHostBundledStyles() {
+    let hostStyleEl: HTMLStyleElement | null = null
+    let observedRoot: HTMLElement | null = null
+
+    const placeHostStyles = (root: HTMLElement, el: HTMLStyleElement): boolean => {
+      const body = root.querySelector(':scope > body')
+      const anchor = body ?? root.querySelector(':scope > head')
+      if (anchor) {
+        if (anchor.nextElementSibling !== el) anchor.after(el)
+      } else if (!el.isConnected) {
+        root.append(el)
+      }
+
+      // 保持按页适配样式紧跟在宿主基础样式之后，避免级联顺序倒挂。
+      const pageStyleEl = root.querySelector<HTMLStyleElement>(
+        ':scope > style[data-bewly-page-style]',
+      )
+      if (pageStyleEl && el.nextElementSibling !== pageStyleEl) el.after(pageStyleEl)
+
+      return Boolean(body)
+    }
+
     const attach = () => {
       const root = document.documentElement
       if (!root) return false
-      for (const stale of Array.from(
-        root.querySelectorAll(':scope > style[data-bewly-host-styles]'),
-      ))
-        stale.remove()
-      const hostStyleEl = document.createElement('style')
-      hostStyleEl.setAttribute('data-bewly-host-styles', '')
-      hostStyleEl.textContent = bundledHostStyleText
-      root.prepend(hostStyleEl)
-      return true
+      if (!hostStyleEl || !hostStyleEl.isConnected) {
+        for (const stale of Array.from(
+          root.querySelectorAll(':scope > style[data-bewly-host-styles]'),
+        ))
+          stale.remove()
+        hostStyleEl = document.createElement('style')
+        hostStyleEl.setAttribute('data-bewly-host-styles', '')
+        hostStyleEl.textContent = bundledHostStyleText
+      }
+      // 宿主样式放在 <body> 之后，保证在级联顺序上后于原站 <head>/<body> 内的样式表，
+      // 同时仍早于后续通过 injectCSS 追加到 <html> 末尾的用户自定义样式。
+      return placeHostStyles(root, hostStyleEl)
     }
 
     if (attach()) return
 
+    let cleanup = () => {}
     const observer = new MutationObserver(() => {
-      if (attach()) observer.disconnect()
+      if (attach()) {
+        cleanup()
+        return
+      }
+      const root = document.documentElement
+      if (root && root !== observedRoot) {
+        observedRoot = root
+        observer.observe(root, { childList: true })
+      }
     })
+    const onDomContentLoaded = () => {
+      attach()
+      cleanup()
+    }
+    cleanup = () => {
+      observer.disconnect()
+      document.removeEventListener('DOMContentLoaded', onDomContentLoaded)
+    }
+
     observer.observe(document, { childList: true })
+    if (document.documentElement) {
+      observedRoot = document.documentElement
+      observer.observe(observedRoot, { childList: true })
+    }
+    document.addEventListener('DOMContentLoaded', onDomContentLoaded, { once: true })
   }
 
   ensureHostBundledStyles()
@@ -502,10 +553,10 @@ if (isElectronEnv) {
   void settingsReady.then(() => {
     if (!isSupportedPages() && !isSupportedIframePages()) return
 
-    // 玻璃风格只限当前视频页，避免把主题同步扩散到未适配的其他页面。
+    // 玻璃风格和视频页独立主题仅在视频播放页触发，避免把主题同步扩散到未适配的其他页面。
     if (
       settings.value.adaptToOtherPageStyles ||
-      settings.value.videoPageDarkMode ||
+      hasVideoPageThemeOverride() ||
       isVideoPageGlassStyleEnabled()
     )
       useDark()
@@ -1963,6 +2014,9 @@ if (isElectronEnv) {
       } = event.data
 
       if (type === IFRAME_DARK_MODE_CHANGE) {
+        // 视频播放页开启独立主题时，优先遵循视频页自身设置，不被父窗口覆盖。
+        if (hasVideoPageThemeOverride()) return
+
         // Check if we should apply selective dark mode (plugin UI only) on festival pages
         const isSelectiveDark = isFestivalPage()
 

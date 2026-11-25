@@ -385,7 +385,7 @@ settings:
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
-  group_sidebar_desc: 位于主页以外的页面右侧或左侧，通常有亮/暗模式切换按钮和设置按钮。
+  group_sidebar_desc: 位于主页以外的页面右侧或左侧，通常有浅/深色模式切换按钮和设置按钮。
   group_color: 颜色
   group_page_style: 页面样式
   group_wallpaper: 背景图片
@@ -751,7 +751,7 @@ settings:
     exp_default: 自动（实验）
     exp_frosted_glass: 白雾（实验）
     exp_transparent: 阴影（实验）
-  show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
+  show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在深色模式下有效）
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器
   filter_articles_in_moments: 过滤专栏
@@ -877,7 +877,7 @@ settings:
   enable_dock_glowing_effect: 启用 Dock 栏发光效果
   enable_dock_icon_animation: 启用 Dock 图标悬停动画
   enable_dock_icon_animation_desc: 在悬停、聚焦 Dock 图标时播放弹跳、旋转等动画；关闭后不影响点击回弹与操作按钮脉冲。
-  enable_light_dark_mode_switcher: 启用亮/暗色模式切换按钮
+  enable_light_dark_mode_switcher: 启用浅/深色模式切换按钮
   enable_back_to_top_button_on_dock: 启用 Dock 栏回到顶部按钮
   enable_refresh_button_on_dock: 启用 Dock 栏刷新按钮
   back_to_top_and_refresh_buttons_are_separated: 分离回到顶部和刷新按钮
@@ -886,17 +886,19 @@ settings:
   auto_hide_sidebar: 自动隐藏侧边栏
   theme: 主题
   theme_opt:
-    light: 亮色
-    dark: 暗色
+    light: 浅色
+    dark: 深色
     auto: 设备
     scheduled: 定时
-  theme_schedule: 亮色时间
-  theme_schedule_desc: 在所选时间范围内使用亮色模式，其余时间使用暗色模式。
-  video_page_dark_mode: 仅视频播放页深色模式
-  video_page_dark_mode_desc: 保持全站主题设置不变，仅在视频播放页启用 BewlyCat 深色样式。
+  theme_schedule: 浅色时间
+  theme_schedule_desc: 在所选时间范围内使用浅色模式，其余时间使用深色模式。
+  video_page_follow_global_theme: 视频页跟随浅/深色主题
+  video_page_follow_global_theme_desc: 开启后视频播放页与全站主题保持一致；关闭后可单独指定视频播放页使用浅色或深色模式。
+  video_page_theme: 视频播放页主题
+  video_page_theme_desc: 仅对视频播放页生效（包含普通视频、番剧、课程与播放列表）。
   theme_color: 主题色
   dark_mode_base_color: 深色模式基准颜色
-  gradient_theme_color_background: 在暗色模式下使用渐变主题颜色作为背景
+  gradient_theme_color_background: 在深色模式下使用渐变主题颜色作为背景
   individually_set_dark_mode_wallpaper: 分别为深、浅色模式设置背景图片
   individually_set_dark_mode_wallpaper_desc: 关闭时深、浅色模式共用同一张背景图片；开启后可分别为浅色与深色模式指定不同背景。
   wallpaper_theme_target: 当前编辑的主题模式
@@ -1449,8 +1451,8 @@ dock:
   favorites: 收藏
   watch_later: 稍后再看
   moments: 动态
-  dark_mode: 暗色模式
-  light_mode: 亮色模式
+  dark_mode: 深色模式
+  light_mode: 浅色模式
   settings: 设置
 video_card:
   episode_watch_later_info_failed: 无法获取该剧集的稍后再看信息

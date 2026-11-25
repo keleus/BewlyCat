@@ -542,7 +542,8 @@ export interface Settings {
   theme: 'light' | 'dark' | 'auto' | 'scheduled'
   themeScheduleStart: string
   themeScheduleEnd: string
-  videoPageDarkMode: boolean
+  videoPageFollowGlobalTheme: boolean
+  videoPageTheme: 'light' | 'dark'
   videoPageGlassStyle: boolean
   videoPageGlassStyleOverlay: boolean
   roundedVideoPlayer: boolean
@@ -937,7 +938,8 @@ export const originalSettings: Settings = {
   theme: 'auto',
   themeScheduleStart: '06:00',
   themeScheduleEnd: '18:00',
-  videoPageDarkMode: false,
+  videoPageFollowGlobalTheme: true,
+  videoPageTheme: 'dark',
   videoPageGlassStyle: false,
   videoPageGlassStyleOverlay: true,
   roundedVideoPlayer: false,
@@ -1775,6 +1777,20 @@ export const settings = useSettingsStorage(originalSettings, {
         }),
       ) as VideoPlayerModeOverrides
     }
+
+    if (typeof record.videoPageFollowGlobalTheme !== 'boolean') {
+      record.videoPageFollowGlobalTheme = originalSettings.videoPageFollowGlobalTheme
+    }
+    if (record.videoPageTheme !== 'light' && record.videoPageTheme !== 'dark') {
+      record.videoPageTheme = originalSettings.videoPageTheme
+    }
+
+    // 迁移旧版「仅视频播放页深色模式」：改为关闭视频页跟随并指定深色
+    if (record.videoPageDarkMode === true) {
+      record.videoPageFollowGlobalTheme = false
+      record.videoPageTheme = 'dark'
+    }
+    Reflect.deleteProperty(record, 'videoPageDarkMode')
 
     if (!['1', '2', '3', '4'].includes(record.momentsGridColumns)) record.momentsGridColumns = '2'
 

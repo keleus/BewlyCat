@@ -226,12 +226,49 @@ const changeDarkModeBaseColorThrottle = useThrottleFn(
           <input v-model="themeScheduleEnd" type="time" @blur="saveThemeSchedule" />
         </div>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.video_page_dark_mode')" right-width="auto">
-        <template #desc>
-          {{ $t('settings.video_page_dark_mode_desc') }}
-        </template>
-
-        <Radio v-model="settings.videoPageDarkMode" />
+      <SettingsItem
+        :title="$t('settings.video_page_follow_global_theme')"
+        :desc="$t('settings.video_page_follow_global_theme_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.videoPageFollowGlobalTheme" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="!settings.videoPageFollowGlobalTheme"
+        :title="$t('settings.video_page_theme')"
+        :desc="$t('settings.video_page_theme_desc')"
+        right-width="auto"
+      >
+        <div
+          class="bew-segment-control bew-segment-control--surface bew-segment-control--static"
+          role="radiogroup"
+          :aria-label="$t('settings.video_page_theme')"
+        >
+          <button
+            type="button"
+            class="bew-segment-control__item"
+            data-segment-item
+            :data-active="settings.videoPageTheme === 'light'"
+            role="radio"
+            :aria-checked="settings.videoPageTheme === 'light'"
+            @click="settings.videoPageTheme = 'light'"
+          >
+            <span class="bew-segment-control__icon i-mingcute:sun-line" aria-hidden="true" />
+            <span>{{ $t('settings.theme_opt.light') }}</span>
+          </button>
+          <button
+            type="button"
+            class="bew-segment-control__item"
+            data-segment-item
+            :data-active="settings.videoPageTheme === 'dark'"
+            role="radio"
+            :aria-checked="settings.videoPageTheme === 'dark'"
+            @click="settings.videoPageTheme = 'dark'"
+          >
+            <span class="bew-segment-control__icon i-mingcute:moon-stars-line" aria-hidden="true" />
+            <span>{{ $t('settings.theme_opt.dark') }}</span>
+          </button>
+        </div>
       </SettingsItem>
       <SettingsItem :title="$t('settings.theme_color')" right-width="auto">
         <div class="theme-color-options" flex="~ gap-2 wrap" justify-end>

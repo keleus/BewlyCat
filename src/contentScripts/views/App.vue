@@ -77,7 +77,7 @@ import {
 } from '~/utils/settingsMigration'
 import { isComponentVisible } from '~/utils/topBarBadge'
 import { canOpenInVideoDialog } from '~/utils/videoDialog'
-import { isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
+import { hasVideoPageThemeOverride, isVideoPageGlassStyleEnabled } from '~/utils/videoPageDesign'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -135,7 +135,7 @@ onUnmounted(() => {
 const shouldUseDark = computed(
   () =>
     settings.value.adaptToOtherPageStyles ||
-    settings.value.videoPageDarkMode ||
+    hasVideoPageThemeOverride(currentPageUrl.value) ||
     isVideoPageGlassStyleEnabled(currentPageUrl.value),
 )
 const darkIsDark = shallowRef<Ref<boolean>>()

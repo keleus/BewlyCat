@@ -797,8 +797,10 @@ settings:
     scheduled: Scheduled
   theme_schedule: Light mode hours
   theme_schedule_desc: Use light mode during this time range and dark mode outside it.
-  video_page_dark_mode: Video page dark mode only
-  video_page_dark_mode_desc: Keep the global theme unchanged and enable BewlyCat dark styles only on video playback pages.
+  video_page_follow_global_theme: Video page follows light/dark theme
+  video_page_follow_global_theme_desc: Follow the global theme on video playback pages when on; turn off to choose light or dark mode specifically for video playback pages.
+  video_page_theme: Video playback page theme
+  video_page_theme_desc: Applies only to video playback pages (videos, anime, courses, and playlists).
   theme_color: Theme color
   dark_mode_base_color: Dark mode base color
   gradient_theme_color_background: Use a gradient theme color as the background in dark mode

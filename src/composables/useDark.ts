@@ -2,7 +2,12 @@ import { usePreferredDark } from '@vueuse/core'
 
 import { DARK_MODE_BASE_COLOR_CHANGE, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
-import { isVideoPlaybackPage, setCookie } from '~/utils/main'
+import { isHomePage, setCookie } from '~/utils/main'
+import {
+  isFestivalPageUrl,
+  isVideoPageGlassStyleEnabled,
+  resolveVideoPageThemeOverride,
+} from '~/utils/videoPageDesign'
 
 const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
 const currentMinuteOfDay = ref(getCurrentMinuteOfDay())
@@ -99,11 +104,8 @@ function startScheduleClock() {
   }, 30_000)
 }
 
-/**
- * Check if current page is festival page
- */
-function isFestivalPage(): boolean {
-  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+function isBilibiliWebUrl(url: string): boolean {
+  return /^https?:\/\/(?:[\w-]+\.)?bilibili\.com(?:\/|$)/.test(url)
 }
 
 function startRouteWatcher() {
@@ -114,7 +116,12 @@ function startRouteWatcher() {
   const updateCurrentUrl = () => {
     if (currentUrl.value !== location.href) currentUrl.value = location.href
   }
+  const scheduleUrlUpdate = () => {
+    queueMicrotask(updateCurrentUrl)
+  }
 
+  window.addEventListener('pushstate', scheduleUrlUpdate)
+  window.addEventListener('replacestate', scheduleUrlUpdate)
   window.addEventListener('popstate', updateCurrentUrl)
   window.addEventListener('hashchange', updateCurrentUrl)
   window.setInterval(updateCurrentUrl, 800)
@@ -168,21 +175,37 @@ export function useDark() {
     }
     return currentSystemColorScheme.value
   })
-  const isVideoPageDark = computed(() => {
-    return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
-  })
-  const isDark = computed(
-    () =>
-      iframeTheme.value?.isDark ??
-      (currentAppColorScheme.value === 'dark' || isVideoPageDark.value),
+  const videoPageThemeOverride = computed(() => resolveVideoPageThemeOverride(currentUrl.value))
+  const isPluginHomepage = computed(
+    () => !settings.value.useOriginalBilibiliHomepage && isHomePage(currentUrl.value),
   )
+  const isThemeManagedPage = computed(
+    () =>
+      !isBilibiliWebUrl(currentUrl.value) ||
+      settings.value.adaptToOtherPageStyles ||
+      isPluginHomepage.value ||
+      videoPageThemeOverride.value !== null ||
+      isVideoPageGlassStyleEnabled(currentUrl.value),
+  )
+  const isDark = computed(() => {
+    if (videoPageThemeOverride.value) return videoPageThemeOverride.value === 'dark'
+    if (iframeTheme.value) return iframeTheme.value.isDark
+    if (!isThemeManagedPage.value) return false
+    return currentAppColorScheme.value === 'dark'
+  })
   const darkModeBaseColor = computed(
     () => iframeTheme.value?.baseColor ?? settings.value.darkModeBaseColor,
   )
 
   // Apply appearance only when an effective theme input changes.
   watch(
-    [isDark, currentAppColorScheme, () => settings.value.adaptToOtherPageStyles, currentUrl],
+    [
+      isDark,
+      currentAppColorScheme,
+      isThemeManagedPage,
+      () => settings.value.adaptToOtherPageStyles,
+      currentUrl,
+    ],
     () => {
       setAppAppearance()
     },
@@ -209,7 +232,8 @@ export function useDark() {
    */
   function setAppAppearance() {
     // Check if we should apply selective dark mode (plugin UI only) on festival pages
-    const isSelectiveDark = isFestivalPage() && settings.value.adaptToOtherPageStyles
+    const isSelectiveDark =
+      isFestivalPageUrl(currentUrl.value) && settings.value.adaptToOtherPageStyles
 
     if (isDark.value) {
       // Always apply dark mode to plugin container
@@ -219,8 +243,6 @@ export function useDark() {
       if (!isSelectiveDark) {
         document.documentElement.classList.add('dark')
         document.body?.classList.add('dark')
-        // bili_dark is bilibili's official dark mode class
-        document.documentElement.classList.add('bili_dark')
       }
 
       // 确保深色模式基准颜色被正确应用
@@ -236,16 +258,22 @@ export function useDark() {
       }
     }
 
-    syncBilibiliTheme(isDark.value)
+    if (isBilibiliWebUrl(currentUrl.value) && isThemeManagedPage.value) {
+      syncBilibiliTheme(isDark.value)
+    }
 
-    // Only used as a temporary solution, which will eventually be removed
-    // It seems like Bilibili already supports dark mode when the `bili_dark` class is added to the `html` element
-    // but it's not yet fully refined.
-    setBiliDarkSuppressed(currentAppColorScheme.value === 'dark')
+    // 统一剥离 B 站原生的 bili_dark：深色页使用插件自身 .dark（避免 #991 纹理遮罩），
+    // 独立浅色页也需防止原站按旧的 theme_style=dark cookie 重新挂上 bili_dark。
+    setBiliDarkSuppressed(!isSelectiveDark && isThemeManagedPage.value)
   }
 
   function toggleDark(e: MouseEvent) {
     const updateThemeSettings = () => {
+      if (videoPageThemeOverride.value) {
+        settings.value.videoPageTheme = isDark.value ? 'light' : 'dark'
+        return
+      }
+
       if (currentAppColorScheme.value !== currentSystemColorScheme.value)
         settings.value.theme = 'auto'
       else settings.value.theme = isPreferredDark.value ? 'light' : 'dark'
