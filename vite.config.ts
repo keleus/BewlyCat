@@ -43,10 +43,15 @@ export function createSharedConfig(): UserConfig {
 
       AutoImport({
         dts: r('src/auto-imports.d.ts'),
+        // @types/webextension-polyfill 使用 `export = Browser`，unimport 为默认导入生成的
+        // `typeof import('webextension-polyfill').default` 会退化为 any；全局类型改由 src/global.d.ts 声明。
+        ignoreDts: ['browser'],
         imports: [
           'vue',
           {
-            'webextension-polyfill': [['*', 'browser']],
+            // webextension-polyfill 是返回 Proxy 的 CJS/UMD 模块；命名空间导入在 Rolldown 下会
+            // 通过 __toESM 丢失自有属性并穿透到原生 chrome.*，必须使用默认导入。
+            'webextension-polyfill': [['default', 'browser']],
           },
         ],
       }),

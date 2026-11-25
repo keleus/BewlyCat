@@ -1,5 +1,6 @@
 declare const __DEV__: boolean
 declare const __BUILD_COMMIT__: string
+declare const browser: typeof import('webextension-polyfill')
 
 declare module '*.vue' {
   const component: any
