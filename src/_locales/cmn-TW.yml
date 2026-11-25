@@ -1234,9 +1234,9 @@ settings:
   image_viewer_close_at_bottom_desc: 作用於評論區和動態圖片檢視器。
   comment_ai_filter:
     group_title: AI 評論過濾
-    group_desc: 使用 B 站內建免費 Index-Translate-2B 介面批次偵測並標記評論區中的低品質評論，支援原站評論區與 Bewly 動態評論區。
+    group_desc: 使用 B 站內建免費 Index-Translate 介面批次偵測並標記評論區中的低品質評論，支援原站評論區與 Bewly 動態評論區。
     enable: 啟用 AI 評論過濾
-    enable_desc: 開啟後將目前可視範圍內的評論文字分批傳送至 B 站 Index-Translate-2B 介面進行品質篩選。
+    enable_desc: 開啟後將目前可視範圍內的評論文字分批傳送至 B 站 Index-Translate 介面進行品質篩選。
     auto_scan: 自動批次篩選
     auto_scan_desc: 開啟後自動偵測新載入的評論；關閉後僅在點擊評論區按鈕時手動篩選。
     include_replies: 包含樓中樓子回覆

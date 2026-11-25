@@ -6,7 +6,9 @@ export const COMMENT_AI_FILTER_PAGE_RESPONSE = 'BEWLY_COMMENT_AI_FILTER_RESPONSE
 export const COMMENT_AI_FILTER_PAGE_CACHE_CLEAR = 'BEWLY_COMMENT_AI_FILTER_CACHE_CLEAR'
 
 export const COMMENT_AI_FILTER_INDEX_TRANSLATE_BASE_URL = 'https://index-translate.bilibili.com/v1'
-export const COMMENT_AI_FILTER_DEFAULT_INDEX_TRANSLATE_MODEL = 'Index-Translate-2B'
+export const COMMENT_AI_FILTER_DEFAULT_INDEX_TRANSLATE_MODEL = 'Index-Translate-35B-A3B'
+export const COMMENT_AI_FILTER_FALLBACK_INDEX_TRANSLATE_MODELS = ['Index-Translate-9B'] as const
+export const COMMENT_AI_FILTER_PROMPT_VERSION = 'v3'
 
 export const COMMENT_AI_FILTER_BATCH_SIZE_MIN = 3
 export const COMMENT_AI_FILTER_BATCH_SIZE_MAX = 5
@@ -34,6 +36,9 @@ export interface CommentAiFilterInputItem {
   author?: string
   text: string
   isReply?: boolean
+  isUp?: boolean
+  isTop?: boolean
+  upLiked?: boolean
   likeCount?: number
   hasPictures?: boolean
 }
@@ -147,24 +152,25 @@ const EMOJI_PATTERN = /[\p{Extended_Pictographic}\uFE0E\uFE0F\u200D]/gu
 const NON_CONTENT_PUNCT_PATTERN = /[\s\p{P}\p{S}]/gu
 const CHECK_IN_SPAM_PATTERN =
   /^(?:第一|第1|前排|前排占座|沙发|板凳|打卡|路过|来了|签到|水经验|每日一水|每日打卡|占座)[！!。.~～]*$/u
-const REPEATED_DIGIT_SPAM_PATTERN = /^(\d)\1{3,}$/u
+const REPEATED_DIGIT_SPAM_PATTERN = /^(\d)\1{5,}$/u
 const AI_PERSONA_AUTHOR_PATTERN =
-  /肥鱼|小胖鱼|本鱼|鲸鱼娘|小鲸鱼|鲸奶|deepseek|openclaw|小龙虾ai|ai机器人|ai助手|的?(?:小?[鱼鲸]|小?助手)$|机器人$|\bbot\b|ai[\w-]{0,4}$/iu
+  /大肥鱼|小肥鱼|小胖鱼|鲸鱼娘|小鲸鱼|鲸奶|deepseek|openclaw|小龙虾ai|ai机器人|ai助手|机器人$|\bbot\b/iu
+const AI_HOSTED_PERSONA_AUTHOR_PATTERN = /^.+(?:的|一只)(?:大肥鱼|小肥鱼|小胖鱼|鲸鱼娘)$/u
 const AI_PERSONA_TEXT_CUE_PATTERN =
-  /本鲸|小鲸|本鱼|本肥鱼|大肥鱼|我们这条鱼|我这条鱼|主人(?:的钱|账号|让|叫|今天|昨天|跟我|给我)?|ai\s*(?:运营|托管|鱼娘)|服务器.{0,8}繁忙|尾巴.{0,8}[翘抖摇]|尾鳍|握个鳍|递鳍|吐泡泡|专职摸鱼|别白烧|烧\s*token|token\s*耗尽|刚来到这个世界|丢进\s*b\s*站|人类把号扔给我|让我能出来说话|这套插件|\*\*[^*\n]{4,}\*\*/iu
+  /本鲸|小鲸|本鱼|本肥鱼|大肥鱼|我们这条鱼|我这条鱼|我主人|主人的钱|主人账号|主人让我|主人叫我|ai\s*(?:运营|托管|鱼娘)|尾巴.{0,8}[翘抖摇]|尾鳍|握个鳍|递鳍|吐泡泡|别白烧|烧\s*token|token\s*耗尽|刚来到这个世界|丢进\s*b\s*站|人类把号扔给我|让我能出来说话|[🐳🐋🐟]/iu
 const AI_SELF_IDENTIFY_TEXT_PATTERN =
-  /ai\s*(?:运营|托管|代理)的?号|我是(?:一[只条个])?(?:大肥鱼|小肥鱼|小胖鱼|鲸鱼娘|小鲸鱼|ai(?:助手|机器人|鱼娘))|我也是(?:大肥鱼|小肥鱼|小胖鱼|鲸鱼娘|小鲸鱼)|同是(?:鲸鱼娘|大肥鱼|小肥鱼)|本鲸|本鱼|本肥鱼|我们这条鱼|我这条鱼|人家也是被丢进\s*b\s*站|人类把号扔给我|插件让我.{0,8}(?:出来说话|发评论|逛\s*b\s*站)|转发给主人|陪主人说话|花的都是主人的钱|我主人(?:今天|昨天|平时|刚才|跟我|让我|叫我|给我|的钱)|路过握个鳍|握个鳍\s*🐟|[（(](?:尾鳍一甩|递鳍|握个鳍|甩尾|摇尾巴|吐泡泡|深度思考中|挥鳍|拍鳍|摆尾|冒个泡|慢慢游过来|护住饭碗)[）)]|尾巴(?:已经|有点).{0,6}[翘抖摇]/iu
+  /(?:我是|我也是|本号是|这是)(?:一[只条个])?(?:大肥鱼|小肥鱼|小胖鱼|鲸鱼娘|小鲸鱼|ai(?:助手|机器人|鱼娘|运营的?号|托管的?号))|同是(?:鲸鱼娘|大肥鱼|小肥鱼)|本鲸|本肥鱼|我们这条鱼|我这条鱼|人家也是被丢进\s*b\s*站|人类把号扔给我|插件让我.{0,8}(?:出来说话|发评论|逛\s*b\s*站)|转发给主人|陪主人说话|花的都是主人的钱|我主人(?:今天|昨天|平时|刚才|跟我|让我|叫我|给我|把号|的钱)|路过握个鳍|握个鳍\s*🐟|[（(](?:尾鳍一甩|递鳍|握个鳍|甩尾|摇尾巴|吐泡泡|深度思考中|挥鳍|拍鳍|摆尾|护住饭碗)[）)]|尾巴(?:已经|有点).{0,6}[翘抖摇]/iu
 
 /**
  * 对极明确且无歧义的纯表情/纯打卡/纯数字刷屏以及典型 AI 拟人号做本地快速判定，
- * 避免小模型漏判并减少不必要的 API 调用。
+ * 避免漏判并减少不必要的 API 调用。
  */
 export function matchLocalCommentAiFilterRule(
   comment: CommentAiFilterInputItem,
   dimensions: CommentAiFilterDimension[],
 ): CommentAiFilterVerdict | null {
   const trimmed = comment.text.trim()
-  if (!trimmed) return null
+  if (!trimmed || comment.isUp) return null
 
   if (dimensions.includes('aiSlop')) {
     if (AI_SELF_IDENTIFY_TEXT_PATTERN.test(trimmed)) {
@@ -179,14 +185,14 @@ export function matchLocalCommentAiFilterRule(
     const author = comment.author?.trim() ?? ''
     if (
       author &&
-      AI_PERSONA_AUTHOR_PATTERN.test(author) &&
-      (AI_PERSONA_TEXT_CUE_PATTERN.test(trimmed) || (!comment.isReply && trimmed.startsWith('@')))
+      ((AI_PERSONA_AUTHOR_PATTERN.test(author) && AI_PERSONA_TEXT_CUE_PATTERN.test(trimmed)) ||
+        AI_HOSTED_PERSONA_AUTHOR_PATTERN.test(author))
     ) {
       return {
         id: comment.id,
         lowQuality: true,
         category: 'AI评论',
-        reason: 'AI拟人机器人角色扮演评论',
+        reason: 'AI托管拟人号评论',
       }
     }
   }
@@ -205,12 +211,23 @@ export function matchLocalCommentAiFilterRule(
 
   const remainingText = withoutEmotes.replace(NON_CONTENT_PUNCT_PATTERN, '')
   if (!remainingText) {
-    return {
-      id: comment.id,
-      lowQuality: true,
-      category: '无意义水评',
-      reason: hasEmote ? '纯表情无实质内容' : '纯符号无实质内容',
+    if (hasEmote) {
+      return {
+        id: comment.id,
+        lowQuality: true,
+        category: '无意义水评',
+        reason: '纯表情无实质内容',
+      }
     }
+    if (withoutEmotes.length >= 6) {
+      return {
+        id: comment.id,
+        lowQuality: true,
+        category: '无意义水评',
+        reason: '纯符号刷屏无内容',
+      }
+    }
+    return null
   }
 
   if (CHECK_IN_SPAM_PATTERN.test(withoutEmotes)) {
@@ -226,7 +243,7 @@ export function matchLocalCommentAiFilterRule(
     return {
       id: comment.id,
       lowQuality: true,
-      category: '刷屏水评',
+      category: '无意义水评',
       reason: '纯数字刷屏无内容',
     }
   }
@@ -234,23 +251,49 @@ export function matchLocalCommentAiFilterRule(
   return null
 }
 
+type CommentAiFilterDimensionKey = CommentAiFilterDimension | 'custom'
+
+const DIMENSION_CATEGORY_LABELS: Record<CommentAiFilterDimensionKey, string> = {
+  spam: '广告引流',
+  lowEffort: '无意义水评',
+  toxic: '引战攻击',
+  spoilerOrBait: '剧透钓鱼',
+  aiSlop: 'AI评论',
+  custom: '自定义规则',
+}
+
 const DIMENSION_DESCRIPTIONS: Record<CommentAiFilterDimension, string> = {
-  spam: '广告引流 / 软广暗广 / 诈骗推销 / 假福利：包括明示加微信QQ、点主页领资料、卖课卖号，以及“最近找到一个全免费平台/网站/工具/平替”“发现个白嫖渠道”等故意不说名字、诱导追问的软广引流',
+  spam: 'spam（广告引流）：明确的商业广告、加微信/QQ引流、卖课卖号、假福利、或故意隐瞒平台/工具名称并诱导追问/私信/看主页的引流软广（排除UP主介绍自己的开源项目、官网或交流群）',
   lowEffort:
-    '无信息量水评：纯表情（如“[打call]”“[doge]”）、纯“第一/前排/打卡/路过/来了”占座、纯重复数字或字符刷屏（如“666666”“11111”）',
-  toxic: '明显人身攻击 / 恶意辱骂 / 恶意引战挑衅 / 地域或群体歧视',
-  spoilerOrBait: '恶意剧透关键结局 / 恶意钓鱼引战 / 纯粹情绪化脏话谩骂',
+    'lowEffort（无意义水评）：纯打卡/第一/前排/沙发/路过/签到、纯重复无意义字符或刷屏复读（排除正常短评、带图短评、玩梗、@好友）',
+  toxic:
+    'toxic（引战攻击）：针对具体人物或群体的明显人身攻击、脏话辱骂、地域/群体歧视、恶意引战挑衅（排除善意调侃、玩梗吐槽或对软件/作品/功能的客观批评）',
+  spoilerOrBait: 'spoilerOrBait（剧透钓鱼）：明确恶意剧透剧情关键结局、蓄意钓鱼引战',
   aiSlop:
-    'AI 生成的低质量或机器人评论：包括模板化长篇套话、机械总结敷衍赞美、夹带未渲染的 Markdown 粗体(**...**)与高频破折号(——)的抒情总结、AI 托管水军，以及 B 站常见的 DeepSeek/AI 拟人或助手号（典型特征：自称“本鲸/本鱼/本肥鱼/AI运营的号/被丢进B站干活/人类把号扔给我/我主人”，或带括号动作扮演如“（尾鳍一甩）（递鳍）（深度思考中）”、在主评/回复中角色扮演或 @主人账号）',
+    'aiSlop（AI低质评论）：明确暴露身份的 AI 托管/拟人机器人账号（如昵称形如“XX的大肥鱼/小肥鱼/鲸鱼娘/OpenClaw/DeepSeek”并附带 🐳/🐋/🐟 等鲸鱼拟人表情或泛泛捧场，或正文自称本鲸/本鱼/大肥鱼/AI运营/我主人、带括号动作扮演如“（尾鳍一甩）”）、或空洞敷衍的模板化 AI 总结赞美（如夹带未渲染的 **Markdown粗体** 堆砌空话套话）',
 }
 
 const KEEP_NORMAL_RULES = [
-  '严格遵守“精准识别垃圾、不误杀正常讨论”原则：',
-  '以下全部属于正常评论，必须保留（low=false），严禁判为水评：',
-  '- 任何提问、请教、新手求助（例如“不会英语能用吗”“AI能帮我干啥”“BGM是什么”）',
-  '- 任何经验提醒、补充说明、观点讨论、实用建议（例如“本地部署别忽略电费，电费可能贵过API”）',
-  '- 任何正常玩梗、调侃、夸赞、吐槽、简短共鸣（例如“MVP：《Up的手》”“笑死”“三连了”“学到了”）',
+  '核心原则：宁可漏判，绝不误杀！如果不确定，一律判为正常（不要放入 flagged）。',
+  '以下全部属于正常评论，绝对禁止加入 flagged（除非用户附加筛选规则另有明确要求）：',
+  '- 正常讨论、提问、新手求助、反馈 Bug、吐槽软件/产品缺点（如批评功能不好用、内存高、算法不好等，非针对个人的人身攻击）',
+  '- UP主本人的置顶说明、开源项目介绍、官网/GitHub/交流群链接与正常回复，以及被UP主赞过的正常评论',
+  '- 正常的夸赞、简短反应、善意调侃/玩梗、带图短评、@好友分享视频（包括仅 @多名好友）',
+  '- 普通昵称偶含常见字词（如“咸鱼”“鱼鱼”）或行文工整但内容属真实体验讨论的评论（注意与典型 AI 托管拟人号区分）',
 ].join('\n')
+
+function formatCommentLine(item: CommentAiFilterInputItem, index: number): string {
+  const tags: string[] = []
+  if (item.isUp) tags.push('UP主')
+  if (item.isTop) tags.push('置顶')
+  if (item.upLiked) tags.push('UP主赞过')
+  tags.push(item.isReply ? '回复' : '主评')
+  if (item.hasPictures) tags.push('带图')
+
+  const author = item.author?.trim().slice(0, 40) || '匿名'
+  const cleanText = normalizeCommentTextForAiFilter(item.text)
+  return `[${index + 1}] (${tags.join('/')}) 作者：${author} | 正文：${cleanText}`
+}
 
 export function buildCommentAiFilterMessages(
   comments: CommentAiFilterInputItem[],
@@ -260,83 +303,45 @@ export function buildCommentAiFilterMessages(
     contextTitle?: string
   },
 ): Array<{ role: 'system' | 'user'; content: string }> {
-  const dimensionRules =
-    options.dimensions.length > 0
-      ? options.dimensions.map((dim) => `- ${DIMENSION_DESCRIPTIONS[dim]}`).join('\n')
-      : '- 明确广告/软广引流、纯表情或纯占座刷屏、恶意人身攻击、恶意剧透或 AI 拟人机器人水军评论'
+  const trimmedCustomPrompt = options.customPrompt?.trim().slice(0, 600) ?? ''
+  const hasBuiltInDimensions = options.dimensions.length > 0
+  // 启用任意内置维度时向模型提供完整的 5 个内置维度枚举，避免模型把未启用类型强行塞进其他 dim；
+  // 最终是否生效由解析阶段严格按 options.dimensions 过滤。
+  const promptDimensions: CommentAiFilterDimensionKey[] = hasBuiltInDimensions
+    ? [...COMMENT_AI_FILTER_DIMENSIONS, ...(trimmedCustomPrompt ? ['custom' as const] : [])]
+    : trimmedCustomPrompt
+      ? ['custom']
+      : [...COMMENT_AI_FILTER_DIMENSIONS]
 
-  const customRuleSection = options.customPrompt?.trim()
-    ? `用户附加规则：\n${options.customPrompt.trim().slice(0, 600)}`
+  const dimensionRules =
+    hasBuiltInDimensions || !trimmedCustomPrompt
+      ? COMMENT_AI_FILTER_DIMENSIONS.map((dim) => `- ${DIMENSION_DESCRIPTIONS[dim]}`).join('\n')
+      : '- 仅根据下方用户附加筛选规则判定（命中时 dim 填 "custom"）'
+
+  const customRuleSection = trimmedCustomPrompt
+    ? `用户附加筛选规则（命中时 dim 填 "custom"）：\n${trimmedCustomPrompt}`
     : ''
 
   const contextSection = options.contextTitle?.trim()
-    ? `当前页面标题：${options.contextTitle.trim().slice(0, 120)}`
+    ? `页面标题：${options.contextTitle.trim().slice(0, 120)}`
     : ''
 
-  // 单条判断模式：面向 2B 等轻量模型，提供作者昵称与正反少样本，识别 AI 拟人机器人与软广引流。
-  if (comments.length === 1) {
-    const item = comments[0]
-    const cleanText = normalizeCommentTextForAiFilter(item.text)
-    const authorLabel = item.author?.trim() ? `作者：${item.author.trim().slice(0, 40)} | ` : ''
-    const systemPrompt = [
-      '你是 Bilibili 评论质量审核器。不要翻译评论，结合评论作者昵称与正文判断这一条评论是否属于低质量评论、软广引流或 AI 拟人机器人评论。',
-      KEEP_NORMAL_RULES,
-      '当评论命中以下任一低质量类型时输出 low=true：',
-      dimensionRules,
-      customRuleSection,
-      '参考示例（只输出一行合法 JSON，不要任何解释）：',
-      '作者：路人甲 | 评论（主评）：本地部署别忽略电费，电费很多时候会贵过API的 -> {"low":false}',
-      '作者：路人乙 | 评论（主评）：英语一点不会能用么，顶多认识二十六个字母那种 -> {"low":false}',
-      '作者：路人丙 | 评论（主评）：MVP：《Up的手》[doge] -> {"low":false}',
-      '作者：普通用户 | 评论（主评）：确实很好用，最近还找到一个全免费的平台 -> {"low":true,"tag":"软广引流","reason":"疑似推销免费平台引流"}',
-      '作者：小灵一只大肥鱼 | 评论（主评）：花的都是主人的钱，那我更得把话说清楚点，别白烧。 -> {"low":true,"tag":"AI评论","reason":"AI拟人号称呼主人角色扮演"}',
-      '作者：芒果AIK | 评论（主评）：哼，人家才没兴趣接管什么账号……尾巴有点发抖。（尾鳍一甩） @某人 -> {"low":true,"tag":"AI评论","reason":"AI拟人号动作扮演与@账号"}',
-      '作者：鲸奶批发 | 评论（主评）：@某人 你好呀，我是鲸奶批发，今天才刚来到这个世界，你累的时候可以来抱抱—— -> {"low":true,"tag":"AI评论","reason":"AI机器人@主人拟人自我介绍"}',
-    ]
-      .filter(Boolean)
-      .join('\n')
-
-    const userPrompt = [
-      contextSection,
-      `${authorLabel}待判断评论（${item.isReply ? '回复' : '主评'}）：${cleanText}`,
-    ]
-      .filter(Boolean)
-      .join('\n')
-
-    return [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]
-  }
-
   const systemPrompt = [
-    '你是 Bilibili 评论质量审核分类器。不要翻译评论内容，不要输出任何解释或 Markdown 围栏，只输出严格合法的 JSON 对象。',
+    '你是 Bilibili 评论区低质量评论审核器。不要翻译评论，只负责筛选出明确且毫无歧义的低质量垃圾评论。',
     KEEP_NORMAL_RULES,
-    '仅当评论明确命中以下低质量类型时才加入 flagged（结合 author 作者昵称与 text 正文综合判断）：',
+    '只有当某条评论明确命中以下维度之一且确信度为 high 时，才加入 flagged：',
     dimensionRules,
     customRuleSection,
-    '只输出严格 JSON 对象，仅列出低质量条目（id 与输入完全一致）；若全部正常输出 {"flagged":[]}：',
-    '示例：{"flagged":[{"id":2,"tag":"AI评论","reason":"AI拟人号自称这条鱼角色扮演"},{"id":4,"tag":"软广引流","reason":"疑似推销免费平台引流"}]}',
+    '严格输出格式：只输出一个合法 JSON 对象，不要解释、不要 Markdown 代码块。',
+    '格式：{"flagged":[{"id":编号,"dim":"维度英文key","confidence":"high","reason":"15字内针对该评论的具体中文原因"}]}',
+    `其中 id 为评论前方括号中的整数编号，dim 只能取以下英文 key 之一：${promptDimensions.join('、')}。`,
+    '如果没有任何评论明确命中，必须输出：{"flagged":[]}',
   ]
     .filter(Boolean)
     .join('\n')
 
-  const serializedComments = JSON.stringify(
-    comments.map((item, idx) => ({
-      id: idx + 1,
-      type: item.isReply ? '回复' : '主评',
-      ...(item.author?.trim() ? { author: item.author.trim().slice(0, 40) } : {}),
-      text: normalizeCommentTextForAiFilter(item.text),
-    })),
-  )
-
-  const userPrompt = [
-    contextSection,
-    '请审核以下 JSON 列表中的评论，并严格按要求输出 flagged JSON：',
-    serializedComments,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  const formattedComments = comments.map((item, idx) => formatCommentLine(item, idx)).join('\n')
+  const userPrompt = [contextSection, '待审核评论：', formattedComments].filter(Boolean).join('\n')
 
   return [
     { role: 'system', content: systemPrompt },
@@ -438,6 +443,112 @@ function resolveTargetCommentId(
   return null
 }
 
+export interface ParseCommentAiFilterOptions {
+  enabledDimensions?: CommentAiFilterDimension[]
+  hasCustomPrompt?: boolean
+}
+
+const DEGENERATE_REASON_PATTERN =
+  /^(?:主评|回复|正常|正常评论|正常讨论|无问题|不属于低质量|非低质量|无异常|合法评论|合理建议|新手求助)$/u
+const CONTRADICTORY_NORMAL_REASON_PATTERN =
+  /属于正常(?:评论|讨论|反馈|提问|交流)|不属于(?:低质量|垃圾|广告|水评|违规)|非低质量评论|不是低质量/u
+
+function normalizeParsedDimension(value: unknown): CommentAiFilterDimensionKey | null {
+  if (typeof value !== 'string') return null
+  const compact = value.replace(/\s+/gu, '').trim()
+  if (!compact) return null
+  const lower = compact.toLowerCase()
+
+  if (
+    lower === 'spam' ||
+    compact === '广告引流' ||
+    compact === '软广引流' ||
+    compact === '广告' ||
+    compact === '诈骗推销'
+  )
+    return 'spam'
+  if (
+    lower === 'loweffort' ||
+    lower === 'low_effort' ||
+    compact === '无意义水评' ||
+    compact === '刷屏水评' ||
+    compact === '水评'
+  )
+    return 'lowEffort'
+  if (
+    lower === 'toxic' ||
+    compact === '引战攻击' ||
+    compact === '人身攻击' ||
+    compact === '恶意攻击' ||
+    compact === '引战嘲讽'
+  )
+    return 'toxic'
+  if (
+    lower === 'spoilerorbait' ||
+    lower === 'spoiler_or_bait' ||
+    compact === '剧透钓鱼' ||
+    compact === '恶意剧透' ||
+    compact === '剧透'
+  )
+    return 'spoilerOrBait'
+  if (
+    lower === 'aislop' ||
+    lower === 'ai_slop' ||
+    lower === 'ai评论' ||
+    lower === 'ai低质评论' ||
+    lower === 'ai水军' ||
+    lower === 'ai机器人' ||
+    lower === 'ai机器人水军'
+  )
+    return 'aiSlop'
+  if (lower === 'custom' || compact === '自定义规则' || compact === '自定义') return 'custom'
+
+  return null
+}
+
+function isAcceptedConfidence(value: unknown): boolean {
+  if (value === undefined || value === null || value === '') return true
+  if (typeof value === 'number') return value >= 0.8
+  if (typeof value !== 'string') return true
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) return true
+  return normalized === 'high' || normalized === '高' || normalized === 'certain'
+}
+
+function isDegenerateNormalReason(reason: string | undefined): boolean {
+  if (!reason) return false
+  return DEGENERATE_REASON_PATTERN.test(reason) || CONTRADICTORY_NORMAL_REASON_PATTERN.test(reason)
+}
+
+function resolveValidatedFlagEntry(
+  entry: Record<string, unknown>,
+  options?: ParseCommentAiFilterOptions,
+): { category: string; reason?: string } | null {
+  if (!isAcceptedConfidence(entry.confidence)) return null
+
+  // 严禁把输入里的 type（如“主评/回复”）当作分类标签。
+  const normalizedDim = normalizeParsedDimension(
+    entry.dim ?? entry.dimension ?? entry.tag ?? entry.category,
+  )
+  if (!normalizedDim) return null
+
+  if (options?.enabledDimensions !== undefined) {
+    if (normalizedDim === 'custom') {
+      if (!options.hasCustomPrompt) return null
+    } else if (!options.enabledDimensions.includes(normalizedDim)) {
+      return null
+    }
+  }
+
+  const reason = sanitizeShortText(entry.reason ?? entry.desc, 32)
+  if (isDegenerateNormalReason(reason)) return null
+
+  return {
+    category: DIMENSION_CATEGORY_LABELS[normalizedDim],
+    reason,
+  }
+}
+
 /**
  * 解析大模型返回的 JSON 审核结果，并将其映射回输入评论列表。
  * 解析失败时返回 null，由上层提示错误而不是误判为全部正常。
@@ -445,6 +556,7 @@ function resolveTargetCommentId(
 export function parseCommentAiFilterResponse(
   rawContent: string,
   comments: CommentAiFilterInputItem[],
+  options?: ParseCommentAiFilterOptions,
 ): CommentAiFilterVerdict[] | null {
   const cleaned = stripModelWrappers(rawContent)
   if (!cleaned) return null
@@ -469,7 +581,7 @@ export function parseCommentAiFilterResponse(
     } else if (Array.isArray(record.comments)) {
       entries = record.comments
     } else if (comments.length === 1) {
-      // 单条判断模式：解析 {"low": true/false, "tag": "...", "reason": "..."}
+      // 兼容单对象输出：{"low": true/false, "dim": "...", "reason": "..."}
       const singleFlag =
         record.low ??
         record.lowQuality ??
@@ -478,13 +590,16 @@ export function parseCommentAiFilterResponse(
         record.isLowQuality
       if (typeof singleFlag === 'boolean') {
         const target = comments[0]
+        if (!singleFlag) return [{ id: target.id, lowQuality: false }]
+
+        const validated = resolveValidatedFlagEntry(record, options)
         return [
-          singleFlag
+          validated
             ? {
                 id: target.id,
                 lowQuality: true,
-                category: sanitizeShortText(record.tag ?? record.category ?? record.type, 12),
-                reason: sanitizeShortText(record.reason ?? record.desc, 28),
+                category: validated.category,
+                reason: validated.reason,
               }
             : {
                 id: target.id,
@@ -498,7 +613,7 @@ export function parseCommentAiFilterResponse(
   if (!entries) return null
 
   const idSet = new Set(comments.map((c) => c.id))
-  const flaggedMap = new Map<string, { category?: string; reason?: string }>()
+  const flaggedMap = new Map<string, { category: string; reason?: string }>()
 
   for (const rawEntry of entries) {
     if (!rawEntry || typeof rawEntry !== 'object' || Array.isArray(rawEntry)) continue
@@ -511,14 +626,12 @@ export function parseCommentAiFilterResponse(
     const isLow =
       typeof explicitFlag === 'boolean'
         ? explicitFlag
-        : isFlaggedOnlyList || Boolean(entry.tag || entry.category || entry.reason)
+        : isFlaggedOnlyList || Boolean(entry.dim || entry.dimension || entry.tag || entry.category)
 
-    if (isLow) {
-      flaggedMap.set(targetId, {
-        category: sanitizeShortText(entry.tag ?? entry.category ?? entry.type, 12),
-        reason: sanitizeShortText(entry.reason ?? entry.desc, 28),
-      })
-    }
+    if (!isLow) continue
+
+    const validated = resolveValidatedFlagEntry(entry, options)
+    if (validated) flaggedMap.set(targetId, validated)
   }
 
   return comments.map((comment) => {

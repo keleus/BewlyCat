@@ -113,6 +113,9 @@ export function useMomentCommentAiFilter(
         author: comment.author || undefined,
         text,
         isReply,
+        isUp: Boolean(moment.author.mid && comment.mid && moment.author.mid === comment.mid),
+        isTop: comment.isTop === true,
+        upLiked: comment.upLiked === true,
         likeCount: comment.likeCount,
         hasPictures: comment.pictures.length > 0,
       })
@@ -149,7 +152,7 @@ export function useMomentCommentAiFilter(
   function hydrateFromCache(items: CommentAiFilterInputItem[]) {
     for (const item of items) {
       if (verdicts.has(item.id)) continue
-      const cached = getCachedCommentVerdict(item.text, item.author, item.isReply)
+      const cached = getCachedCommentVerdict(item.text, item)
       if (cached) {
         verdicts.set(item.id, {
           id: item.id,

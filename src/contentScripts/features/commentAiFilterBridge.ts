@@ -81,6 +81,9 @@ export function setupCommentAiFilterBridge() {
         author: typeof record.author === 'string' ? record.author : undefined,
         text: record.text,
         isReply: record.isReply === true,
+        isUp: record.isUp === true,
+        isTop: record.isTop === true,
+        upLiked: record.upLiked === true,
         likeCount: typeof record.likeCount === 'number' ? record.likeCount : undefined,
         hasPictures: record.hasPictures === true,
       })

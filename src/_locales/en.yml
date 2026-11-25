@@ -1343,9 +1343,9 @@ settings:
   image_viewer_close_at_bottom_desc: Applies to comment and moments image viewers.
   comment_ai_filter:
     group_title: AI Comment Filter
-    group_desc: Batch-evaluate visible comments with Bilibili's built-in free Index-Translate-2B endpoint on native Bilibili pages and Bewly Moments.
+    group_desc: Batch-evaluate visible comments with Bilibili's built-in free Index-Translate endpoint on native Bilibili pages and Bewly Moments.
     enable: Enable AI comment filter
-    enable_desc: Send visible comment text in batches to Bilibili's Index-Translate-2B API for quality screening.
+    enable_desc: Send visible comment text in batches to Bilibili's Index-Translate API for quality screening.
     auto_scan: Auto-scan new comments
     auto_scan_desc: Automatically inspect newly loaded comments; when off, only scan when you click the button in the comment header.
     include_replies: Include nested replies

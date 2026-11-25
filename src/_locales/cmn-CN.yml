@@ -1291,9 +1291,9 @@ settings:
   image_viewer_close_at_bottom_desc: 作用于评论区和动态图片查看器。
   comment_ai_filter:
     group_title: AI 评论过滤
-    group_desc: 使用 B 站内置免费 Index-Translate-2B 接口批量检测并标记评论区中的低质量评论，支持原站评论区与 Bewly 动态评论区。
+    group_desc: 使用 B 站内置免费 Index-Translate 接口批量检测并标记评论区中的低质量评论，支持原站评论区与 Bewly 动态评论区。
     enable: 启用 AI 评论过滤
-    enable_desc: 开启后将当前可视范围内的评论文本分批发送到 B 站 Index-Translate-2B 接口进行质量筛选。
+    enable_desc: 开启后将当前可视范围内的评论文本分批发送到 B 站 Index-Translate 接口进行质量筛选。
     auto_scan: 自动批量筛选
     auto_scan_desc: 开启后自动检测新加载的评论；关闭后仅在点击评论区按钮时手动筛选。
     include_replies: 包含楼中楼子回复

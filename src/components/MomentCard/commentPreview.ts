@@ -19,7 +19,8 @@ interface RawComment {
   count?: number
   rcount?: number
   member?: { mid?: string; uname?: string; avatar?: string; sex?: string }
-  reply_control?: { location?: string }
+  reply_control?: { location?: string; is_up_top?: boolean; up_like?: boolean }
+  up_action?: { like?: boolean; reply?: boolean }
   content?: {
     message?: string
     emote?: Record<string, { url?: string }>
@@ -60,6 +61,8 @@ export interface PreviewComment {
   content: CommentContentPart[]
   pictures: string[]
   likeCount: number
+  isTop?: boolean
+  upLiked?: boolean
   liked: boolean
   liking: boolean
   deleting: boolean
@@ -203,6 +206,8 @@ export function normalizeComment(raw: RawComment): PreviewComment {
       .map((picture) => safeImageUrl(picture.img_src))
       .filter(Boolean),
     likeCount: Math.max(0, Number(raw.like) || 0),
+    isTop: Boolean(raw.reply_control?.is_up_top),
+    upLiked: Boolean(raw.up_action?.like || raw.reply_control?.up_like),
     liked: Number(raw.action) === 1,
     liking: false,
     deleting: false,
@@ -252,6 +257,8 @@ export function mergeComments(
           time: comment.time,
           content: comment.content,
           pictures: comment.pictures,
+          isTop: comment.isTop,
+          upLiked: comment.upLiked,
         })
       }
       result.push(cached || comment)

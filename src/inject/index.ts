@@ -4958,6 +4958,12 @@ if (isElectronEnv) {
     if (!text.trim()) return null
 
     const isReply = isReplyHint || Boolean(findCommentRepliesRendererHost(component))
+    const userInfo = component.shadowRoot?.querySelector('bili-comment-user-info')
+    const isUp = Boolean(userInfo?.shadowRoot?.querySelector('#user-up'))
+    const isTop = Boolean(
+      data?.reply_control?.is_up_top || component.shadowRoot?.querySelector('#top'),
+    )
+    const upLiked = Boolean(data?.up_action?.like || data?.reply_control?.up_like)
     const hasPictures = Boolean(
       (Array.isArray(data?.content?.pictures) && data.content.pictures.length > 0) ||
       component.shadowRoot?.querySelector('bili-comment-pictures-renderer'),
@@ -4967,6 +4973,9 @@ if (isElectronEnv) {
       text,
       author: getReplyAuthorName(data) ?? getCommentRendererAuthorName(component) ?? undefined,
       isReply,
+      isUp,
+      isTop,
+      upLiked,
       likeCount: typeof data?.like === 'number' ? data.like : undefined,
       hasPictures,
     }

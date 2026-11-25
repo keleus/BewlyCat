@@ -13,6 +13,7 @@ import {
   COMMENT_AI_FILTER_CLASSIFY_MESSAGE,
   COMMENT_AI_FILTER_DEFAULT_DIMENSIONS,
   COMMENT_AI_FILTER_DEFAULT_INDEX_TRANSLATE_MODEL,
+  COMMENT_AI_FILTER_FALLBACK_INDEX_TRANSLATE_MODELS,
   COMMENT_AI_FILTER_INDEX_TRANSLATE_BASE_URL,
   COMMENT_AI_FILTER_TEST_MESSAGE,
   normalizeCommentAiFilterDimensions,
@@ -117,7 +118,7 @@ async function readCommentAiFilterConfig(
 function resolveEndpoint():
   | {
       url: string
-      model: string
+      models: string[]
       apiKey: string
     }
   | {
@@ -126,10 +127,13 @@ function resolveEndpoint():
   const url = resolveChatCompletionsUrl(COMMENT_AI_FILTER_INDEX_TRANSLATE_BASE_URL)
   if (!url) return { error: 'Failed to resolve Index-Translate endpoint URL.' }
 
-  // 暂不开放外部供应商配置，固定使用 B 站内置免费 Index-Translate-2B 接口。
+  // 暂不开放外部供应商配置，固定使用 B 站内置免费 Index-Translate 接口（优先 35B-A3B，异常时回退 9B）。
   return {
     url,
-    model: COMMENT_AI_FILTER_DEFAULT_INDEX_TRANSLATE_MODEL,
+    models: [
+      COMMENT_AI_FILTER_DEFAULT_INDEX_TRANSLATE_MODEL,
+      ...COMMENT_AI_FILTER_FALLBACK_INDEX_TRANSLATE_MODELS,
+    ],
     apiKey: 'index',
   }
 }
@@ -191,12 +195,98 @@ function extractApiErrorMessage(status: number, statusText: string, bodyText: st
   return `HTTP ${status}${statusText ? ` ${statusText}` : ''}`
 }
 
+async function callSingleModel(
+  url: string,
+  model: string,
+  headers: Record<string, string>,
+  messages: Array<{ role: 'system' | 'user'; content: string }>,
+  comments: CommentAiFilterInputItem[],
+  config: CommentAiFilterConfigSnapshot,
+): Promise<CommentAiFilterClassifyResponse & { fatal?: boolean }> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      // 不携带 B 站登录 Cookie，避免凭据泄露给外部模型接口。
+      credentials: 'omit',
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0,
+        max_tokens: comments.length === 1 ? 256 : 1024,
+        stream: false,
+      }),
+    })
+
+    const bodyText = await response.text()
+    if (!response.ok) {
+      const fatal = response.status === 401 || response.status === 403 || response.status === 412
+      return {
+        ok: false,
+        fatal,
+        error: extractApiErrorMessage(response.status, response.statusText, bodyText),
+      }
+    }
+
+    let parsedBody: unknown
+    try {
+      parsedBody = JSON.parse(bodyText)
+    } catch {
+      return {
+        ok: false,
+        error: 'API returned non-JSON response.',
+      }
+    }
+
+    const content = extractMessageContent(parsedBody)
+    const verdicts = parseCommentAiFilterResponse(content, comments, {
+      enabledDimensions: config.dimensions,
+      hasCustomPrompt: Boolean(config.customPrompt),
+    })
+    if (!verdicts) {
+      const preview = content.replace(/\s+/gu, ' ').trim().slice(0, 120)
+      return {
+        ok: false,
+        error: preview
+          ? `Unexpected model output format: ${preview}`
+          : 'Model returned an empty response.',
+      }
+    }
+
+    return {
+      ok: true,
+      results: verdicts,
+      model,
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError')
+      return { ok: false, error: `Request timed out (${REQUEST_TIMEOUT_MS / 1000}s).` }
+
+    const message = error instanceof Error ? error.message : String(error)
+    return { ok: false, error: message || 'Network request failed.' }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function callCommentAiFilterApi(
   comments: CommentAiFilterInputItem[],
   config: CommentAiFilterConfigSnapshot,
   contextTitle?: string,
 ): Promise<CommentAiFilterClassifyResponse> {
   if (!comments.length) return { ok: true, results: [], model: '' }
+
+  if (config.dimensions.length === 0 && !config.customPrompt) {
+    return {
+      ok: true,
+      results: comments.map((c) => ({ id: c.id, lowQuality: false })),
+      model: '',
+    }
+  }
 
   const endpoint = resolveEndpoint()
   if ('error' in endpoint) return { ok: false, error: endpoint.error }
@@ -214,68 +304,17 @@ async function callCommentAiFilterApi(
   }
   if (endpoint.apiKey) headers.Authorization = `Bearer ${endpoint.apiKey}`
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  let lastError = 'AI classification failed.'
+  for (const model of endpoint.models) {
+    const result = await callSingleModel(endpoint.url, model, headers, messages, comments, config)
+    if (result.ok) return result
+    lastError = result.error
+    if (result.fatal) break
+  }
 
-  try {
-    const response = await fetch(endpoint.url, {
-      method: 'POST',
-      headers,
-      // 不携带 B 站登录 Cookie，避免凭据泄露给外部模型接口。
-      credentials: 'omit',
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: endpoint.model,
-        messages,
-        temperature: 0,
-        max_tokens: comments.length === 1 ? 160 : 1024,
-        stream: false,
-      }),
-    })
-
-    const bodyText = await response.text()
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: extractApiErrorMessage(response.status, response.statusText, bodyText),
-      }
-    }
-
-    let parsedBody: unknown
-    try {
-      parsedBody = JSON.parse(bodyText)
-    } catch {
-      return {
-        ok: false,
-        error: 'API returned non-JSON response.',
-      }
-    }
-
-    const content = extractMessageContent(parsedBody)
-    const verdicts = parseCommentAiFilterResponse(content, comments)
-    if (!verdicts) {
-      const preview = content.replace(/\s+/gu, ' ').trim().slice(0, 120)
-      return {
-        ok: false,
-        error: preview
-          ? `Unexpected model output format: ${preview}`
-          : 'Model returned an empty response.',
-      }
-    }
-
-    return {
-      ok: true,
-      results: verdicts,
-      model: endpoint.model,
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError')
-      return { ok: false, error: `Request timed out (${REQUEST_TIMEOUT_MS / 1000}s).` }
-
-    const message = error instanceof Error ? error.message : String(error)
-    return { ok: false, error: message || 'Network request failed.' }
-  } finally {
-    clearTimeout(timer)
+  return {
+    ok: false,
+    error: lastError,
   }
 }
 
@@ -296,7 +335,11 @@ async function handleClassifyRequest(
       author: typeof item.author === 'string' ? item.author : undefined,
       text,
       isReply: Boolean(item.isReply),
+      isUp: item.isUp === true,
+      isTop: item.isTop === true,
+      upLiked: item.upLiked === true,
       likeCount: typeof item.likeCount === 'number' ? item.likeCount : undefined,
+      hasPictures: item.hasPictures === true,
     })
   }
 
@@ -310,7 +353,11 @@ async function handleTestRequest(
   request?: CommentAiFilterTestRequest,
 ): Promise<CommentAiFilterTestResponse> {
   const startedAt = Date.now()
-  const config = await readCommentAiFilterConfig(request?.config)
+  const rawConfig = await readCommentAiFilterConfig(request?.config)
+  const config: CommentAiFilterConfigSnapshot =
+    rawConfig.dimensions.length === 0 && !rawConfig.customPrompt
+      ? { ...rawConfig, dimensions: [...COMMENT_AI_FILTER_DEFAULT_DIMENSIONS] }
+      : rawConfig
 
   const sampleComments: CommentAiFilterInputItem[] = [
     {
@@ -323,7 +370,7 @@ async function handleTestRequest(
     },
   ]
 
-  // 逐条验证与单条判断模式保持一致，也兼顾 2B 等轻量模型。
+  // 逐条验证与单条/批量统一协议保持一致。
   const responses = await Promise.all(
     sampleComments.map((sample) =>
       callCommentAiFilterApi([sample], config, 'AI 评论过滤连通性测试'),

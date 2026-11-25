@@ -10,6 +10,7 @@ import type {
 } from '~/utils/commentAiFilter'
 import {
   COMMENT_AI_FILTER_CLASSIFY_MESSAGE,
+  COMMENT_AI_FILTER_PROMPT_VERSION,
   COMMENT_AI_FILTER_TEST_MESSAGE,
   matchLocalCommentAiFilterRule,
   normalizeCommentAiFilterBatchSize,
@@ -42,17 +43,32 @@ const verdictCache = new Map<string, CachedVerdict>()
 export function getCommentAiFilterConfigFingerprint(): string {
   const s = settings.value
   const dims = [...(s.commentAiFilterDimensions || [])].sort().join(',')
-  return `${dims}|${s.commentAiFilterCustomPrompt.trim()}`
+  return `${COMMENT_AI_FILTER_PROMPT_VERSION}|${dims}|${s.commentAiFilterCustomPrompt.trim()}`
+}
+
+interface CacheKeyCommentMeta {
+  author?: string
+  isReply?: boolean
+  isUp?: boolean
+  isTop?: boolean
+  upLiked?: boolean
+  hasPictures?: boolean
 }
 
 function buildCacheKey(
   fingerprint: string,
   normalizedText: string,
-  author?: string,
-  isReply?: boolean,
+  meta?: CacheKeyCommentMeta,
 ): string {
-  const cleanAuthor = author?.trim() ?? ''
-  return `${fingerprint}\n${isReply ? 'R' : 'M'}\n${cleanAuthor}\n${normalizedText}`
+  const cleanAuthor = meta?.author?.trim() ?? ''
+  const flags = [
+    meta?.isReply ? 'R' : 'M',
+    meta?.isUp ? 'U' : '',
+    meta?.isTop ? 'T' : '',
+    meta?.upLiked ? 'L' : '',
+    meta?.hasPictures ? 'P' : '',
+  ].join('')
+  return `${fingerprint}\n${flags}\n${cleanAuthor}\n${normalizedText}`
 }
 
 function setCacheEntry(key: string, value: CachedVerdict) {
@@ -73,19 +89,17 @@ export function clearCommentAiFilterCache(comments?: CommentAiFilterInputItem[])
   const fingerprint = getCommentAiFilterConfigFingerprint()
   for (const comment of comments) {
     const normalized = normalizeCommentTextForAiFilter(comment.text)
-    if (normalized)
-      verdictCache.delete(buildCacheKey(fingerprint, normalized, comment.author, comment.isReply))
+    if (normalized) verdictCache.delete(buildCacheKey(fingerprint, normalized, comment))
   }
 }
 
 export function getCachedCommentVerdict(
   text: string,
-  author?: string,
-  isReply?: boolean,
+  meta?: CacheKeyCommentMeta,
 ): CachedVerdict | undefined {
   const normalized = normalizeCommentTextForAiFilter(text)
   if (!normalized) return undefined
-  const key = buildCacheKey(getCommentAiFilterConfigFingerprint(), normalized, author, isReply)
+  const key = buildCacheKey(getCommentAiFilterConfigFingerprint(), normalized, meta)
   const hit = verdictCache.get(key)
   if (!hit) return undefined
   // Refresh LRU order
@@ -119,6 +133,19 @@ export async function classifyCommentsBatch(
   const uniqueUncachedItems: CommentAiFilterInputItem[] = []
 
   const dimensions = settings.value.commentAiFilterDimensions || []
+  const customPrompt = settings.value.commentAiFilterCustomPrompt.trim()
+  if (dimensions.length === 0 && !customPrompt) {
+    const passthrough = comments.map((comment) => ({
+      id: comment.id,
+      lowQuality: false,
+    }))
+    options?.onChunkResult?.(passthrough)
+    return {
+      ok: true,
+      results: passthrough,
+    }
+  }
+
   for (const comment of comments) {
     const normalized = normalizeCommentTextForAiFilter(comment.text)
     if (!normalized) {
@@ -135,7 +162,7 @@ export async function classifyCommentsBatch(
       continue
     }
 
-    const cacheKey = buildCacheKey(fingerprint, normalized, comment.author, comment.isReply)
+    const cacheKey = buildCacheKey(fingerprint, normalized, comment)
     if (!options?.bypassCache) {
       const cached = verdictCache.get(cacheKey)
       if (cached) {
@@ -232,12 +259,7 @@ export async function classifyCommentsBatch(
             category: verdict.category,
             reason: verdict.reason,
           }
-          const repCacheKey = buildCacheKey(
-            fingerprint,
-            representative.text,
-            representative.author,
-            representative.isReply,
-          )
+          const repCacheKey = buildCacheKey(fingerprint, representative.text, representative)
           setCacheEntry(repCacheKey, cacheValue)
 
           const group = uncachedByText.get(repCacheKey) ?? [representative]

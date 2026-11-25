@@ -23,6 +23,9 @@ export interface NativeCommentMeta {
   text: string
   author?: string
   isReply: boolean
+  isUp?: boolean
+  isTop?: boolean
+  upLiked?: boolean
   likeCount?: number
   hasPictures?: boolean
 }
@@ -511,6 +514,20 @@ export function createNativeCommentAiFilterController(options: {
     return Boolean(normalizeCommentTextForAiFilter(meta.text))
   }
 
+  function toFilterInputItem(meta: NativeCommentMeta): CommentAiFilterInputItem {
+    return {
+      id: meta.rpid,
+      author: meta.author,
+      text: meta.text,
+      isReply: meta.isReply,
+      isUp: meta.isUp === true,
+      isTop: meta.isTop === true,
+      upLiked: meta.upLiked === true,
+      likeCount: meta.likeCount,
+      hasPictures: meta.hasPictures === true,
+    }
+  }
+
   function getStats() {
     pruneDisconnected()
     let eligibleCount = 0
@@ -606,19 +623,7 @@ export function createNativeCommentAiFilterController(options: {
         event.preventDefault()
         event.stopPropagation()
         failedErrors.delete(meta.rpid)
-        sendClassifyRequest(
-          [
-            {
-              id: meta.rpid,
-              author: meta.author,
-              text: meta.text,
-              isReply: meta.isReply,
-              likeCount: meta.likeCount,
-              hasPictures: meta.hasPictures,
-            },
-          ],
-          true,
-        )
+        sendClassifyRequest([toFilterInputItem(meta)], true)
       }
     }
   }
@@ -873,16 +878,23 @@ export function createNativeCommentAiFilterController(options: {
 
   function queueCommentForScan(meta: NativeCommentMeta) {
     if (!config.enabled || paused || !isEligibleMeta(meta)) return
-    if (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid) || pendingQueue.has(meta.rpid)) return
+    if (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid)) return
 
-    pendingQueue.set(meta.rpid, {
-      id: meta.rpid,
-      author: meta.author,
-      text: meta.text,
-      isReply: meta.isReply,
-      likeCount: meta.likeCount,
-      hasPictures: meta.hasPictures,
-    })
+    const existingQueued = pendingQueue.get(meta.rpid)
+    if (existingQueued) {
+      // user-info / pictures 晚于 comment-renderer 完成渲染时，刷新待发送队列里的上下文元数据。
+      pendingQueue.set(meta.rpid, {
+        ...existingQueued,
+        author: meta.author || existingQueued.author,
+        isUp: Boolean(existingQueued.isUp || meta.isUp),
+        isTop: Boolean(existingQueued.isTop || meta.isTop),
+        upLiked: Boolean(existingQueued.upLiked || meta.upLiked),
+        hasPictures: Boolean(existingQueued.hasPictures || meta.hasPictures),
+      })
+      return
+    }
+
+    pendingQueue.set(meta.rpid, toFilterInputItem(meta))
     refreshAllRenderers()
     scheduleQueueFlush()
     refreshToolbars()
@@ -918,14 +930,7 @@ export function createNativeCommentAiFilterController(options: {
       if (!meta || !isEligibleMeta(meta) || seen.has(meta.rpid)) continue
       if (!forceRescan && (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid))) continue
       seen.add(meta.rpid)
-      toScan.push({
-        id: meta.rpid,
-        author: meta.author,
-        text: meta.text,
-        isReply: meta.isReply,
-        likeCount: meta.likeCount,
-        hasPictures: meta.hasPictures,
-      })
+      toScan.push(toFilterInputItem(meta))
     }
 
     if (toScan.length > 0) sendClassifyRequest(toScan, forceRescan)
