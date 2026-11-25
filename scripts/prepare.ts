@@ -1,12 +1,12 @@
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import process from 'node:process'
 
 import chokidar from 'chokidar'
 import fs from 'fs-extra'
 
-import { clearSavedBuildSummaries } from './buildReport'
-import { compressContributorsSvg, isCompressedContributorsSvg } from './compressContributorsSvg'
-import { isDev, isFirefox, isSafari, log, r } from './utils'
+import { clearSavedBuildSummaries } from './buildReport.ts'
+import { compressContributorsSvg, isCompressedContributorsSvg } from './compressContributorsSvg.ts'
+import { isDev, isFirefox, isSafari, log, r } from './utils.ts'
 
 const extensionDirectory = isFirefox
   ? 'extension-firefox'
@@ -18,7 +18,7 @@ const contributorsImageCachePath = r('.cache/bewlycat/contributors.svg')
 const contributorsImagePath = r(extensionDirectory, 'assets/contributors.svg')
 
 function writeManifest() {
-  execSync('esno ./scripts/manifest.ts', { stdio: 'inherit' })
+  execFileSync(process.execPath, [r('scripts/manifest.ts')], { stdio: 'inherit' })
 }
 
 async function hasUsableImage(path: string): Promise<boolean> {

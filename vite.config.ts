@@ -43,6 +43,8 @@ export function createSharedConfig(): UserConfig {
 
       AutoImport({
         dts: r('src/auto-imports.d.ts'),
+        // 跳过 node_modules 与 Vue 样式子模块，避免 Rolldown 将 200+ 个 ?vue&type=style 传给 JS transform。
+        exclude: [/[\\/]node_modules[\\/]/, /[\\/]\.git[\\/]/, /[?&]type=style(?:&|$)/],
         // @types/webextension-polyfill 使用 `export = Browser`，unimport 为默认导入生成的
         // `typeof import('webextension-polyfill').default` 会退化为 any；全局类型改由 src/global.d.ts 声明。
         ignoreDts: ['browser'],

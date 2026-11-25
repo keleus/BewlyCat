@@ -10,16 +10,19 @@ import {
   presetWind3,
   transformerDirectives,
 } from 'unocss'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 
 const remRE = /(-?[.\d]+)rem/g
-const STYLE_BLOCK_RE = /<style\b[^>]*>[\s\S]*?<\/style>/gi
-const SCRIPT_BLOCK_RE = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
 // JS/TS 代码中的动态类名或图标只出现在字符串字面量里；跳过类型声明、变量名与注释可减少约 65% 无效 token。
 const STRING_LITERAL_RE = /'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`/g
 
-function extractTemplateOnly(code: string): string {
-  return code.replace(STYLE_BLOCK_RE, '').replace(SCRIPT_BLOCK_RE, '')
+interface ParsedVueUnoBlocks {
+  code: string
+  template: string
+  scoped: string
 }
+
+const vueUnoBlocksCache = new Map<string, ParsedVueUnoBlocks>()
 
 function extractStringLiterals(code: string): string {
   const literals: string[] = []
@@ -27,15 +30,23 @@ function extractStringLiterals(code: string): string {
   return literals.join(' ')
 }
 
-function extractVueScopedCode(code: string): string {
-  const withoutStyle = code.replace(STYLE_BLOCK_RE, '')
-  const templatePart = withoutStyle.replace(SCRIPT_BLOCK_RE, '')
+function parseVueUnoBlocks(id: string, code: string): ParsedVueUnoBlocks {
+  const cached = vueUnoBlocksCache.get(id)
+  if (cached && cached.code === code) return cached
+
+  // 使用 Vue 官方 SFC 解析器拆分块，避免用正则剥离 <script>/<style> 标签产生漏匹配或代码扫描告警。
+  const { descriptor } = parseSfc(code, { filename: id, ignoreEmpty: true })
+  const template = descriptor.template?.content ?? ''
   const scriptLiterals: string[] = []
-  for (const match of withoutStyle.matchAll(SCRIPT_BLOCK_RE)) {
-    const literalText = extractStringLiterals(match[1])
+  for (const block of [descriptor.script, descriptor.scriptSetup]) {
+    if (!block?.content) continue
+    const literalText = extractStringLiterals(block.content)
     if (literalText) scriptLiterals.push(literalText)
   }
-  return scriptLiterals.length ? `${templatePart}\n${scriptLiterals.join('\n')}` : templatePart
+  const scoped = scriptLiterals.length ? `${template}\n${scriptLiterals.join('\n')}` : template
+  const parsed: ParsedVueUnoBlocks = { code, template, scoped }
+  vueUnoBlocksCache.set(id, parsed)
+  return parsed
 }
 
 function createTemplateScopedAttributifyPreset() {
@@ -48,7 +59,7 @@ function createTemplateScopedAttributifyPreset() {
         const id = ctx.id ?? ''
         // 属性化语法仅存在于原始 .vue 的 <template> 与 .html，跳过 <script>、<style>、.ts 与 ?vue 虚拟子模块。
         if (id.endsWith('.vue')) {
-          const templateCode = extractTemplateOnly(ctx.code)
+          const templateCode = parseVueUnoBlocks(id, ctx.code).template
           if (!templateCode.trim()) return undefined
           return extractor.extract?.({ ...ctx, code: templateCode })
         }
@@ -270,7 +281,7 @@ export function createUnoConfig() {
         extract(ctx) {
           const id = ctx.id ?? ''
           let code = ctx.code
-          if (id.endsWith('.vue')) code = extractVueScopedCode(ctx.code)
+          if (id.endsWith('.vue')) code = parseVueUnoBlocks(id, ctx.code).scoped
           else if (/\.[jt]sx?$/.test(id)) code = extractStringLiterals(ctx.code)
           return extractorSplit.extract?.({ ...ctx, code })
         },

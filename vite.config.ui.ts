@@ -11,6 +11,8 @@ import { createSharedConfig } from './vite.config.ts'
 
 const UI_VENDOR_RE =
   /[\\/]node_modules[\\/](?:\.pnpm[\\/])?(?:vue|@vue|vue-i18n|@intlify|pinia|@vueuse|vue-toastification|webextension-polyfill|webext-bridge)[\\/@+]/
+const UI_PLAYER_RE =
+  /[\\/]src[\\/](?:utils[\\/](?:bewlyWidescreen|player|playerAdjustment|randomPlay|verticalVideoZoom|watchLaterButton|videoScreenshot)\.ts|contentScripts[\\/](?:bewlyWidescreenControl|fullscreenWheelVolume|keyboardVolumeStep|localLoudnessControl|playerControlFit|touchPlayerGestures|videoAspectRatioMemory|videoPipButtonControl|videoQualityMemory|videoScreenshotControl)\.ts|components[\\/]PlayerLoudnessControl\.vue)/
 
 // 内容脚本与独立设置页的统一多入口 UI 构建：共享 vendor、语言包、svgIcons、vuedraggable、
 // logic、21 个设置子页及 Shadow DOM 样式分块，避免两端重复打包。
@@ -51,6 +53,10 @@ export function createUiConfig(): UserConfig {
       reportCompressedSize: false,
       ...(isDev ? { target: 'esnext' } : {}),
       rolldownOptions: {
+        checks: {
+          // Vue、UnoCSS 与 AutoImport 的 JS 钩子耗时天然高于 Rolldown 原生打包阶段，关闭提示性耗时告警。
+          bundlerTimings: false,
+        },
         input: {
           'contentScripts/main': r('src/contentScripts/index.ts'),
           'options/index': r('src/options/index.html'),
@@ -69,6 +75,12 @@ export function createUiConfig(): UserConfig {
                 name: 'vendor',
                 // 保持 vuedraggable / sortablejs / qrcode 等按需依赖留在各自异步分块，不打入首屏 vendor。
                 test: UI_VENDOR_RE,
+              },
+              {
+                name: 'player',
+                // 仅将视频播放器增强模块独立分块，不递归吸纳共享的 logic 等模块，避免设置页误依赖 player 分块。
+                test: UI_PLAYER_RE,
+                includeDependenciesRecursively: false,
               },
             ],
           },

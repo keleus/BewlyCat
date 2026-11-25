@@ -122,14 +122,12 @@ import {
 } from '~/utils/watchLaterButton'
 
 import { version } from '../../package.json'
-import { initAmbilightControl } from './ambilightControl'
 import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
 import { setupCommentAiFilterBridge } from './features/commentAiFilterBridge'
 import { setupFavoriteOrganizerTripleSync } from './features/favoriteOrganizerTripleSync'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
-import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupOriginalMomentsFilter } from './features/originalMomentsFilter'
 import { setupOriginalMomentsFoldComments } from './features/originalMomentsFoldComments'
 import { verifyPageScriptVersion } from './features/pageScriptVersionCheck'
@@ -517,7 +515,11 @@ if (isElectronEnv) {
     // opus 详情分栏布局与图片查看器检测都不依赖“适配其他页样式”，只要在 iframe 内就启用；
     // 否则关闭该设置后，首页 iframe 内打开大图时父页面顶栏不会隐藏，遮住关闭按钮（#1298）
     if (isInIframe()) {
-      setupOpusDetailDrawerLayout()
+      void import('./features/opusDetailDrawerLayout')
+        .then(({ setupOpusDetailDrawerLayout }) => setupOpusDetailDrawerLayout())
+        .catch((error) => {
+          console.error('[BewlyCat] 加载动态详情分栏布局失败:', error)
+        })
       setupIframePhotoViewerDetector()
     }
 
@@ -1662,7 +1664,25 @@ if (isElectronEnv) {
       initVideoScreenshotControl()
       initVideoPipButtonControl()
       initLocalLoudnessControl()
-      initAmbilightControl()
+      const loadAmbilightControl = () => {
+        void import('./ambilightControl')
+          .then(({ initAmbilightControl }) => initAmbilightControl())
+          .catch((error) => {
+            console.error('[BewlyCat] 加载环境光模块失败:', error)
+          })
+      }
+      if (settings.value.ambilightEnabled) {
+        loadAmbilightControl()
+      } else {
+        const stopAmbilightLoader = watch(
+          () => settings.value.ambilightEnabled,
+          (enabled) => {
+            if (!enabled) return
+            stopAmbilightLoader()
+            loadAmbilightControl()
+          },
+        )
+      }
       runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)
       initTouchPlayerGestures()
       initFullscreenWheelVolume()

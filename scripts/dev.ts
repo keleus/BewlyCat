@@ -157,7 +157,7 @@ function spawnBuildWorker(target: DevWorkerTarget): Promise<DevWorkerResult> {
   return new Promise((resolve) => {
     let workerResult: DevWorkerResult | undefined
     const child = fork(WORKER_SCRIPT, [target], {
-      // 直接使用原生 Node 22 运行 .ts，不继承 esno/tsx 注入参数，减少子进程启动与内存开销。
+      // 直接使用原生 Node 运行 .ts，不继承父进程额外的启动参数，减少子进程开销。
       execArgv: [],
       env: process.env,
       stdio: ['ignore', 'inherit', 'inherit', 'ipc'],

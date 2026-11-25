@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 
-import { getManifest } from '../src/manifest'
-import { isFirefox, isSafari, log, r } from './utils'
+import { getManifest } from '../src/manifest.ts'
+import { isFirefox, isSafari, log, r } from './utils.ts'
 
 export async function writeManifest() {
   await fs.writeJSON(
