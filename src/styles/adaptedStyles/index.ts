@@ -124,8 +124,13 @@ function syncPageStyleElement(cssText: string): boolean {
   const hostStyle = root.querySelector(HOST_STYLE_SELECTOR)
   if (hostStyle) {
     if (hostStyle.nextElementSibling !== styleEl) hostStyle.after(styleEl)
-  } else if (!styleEl.isConnected) {
-    root.prepend(styleEl)
+  } else {
+    const anchor = root.querySelector(':scope > body') ?? root.querySelector(':scope > head')
+    if (anchor) {
+      if (anchor.nextElementSibling !== styleEl) anchor.after(styleEl)
+    } else if (!styleEl.isConnected) {
+      root.append(styleEl)
+    }
   }
 
   return true

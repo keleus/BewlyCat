@@ -209,7 +209,7 @@ export function createUnoConfig() {
           // 仅匹配原始 .vue 文件，跳过 vite:vue 拆出的 ?vue&type=script/template/style 虚拟子模块
           /\.vue$/,
           /\.html$/,
-          /[\\/]src[\\/](?:components|stores|constants)[\\/].*\.[jt]sx?$/,
+          /[\\/]src[\\/](?:components|composables|stores|constants)[\\/].*\.[jt]sx?$/,
         ],
         exclude: [
           /[\\/]node_modules[\\/]/,
