@@ -18,7 +18,7 @@ import {
 } from '~/utils/commentAiFilter'
 import { MOBILE_LIST_LAYOUT_BREAKPOINT, normalizeListLayoutBreakpoint } from '~/utils/gridLayout'
 import { normalizeKeyboardVolumeStep } from '~/utils/keyboardVolume'
-import { normalizePlaybackRateStep } from '~/utils/playbackRate'
+import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playbackRate'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
 export type { AppAuthTokens } from './appAuthStorage'
@@ -704,6 +704,8 @@ export interface Settings {
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
+  enableDefaultPlaybackRate: boolean // 启用进入视频时的默认倍速，默认关闭
+  defaultPlaybackRate: number // 默认倍速值 (0.25-5)
   playbackRateStep: number // 倍速快捷键每次调节的幅度 (0.01-1)
   customFullscreenWheelVolume: boolean // 全屏时接管滚轮音量调节
   fullscreenWheelVolumeStep: number // 全屏滚轮每格调节的音量 (1-50)
@@ -1125,6 +1127,8 @@ export const originalSettings: Settings = {
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
+  enableDefaultPlaybackRate: false, // 启用默认倍速，默认关闭
+  defaultPlaybackRate: 1, // 默认倍速值 (0.25-5)
   playbackRateStep: 0.25,
   customFullscreenWheelVolume: false,
   fullscreenWheelVolumeStep: 5,
@@ -1271,6 +1275,10 @@ export const settings = useSettingsStorage(originalSettings, {
   onReady: (value) => resolveSettingsReady(value),
   normalize: (value) => {
     const record = value as Record<string, any>
+    if (typeof record.enableDefaultPlaybackRate !== 'boolean')
+      record.enableDefaultPlaybackRate = originalSettings.enableDefaultPlaybackRate
+    record.defaultPlaybackRate = normalizePlaybackRate(record.defaultPlaybackRate)
+    if (record.rememberPlaybackRate === true) record.enableDefaultPlaybackRate = false
     record.playbackRateStep = normalizePlaybackRateStep(record.playbackRateStep)
     record.fullscreenWheelVolumeStep = normalizeWheelVolumeStep(record.fullscreenWheelVolumeStep)
     record.keyboardVolumeStep = normalizeKeyboardVolumeStep(record.keyboardVolumeStep)

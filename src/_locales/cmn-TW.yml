@@ -1017,8 +1017,14 @@ settings:
   keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   keep_watch_later_video_default_mode: 稍後觀看保持預設模式
   keep_watch_later_video_default_mode_desc: 啟用後，稍後觀看中的影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
+  enable_default_playback_rate: 預設倍速
+  enable_default_playback_rate_desc: 開啟後，每次進入影片自動套用下方設定的倍速；播放中手動修改僅對目前影片生效。
+  enable_default_playback_rate_disabled_desc: 已開啟「記住倍速」，無法同時開啟預設倍速；如需使用請先關閉「記住倍速」。
+  default_playback_rate: 預設播放倍速
+  default_playback_rate_desc: 輸入 0.25–5 倍；每次進入影片時自動套用此倍速。
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住你上次設定的倍速，並在下次打開影片時自動套用
+  remember_playback_rate_disabled_default_notice: 已開啟「記住倍速」，並自動關閉「預設倍速」。
   custom_playback_rate: 自訂播放倍速
   custom_playback_rate_desc: 輸入 0.25–5 倍，套用至最近造訪的影片分頁。開啟「記住倍速」後會儲存此值。
   custom_playback_rate_apply: 套用至影片

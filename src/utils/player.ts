@@ -47,11 +47,15 @@ const _videoClassTag = {
 const monitoredDanmakuSwitches = new WeakSet<HTMLInputElement>()
 const monitoredCaptionControls = new WeakSet<HTMLElement>()
 const monitoredPlaybackRateVideos = new WeakSet<HTMLVideoElement>()
+const PLAYBACK_RATE_MENU_ITEM_SELECTOR =
+  '.bpx-player-ctrl-playbackrate-menu-item, .bilibili-player-video-btn-speed-menu-list, .squirtle-speed-select-list-item'
 const VIDEO_RETRY_MAX_ATTEMPTS = 30
 let applyRateRetryCount = 0
 let applyRateRetryTimer: number | undefined
 let rateMonitorRetryCount = 0
 let rateMonitorRetryTimer: number | undefined
+let manualPlaybackRateNavigationKey: string | null = null
+let playbackRateManualClickMonitored = false
 let autoExitRetryCount = 0
 let autoExitRetryTimer: number | undefined
 
@@ -1277,6 +1281,66 @@ export function toggleCaption() {
   showState(t('player_state.no_captions'))
 }
 
+function getPlaybackRateNavigationKey(url = location.href): string {
+  try {
+    const urlObj = new URL(url)
+    const semanticParams = ['avid', 'bvid', 'cid', 'ep_id', 'oid', 'p', 'page', 'season_id']
+    const params = new URLSearchParams()
+    for (const param of semanticParams) {
+      const value = urlObj.searchParams.get(param)
+      if (value !== null) params.set(param, value)
+    }
+    const query = params.toString()
+    return `${urlObj.origin}${urlObj.pathname}${query ? `?${query}` : ''}`
+  } catch {
+    return url.split('?')[0].split('#')[0]
+  }
+}
+
+function isDefaultPlaybackRateActive(): boolean {
+  return !settings.value.rememberPlaybackRate && settings.value.enableDefaultPlaybackRate
+}
+
+function ensurePlaybackRateManualClickMonitor() {
+  if (playbackRateManualClickMonitored) return
+  playbackRateManualClickMonitored = true
+  document.addEventListener(
+    'click',
+    (event) => {
+      if (!event.isTrusted || !isDefaultPlaybackRateActive() || !(event.target instanceof Element))
+        return
+      if (!event.target.closest(PLAYBACK_RATE_MENU_ITEM_SELECTOR)) return
+      manualPlaybackRateNavigationKey = getPlaybackRateNavigationKey()
+    },
+    true,
+  )
+}
+
+function applyConfiguredPlaybackRate(video: HTMLVideoElement) {
+  if (settings.value.rememberPlaybackRate) {
+    // 确保倍速值在有效范围内
+    const savedRate = settings.value.savedPlaybackRate
+    if (savedRate >= 0.25 && savedRate <= 5) {
+      // B 站站内切换推荐视频时会复用 video 元素并重新加载媒体资源。
+      // 媒体加载会将 playbackRate 恢复为 defaultPlaybackRate，因此两者都要同步。
+      video.defaultPlaybackRate = savedRate
+      video.playbackRate = savedRate
+    }
+    return
+  }
+
+  if (!settings.value.enableDefaultPlaybackRate) return
+
+  const currentKey = getPlaybackRateNavigationKey()
+  if (manualPlaybackRateNavigationKey === currentKey) return
+  // 切换到新视频后清除上一条视频的手动覆盖标记，避免返回旧视频时误跳过默认倍速。
+  manualPlaybackRateNavigationKey = null
+
+  const defaultRate = normalizePlaybackRate(settings.value.defaultPlaybackRate)
+  if (video.defaultPlaybackRate !== defaultRate) video.defaultPlaybackRate = defaultRate
+  if (video.playbackRate !== defaultRate) video.playbackRate = defaultRate
+}
+
 // 改变播放速度
 export function setPlaybackRate(rate: number, video = getVideoElement()): boolean {
   if (!video || !Number.isFinite(rate)) return false
@@ -1285,6 +1349,9 @@ export function setPlaybackRate(rate: number, video = getVideoElement()): boolea
   if (settings.value.rememberPlaybackRate) {
     video.defaultPlaybackRate = nextRate
     settings.value.savedPlaybackRate = nextRate
+  } else if (settings.value.enableDefaultPlaybackRate) {
+    manualPlaybackRateNavigationKey = getPlaybackRateNavigationKey()
+    video.defaultPlaybackRate = nextRate
   }
   return true
 }
@@ -1308,7 +1375,7 @@ export function resetPlaybackRate() {
   }
 }
 
-// 静默恢复记住的倍速，播放器初始化时可能多次调用。
+// 静默恢复记住的倍速或应用默认倍速，播放器初始化时可能多次调用。
 export function applyRememberedPlaybackRate() {
   if (applyRateRetryTimer !== undefined) window.clearTimeout(applyRateRetryTimer)
   applyRateRetryTimer = undefined
@@ -1317,7 +1384,7 @@ export function applyRememberedPlaybackRate() {
 }
 
 function tryApplyRememberedPlaybackRate() {
-  if (!settings.value.rememberPlaybackRate) {
+  if (!settings.value.rememberPlaybackRate && !settings.value.enableDefaultPlaybackRate) {
     applyRateRetryCount = 0
     return
   }
@@ -1334,14 +1401,7 @@ function tryApplyRememberedPlaybackRate() {
   }
   applyRateRetryCount = 0
 
-  // 确保倍速值在有效范围内
-  const savedRate = settings.value.savedPlaybackRate
-  if (savedRate >= 0.25 && savedRate <= 5) {
-    // B 站站内切换推荐视频时会复用 video 元素并重新加载媒体资源。
-    // 媒体加载会将 playbackRate 恢复为 defaultPlaybackRate，因此两者都要同步。
-    video.defaultPlaybackRate = savedRate
-    video.playbackRate = savedRate
-  }
+  applyConfiguredPlaybackRate(video)
 }
 
 // 监听播放器倍速变化并记录（监听所有倍速变化，包括播放器UI操作）
@@ -1353,10 +1413,12 @@ export function startPlaybackRateMonitoring() {
 }
 
 function tryStartPlaybackRateMonitoring() {
-  if (!settings.value.rememberPlaybackRate) {
+  if (!settings.value.rememberPlaybackRate && !settings.value.enableDefaultPlaybackRate) {
     rateMonitorRetryCount = 0
     return
   }
+
+  ensurePlaybackRateManualClickMonitor()
 
   const video = getVideoElement()
   if (!video) {
@@ -1387,19 +1449,21 @@ function tryStartPlaybackRateMonitoring() {
         // 让同一个 video 加载下一条推荐视频时沿用当前倍速，而不是回落到 1。
         if (video.defaultPlaybackRate !== currentRate) video.defaultPlaybackRate = currentRate
       }
+    } else if (
+      settings.value.enableDefaultPlaybackRate &&
+      manualPlaybackRateNavigationKey === getPlaybackRateNavigationKey()
+    ) {
+      const currentRate = video.playbackRate
+      // 当前视频已由用户手动改速时同步 defaultPlaybackRate，避免切换清晰度等媒体重载把速度拉回默认倍速。
+      if (currentRate >= 0.25 && currentRate <= 5 && video.defaultPlaybackRate !== currentRate)
+        video.defaultPlaybackRate = currentRate
     }
   })
 
   // 部分播放器更新会替换媒体资源但保留 video 节点；元数据就绪后再同步一次，
   // 覆盖播放器初始化期间对 playbackRate 的重设。
   video.addEventListener('loadedmetadata', () => {
-    if (!settings.value.rememberPlaybackRate) return
-
-    const savedRate = settings.value.savedPlaybackRate
-    if (savedRate < 0.25 || savedRate > 5) return
-
-    video.defaultPlaybackRate = savedRate
-    video.playbackRate = savedRate
+    applyConfiguredPlaybackRate(video)
   })
 }
 

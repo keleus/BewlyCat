@@ -632,8 +632,14 @@ settings:
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   keep_watch_later_video_default_mode: 稍后再看保持默认模式
   keep_watch_later_video_default_mode_desc: 启用后，稍后再看中的视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
+  enable_default_playback_rate: 默认倍速
+  enable_default_playback_rate_desc: 开启后，每次进入视频自动应用下方设定的倍速；播放中手动修改仅对当前视频生效。
+  enable_default_playback_rate_disabled_desc: 已开启「记住倍速」，无法同时开启默认倍速；如需使用请先关闭「记住倍速」。
+  default_playback_rate: 默认播放倍速
+  default_playback_rate_desc: 输入 0.25–5 倍；每次进入视频时自动应用此倍速。
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
+  remember_playback_rate_disabled_default_notice: 已开启「记住倍速」，并自动关闭「默认倍速」。
   custom_playback_rate: 自定义播放倍速
   custom_playback_rate_desc: 输入 0.25–5 倍，应用到最近访问的视频标签页。开启「记住倍速」后会保存此值。
   custom_playback_rate_apply: 应用到视频

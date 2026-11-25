@@ -1120,10 +1120,16 @@ settings:
   keep_watch_later_video_default_mode_desc: >-
     When enabled, videos played from Watch Later will always use the default
     player mode and won't apply widescreen or fullscreen settings
+  enable_default_playback_rate: Default playback rate
+  enable_default_playback_rate_desc: Automatically apply the playback rate below whenever you open a video. Manual changes during playback only apply to the current video.
+  enable_default_playback_rate_disabled_desc: Cannot be enabled while "Remember playback rate" is turned on. Disable "Remember playback rate" first.
+  default_playback_rate: Default playback rate value
+  default_playback_rate_desc: Enter a rate from 0.25 to 5 to apply whenever you open a video.
   remember_playback_rate: Remember playback rate
   remember_playback_rate_desc: >
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
+  remember_playback_rate_disabled_default_notice: '"Remember playback rate" enabled; "Default playback rate" has been turned off.'
   custom_playback_rate: Custom playback rate
   custom_playback_rate_desc: Enter a rate from 0.25 to 5 to apply to the most recently visited video tab. Enable Remember playback rate to save it.
   custom_playback_rate_apply: Apply to video

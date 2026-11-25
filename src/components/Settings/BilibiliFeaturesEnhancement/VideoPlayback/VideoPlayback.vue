@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
@@ -21,6 +22,7 @@ import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import PlaybackRate from './PlaybackRate.vue'
 
 const { t } = useI18n()
+const toast = useToast()
 
 const bewlyWidescreenSidebarPositionOptions = computed(() => {
   return [
@@ -165,6 +167,15 @@ const showVideoQualityMemoryConfirm = ref(false)
 function updatePlaybackMemory(setting: ToggleSetting, enabled: boolean) {
   if (setting === 'rememberVideoQuality' && enabled) {
     showVideoQualityMemoryConfirm.value = true
+    return
+  }
+  if (setting === 'rememberPlaybackRate' && enabled && settings.value.enableDefaultPlaybackRate) {
+    settings.value = {
+      ...settings.value,
+      rememberPlaybackRate: true,
+      enableDefaultPlaybackRate: false,
+    }
+    toast.info(t('settings.remember_playback_rate_disabled_default_notice'))
     return
   }
   settings.value[setting] = enabled
