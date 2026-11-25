@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
@@ -261,9 +262,9 @@ async function restoreBackupWallpapers(
     let darkItem: { id: string; name: string; isLocal: true; url: string } | null = null
 
     for (const [index, entry] of backupEntries.entries()) {
-      const ref = restoredRefs[index]
-      const url = `local-wallpaper:${ref.id}`
-      const item = { ...ref, url }
+      const restoredRef = restoredRefs[index]
+      const url = `local-wallpaper:${restoredRef.id}`
+      const item = { ...restoredRef, url }
       if (entry.slot === 'light') lightItem = item
       else darkItem = item
 
