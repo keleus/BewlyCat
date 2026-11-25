@@ -18,10 +18,105 @@ interface SourceRecord {
   // 音画同步：DelayNode 延后声音，GainNode 在暂停与跳转时截断延迟线里残留的旧声音。
   delay?: { input: DelayNode; output: GainNode }
   owned: boolean
+  ownedAbort?: AbortController
+}
+
+interface DocumentPictureInPictureLike {
+  readonly window: Window | null
+  addEventListener?: (
+    type: 'enter',
+    listener: (event: Event & { window?: Window }) => void,
+    options?: AddEventListenerOptions,
+  ) => void
 }
 
 const MAX_AUDIO_DELAY_MS = 1000
 const VIDEO_SELECTOR = '.bpx-player-video-wrap video, .bilibili-player-video video'
+
+function getDocumentPictureInPicture(): DocumentPictureInPictureLike | undefined {
+  return (window as Window & { documentPictureInPicture?: DocumentPictureInPictureLike })
+    .documentPictureInPicture
+}
+
+function getPipWindow(): Window | undefined {
+  try {
+    const pipWindow = getDocumentPictureInPicture()?.window
+    if (pipWindow && !pipWindow.closed && pipWindow.document) return pipWindow
+  } catch {
+    /* Ignore closed or inaccessible Document Picture-in-Picture windows. */
+  }
+  return undefined
+}
+
+function getPlayerDocuments(): Document[] {
+  const pipDoc = getPipWindow()?.document
+  return pipDoc && pipDoc !== document ? [document, pipDoc] : [document]
+}
+
+function findPlayerVideo(): HTMLVideoElement | null {
+  for (const doc of getPlayerDocuments()) {
+    const video = doc.querySelector<HTMLVideoElement>(VIDEO_SELECTOR)
+    if (video) return video
+  }
+  return null
+}
+
+function findAllPlayerVideos(): HTMLVideoElement[] {
+  const videos: HTMLVideoElement[] = []
+  for (const doc of getPlayerDocuments()) {
+    videos.push(...Array.from(doc.querySelectorAll<HTMLVideoElement>(VIDEO_SELECTOR)))
+  }
+  return videos
+}
+
+function findNativeSettingRoot(): Element | null {
+  for (const doc of getPlayerDocuments()) {
+    const root = doc.querySelector('.bpx-player-ctrl-setting')
+    if (root) return root
+  }
+  return null
+}
+
+// 节点搬入 Document Picture-in-Picture 窗口后原型会切到新窗口 realm，不能只用主窗口的 instanceof。
+function isElement(node: unknown): node is Element {
+  if (!node || typeof node !== 'object') return false
+  if (node instanceof Element) return true
+  const view = (node as Node).ownerDocument?.defaultView as
+    | (Window & typeof globalThis)
+    | null
+    | undefined
+  return Boolean(view?.Element && node instanceof view.Element)
+}
+
+function isHtmlElement(node: unknown): node is HTMLElement {
+  if (!node || typeof node !== 'object') return false
+  if (node instanceof HTMLElement) return true
+  const view = (node as Node).ownerDocument?.defaultView as
+    | (Window & typeof globalThis)
+    | null
+    | undefined
+  return Boolean(view?.HTMLElement && node instanceof view.HTMLElement)
+}
+
+function isMediaElement(node: unknown): node is HTMLMediaElement {
+  if (!node || typeof node !== 'object') return false
+  if (node instanceof HTMLMediaElement) return true
+  const view = (node as Node).ownerDocument?.defaultView as
+    | (Window & typeof globalThis)
+    | null
+    | undefined
+  return Boolean(view?.HTMLMediaElement && node instanceof view.HTMLMediaElement)
+}
+
+function isVideoElement(node: unknown): node is HTMLVideoElement {
+  if (!node || typeof node !== 'object') return false
+  if (node instanceof HTMLVideoElement) return true
+  const view = (node as Node).ownerDocument?.defaultView as
+    | (Window & typeof globalThis)
+    | null
+    | undefined
+  return Boolean(view?.HTMLVideoElement && node instanceof view.HTMLVideoElement)
+}
 
 /** Install at document_start, before the native player captures its media element. */
 export function createLocalLoudnessController() {
@@ -62,7 +157,7 @@ export function createLocalLoudnessController() {
 
   function status(state: string, details: Record<string, number> = {}) {
     lastStatus = state
-    const video = active?.video ?? document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR)
+    const video = active?.video ?? findPlayerVideo()
     window.postMessage(
       {
         type: 'BEWLY_LOUDNESS_STATUS',
@@ -183,6 +278,9 @@ export function createLocalLoudnessController() {
   let cleanupObserverActive = false
   let hasDetachedOwned = false
   let pruneScheduled = false
+  let pipWindow: Window | undefined
+  let pipAbort: AbortController | undefined
+  let pipCleanupObserver: MutationObserver | undefined
 
   function schedulePruneOwned() {
     if (pruneScheduled || disposed) return
@@ -197,9 +295,9 @@ export function createLocalLoudnessController() {
     for (const mutation of mutations) {
       for (let i = 0; i < mutation.addedNodes.length; i++) {
         const node = mutation.addedNodes[i]
-        if (node instanceof HTMLVideoElement) return true
+        if (isVideoElement(node)) return true
         if (
-          node instanceof Element &&
+          isElement(node) &&
           node.childElementCount > 0 &&
           node.getElementsByTagName('video').length > 0
         )
@@ -209,7 +307,7 @@ export function createLocalLoudnessController() {
     return false
   }
 
-  const cleanupObserver = new MutationObserver((mutations) => {
+  function onCleanupMutations(mutations: MutationRecord[]) {
     let needsPrune = false
     for (const record of ownedConnected) {
       if (!record.video.isConnected) {
@@ -219,21 +317,54 @@ export function createLocalLoudnessController() {
     }
     if (!needsPrune && hasDetachedOwned && hasAddedVideoNode(mutations)) needsPrune = true
     if (needsPrune) schedulePruneOwned()
-  })
+  }
+
+  const cleanupObserver = new MutationObserver(onCleanupMutations)
+
+  function ensurePipCleanupObserver() {
+    if (!cleanupObserverActive || !pipWindow || pipCleanupObserver || disposed) return
+    try {
+      const pipDoc = pipWindow.document
+      if (!pipDoc) return
+      pipCleanupObserver = new MutationObserver(onCleanupMutations)
+      pipCleanupObserver.observe(pipDoc, { childList: true, subtree: true })
+    } catch {
+      pipCleanupObserver = undefined
+    }
+  }
+
+  function ensureCleanupObservers() {
+    if (!cleanupObserverActive) {
+      cleanupObserver.observe(document, { childList: true, subtree: true })
+      cleanupObserverActive = true
+    }
+    attachPipWindow(getPipWindow())
+    ensurePipCleanupObserver()
+  }
+
+  function detachPipWindow() {
+    pipCleanupObserver?.disconnect()
+    pipCleanupObserver = undefined
+    pipAbort?.abort()
+    pipAbort = undefined
+    pipWindow = undefined
+  }
 
   function pruneOwned() {
     for (const record of ownedConnected) {
       if (record.video.isConnected) continue
       if (active === record) detach()
       if (delayed === record) removeDelay()
+      record.ownedAbort?.abort()
+      record.ownedAbort = undefined
       record.source.disconnect()
       ownedConnected.delete(record)
       hasDetachedOwned = true
     }
-    // Detached media may be reinserted without another play event. Keep only the
-    // observer (no strong media references) to reconnect its minimal bypass.
+    // Detached media may be reinserted without another play event (including into Document PiP).
+    // Keep only the observer (no strong media references) to reconnect its minimal bypass.
     if (hasDetachedOwned) {
-      for (const video of Array.from(document.querySelectorAll<HTMLVideoElement>(VIDEO_SELECTOR))) {
+      for (const video of findAllPlayerVideos()) {
         const record = sources.get(video)
         if (record?.owned) reconnectOwned(record)
       }
@@ -263,17 +394,23 @@ export function createLocalLoudnessController() {
     if (!record.owned || ownedConnected.has(record)) return
     record.source.connect(record.source.context.destination)
     ownedConnected.add(record)
+    record.ownedAbort?.abort()
+    const ownedAbort = new AbortController()
+    record.ownedAbort = ownedAbort
+    // 直接监听已接管视频自身，跨 Document PiP 搬移节点后也能可靠恢复或挂起 ownedContext。
+    const syncOwnedPlayback = () => settleOwnedContext()
+    record.video.addEventListener('play', syncOwnedPlayback, { signal: ownedAbort.signal })
+    record.video.addEventListener('playing', syncOwnedPlayback, { signal: ownedAbort.signal })
+    record.video.addEventListener('pause', syncOwnedPlayback, { signal: ownedAbort.signal })
+    record.video.addEventListener('ended', syncOwnedPlayback, { signal: ownedAbort.signal })
     settleOwnedContext()
-    if (!cleanupObserverActive) {
-      cleanupObserver.observe(document, { childList: true, subtree: true })
-      cleanupObserverActive = true
-    }
+    ensureCleanupObservers()
   }
 
   // Source capture is irreversible. A small bypass survives disable;
   // DSP does not.
   function onPlay(event: Event) {
-    if (!(event.target instanceof HTMLMediaElement)) return
+    if (!isMediaElement(event.target)) return
     const record = sources.get(event.target)
     if (record?.owned) {
       reconnectOwned(record)
@@ -283,14 +420,72 @@ export function createLocalLoudnessController() {
     if (delayMs) applyDelay()
   }
   function onCanPlay(event: Event) {
-    if (!(event.target instanceof HTMLMediaElement) || event.target.paused) return
+    if (!isMediaElement(event.target) || event.target.paused) return
     if (config.enabled && !active) void reconcile()
   }
-  document.addEventListener('play', onPlay, { capture: true, signal: lifetime.signal })
-  document.addEventListener('playing', onPlay, { capture: true, signal: lifetime.signal })
-  document.addEventListener('canplay', onCanPlay, { capture: true, signal: lifetime.signal })
-  document.addEventListener('pause', settleOwnedContext, { capture: true, signal: lifetime.signal })
-  document.addEventListener('ended', settleOwnedContext, { capture: true, signal: lifetime.signal })
+  function onPointerDown() {
+    for (const record of new Set([active, delayed, ...ownedConnected])) {
+      if (record && record.video.isConnected && !record.video.paused && !record.video.ended)
+        void (record.source.context as AudioContext).resume().catch(() => {})
+    }
+  }
+  function onNativeLoudnessClick(event: Event) {
+    if (!config.enabled || !isElement(event.target)) return
+    const row = event.target.closest('.bpx-player-ctrl-setting-loudness label')
+    const input = row?.querySelector<HTMLInputElement>('input')
+    if (input && input.value !== '0') {
+      // Prevent a competing native graph from being constructed before its change handler.
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      disableNative()
+    }
+  }
+
+  function attachDocumentListeners(doc: Document, signal: AbortSignal) {
+    doc.addEventListener('play', onPlay, { capture: true, signal })
+    doc.addEventListener('playing', onPlay, { capture: true, signal })
+    doc.addEventListener('canplay', onCanPlay, { capture: true, signal })
+    doc.addEventListener('pause', settleOwnedContext, { capture: true, signal })
+    doc.addEventListener('ended', settleOwnedContext, { capture: true, signal })
+    doc.addEventListener('pointerdown', onPointerDown, { capture: true, passive: true, signal })
+    doc.addEventListener('click', onNativeLoudnessClick, { capture: true, signal })
+  }
+
+  function attachPipWindow(nextWindow: Window | undefined) {
+    if (disposed || !nextWindow || nextWindow === window || nextWindow === pipWindow) return
+    let pipDoc: Document
+    try {
+      if (nextWindow.closed || !nextWindow.document) return
+      pipDoc = nextWindow.document
+    } catch {
+      return
+    }
+    detachPipWindow()
+    pipWindow = nextWindow
+    const abortController = new AbortController()
+    pipAbort = abortController
+    attachDocumentListeners(pipDoc, abortController.signal)
+    ensurePipCleanupObserver()
+    const handlePipClose = () => {
+      if (pipWindow !== nextWindow) return
+      detachPipWindow()
+      if (disposed) return
+      // 等宿主页面的 pagehide 监听器把播放器搬回主文档后再同步状态。
+      queueMicrotask(() => {
+        if (disposed) return
+        pruneOwned()
+        if (config.enabled) void reconcile()
+        if (delayMs) applyDelay()
+      })
+    }
+    nextWindow.addEventListener('pagehide', handlePipClose, {
+      once: true,
+      signal: abortController.signal,
+    })
+    schedulePruneOwned()
+  }
+
+  attachDocumentListeners(document, lifetime.signal)
   document.addEventListener(
     'visibilitychange',
     () => {
@@ -300,51 +495,37 @@ export function createLocalLoudnessController() {
     },
     { signal: lifetime.signal },
   )
-  document.addEventListener(
-    'pointerdown',
-    () => {
-      for (const record of new Set([active, delayed])) {
-        if (record && !record.video.paused)
-          void (record.source.context as AudioContext).resume().catch(() => {})
-      }
-    },
-    { capture: true, passive: true, signal: lifetime.signal },
-  )
-  document.addEventListener(
-    'click',
+  const documentPip = getDocumentPictureInPicture()
+  documentPip?.addEventListener?.(
+    'enter',
     (event) => {
-      if (!config.enabled || !(event.target instanceof Element)) return
-      const row = event.target.closest('.bpx-player-ctrl-setting-loudness label')
-      const input = row?.querySelector<HTMLInputElement>('input')
-      if (input && input.value !== '0') {
-        // Prevent a competing native graph from being constructed before its change handler.
-        event.preventDefault()
-        event.stopImmediatePropagation()
-        disableNative()
-      }
+      attachPipWindow(event.window ?? getPipWindow())
     },
-    { capture: true, signal: lifetime.signal },
+    { signal: lifetime.signal },
   )
+  attachPipWindow(getPipWindow())
 
   function disableNative() {
-    const root = document.querySelector('.bpx-player-ctrl-setting')
-    const off = root?.querySelector<HTMLInputElement>(
+    const root = findNativeSettingRoot()
+    if (!root) return false
+    const off = root.querySelector<HTMLInputElement>(
       '.bpx-player-ctrl-setting-loudness input[value="0"]',
     )
     if (!off) return false
     if (off.checked) return true
     // Use Bilibili's own UI handlers, including persistence and audio graph changes.
     const settingsButton = root as HTMLElement
-    const more = root?.querySelector<HTMLElement>('.bpx-player-ctrl-setting-more')
+    const more = root.querySelector<HTMLElement>('.bpx-player-ctrl-setting-more')
     if (!more) return false
-    const focused = document.activeElement
+    const ownerDoc = root.ownerDocument
+    const focused = ownerDoc.activeElement
     settingsButton.click()
     more.click()
     off.click()
     // Close the popover through its native mouse-leave handler.
-    settingsButton.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }))
-    if (focused instanceof HTMLElement && focused.isConnected)
-      focused.focus({ preventScroll: true })
+    const MouseEventCtor = ownerDoc.defaultView?.MouseEvent ?? MouseEvent
+    settingsButton.dispatchEvent(new MouseEventCtor('mouseleave', { bubbles: false }))
+    if (isHtmlElement(focused) && focused.isConnected) focused.focus({ preventScroll: true })
     return off.checked
   }
 
@@ -371,7 +552,8 @@ export function createLocalLoudnessController() {
 
   async function reconcile() {
     if (disposed || hidden || !config.enabled || pending) return
-    const video = document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR)
+    attachPipWindow(getPipWindow())
+    const video = findPlayerVideo()
     if (active && (active.video !== video || !video?.isConnected)) detach()
     if (!video || failed.has(video)) {
       status(video ? 'error' : 'waiting')
@@ -414,7 +596,7 @@ export function createLocalLoudnessController() {
         !config.enabled ||
         hidden ||
         !video.isConnected ||
-        document.querySelector(VIDEO_SELECTOR) !== video
+        findPlayerVideo() !== video
       )
         return
       // Native player may have captured the element while addModule was awaiting.
@@ -557,7 +739,7 @@ export function createLocalLoudnessController() {
 
   function applyDelay() {
     if (disposed || hidden) return
-    const video = document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR)
+    const video = findPlayerVideo()
     if (delayed && (!delayMs || delayed.video !== video || !video?.isConnected)) removeDelay()
     if (!delayMs) {
       delayStatus('off')
@@ -680,11 +862,16 @@ export function createLocalLoudnessController() {
       return
     }
     disposed = true
+    detachPipWindow()
     cleanupObserver.disconnect()
     cleanupObserverActive = false
     hasDetachedOwned = false
     lifetime.abort()
-    for (const record of ownedConnected) record.source.disconnect()
+    for (const record of ownedConnected) {
+      record.ownedAbort?.abort()
+      record.ownedAbort = undefined
+      record.source.disconnect()
+    }
     ownedConnected.clear()
     void ownedContext?.close().catch(() => {})
     if (AudioContext.prototype.createMediaElementSource === patchedCreate)
