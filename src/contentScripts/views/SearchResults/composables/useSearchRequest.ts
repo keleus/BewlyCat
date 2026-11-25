@@ -1,6 +1,7 @@
 import { onScopeDispose, ref } from 'vue'
 
 import type { ApiRequestOptions } from '~/utils/api'
+import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { i18n } from '~/utils/i18n'
 
 import type { SearchCategory } from '../types'
@@ -91,6 +92,11 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
       // 检查请求是否已过期
       if (activeRequestToken !== requestToken) return false
 
+      if (isBilibiliRiskControl(response)) {
+        error.value = i18n.global.t('search.risk_control')
+        return false
+      }
+
       if (!response || response.code !== 0) {
         error.value = i18n.global.t('search.search_failed')
         return false
@@ -103,7 +109,9 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     } catch (err) {
       if (activeRequestToken !== requestToken) return false
       console.error(`Search error for ${category}:`, err)
-      error.value = i18n.global.t('search.search_error')
+      error.value = isBilibiliRiskControl(err)
+        ? i18n.global.t('search.risk_control')
+        : i18n.global.t('search.search_error')
       return false
     } finally {
       if (activeRequestToken === requestToken) {

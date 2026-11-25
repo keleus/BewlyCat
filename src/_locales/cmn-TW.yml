@@ -1799,6 +1799,7 @@ search:
   identity_login: 登入
   identity_guest: 訪客
   search_error: 搜尋發生錯誤，請稍後再試
+  risk_control: 搜尋觸發了 B 站風控，請稍後再試
   work: '稿件 {index}'
   month: '{month}月'
   year: '{year}年'

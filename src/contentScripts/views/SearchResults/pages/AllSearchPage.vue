@@ -609,6 +609,11 @@ function getVideoListItemKey(item: any) {
     <!-- Loading -->
     <Loading v-if="isLoading && !results" />
 
+    <!-- Error -->
+    <div v-else-if="error && (!results || paginationMode === 'pagination')" class="error-message">
+      {{ error }}
+    </div>
+
     <!-- Results -->
     <div v-else class="all-results" space-y-6>
       <!-- 活动和游戏 -->
@@ -979,9 +984,10 @@ function getVideoListItemKey(item: any) {
           :loading="isLoading"
           :no-more-content="!hasMore"
           :request-failed="!!error"
+          :request-failed-description="error || undefined"
           :show-preview="true"
           :show-watcher-later="true"
-          :empty-description="t('common.no_data')"
+          :empty-description="error ? undefined : t('common.no_data')"
           :show-loading-more-skeleton="false"
           :show-load-more-indicator="paginationMode === 'scroll' && videoList.length > 0 && hasMore"
           enable-row-padding
@@ -1006,6 +1012,12 @@ function getVideoListItemKey(item: any) {
 .all-search-page {
   width: 100%;
   padding-bottom: 2rem;
+}
+
+.error-message {
+  padding: 2rem;
+  text-align: center;
+  color: var(--bew-error-color);
 }
 
 .activity-card {

@@ -1784,6 +1784,7 @@ search:
   identity_login: 登录
   identity_guest: 游客
   search_error: 搜索出错，请稍后重试
+  risk_control: 搜索触发了 B 站风控，请稍后再试
   work: '稿件 {index}'
   month: '{month}月'
   year: '{year}年'

@@ -104,6 +104,9 @@ initWbiKeys().catch((error) => {
   console.error('[BewlyCat] WBI keys initialization error:', error)
 })
 
+const BILIBILI_SEARCH_GET_URL_PATTERN =
+  /^https:\/\/api\.bilibili\.com\/x\/web-interface\/(?:wbi\/)?search\//
+
 function isExtensionUri(url: string) {
   return new URL(url).origin === new URL(browser.runtime.getURL('')).origin
 }
@@ -173,16 +176,44 @@ if (isFirefoxBuild) {
             header.name.toLowerCase() === 'firefox-multi-account-cookie',
         )
 
+        const isExtensionSearchGet =
+          extensionUri &&
+          details.method?.toUpperCase() === 'GET' &&
+          BILIBILI_SEARCH_GET_URL_PATTERN.test(details.url)
+        let hasOrigin = false
+        let hasReferer = false
+
         for (const header of details.requestHeaders) {
           const headerName = header.name.toLowerCase()
           if (headerName === 'firefox-multi-account-cookie') continue
           if (multiAccountCookieHeader && headerName === 'cookie') continue
-          if (headerName === 'origin' || headerName === 'referer')
+          if (headerName === 'origin') {
+            hasOrigin = true
             requestHeaders.push({
               name: header.name,
               value: extensionUri ? 'https://www.bilibili.com' : url.origin,
             })
-          else requestHeaders.push(header)
+          } else if (headerName === 'referer') {
+            hasReferer = true
+            requestHeaders.push({
+              name: header.name,
+              value: isExtensionSearchGet
+                ? 'https://www.bilibili.com/'
+                : extensionUri
+                  ? 'https://www.bilibili.com'
+                  : url.origin,
+            })
+          } else {
+            requestHeaders.push(header)
+          }
+        }
+
+        // 与 assets/rules.json 中 Chrome DNR 规则保持一致：
+        // Firefox 后台 GET 搜索请求缺失 Origin/Referer 时主动补齐，避免触发风控。
+        if (isExtensionSearchGet) {
+          if (!hasOrigin) requestHeaders.push({ name: 'Origin', value: 'https://www.bilibili.com' })
+          if (!hasReferer)
+            requestHeaders.push({ name: 'Referer', value: 'https://www.bilibili.com/' })
         }
 
         if (multiAccountCookieHeader)

@@ -1862,6 +1862,7 @@ search:
   identity_login: Signed in
   identity_guest: Guest
   search_error: An error occurred while searching. Please try again later.
+  risk_control: Search triggered Bilibili's risk control. Please try again later.
   work: 'Work {index}'
   month: 'Month {month}'
   year: '{year}'
