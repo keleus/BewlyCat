@@ -41,10 +41,14 @@ const SCROLL_THROTTLE_MS = 180
 const VIEWPORT_MARGIN_PX = 160
 const VIEWPORT_ROOT_MARGIN = `${VIEWPORT_MARGIN_PX}px 0px`
 
-const SPARKLES_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>'
-const SPARKLES_SM_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>'
-const FILTER_SVG = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>'
-const REFRESH_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>'
+const SPARKLES_SVG =
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>'
+const SPARKLES_SM_SVG =
+  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>'
+const FILTER_SVG =
+  '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>'
+const REFRESH_SVG =
+  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>'
 
 export const COMMENT_AI_FILTER_HEADER_CSS = `
   .${TOOLBAR_CLASS} {
@@ -338,8 +342,11 @@ export const COMMENT_AI_FILTER_RENDERER_CSS = `
 
 function findEnclosingThreadRenderer(renderer: HTMLElement): HTMLElement | null {
   const rootNode = renderer.getRootNode?.()
-  if (rootNode instanceof ShadowRoot && rootNode.host instanceof HTMLElement
-    && rootNode.host.localName === 'bili-comment-thread-renderer') {
+  if (
+    rootNode instanceof ShadowRoot &&
+    rootNode.host instanceof HTMLElement &&
+    rootNode.host.localName === 'bili-comment-thread-renderer'
+  ) {
     return rootNode.host
   }
   return null
@@ -371,10 +378,13 @@ export function createNativeCommentAiFilterController(options: {
   const dismissedIds = new Set<string>()
   const inFlightIds = new Set<string>()
   const pendingQueue = new Map<string, CommentAiFilterInputItem>()
-  const pendingRequests = new Map<string, {
-    ids: string[]
-    generation: number
-  }>()
+  const pendingRequests = new Map<
+    string,
+    {
+      ids: string[]
+      generation: number
+    }
+  >()
 
   let paused = false
   let lastError = ''
@@ -389,12 +399,10 @@ export function createNativeCommentAiFilterController(options: {
   }
 
   function ensureObserved(renderer: HTMLElement) {
-    if (!viewportObserver)
-      return
+    if (!viewportObserver) return
     const nextTarget = getRendererMeasureTarget(renderer)
     const prevTarget = observedTargetByRenderer.get(renderer)
-    if (prevTarget === nextTarget)
-      return
+    if (prevTarget === nextTarget) return
     if (prevTarget) {
       viewportObserver.unobserve(prevTarget)
       rendererByObservedTarget.delete(prevTarget)
@@ -419,7 +427,8 @@ export function createNativeCommentAiFilterController(options: {
       (entries) => {
         let visibilityChanged = false
         for (const entry of entries) {
-          const renderer = rendererByObservedTarget.get(entry.target) ?? (entry.target as HTMLElement)
+          const renderer =
+            rendererByObservedTarget.get(entry.target) ?? (entry.target as HTMLElement)
           if (!renderer.isConnected) {
             unobserveRenderer(renderer)
             continue
@@ -431,15 +440,12 @@ export function createNativeCommentAiFilterController(options: {
               visibilityChanged = true
             }
             const meta = metaByRenderer.get(renderer)
-            if (meta && config.enabled && !paused && config.autoScan)
-              queueCommentForScan(meta)
-          }
-          else if (visibleRenderers.delete(renderer)) {
+            if (meta && config.enabled && !paused && config.autoScan) queueCommentForScan(meta)
+          } else if (visibleRenderers.delete(renderer)) {
             visibilityChanged = true
           }
         }
-        if (visibilityChanged && config.enabled)
-          refreshToolbars()
+        if (visibilityChanged && config.enabled) refreshToolbars()
       },
       {
         rootMargin: VIEWPORT_ROOT_MARGIN,
@@ -449,29 +455,27 @@ export function createNativeCommentAiFilterController(options: {
   }
 
   function isRendererInViewport(renderer: HTMLElement): boolean {
-    if (visibleRenderers.has(renderer))
-      return true
+    if (visibleRenderers.has(renderer)) return true
     const target = getRendererMeasureTarget(renderer)
     const rect = target.getBoundingClientRect()
-    if (rect.width === 0 && rect.height === 0)
-      return false
-    return rect.bottom >= -VIEWPORT_MARGIN_PX
-      && rect.top <= window.innerHeight + VIEWPORT_MARGIN_PX
-      && rect.right >= 0
-      && rect.left <= window.innerWidth
+    if (rect.width === 0 && rect.height === 0) return false
+    return (
+      rect.bottom >= -VIEWPORT_MARGIN_PX &&
+      rect.top <= window.innerHeight + VIEWPORT_MARGIN_PX &&
+      rect.right >= 0 &&
+      rect.left <= window.innerWidth
+    )
   }
 
   // 兜底监听页面及任意嵌套滚动容器（如宽屏侧栏、固定高度楼中楼），避免滚动加载后漏检。
   function scanVisibleRenderersOnScroll() {
     scrollCheckTimer = undefined
-    if (!config.enabled || paused)
-      return
+    if (!config.enabled || paused) return
     pruneDisconnected()
     let queued = false
     for (const renderer of renderers) {
       ensureObserved(renderer)
-      if (!isRendererInViewport(renderer))
-        continue
+      if (!isRendererInViewport(renderer)) continue
       visibleRenderers.add(renderer)
       const meta = metaByRenderer.get(renderer)
       if (meta && config.autoScan) {
@@ -479,13 +483,11 @@ export function createNativeCommentAiFilterController(options: {
         queued = true
       }
     }
-    if (!queued)
-      refreshToolbars()
+    if (!queued) refreshToolbars()
   }
 
   function scheduleScrollViewportCheck() {
-    if (!config.enabled || paused || scrollCheckTimer)
-      return
+    if (!config.enabled || paused || scrollCheckTimer) return
     scrollCheckTimer = setTimeout(scanVisibleRenderersOnScroll, SCROLL_THROTTLE_MS)
   }
 
@@ -494,8 +496,7 @@ export function createNativeCommentAiFilterController(options: {
 
   function pruneDisconnected() {
     for (const header of headers) {
-      if (!header.isConnected)
-        headers.delete(header)
+      if (!header.isConnected) headers.delete(header)
     }
     for (const renderer of renderers) {
       if (!renderer.isConnected) {
@@ -506,8 +507,7 @@ export function createNativeCommentAiFilterController(options: {
   }
 
   function isEligibleMeta(meta: NativeCommentMeta): boolean {
-    if (meta.isReply && !config.includeReplies)
-      return false
+    if (meta.isReply && !config.includeReplies) return false
     return Boolean(normalizeCommentTextForAiFilter(meta.text))
   }
 
@@ -520,8 +520,7 @@ export function createNativeCommentAiFilterController(options: {
 
     for (const renderer of renderers) {
       const meta = metaByRenderer.get(renderer)
-      if (!meta || !isEligibleMeta(meta) || seen.has(meta.rpid))
-        continue
+      if (!meta || !isEligibleMeta(meta) || seen.has(meta.rpid)) continue
       seen.add(meta.rpid)
       eligibleCount += 1
 
@@ -529,8 +528,7 @@ export function createNativeCommentAiFilterController(options: {
       if (!verdict) {
         if (!inFlightIds.has(meta.rpid) && isRendererInViewport(renderer))
           visibleUnscannedCount += 1
-      }
-      else if (verdict.lowQuality && !dismissedIds.has(meta.rpid)) {
+      } else if (verdict.lowQuality && !dismissedIds.has(meta.rpid)) {
         flaggedCount += 1
       }
     }
@@ -556,8 +554,7 @@ export function createNativeCommentAiFilterController(options: {
     errorMessage?: string,
   ) {
     const root = renderer.shadowRoot
-    if (!root)
-      return
+    if (!root) return
 
     const existing = root.querySelector<HTMLElement>(`.${STATUS_CLASS}`)
     if (!state) {
@@ -574,21 +571,16 @@ export function createNativeCommentAiFilterController(options: {
 
     if (!el) {
       el = document.createElement(needButton ? 'button' : 'span')
-      if (el instanceof HTMLButtonElement)
-        el.type = 'button'
+      if (el instanceof HTMLButtonElement) el.type = 'button'
       const userInfo = root.querySelector('bili-comment-user-info')
       const header = root.querySelector('#header')
-      if (userInfo)
-        userInfo.insertAdjacentElement('afterend', el)
-      else if (header)
-        header.appendChild(el)
-      else
-        return
+      if (userInfo) userInfo.insertAdjacentElement('afterend', el)
+      else if (header) header.appendChild(el)
+      else return
     }
 
     const sig = `${meta.rpid}|${state}|${errorMessage ?? ''}`
-    if (el.dataset.bewlyAiStatusSig === sig)
-      return
+    if (el.dataset.bewlyAiStatusSig === sig) return
     el.dataset.bewlyAiStatusSig = sig
 
     el.className = `${STATUS_CLASS} ${STATUS_CLASS}--${state}`
@@ -596,18 +588,15 @@ export function createNativeCommentAiFilterController(options: {
       el.innerHTML = SPARKLES_SM_SVG
       el.title = pageT('inject.ai_filter_item_analyzing')
       el.setAttribute('aria-label', el.title)
-    }
-    else if (state === 'passed') {
+    } else if (state === 'passed') {
       el.innerHTML = SPARKLES_SM_SVG
       el.title = pageT('inject.ai_filter_item_passed')
       el.setAttribute('aria-label', el.title)
-    }
-    else if (state === 'flagged') {
+    } else if (state === 'flagged') {
       el.innerHTML = FILTER_SVG
       el.title = pageT('inject.ai_filter_item_flagged')
       el.setAttribute('aria-label', el.title)
-    }
-    else if (state === 'error') {
+    } else if (state === 'error') {
       el.innerHTML = REFRESH_SVG
       el.title = errorMessage
         ? `${pageT('inject.ai_filter_item_error')} (${errorMessage})`
@@ -617,60 +606,63 @@ export function createNativeCommentAiFilterController(options: {
         event.preventDefault()
         event.stopPropagation()
         failedErrors.delete(meta.rpid)
-        sendClassifyRequest([{
-          id: meta.rpid,
-          author: meta.author,
-          text: meta.text,
-          isReply: meta.isReply,
-          likeCount: meta.likeCount,
-          hasPictures: meta.hasPictures,
-        }], true)
+        sendClassifyRequest(
+          [
+            {
+              id: meta.rpid,
+              author: meta.author,
+              text: meta.text,
+              isReply: meta.isReply,
+              likeCount: meta.likeCount,
+              hasPictures: meta.hasPictures,
+            },
+          ],
+          true,
+        )
       }
     }
   }
 
   function clearRendererDecorations(renderer: HTMLElement, keepStatus = false) {
-    const hadState = renderer.hasAttribute(ATTR_FILTERED)
-      || renderer.hasAttribute(ATTR_EXPANDED)
-      || renderer.hasAttribute(ATTR_HIDDEN)
+    const hadState =
+      renderer.hasAttribute(ATTR_FILTERED) ||
+      renderer.hasAttribute(ATTR_EXPANDED) ||
+      renderer.hasAttribute(ATTR_HIDDEN)
 
     renderer.removeAttribute(ATTR_FILTERED)
     renderer.removeAttribute(ATTR_EXPANDED)
     renderer.removeAttribute(ATTR_HIDDEN)
 
     const thread = findEnclosingThreadRenderer(renderer)
-    if (thread?.hasAttribute(ATTR_HIDDEN))
-      thread.removeAttribute(ATTR_HIDDEN)
+    if (thread?.hasAttribute(ATTR_HIDDEN)) thread.removeAttribute(ATTR_HIDDEN)
 
     const banner = renderer.shadowRoot?.querySelector<HTMLElement>(`.${BANNER_CLASS}`)
-    if (banner)
-      banner.remove()
+    if (banner) banner.remove()
 
-    if (!keepStatus)
-      removeStatusIndicator(renderer)
+    if (!keepStatus) removeStatusIndicator(renderer)
 
-    if (hadState || banner)
-      onLayoutChanged?.(renderer)
+    if (hadState || banner) onLayoutChanged?.(renderer)
   }
 
-  function ensureBanner(renderer: HTMLElement, verdict: CommentAiFilterVerdict, mode: CommentAiFilterDisplayMode) {
+  function ensureBanner(
+    renderer: HTMLElement,
+    verdict: CommentAiFilterVerdict,
+    mode: CommentAiFilterDisplayMode,
+  ) {
     const root = renderer.shadowRoot
-    if (!root)
-      return
+    if (!root) return
 
-    const main = root.querySelector<HTMLElement>('#main') ?? root.querySelector<HTMLElement>('#body')
-    if (!main)
-      return
+    const main =
+      root.querySelector<HTMLElement>('#main') ?? root.querySelector<HTMLElement>('#body')
+    if (!main) return
 
     let banner = root.querySelector<HTMLElement>(`.${BANNER_CLASS}`)
     if (!banner) {
       banner = document.createElement('div')
       banner.className = BANNER_CLASS
       const contentEl = main.querySelector('#content') ?? main.querySelector('bili-rich-text')
-      if (contentEl)
-        contentEl.before(banner)
-      else
-        main.appendChild(banner)
+      if (contentEl) contentEl.before(banner)
+      else main.appendChild(banner)
     }
 
     const rpid = verdict.id
@@ -682,8 +674,7 @@ export function createNativeCommentAiFilterController(options: {
     const reasonText = verdict.reason || pageT('inject.ai_filter_default_reason')
 
     const signature = `${rpid}|${mode}|${isExpanded ? '1' : '0'}|${tagLabel}|${reasonText}`
-    if (banner.dataset.bewlyAiSig === signature)
-      return
+    if (banner.dataset.bewlyAiSig === signature) return
     banner.dataset.bewlyAiSig = signature
 
     banner.textContent = ''
@@ -722,10 +713,8 @@ export function createNativeCommentAiFilterController(options: {
       toggleBtn.addEventListener('click', (event) => {
         event.preventDefault()
         event.stopPropagation()
-        if (expandedIds.has(rpid))
-          expandedIds.delete(rpid)
-        else
-          expandedIds.add(rpid)
+        if (expandedIds.has(rpid)) expandedIds.delete(rpid)
+        else expandedIds.add(rpid)
         applyVerdictToRenderer(renderer)
       })
       actions.appendChild(toggleBtn)
@@ -748,8 +737,7 @@ export function createNativeCommentAiFilterController(options: {
   }
 
   function applyVerdictToRenderer(renderer: HTMLElement) {
-    if (!renderer.isConnected)
-      return
+    if (!renderer.isConnected) return
 
     if (!config.enabled || paused) {
       clearRendererDecorations(renderer)
@@ -799,8 +787,7 @@ export function createNativeCommentAiFilterController(options: {
       if (thread && !meta.isReply) {
         thread.setAttribute(ATTR_HIDDEN, 'true')
         renderer.removeAttribute(ATTR_HIDDEN)
-      }
-      else {
+      } else {
         renderer.setAttribute(ATTR_HIDDEN, 'true')
       }
       onLayoutChanged?.(renderer)
@@ -813,8 +800,7 @@ export function createNativeCommentAiFilterController(options: {
     renderer.setAttribute(ATTR_FILTERED, effectiveMode)
     if (effectiveMode === 'collapse' && expandedIds.has(meta.rpid))
       renderer.setAttribute(ATTR_EXPANDED, 'true')
-    else
-      renderer.removeAttribute(ATTR_EXPANDED)
+    else renderer.removeAttribute(ATTR_EXPANDED)
 
     ensureBanner(renderer, verdict, effectiveMode)
     onLayoutChanged?.(renderer)
@@ -822,17 +808,15 @@ export function createNativeCommentAiFilterController(options: {
 
   function refreshAllRenderers() {
     pruneDisconnected()
-    for (const renderer of renderers)
-      applyVerdictToRenderer(renderer)
+    for (const renderer of renderers) applyVerdictToRenderer(renderer)
   }
 
   function sendClassifyRequest(items: CommentAiFilterInputItem[], bypassCache = false) {
-    if (!items.length || !config.enabled || paused)
-      return
+    if (!items.length || !config.enabled || paused) return
 
     const currentGen = generation
     const requestId = `bewly-ai-${++requestCounter}-${Date.now()}`
-    const ids = items.map(item => item.id)
+    const ids = items.map((item) => item.id)
     for (const id of ids) {
       inFlightIds.add(id)
       failedErrors.delete(id)
@@ -844,21 +828,22 @@ export function createNativeCommentAiFilterController(options: {
     refreshToolbars()
 
     try {
-      window.postMessage({
-        type: COMMENT_AI_FILTER_PAGE_REQUEST,
-        requestId,
-        comments: items,
-        bypassCache,
-        context: {
-          title: document.title,
-          source: 'native',
+      window.postMessage(
+        {
+          type: COMMENT_AI_FILTER_PAGE_REQUEST,
+          requestId,
+          comments: items,
+          bypassCache,
+          context: {
+            title: document.title,
+            source: 'native',
+          },
         },
-      }, window.location.origin)
-    }
-    catch {
+        window.location.origin,
+      )
+    } catch {
       pendingRequests.delete(requestId)
-      for (const id of ids)
-        inFlightIds.delete(id)
+      for (const id of ids) inFlightIds.delete(id)
       lastError = pageT('inject.ai_filter_error')
       refreshToolbars()
     }
@@ -882,16 +867,13 @@ export function createNativeCommentAiFilterController(options: {
   }
 
   function scheduleQueueFlush() {
-    if (flushTimer)
-      clearTimeout(flushTimer)
+    if (flushTimer) clearTimeout(flushTimer)
     flushTimer = setTimeout(flushPendingQueue, DEBOUNCE_MS)
   }
 
   function queueCommentForScan(meta: NativeCommentMeta) {
-    if (!config.enabled || paused || !isEligibleMeta(meta))
-      return
-    if (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid) || pendingQueue.has(meta.rpid))
-      return
+    if (!config.enabled || paused || !isEligibleMeta(meta)) return
+    if (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid) || pendingQueue.has(meta.rpid)) return
 
     pendingQueue.set(meta.rpid, {
       id: meta.rpid,
@@ -907,8 +889,7 @@ export function createNativeCommentAiFilterController(options: {
   }
 
   function triggerScanAll(forceRescan: boolean) {
-    if (!config.enabled)
-      return
+    if (!config.enabled) return
     paused = false
     lastError = ''
 
@@ -922,8 +903,7 @@ export function createNativeCommentAiFilterController(options: {
       dismissedIds.clear()
       try {
         window.postMessage({ type: COMMENT_AI_FILTER_PAGE_CACHE_CLEAR }, window.location.origin)
-      }
-      catch {
+      } catch {
         // ignore
       }
       refreshAllRenderers()
@@ -933,13 +913,10 @@ export function createNativeCommentAiFilterController(options: {
     const toScan: CommentAiFilterInputItem[] = []
     const seen = new Set<string>()
     for (const renderer of renderers) {
-      if (!isRendererInViewport(renderer))
-        continue
+      if (!isRendererInViewport(renderer)) continue
       const meta = metaByRenderer.get(renderer)
-      if (!meta || !isEligibleMeta(meta) || seen.has(meta.rpid))
-        continue
-      if (!forceRescan && (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid)))
-        continue
+      if (!meta || !isEligibleMeta(meta) || seen.has(meta.rpid)) continue
+      if (!forceRescan && (verdicts.has(meta.rpid) || inFlightIds.has(meta.rpid))) continue
       seen.add(meta.rpid)
       toScan.push({
         id: meta.rpid,
@@ -951,16 +928,13 @@ export function createNativeCommentAiFilterController(options: {
       })
     }
 
-    if (toScan.length > 0)
-      sendClassifyRequest(toScan, forceRescan)
-    else
-      refreshToolbars()
+    if (toScan.length > 0) sendClassifyRequest(toScan, forceRescan)
+    else refreshToolbars()
   }
 
   function renderToolbarIntoHeader(header: HTMLElement) {
     const root = header.shadowRoot
-    if (!root)
-      return
+    if (!root) return
 
     const existing = root.querySelector<HTMLElement>(`.${TOOLBAR_CLASS}`)
     if (!config.enabled) {
@@ -972,14 +946,13 @@ export function createNativeCommentAiFilterController(options: {
     if (!container) {
       container = document.createElement('div')
       container.className = TOOLBAR_CLASS
-      const navbar = root.querySelector('#navbar')
-        ?? root.querySelector('#sort-actions')?.parentElement
-        ?? root.querySelector('#top')
-        ?? root.firstElementChild
-      if (navbar)
-        navbar.appendChild(container)
-      else
-        root.appendChild(container)
+      const navbar =
+        root.querySelector('#navbar') ??
+        root.querySelector('#sort-actions')?.parentElement ??
+        root.querySelector('#top') ??
+        root.firstElementChild
+      if (navbar) navbar.appendChild(container)
+      else root.appendChild(container)
     }
 
     const stats = getStats()
@@ -992,8 +965,7 @@ export function createNativeCommentAiFilterController(options: {
       pageT('inject.ai_filter_label'),
     ].join('|')
 
-    if (container.dataset.bewlyAiSig === sig)
-      return
+    if (container.dataset.bewlyAiSig === sig) return
     container.dataset.bewlyAiSig = sig
 
     container.textContent = ''
@@ -1004,16 +976,14 @@ export function createNativeCommentAiFilterController(options: {
     const isError = !paused && !stats.scanning && Boolean(lastError)
     toggleBtn.className = `${TOOLBAR_CLASS}__btn${isError ? ' is-error' : !paused ? ' is-active' : ''}`
     toggleBtn.setAttribute('aria-pressed', String(!paused))
-    if (lastError)
-      toggleBtn.title = lastError
+    if (lastError) toggleBtn.title = lastError
 
     if (!paused && stats.scanning) {
       const spinner = document.createElement('span')
       spinner.className = `${TOOLBAR_CLASS}__spinner`
       spinner.setAttribute('aria-hidden', 'true')
       toggleBtn.appendChild(spinner)
-    }
-    else {
+    } else {
       toggleBtn.innerHTML = SPARKLES_SVG
     }
 
@@ -1037,8 +1007,7 @@ export function createNativeCommentAiFilterController(options: {
         return
       }
       paused = !paused
-      if (!paused && config.autoScan)
-        triggerScanAll(false)
+      if (!paused && config.autoScan) triggerScanAll(false)
       refreshAllRenderers()
       refreshToolbars()
     })
@@ -1047,12 +1016,16 @@ export function createNativeCommentAiFilterController(options: {
 
   function refreshToolbars() {
     pruneDisconnected()
-    for (const header of headers)
-      renderToolbarIntoHeader(header)
+    for (const header of headers) renderToolbarIntoHeader(header)
   }
 
   window.addEventListener('message', (event) => {
-    if (event.source !== window || !event.data || typeof event.data !== 'object' || Array.isArray(event.data))
+    if (
+      event.source !== window ||
+      !event.data ||
+      typeof event.data !== 'object' ||
+      Array.isArray(event.data)
+    )
       return
 
     const data = event.data as {
@@ -1063,23 +1036,19 @@ export function createNativeCommentAiFilterController(options: {
       results?: unknown
       error?: unknown
     }
-    if (data.type !== COMMENT_AI_FILTER_PAGE_RESPONSE || typeof data.requestId !== 'string')
-      return
+    if (data.type !== COMMENT_AI_FILTER_PAGE_RESPONSE || typeof data.requestId !== 'string') return
 
     const pending = pendingRequests.get(data.requestId)
-    if (!pending)
-      return
+    if (!pending) return
 
     const isPartial = data.partial === true
     if (!isPartial) {
       pendingRequests.delete(data.requestId)
-      for (const id of pending.ids)
-        inFlightIds.delete(id)
+      for (const id of pending.ids) inFlightIds.delete(id)
     }
 
     if (pending.generation !== generation) {
-      if (!isPartial)
-        refreshToolbars()
+      if (!isPartial) refreshToolbars()
       return
     }
 
@@ -1097,11 +1066,9 @@ export function createNativeCommentAiFilterController(options: {
       if (data.ok === false && typeof data.error === 'string' && data.error) {
         lastError = data.error
         for (const id of pending.ids) {
-          if (!verdicts.has(id))
-            failedErrors.set(id, data.error)
+          if (!verdicts.has(id)) failedErrors.set(id, data.error)
         }
-      }
-      else if (data.ok === true) {
+      } else if (data.ok === true) {
         lastError = ''
       }
     }
@@ -1133,14 +1100,20 @@ export function createNativeCommentAiFilterController(options: {
         return
       }
 
-      if (!wasEnabled || prevDisplayMode !== config.displayMode || prevIncludeReplies !== config.includeReplies) {
+      if (
+        !wasEnabled ||
+        prevDisplayMode !== config.displayMode ||
+        prevIncludeReplies !== config.includeReplies
+      ) {
         refreshAllRenderers()
       }
 
-      if (config.autoScan && (!wasEnabled || !prevAutoScan || (config.includeReplies && !prevIncludeReplies))) {
+      if (
+        config.autoScan &&
+        (!wasEnabled || !prevAutoScan || (config.includeReplies && !prevIncludeReplies))
+      ) {
         triggerScanAll(false)
-      }
-      else {
+      } else {
         refreshToolbars()
       }
     },
@@ -1161,16 +1134,14 @@ export function createNativeCommentAiFilterController(options: {
       const prevMeta = metaByRenderer.get(renderer)
       metaByRenderer.set(renderer, meta)
 
-      if (prevMeta && prevMeta.rpid !== meta.rpid)
-        clearRendererDecorations(renderer)
+      if (prevMeta && prevMeta.rpid !== meta.rpid) clearRendererDecorations(renderer)
 
       applyVerdictToRenderer(renderer)
 
       // 仅对当前处于可视范围内的评论自动入队，滚动进入视口时再由 IntersectionObserver / 滚动兜底触发。
       if (config.enabled && !paused && config.autoScan && isRendererInViewport(renderer))
         queueCommentForScan(meta)
-      else if (config.enabled)
-        refreshToolbars()
+      else if (config.enabled) refreshToolbars()
     },
 
     onNavigation() {

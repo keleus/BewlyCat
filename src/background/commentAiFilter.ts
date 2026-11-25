@@ -34,35 +34,39 @@ let indexTranslateHeaderRuleReady: Promise<void> | null = null
  * 用仅作用于非标签页（后台自身）的会话规则把 Origin/Referer 改写为目标站，避免 412。
  */
 function ensureIndexTranslateHeaderRule(): Promise<void> {
-  // eslint-disable-next-line node/prefer-global/process
-  if (process.env.FIREFOX || typeof browser.declarativeNetRequest?.updateSessionRules !== 'function')
+  if (
+    process.env.FIREFOX ||
+    typeof browser.declarativeNetRequest?.updateSessionRules !== 'function'
+  )
     return Promise.resolve()
 
-  indexTranslateHeaderRuleReady ??= browser.declarativeNetRequest.updateSessionRules({
-    removeRuleIds: [INDEX_TRANSLATE_HEADER_RULE_ID],
-    addRules: [
-      {
-        id: INDEX_TRANSLATE_HEADER_RULE_ID,
-        priority: 2,
-        action: {
-          type: 'modifyHeaders',
-          requestHeaders: [
-            { header: 'origin', operation: 'set', value: INDEX_TRANSLATE_ORIGIN },
-            { header: 'referer', operation: 'set', value: `${INDEX_TRANSLATE_ORIGIN}/` },
-          ],
+  indexTranslateHeaderRuleReady ??= browser.declarativeNetRequest
+    .updateSessionRules({
+      removeRuleIds: [INDEX_TRANSLATE_HEADER_RULE_ID],
+      addRules: [
+        {
+          id: INDEX_TRANSLATE_HEADER_RULE_ID,
+          priority: 2,
+          action: {
+            type: 'modifyHeaders',
+            requestHeaders: [
+              { header: 'origin', operation: 'set', value: INDEX_TRANSLATE_ORIGIN },
+              { header: 'referer', operation: 'set', value: `${INDEX_TRANSLATE_ORIGIN}/` },
+            ],
+          },
+          condition: {
+            urlFilter: '||index-translate.bilibili.com',
+            resourceTypes: ['xmlhttprequest'],
+            requestMethods: ['post'],
+            tabIds: [-1],
+          },
         },
-        condition: {
-          urlFilter: '||index-translate.bilibili.com',
-          resourceTypes: ['xmlhttprequest'],
-          requestMethods: ['post'],
-          tabIds: [-1],
-        },
-      },
-    ],
-  }).catch((error) => {
-    indexTranslateHeaderRuleReady = null
-    console.warn('[BewlyCat] Failed to register Index-Translate header rule:', error)
-  })
+      ],
+    })
+    .catch((error) => {
+      indexTranslateHeaderRuleReady = null
+      console.warn('[BewlyCat] Failed to register Index-Translate header rule:', error)
+    })
 
   return indexTranslateHeaderRuleReady
 }
@@ -73,8 +77,7 @@ function parseStoredObject(value: unknown): Record<string, unknown> {
       const parsed: unknown = JSON.parse(value)
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
         return parsed as Record<string, unknown>
-    }
-    catch {
+    } catch {
       return {}
     }
   }
@@ -90,31 +93,38 @@ async function readCommentAiFilterConfig(
   const settingsObj = parseStoredObject(stored.settings)
 
   const base: CommentAiFilterConfigSnapshot = {
-    dimensions: normalizeCommentAiFilterDimensions(settingsObj.commentAiFilterDimensions ?? COMMENT_AI_FILTER_DEFAULT_DIMENSIONS),
-    customPrompt: typeof settingsObj.commentAiFilterCustomPrompt === 'string'
-      ? settingsObj.commentAiFilterCustomPrompt.trim()
-      : '',
+    dimensions: normalizeCommentAiFilterDimensions(
+      settingsObj.commentAiFilterDimensions ?? COMMENT_AI_FILTER_DEFAULT_DIMENSIONS,
+    ),
+    customPrompt:
+      typeof settingsObj.commentAiFilterCustomPrompt === 'string'
+        ? settingsObj.commentAiFilterCustomPrompt.trim()
+        : '',
   }
 
-  if (!override)
-    return base
+  if (!override) return base
 
   return {
-    dimensions: override.dimensions !== undefined ? normalizeCommentAiFilterDimensions(override.dimensions) : base.dimensions,
-    customPrompt: typeof override.customPrompt === 'string' ? override.customPrompt.trim() : base.customPrompt,
+    dimensions:
+      override.dimensions !== undefined
+        ? normalizeCommentAiFilterDimensions(override.dimensions)
+        : base.dimensions,
+    customPrompt:
+      typeof override.customPrompt === 'string' ? override.customPrompt.trim() : base.customPrompt,
   }
 }
 
-function resolveEndpoint(): {
-  url: string
-  model: string
-  apiKey: string
-} | {
-  error: string
-} {
+function resolveEndpoint():
+  | {
+      url: string
+      model: string
+      apiKey: string
+    }
+  | {
+      error: string
+    } {
   const url = resolveChatCompletionsUrl(COMMENT_AI_FILTER_INDEX_TRANSLATE_BASE_URL)
-  if (!url)
-    return { error: 'Failed to resolve Index-Translate endpoint URL.' }
+  if (!url) return { error: 'Failed to resolve Index-Translate endpoint URL.' }
 
   // 暂不开放外部供应商配置，固定使用 B 站内置免费 Index-Translate-2B 接口。
   return {
@@ -125,24 +135,24 @@ function resolveEndpoint(): {
 }
 
 function extractMessageContent(data: unknown): string {
-  if (!data || typeof data !== 'object')
-    return ''
+  if (!data || typeof data !== 'object') return ''
 
   const choices = (data as { choices?: unknown }).choices
-  if (!Array.isArray(choices) || choices.length === 0)
-    return ''
+  if (!Array.isArray(choices) || choices.length === 0) return ''
 
-  const first = choices[0] as { message?: { content?: unknown }, text?: unknown } | undefined
+  const first = choices[0] as { message?: { content?: unknown }; text?: unknown } | undefined
   const content = first?.message?.content ?? first?.text
-  if (typeof content === 'string')
-    return content
+  if (typeof content === 'string') return content
 
   if (Array.isArray(content)) {
     return content
       .map((part) => {
-        if (typeof part === 'string')
-          return part
-        if (part && typeof part === 'object' && typeof (part as { text?: unknown }).text === 'string')
+        if (typeof part === 'string') return part
+        if (
+          part &&
+          typeof part === 'object' &&
+          typeof (part as { text?: unknown }).text === 'string'
+        )
           return (part as { text: string }).text
         return ''
       })
@@ -155,25 +165,27 @@ function extractMessageContent(data: unknown): string {
 function extractApiErrorMessage(status: number, statusText: string, bodyText: string): string {
   if (bodyText) {
     try {
-      const parsed = JSON.parse(bodyText) as { error?: { message?: unknown } | string, message?: unknown, detail?: unknown }
-      const detail = typeof parsed.error === 'string'
-        ? parsed.error
-        : typeof parsed.error?.message === 'string'
-          ? parsed.error.message
-          : typeof parsed.message === 'string'
-            ? parsed.message
-            : typeof parsed.detail === 'string'
-              ? parsed.detail
-              : ''
-      if (detail)
-        return `HTTP ${status}: ${detail.slice(0, 180)}`
-    }
-    catch {
+      const parsed = JSON.parse(bodyText) as {
+        error?: { message?: unknown } | string
+        message?: unknown
+        detail?: unknown
+      }
+      const detail =
+        typeof parsed.error === 'string'
+          ? parsed.error
+          : typeof parsed.error?.message === 'string'
+            ? parsed.error.message
+            : typeof parsed.message === 'string'
+              ? parsed.message
+              : typeof parsed.detail === 'string'
+                ? parsed.detail
+                : ''
+      if (detail) return `HTTP ${status}: ${detail.slice(0, 180)}`
+    } catch {
       const trimmed = bodyText.replace(/\s+/gu, ' ').trim()
       if (/^<!doctype\s+html|^<html\b/iu.test(trimmed))
         return `HTTP ${status}: 请求被服务端风控/网关拦截（返回了 HTML 页面）`
-      if (trimmed)
-        return `HTTP ${status}: ${trimmed.slice(0, 160)}`
+      if (trimmed) return `HTTP ${status}: ${trimmed.slice(0, 160)}`
     }
   }
   return `HTTP ${status}${statusText ? ` ${statusText}` : ''}`
@@ -184,12 +196,10 @@ async function callCommentAiFilterApi(
   config: CommentAiFilterConfigSnapshot,
   contextTitle?: string,
 ): Promise<CommentAiFilterClassifyResponse> {
-  if (!comments.length)
-    return { ok: true, results: [], model: '' }
+  if (!comments.length) return { ok: true, results: [], model: '' }
 
   const endpoint = resolveEndpoint()
-  if ('error' in endpoint)
-    return { ok: false, error: endpoint.error }
+  if ('error' in endpoint) return { ok: false, error: endpoint.error }
 
   await ensureIndexTranslateHeaderRule()
 
@@ -202,8 +212,7 @@ async function callCommentAiFilterApi(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
-  if (endpoint.apiKey)
-    headers.Authorization = `Bearer ${endpoint.apiKey}`
+  if (endpoint.apiKey) headers.Authorization = `Bearer ${endpoint.apiKey}`
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -235,8 +244,7 @@ async function callCommentAiFilterApi(
     let parsedBody: unknown
     try {
       parsedBody = JSON.parse(bodyText)
-    }
-    catch {
+    } catch {
       return {
         ok: false,
         error: 'API returned non-JSON response.',
@@ -260,15 +268,13 @@ async function callCommentAiFilterApi(
       results: verdicts,
       model: endpoint.model,
     }
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError')
       return { ok: false, error: `Request timed out (${REQUEST_TIMEOUT_MS / 1000}s).` }
 
     const message = error instanceof Error ? error.message : String(error)
     return { ok: false, error: message || 'Network request failed.' }
-  }
-  finally {
+  } finally {
     clearTimeout(timer)
   }
 }
@@ -284,8 +290,7 @@ async function handleClassifyRequest(
     if (!item || typeof item.id !== 'string' || !item.id.trim() || typeof item.text !== 'string')
       continue
     const text = item.text.trim()
-    if (!text)
-      continue
+    if (!text) continue
     sanitized.push({
       id: item.id.trim(),
       author: typeof item.author === 'string' ? item.author : undefined,
@@ -295,8 +300,7 @@ async function handleClassifyRequest(
     })
   }
 
-  if (!sanitized.length)
-    return { ok: true, results: [], model: '' }
+  if (!sanitized.length) return { ok: true, results: [], model: '' }
 
   const config = await readCommentAiFilterConfig()
   return callCommentAiFilterApi(sanitized, config, request.context?.title)
@@ -321,10 +325,12 @@ async function handleTestRequest(
 
   // 逐条验证与单条判断模式保持一致，也兼顾 2B 等轻量模型。
   const responses = await Promise.all(
-    sampleComments.map(sample => callCommentAiFilterApi([sample], config, 'AI 评论过滤连通性测试')),
+    sampleComments.map((sample) =>
+      callCommentAiFilterApi([sample], config, 'AI 评论过滤连通性测试'),
+    ),
   )
   const latencyMs = Date.now() - startedAt
-  const failed = responses.find(res => !res.ok)
+  const failed = responses.find((res) => !res.ok)
   if (failed && !failed.ok) {
     return {
       ok: false,
@@ -333,11 +339,11 @@ async function handleTestRequest(
     }
   }
 
-  const allResults = responses.flatMap(res => res.ok ? res.results : [])
-  const model = responses.find(res => res.ok && res.model)?.ok
-    ? (responses.find(res => res.ok && res.model) as { ok: true, model: string }).model
+  const allResults = responses.flatMap((res) => (res.ok ? res.results : []))
+  const model = responses.find((res) => res.ok && res.model)?.ok
+    ? (responses.find((res) => res.ok && res.model) as { ok: true; model: string }).model
     : ''
-  const flagged = allResults.filter(item => item.lowQuality)
+  const flagged = allResults.filter((item) => item.lowQuality)
   return {
     ok: true,
     latencyMs,
@@ -351,10 +357,10 @@ export function setupCommentAiFilter() {
   void ensureIndexTranslateHeaderRule()
   onMessage<CommentAiFilterClassifyRequest, CommentAiFilterClassifyResponse>(
     COMMENT_AI_FILTER_CLASSIFY_MESSAGE,
-    request => handleClassifyRequest(request),
+    (request) => handleClassifyRequest(request),
   )
   onMessage<CommentAiFilterTestRequest | undefined, CommentAiFilterTestResponse>(
     COMMENT_AI_FILTER_TEST_MESSAGE,
-    request => handleTestRequest(request),
+    (request) => handleTestRequest(request),
   )
 }

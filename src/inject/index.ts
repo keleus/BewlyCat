@@ -3,18 +3,35 @@ import injectMessages from 'virtual:bewly-inject-messages'
 
 import { CONTENT_SCRIPT_COMMIT } from '~/constants/contentScript'
 import { isSearchResultApiPath } from '~/constants/searchApi'
-import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
-import { getBilibiliDesktopNavigatorValues, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import {
+  getBilibiliDesktopNavigatorValues,
+  isBilibiliWwwUrl,
+} from '~/utils/bilibiliDesktopNavigation'
 import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
 import { CommentReplyPageCache } from '~/utils/commentReplyPageCache'
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
-import { formatCommentReplyGuideCoordinate, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
+import {
+  formatCommentReplyGuideCoordinate,
+  getCommentReplyBranchPath,
+  getCommentReplyBranchToggleY,
+} from '~/utils/commentReplyTree'
 import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUserInfo'
 import { isElectron } from '~/utils/main'
 import type { NativeSelectController, NativeSelectOption } from '~/utils/nativeSelectDropdown'
-import { createNativeSelectDropdown, NATIVE_SELECT_DROPDOWN_CSS } from '~/utils/nativeSelectDropdown'
-import type { PageScriptIdentity, PageScriptInitializedMarker, RunningPageScriptIdentity } from '~/utils/pageScriptIdentity'
-import { createPageScriptIdentityMessage, isPageScriptIdentity, PAGE_SCRIPT_PING } from '~/utils/pageScriptIdentity'
+import {
+  createNativeSelectDropdown,
+  NATIVE_SELECT_DROPDOWN_CSS,
+} from '~/utils/nativeSelectDropdown'
+import type {
+  PageScriptIdentity,
+  PageScriptInitializedMarker,
+  RunningPageScriptIdentity,
+} from '~/utils/pageScriptIdentity'
+import {
+  createPageScriptIdentityMessage,
+  isPageScriptIdentity,
+  PAGE_SCRIPT_PING,
+} from '~/utils/pageScriptIdentity'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { createPageSettingsPayload, readPageBootSnapshot } from '~/utils/pageSettingsProtocol'
 
@@ -27,6 +44,8 @@ import {
   createNativeCommentAiFilterController,
 } from './commentAiFilter'
 
+import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
+
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
 
@@ -36,11 +55,12 @@ const DEFAULT_PAGE_LOCALE = 'en'
 function pageT(key: string, params: Record<string, unknown> = {}) {
   const locale = currentSettings?.language || DEFAULT_PAGE_LOCALE
   const messageKey = key.replace(/^inject\./, '')
-  const message = injectMessages[locale]?.[messageKey] ?? injectMessages[DEFAULT_PAGE_LOCALE]?.[messageKey]
-  if (message === undefined)
-    return key
+  const message =
+    injectMessages[locale]?.[messageKey] ?? injectMessages[DEFAULT_PAGE_LOCALE]?.[messageKey]
+  if (message === undefined) return key
   return message.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
-    name in params ? String(params[name]) : placeholder)
+    name in params ? String(params[name]) : placeholder,
+  )
 }
 let settingsReady = false
 let preventMobileRedirectEnabled = false
@@ -52,7 +72,10 @@ const settingsReadyPromise = new Promise<void>((resolve) => {
 const pageScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_PAGE_SCRIPT_INITIALIZED__?: PageScriptInitializedMarker
 }
-const ownPageScriptIdentity: PageScriptIdentity = Object.freeze({ version, commit: CONTENT_SCRIPT_COMMIT })
+const ownPageScriptIdentity: PageScriptIdentity = Object.freeze({
+  version,
+  commit: CONTENT_SCRIPT_COMMIT,
+})
 const existingPageScriptMarker = pageScriptGlobal.__BEWLYCAT_PAGE_SCRIPT_INITIALIZED__
 // 直播站及其内嵌框架中不改写任何页面全局对象。
 const isPageScriptContext = !isInBilibiliLiveContext()
@@ -68,14 +91,17 @@ function installPageScriptIdentityResponder(identity: RunningPageScriptIdentity)
   const announce = () => {
     try {
       window.postMessage(createPageScriptIdentityMessage(identity), window.location.origin)
-    }
-    catch {
+    } catch {
       // 不透明来源的框架无法按来源投递消息，content script 也不会在其中提示刷新。
     }
   }
   window.addEventListener('message', (event) => {
-    if (event.source !== window || typeof event.data !== 'object' || event.data === null
-      || event.data.type !== PAGE_SCRIPT_PING) {
+    if (
+      event.source !== window ||
+      typeof event.data !== 'object' ||
+      event.data === null ||
+      event.data.type !== PAGE_SCRIPT_PING
+    ) {
       return
     }
     announce()
@@ -85,20 +111,21 @@ function installPageScriptIdentityResponder(identity: RunningPageScriptIdentity)
 }
 
 // 正在运行的页面脚本负责回应版本询问；旧版本不支持握手，由被跳过的新版脚本代为报告。
-if (isPageScriptContext && !isElectronEnv
-  && (shouldInitializePageScript || !isPageScriptIdentity(existingPageScriptMarker))) {
+if (
+  isPageScriptContext &&
+  !isElectronEnv &&
+  (shouldInitializePageScript || !isPageScriptIdentity(existingPageScriptMarker))
+) {
   installPageScriptIdentityResponder(shouldInitializePageScript ? ownPageScriptIdentity : 'legacy')
 }
 if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
-}
-else if (shouldInitializePageScript) {
+} else if (shouldInitializePageScript) {
   let localLoudness: ReturnType<typeof createLocalLoudnessController> | undefined
   if (typeof AudioContext !== 'undefined') {
     try {
       localLoudness = createLocalLoudnessController()
-    }
-    catch (error) {
+    } catch (error) {
       console.warn('[BewlyCat] Failed to install local loudness control.', error)
     }
   }
@@ -116,15 +143,19 @@ else if (shouldInitializePageScript) {
       userAgent: navigator.userAgent,
       oscpu: (navigator as Navigator & { oscpu?: string }).oscpu,
     }
-    const desktopNavigatorValues = getBilibiliDesktopNavigatorValues(originalNavigatorValues.userAgent)
-    const defineNavigatorValue = (property: keyof typeof originalNavigatorValues, value: string) => {
+    const desktopNavigatorValues = getBilibiliDesktopNavigatorValues(
+      originalNavigatorValues.userAgent,
+    )
+    const defineNavigatorValue = (
+      property: keyof typeof originalNavigatorValues,
+      value: string,
+    ) => {
       try {
         Object.defineProperty(navigator, property, {
           configurable: true,
-          get: () => preventMobileRedirectEnabled ? value : originalNavigatorValues[property],
+          get: () => (preventMobileRedirectEnabled ? value : originalNavigatorValues[property]),
         })
-      }
-      catch {
+      } catch {
         // 个别浏览器不允许覆盖 Navigator 实例属性，网络层规则仍会提供桌面 UA。
       }
     }
@@ -135,12 +166,14 @@ else if (shouldInitializePageScript) {
     if (desktopNavigatorValues.oscpu && originalNavigatorValues.oscpu !== undefined)
       defineNavigatorValue('oscpu', desktopNavigatorValues.oscpu)
 
-    const userAgentData = (navigator as Navigator & {
-      userAgentData?: {
-        mobile?: boolean
-        platform?: string
+    const userAgentData = (
+      navigator as Navigator & {
+        userAgentData?: {
+          mobile?: boolean
+          platform?: string
+        }
       }
-    }).userAgentData
+    ).userAgentData
 
     if (userAgentData) {
       const originalMobile = userAgentData.mobile
@@ -149,15 +182,14 @@ else if (shouldInitializePageScript) {
         Object.defineProperties(userAgentData, {
           mobile: {
             configurable: true,
-            get: () => preventMobileRedirectEnabled ? false : originalMobile,
+            get: () => (preventMobileRedirectEnabled ? false : originalMobile),
           },
           platform: {
             configurable: true,
-            get: () => preventMobileRedirectEnabled ? 'Windows' : originalUserAgentDataPlatform,
+            get: () => (preventMobileRedirectEnabled ? 'Windows' : originalUserAgentDataPlatform),
           },
         })
-      }
-      catch {
+      } catch {
         // UA Client Hints 不可配置时交由网络层请求头规则处理。
       }
     }
@@ -170,21 +202,20 @@ else if (shouldInitializePageScript) {
   const patchedAbTests = new WeakSet<object>()
   let skipConciseDanmaku: boolean | undefined
   const patchDanmakuThreeStateExp = (abTest: unknown) => {
-    if (!abTest || typeof abTest !== 'object' || patchedAbTests.has(abTest))
-      return
+    if (!abTest || typeof abTest !== 'object' || patchedAbTests.has(abTest)) return
 
     try {
       const descriptor = Object.getOwnPropertyDescriptor(abTest, danmakuThreeStateExpKey)
       // 已被其他脚本改成访问器时不再叠加覆盖
-      if (descriptor && !('value' in descriptor))
-        return
+      if (descriptor && !('value' in descriptor)) return
       let originalValue: unknown = descriptor?.value
       Object.defineProperty(abTest, danmakuThreeStateExpKey, {
         configurable: true,
         enumerable: descriptor?.enumerable ?? false,
         get: () => {
           // 设置未送达时按默认值（跳过）处理
-          skipConciseDanmaku ??= currentSettings?.skipConciseDanmaku ?? pageBootSnapshot?.skipConciseDanmaku ?? true
+          skipConciseDanmaku ??=
+            currentSettings?.skipConciseDanmaku ?? pageBootSnapshot?.skipConciseDanmaku ?? true
           return skipConciseDanmaku ? 'false' : originalValue
         },
         set: (value: unknown) => {
@@ -192,8 +223,7 @@ else if (shouldInitializePageScript) {
         },
       })
       patchedAbTests.add(abTest)
-    }
-    catch {
+    } catch {
       // 实验对象不可扩展时保持 B 站原行为
     }
   }
@@ -201,9 +231,11 @@ else if (shouldInitializePageScript) {
   // 只有主站播放页使用该实验；其他子域不改写全局实验对象，已被其他脚本接管时也不叠加。
   // 快照确认已关闭「跳过精简弹幕」时不安装；快照缺失按默认开启处理。
   const windowAbTestDescriptor = Object.getOwnPropertyDescriptor(window, 'webAbTest')
-  if (isBilibiliWwwPage
-    && pageBootSnapshot?.skipConciseDanmaku !== false
-    && (!windowAbTestDescriptor || 'value' in windowAbTestDescriptor)) {
+  if (
+    isBilibiliWwwPage &&
+    pageBootSnapshot?.skipConciseDanmaku !== false &&
+    (!windowAbTestDescriptor || 'value' in windowAbTestDescriptor)
+  ) {
     try {
       let webAbTest: unknown = windowAbTestDescriptor?.value
       patchDanmakuThreeStateExp(webAbTest)
@@ -217,24 +249,18 @@ else if (shouldInitializePageScript) {
           patchDanmakuThreeStateExp(value)
         },
       })
-    }
-    catch {
+    } catch {
       // window.webAbTest 不可重定义时保持 B 站原行为
     }
   }
 
   // 之前inject.js的内容
   const isArray = (val: any): boolean => Array.isArray(val)
-  function injectFunction(
-    origin: any,
-    keys: string | string[],
-    cb: (...args: any[]) => void,
-  ) {
+  function injectFunction(origin: any, keys: string | string[], cb: (...args: any[]) => void) {
     let keysArray: string[]
     if (!isArray(keys)) {
       keysArray = [keys as string]
-    }
-    else {
+    } else {
       keysArray = keys as string[]
     }
 
@@ -246,17 +272,17 @@ else if (shouldInitializePageScript) {
     keysArray.forEach((key: string) => {
       const fn = (...args: any[]) => {
         cb(...args)
-        return (originKeysValue[key]).apply(origin, args)
+        return originKeysValue[key].apply(origin, args)
       }
-      fn.toString = (origin)[key].toString
-      ;(origin)[key] = fn
+      fn.toString = origin[key].toString
+      origin[key] = fn
     })
 
     return {
       originKeysValue,
       restore: () => {
         for (const key in originKeysValue) {
-          origin[key] = (originKeysValue[key]).bind(origin)
+          origin[key] = originKeysValue[key].bind(origin)
         }
       },
     }
@@ -284,7 +310,8 @@ else if (shouldInitializePageScript) {
   const COMPACT_COMMENT_REPLY_TREE_INDENT_STEP = 24
   const COMMENT_REPLY_TREE_MIN_GUIDE_GAP = 4
   const COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS = 12
-  const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
+  const COMMENT_REPLY_TREE_INDENT_STEP =
+    'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
   const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
   const COMMENT_REPLY_EXPAND_ALL_ID = 'bewly-comment-expand-all-replies'
   const COMMENT_REPLY_PAGE_SELECT_ID = 'bewly-comment-reply-page-select'
@@ -377,7 +404,7 @@ else if (shouldInitializePageScript) {
     expandAllLoading?: Promise<void>
     allRepliesExpanded?: boolean
     /** 直接选页只显示目标页；之后的「加载更多」从该页继续追加。 */
-    pageJump?: { previousPage: number, allRepliesExpanded?: boolean }
+    pageJump?: { previousPage: number; allRepliesExpanded?: boolean }
     /**
      * 从已渲染回复组件捕获的用户交互状态。楼中楼接口可能返回点赞前的
      * 缓存数据，后续分页合并时需要以本地刚完成的操作为准。
@@ -413,7 +440,7 @@ else if (shouldInitializePageScript) {
     }
   `
 
-  const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
+  const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string; css: string }> = {
     'bili-comments-header-renderer': {
       id: 'bewly-comment-header-style',
       css: `
@@ -874,8 +901,7 @@ else if (shouldInitializePageScript) {
   }
 
   function ensureCommentShadowStyle(root: ShadowRoot, id: string, css: string) {
-    if (root.querySelector(`#${id}`))
-      return
+    if (root.querySelector(`#${id}`)) return
 
     const style = document.createElement('style')
     style.id = id
@@ -885,15 +911,15 @@ else if (shouldInitializePageScript) {
 
   function updateWidescreenCommentEmojiOverflow(component: HTMLElement, root: ShadowRoot) {
     const emojiPopover = root.querySelector<HTMLElement>('#emoji-popover')
-    const emojiPickerOpen = (component as HTMLElement & { showEmojiPicker?: boolean }).showEmojiPicker === true
-      || emojiPopover?.style.display === 'block'
+    const emojiPickerOpen =
+      (component as HTMLElement & { showEmojiPicker?: boolean }).showEmojiPicker === true ||
+      emojiPopover?.style.display === 'block'
     const componentRoot = component.getRootNode()
     const shadowHost = componentRoot instanceof ShadowRoot ? componentRoot.host : null
-    const panel = component.closest('.bewly-widescreen-panel')
-      ?? shadowHost?.closest('.bewly-widescreen-panel')
+    const panel =
+      component.closest('.bewly-widescreen-panel') ?? shadowHost?.closest('.bewly-widescreen-panel')
 
-    if (!(panel instanceof HTMLElement))
-      return
+    if (!(panel instanceof HTMLElement)) return
 
     panel.toggleAttribute(WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE, emojiPickerOpen)
 
@@ -901,7 +927,11 @@ else if (shouldInitializePageScript) {
     if (panels?.classList.contains('bewly-widescreen-panels')) {
       panels.toggleAttribute(
         WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE,
-        Boolean(panels.querySelector(`.bewly-widescreen-panel[${WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE}]`)),
+        Boolean(
+          panels.querySelector(
+            `.bewly-widescreen-panel[${WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE}]`,
+          ),
+        ),
       )
     }
   }
@@ -914,8 +944,7 @@ else if (shouldInitializePageScript) {
     while (current && current !== Object.prototype) {
       const descriptor = Object.getOwnPropertyDescriptor(current, methodName)
       if (descriptor) {
-        if (typeof descriptor.value === 'function')
-          return descriptor.value
+        if (typeof descriptor.value === 'function') return descriptor.value
         return null
       }
       current = Object.getPrototypeOf(current)
@@ -940,25 +969,21 @@ else if (shouldInitializePageScript) {
       return false
     }
 
-    if ((prototype as any)[COMMENT_COMPONENT_PATCHED])
-      return true
+    if ((prototype as any)[COMMENT_COMPONENT_PATCHED]) return true
 
     const scheduleEnhance = (instance: any) => {
       // Do not run BewlyCat DOM work inside Bilibili's render lifecycle.
-      if (pendingCommentEnhancements.has(instance))
-        return
+      if (pendingCommentEnhancements.has(instance)) return
       pendingCommentEnhancements.add(instance)
       const runAfterBilibiliRender = () => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             pendingCommentEnhancements.delete(instance)
-            if (instance instanceof Node && !instance.isConnected)
-              return
+            if (instance instanceof Node && !instance.isConnected) return
 
             try {
               enhance(instance)
-            }
-            catch (error) {
+            } catch (error) {
               console.warn(`[BewlyCat] Failed to enhance ${name}.`, error)
             }
           })
@@ -966,14 +991,12 @@ else if (shouldInitializePageScript) {
       }
 
       // 设置读取和两个渲染帧都完成后再增强，避免与 B 站首次水合争抢 DOM。
-      if (settingsReady)
-        runAfterBilibiliRender()
-      else
-        void settingsReadyPromise.then(runAfterBilibiliRender)
+      if (settingsReady) runAfterBilibiliRender()
+      else void settingsReadyPromise.then(runAfterBilibiliRender)
     }
 
     const lifecycleMethods = ['update', 'updated', 'connectedCallback'] as const
-    let patchedMethod: typeof lifecycleMethods[number] | null = null
+    let patchedMethod: (typeof lifecycleMethods)[number] | null = null
     let originalMethod: ((...args: any[]) => any) | null = null
 
     for (const methodName of lifecycleMethods) {
@@ -1010,20 +1033,12 @@ else if (shouldInitializePageScript) {
     return true
   }
 
-  injectFunction(
-    window.history,
-    ['pushState'],
-    (...args: any[]) => {
-      window.dispatchEvent(new CustomEvent('pushstate', { detail: args }))
-    },
-  )
-  injectFunction(
-    window.history,
-    ['replaceState'],
-    (...args: any[]) => {
-      window.dispatchEvent(new CustomEvent('replacestate', { detail: args }))
-    },
-  )
+  injectFunction(window.history, ['pushState'], (...args: any[]) => {
+    window.dispatchEvent(new CustomEvent('pushstate', { detail: args }))
+  })
+  injectFunction(window.history, ['replaceState'], (...args: any[]) => {
+    window.dispatchEvent(new CustomEvent('replacestate', { detail: args }))
+  })
 
   // 获取IP地理位置字符串
   function getLocationString(replyItem: any) {
@@ -1041,15 +1056,18 @@ else if (shouldInitializePageScript) {
     'cmn-CN': '楼主',
   }
 
-  const COMMENT_REPLY_BRANCH_LABELS: Record<string, { collapse: string, expand: string }> = {
+  const COMMENT_REPLY_BRANCH_LABELS: Record<string, { collapse: string; expand: string }> = {
     en: { collapse: 'Collapse comment and replies', expand: 'Expand comment and replies' },
     'cmn-TW': { collapse: '收合此評論及回覆', expand: '展開此評論及回覆' },
     jyut: { collapse: '收起呢條評論同回覆', expand: '展開呢條評論同回覆' },
     'cmn-CN': { collapse: '收起此评论及回复', expand: '展开此评论及回复' },
   }
 
-  const COMMENT_REPLY_TAIL_LABELS: Record<string, { collapse: string, expand: string }> = {
-    en: { collapse: 'Collapse following sibling comments', expand: 'Expand following sibling comments' },
+  const COMMENT_REPLY_TAIL_LABELS: Record<string, { collapse: string; expand: string }> = {
+    en: {
+      collapse: 'Collapse following sibling comments',
+      expand: 'Expand following sibling comments',
+    },
     'cmn-TW': { collapse: '收合後續同層評論', expand: '展開後續同層評論' },
     jyut: { collapse: '收起後面嘅同層留言', expand: '展開後面嘅同層留言' },
     'cmn-CN': { collapse: '收起后续同级评论', expand: '展开后续同级评论' },
@@ -1057,10 +1075,10 @@ else if (shouldInitializePageScript) {
 
   /** 父回复不在本页时的标题文案 */
   const COMMENT_REPLY_OFFPAGE_PARENT_LABELS: Record<string, (name: string) => string> = {
-    en: name => `Reply to @${name} · not on this page`,
-    'cmn-TW': name => `回覆 @${name} · 不在本頁`,
-    jyut: name => `回覆 @${name} · 唔喺呢一頁`,
-    'cmn-CN': name => `回复 @${name} · 不在本页`,
+    en: (name) => `Reply to @${name} · not on this page`,
+    'cmn-TW': (name) => `回覆 @${name} · 不在本頁`,
+    jyut: (name) => `回覆 @${name} · 唔喺呢一頁`,
+    'cmn-CN': (name) => `回复 @${name} · 不在本页`,
   }
 
   /** 离页父评引用块最大展示字数 */
@@ -1068,20 +1086,20 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyOffpageParentLabel(authorName: string): string {
     const language = currentSettings?.language || 'cmn-CN'
-    const formatter = COMMENT_REPLY_OFFPAGE_PARENT_LABELS[language]
-      ?? COMMENT_REPLY_OFFPAGE_PARENT_LABELS['cmn-CN']
+    const formatter =
+      COMMENT_REPLY_OFFPAGE_PARENT_LABELS[language] ?? COMMENT_REPLY_OFFPAGE_PARENT_LABELS['cmn-CN']
     return formatter(authorName)
   }
 
   /** 从子回复正文「回复 @xxx」前缀解析被回复者昵称（父评未缓存时的回退） */
   function getReplyAtAuthorFromMessage(replyItem: any): string | null {
-    const raw = typeof replyItem?.content?.message === 'string'
-      ? replyItem.content.message
-      : typeof replyItem?.message === 'string'
-        ? replyItem.message
-        : null
-    if (!raw)
-      return null
+    const raw =
+      typeof replyItem?.content?.message === 'string'
+        ? replyItem.content.message
+        : typeof replyItem?.message === 'string'
+          ? replyItem.message
+          : null
+    if (!raw) return null
     // 用单一 \s+ 避免 \s*@?\s* 回溯；@ 可选，捕获昵称
     const match = raw.match(/^(?:回复|回覆|Reply(?:\s+to)?)\s+@?([^\s:：]+)/iu)
     const name = match?.[1]?.trim()
@@ -1090,8 +1108,7 @@ else if (shouldInitializePageScript) {
 
   /** 去掉「回复 @xxx :」前缀并压空白，供缓存与引用展示 */
   function normalizeReplyMessageText(text: string | null | undefined): string | null {
-    if (typeof text !== 'string')
-      return null
+    if (typeof text !== 'string') return null
     // @ 已可由 [^\s:：]+ 吞掉，无需再写 @?
     const stripped = text
       .replace(/^(?:回复|回覆|Reply(?:\s+to)?)\s+[^\s:：]+(?:\s*[:：]\s*|\s+)/iu, '')
@@ -1101,8 +1118,7 @@ else if (shouldInitializePageScript) {
   }
 
   function getReplyMessageText(replyItem: any): string | null {
-    if (!replyItem || typeof replyItem !== 'object')
-      return null
+    if (!replyItem || typeof replyItem !== 'object') return null
 
     const candidates = [
       replyItem?.content?.message,
@@ -1112,17 +1128,17 @@ else if (shouldInitializePageScript) {
     ]
     for (const candidate of candidates) {
       const normalized = normalizeReplyMessageText(typeof candidate === 'string' ? candidate : null)
-      if (normalized)
-        return normalized
+      if (normalized) return normalized
     }
     return null
   }
 
-  function pickRicherReplyMessageText(a: string | null | undefined, b: string | null | undefined): string | null {
-    if (!a)
-      return b ?? null
-    if (!b)
-      return a
+  function pickRicherReplyMessageText(
+    a: string | null | undefined,
+    b: string | null | undefined,
+  ): string | null {
+    if (!a) return b ?? null
+    if (!b) return a
     return b.length > a.length ? b : a
   }
 
@@ -1130,21 +1146,19 @@ else if (shouldInitializePageScript) {
     text: string,
     maxLen = COMMENT_REPLY_OFFPAGE_PARENT_SNIPPET_MAX,
   ): string {
-    if (text.length <= maxLen)
-      return text
+    if (text.length <= maxLen) return text
     return `${text.slice(0, maxLen).trimEnd()}…`
   }
 
   function getCommentRendererMessageText(renderer: HTMLElement): string | null {
     const contentsList = findCommentRichTextContents(renderer)
-    if (contentsList.length === 0)
-      return null
+    if (contentsList.length === 0) return null
 
     const raw = contentsList
       .map((contents) => {
         // 忽略我们隐藏的「回复 @」前缀节点，避免污染正文缓存
         const clone = contents.cloneNode(true) as HTMLElement
-        clone.querySelectorAll('[data-bewly-hide-reply-at]').forEach(el => el.remove())
+        clone.querySelectorAll('[data-bewly-hide-reply-at]').forEach((el) => el.remove())
         return clone.textContent || ''
       })
       .join(' ')
@@ -1171,8 +1185,7 @@ else if (shouldInitializePageScript) {
   const rootReplyAuthorByThread = new Map<string, string>()
 
   function toIdString(id: unknown): string | null {
-    if (id === null || id === undefined || id === '')
-      return null
+    if (id === null || id === undefined || id === '') return null
     return String(id)
   }
 
@@ -1197,27 +1210,20 @@ else if (shouldInitializePageScript) {
   }
 
   function getReplyAuthorName(replyItem: any): string | null {
-    const authorName = replyItem?.member?.uname
-      ?? replyItem?.member?.name
-      ?? replyItem?.uname
-      ?? replyItem?.name
-    return typeof authorName === 'string' && authorName.trim()
-      ? authorName.trim()
-      : null
+    const authorName =
+      replyItem?.member?.uname ?? replyItem?.member?.name ?? replyItem?.uname ?? replyItem?.name
+    return typeof authorName === 'string' && authorName.trim() ? authorName.trim() : null
   }
 
   /** 从评论组件解析作者昵称（含 DOM 回退，折叠后 data 偶发缺失） */
   function getCommentRendererAuthorName(renderer: HTMLElement | null | undefined): string | null {
-    if (!renderer)
-      return null
+    if (!renderer) return null
 
     const fromData = getReplyAuthorName(getCommentReplyData(renderer))
-    if (fromData)
-      return fromData
+    if (fromData) return fromData
 
     const shadow = renderer.shadowRoot
-    if (!shadow)
-      return null
+    if (!shadow) return null
 
     const nameCandidates = [
       shadow.querySelector('#user-name'),
@@ -1226,8 +1232,7 @@ else if (shouldInitializePageScript) {
     ]
     for (const el of nameCandidates) {
       const text = el?.textContent?.trim()
-      if (text)
-        return text
+      if (text) return text
     }
     return null
   }
@@ -1238,11 +1243,9 @@ else if (shouldInitializePageScript) {
   }
 
   function getCommentReplyData(component: any): any | null {
-    const userInfoData = component?.shadowRoot
-      ?.querySelector('bili-comment-user-info')
-      ?.data
+    const userInfoData = component?.shadowRoot?.querySelector('bili-comment-user-info')?.data
     const candidates = [component?.data, component?.reply, component?.replyItem, userInfoData]
-    return candidates.find(candidate => candidate && typeof candidate === 'object') ?? null
+    return candidates.find((candidate) => candidate && typeof candidate === 'object') ?? null
   }
 
   function findCommentPropertyDescriptor(
@@ -1252,8 +1255,7 @@ else if (shouldInitializePageScript) {
     let current: object | null = prototype
     while (current && current !== Object.prototype) {
       const descriptor = Object.getOwnPropertyDescriptor(current, property)
-      if (descriptor)
-        return descriptor
+      if (descriptor) return descriptor
       current = Object.getPrototypeOf(current)
     }
     return null
@@ -1268,21 +1270,20 @@ else if (shouldInitializePageScript) {
   }
 
   function isCommentReplyLoadMoreEnabled(): boolean {
-    return getCommentReplyTreeMode() !== null
-      && currentSettings?.commentReplyPaginationMode !== 'pagination'
+    return (
+      getCommentReplyTreeMode() !== null &&
+      currentSettings?.commentReplyPaginationMode !== 'pagination'
+    )
   }
 
   function getCommentReplyPageCache(renderer: any): CommentReplyPageCache | undefined {
     const identity = getCommentReplyPaginationIdentity(renderer)
-    if (!identity.split('|').every(part => /^\d+$/.test(part)))
-      return undefined
+    if (!identity.split('|').every((part) => /^\d+$/.test(part))) return undefined
     const pageSize = Number(renderer.pageSize) || 20
-    if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100)
-      return undefined
+    if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100) return undefined
     const key = `${identity}|${pageSize}`
     let cache = commentReplyPageCaches.get(key)
-    if (!cache)
-      cache = new CommentReplyPageCache(pageSize)
+    if (!cache) cache = new CommentReplyPageCache(pageSize)
     // 按最近使用淘汰；同一楼层的组件重建后仍可复用完整单页。
     commentReplyPageCaches.delete(key)
     commentReplyPageCaches.set(key, cache)
@@ -1300,52 +1301,78 @@ else if (shouldInitializePageScript) {
     const invisibleIds = getCommentReplyInvisibleIds(renderer)
     if (invisibleIds.size) {
       cache.pages.forEach((replies, page) => {
-        cache.pages.set(page, replies.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+        cache.pages.set(
+          page,
+          replies.filter((reply) => !invisibleIds.has(getReplyRpid(reply) ?? '')),
+        )
       })
     }
-    if (renderer.showPagination !== true || renderer.showSpinner || state?.loading)
-      return
+    if (renderer.showPagination !== true || renderer.showSpinner || state?.loading) return
     const page = Number(renderer.currentPage) || 1
     // 累计列表并非完整单页，不能当作当前页写进缓存。
     const replies = state?.mergedList === renderer.list ? state?.pages.get(page) : renderer.list
     if (Array.isArray(replies))
-      cache.pages.set(page, replies.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+      cache.pages.set(
+        page,
+        replies.filter((reply) => !invisibleIds.has(getReplyRpid(reply) ?? '')),
+      )
   }
 
   function prefetchOtherCommentReplyPages(renderer: any) {
     const cache = getCommentReplyPageCache(renderer)
-    if (!cache || getCommentReplyTreeMode() === null)
-      return
+    if (!cache || getCommentReplyTreeMode() === null) return
     rememberCommentReplyPages(renderer, cache)
     const identity = getCommentReplyPaginationIdentity(renderer)
     const [oid, type, root] = identity.split('|')
-    const isActive = () => renderer.isConnected && renderer.showPagination === true
-      && getCommentReplyTreeMode() !== null && identity === getCommentReplyPaginationIdentity(renderer)
+    const isActive = () =>
+      renderer.isConnected &&
+      renderer.showPagination === true &&
+      getCommentReplyTreeMode() !== null &&
+      identity === getCommentReplyPaginationIdentity(renderer)
     const refreshParents = (replies?: any[]) => {
-      if (!isActive() || commentReplyPaginationStates.get(renderer)?.loading || renderer.showSpinner)
+      if (
+        !isActive() ||
+        commentReplyPaginationStates.get(renderer)?.loading ||
+        renderer.showSpinner
+      )
         return
-      const missing = renderer.shadowRoot?.querySelectorAll('.bewly-comment-missing-parent') as NodeListOf<HTMLElement> | undefined
-      if (!missing?.length)
-        return
+      const missing = renderer.shadowRoot?.querySelectorAll('.bewly-comment-missing-parent') as
+        | NodeListOf<HTMLElement>
+        | undefined
+      if (!missing?.length) return
       const loadedIds = replies ? new Set(replies.map(getReplyRpid)) : undefined
-      if (loadedIds && !Array.from(missing).some(node => loadedIds.has(node.dataset.parentRpid ?? '')))
+      if (
+        loadedIds &&
+        !Array.from(missing).some((node) => loadedIds.has(node.dataset.parentRpid ?? ''))
+      )
         return
       const snapshot = captureCommentReplyScrollSnapshot(renderer)
       updateCommentReplyTree(renderer)
       restoreCommentReplyScrollSnapshot(snapshot)
     }
-    void cache.prefetch({ oid, type, root, totalPage: getCommentReplyTotalPage(renderer) }, isActive, refreshParents)
-      .catch(error => console.warn('[BewlyCat] Failed to cache other reply pages.', error))
+    void cache
+      .prefetch(
+        { oid, type, root, totalPage: getCommentReplyTotalPage(renderer) },
+        isActive,
+        refreshParents,
+      )
+      .catch((error) => console.warn('[BewlyCat] Failed to cache other reply pages.', error))
       .finally(() => refreshParents())
     refreshParents()
   }
 
   function updateCommentReplyPaginationHead(component: any) {
-    const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
-    if (!head)
-      return
+    const head = component?.shadowRoot?.querySelector('#pagination-head') as
+      | HTMLElement
+      | null
+      | undefined
+    if (!head) return
     const totalPage = getCommentReplyTotalPage(component)
-    if (component.showPagination !== true || totalPage <= 1 || typeof component.handleChangePage !== 'function') {
+    if (
+      component.showPagination !== true ||
+      totalPage <= 1 ||
+      typeof component.handleChangePage !== 'function'
+    ) {
       restoreCommentReplyPaginationHead(component)
       return
     }
@@ -1396,20 +1423,23 @@ else if (shouldInitializePageScript) {
       select.dataset.optionsKey = optionsKey
     }
     controller.setValue(allExpanded ? '' : String(Number(component.currentPage) || 1))
-    controller.setDisabled(Boolean(state?.loading || state?.expandAllLoading || component.showSpinner))
+    controller.setDisabled(
+      Boolean(state?.loading || state?.expandAllLoading || component.showSpinner),
+    )
     controller.setAriaLabel(pageT('inject.select_reply_page'))
     const totalLabel = pageT('inject.page_total', { total: totalPage })
     const summary = select.nextElementSibling
-    if (summary && summary.textContent !== totalLabel)
-      summary.textContent = totalLabel
+    if (summary && summary.textContent !== totalLabel) summary.textContent = totalLabel
   }
 
   function restoreCommentReplyPaginationHead(component: any) {
     commentReplyPageSelectControllers.get(component)?.destroy()
     commentReplyPageSelectControllers.delete(component)
-    const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
-    if (!head)
-      return
+    const head = component?.shadowRoot?.querySelector('#pagination-head') as
+      | HTMLElement
+      | null
+      | undefined
+    if (!head) return
     head.parentElement?.querySelector(`#${COMMENT_REPLY_PAGE_HEAD_ID}`)?.remove()
   }
 
@@ -1417,9 +1447,15 @@ else if (shouldInitializePageScript) {
     const state = isCommentReplyLoadMoreEnabled()
       ? getCommentReplyPaginationState(renderer)
       : commentReplyPaginationStates.get(renderer)
-    if (!Number.isInteger(page) || page < 1 || page > getCommentReplyTotalPage(renderer)
-      || renderer.showPagination !== true || renderer.showSpinner
-      || state?.loading || state?.expandAllLoading) {
+    if (
+      !Number.isInteger(page) ||
+      page < 1 ||
+      page > getCommentReplyTotalPage(renderer) ||
+      renderer.showPagination !== true ||
+      renderer.showSpinner ||
+      state?.loading ||
+      state?.expandAllLoading
+    ) {
       updateCommentReplyPaginationHead(renderer)
       return
     }
@@ -1444,8 +1480,12 @@ else if (shouldInitializePageScript) {
       const cachedPage = cache?.pages.get(page) ?? state?.pages.get(page)
       if (cachedPage) {
         const invisibleIds = getCommentReplyInvisibleIds(renderer)
-        const visiblePage = cachedPage.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? ''))
-        const restoredPage = state ? restoreCommentReplyInteractionState(state, visiblePage) : visiblePage
+        const visiblePage = cachedPage.filter(
+          (reply) => !invisibleIds.has(getReplyRpid(reply) ?? ''),
+        )
+        const restoredPage = state
+          ? restoreCommentReplyInteractionState(state, visiblePage)
+          : visiblePage
         if (state) {
           state.pages.set(page, restoredPage)
           state.currentPage = page
@@ -1473,44 +1513,42 @@ else if (shouldInitializePageScript) {
       updateCommentReplyPaginationHead(renderer)
       await result
       const currentState = commentReplyPaginationStates.get(renderer)
-      if (currentState?.loading)
-        await currentState.loading
-    }
-    catch (error) {
-      if (!isCommentReplyLoadMoreEnabled() && renderer.showPagination === true
-        && identity === getCommentReplyPaginationIdentity(renderer)) {
+      if (currentState?.loading) await currentState.loading
+    } catch (error) {
+      if (
+        !isCommentReplyLoadMoreEnabled() &&
+        renderer.showPagination === true &&
+        identity === getCommentReplyPaginationIdentity(renderer)
+      ) {
         renderer.currentPage = previousPage
         renderer.list = previousList
         renderer.requestUpdate?.()
       }
       console.warn('[BewlyCat] Failed to change comment reply page.', error)
-    }
-    finally {
-      if (state)
-        state.pageJump = undefined
+    } finally {
+      if (state) state.pageJump = undefined
       if (!renderer.isConnected || identity !== getCommentReplyPaginationIdentity(renderer))
         scrollSnapshot.controller.abort()
       restoreCommentReplyScrollSnapshot(scrollSnapshot)
       updateCommentReplyPaginationHead(renderer)
-      if (identity === getCommentReplyPaginationIdentity(renderer)
-        && Number(renderer.currentPage) === page && !renderer.showSpinner) {
+      if (
+        identity === getCommentReplyPaginationIdentity(renderer) &&
+        Number(renderer.currentPage) === page &&
+        !renderer.showSpinner
+      ) {
         prefetchOtherCommentReplyPages(renderer)
       }
     }
   }
 
   function getCommentReplyInvisibleIds(renderer: any): Set<string> {
-    if (!renderer.invisibleID || typeof renderer.invisibleID !== 'object')
-      return new Set()
-    return new Set(
-      Object.keys(renderer.invisibleID).filter(rpid => renderer.invisibleID[rpid]),
-    )
+    if (!renderer.invisibleID || typeof renderer.invisibleID !== 'object') return new Set()
+    return new Set(Object.keys(renderer.invisibleID).filter((rpid) => renderer.invisibleID[rpid]))
   }
 
   function clearCommentReplyPaginationState(renderer: any, restoreCurrentPage: boolean) {
     const state = commentReplyPaginationStates.get(renderer)
-    if (!state)
-      return
+    if (!state) return
     const original = state.pages.get(state.currentPage)
     if (restoreCurrentPage && state.mergedList && renderer.list === state.mergedList && original) {
       renderer.list = original.slice()
@@ -1536,14 +1574,12 @@ else if (shouldInitializePageScript) {
    */
   function invalidateCommentReplyPaginationLoading(renderer: any) {
     const state = commentReplyPaginationStates.get(renderer)
-    if (!state || (!state.pending && !state.loading))
-      return
+    if (!state || (!state.pending && !state.loading)) return
 
     releaseCommentReplyLayoutReservation(state.pending?.layoutReservation)
     if (!state.mergedList && state.pages.size > 0)
       state.mergedList = mergeCommentReplyPaginationPages(state)
-    if (state.mergedList)
-      renderer.list = state.mergedList
+    if (state.mergedList) renderer.list = state.mergedList
     state.pending = undefined
     state.loading = undefined
     renderer.requestUpdate?.()
@@ -1554,8 +1590,7 @@ else if (shouldInitializePageScript) {
     captureCollapsedList: boolean,
   ) {
     const state = commentReplyPaginationStates.get(renderer)
-    if (!state)
-      return
+    if (!state) return
     state.suppressInvalidatedResultRestore = true
     state.allRepliesExpanded = false
     state.frozenTreeIndentStep = undefined
@@ -1568,10 +1603,8 @@ else if (shouldInitializePageScript) {
   function getCommentReplyPaginationState(renderer: any): CommentReplyPaginationState {
     const identity = getCommentReplyPaginationIdentity(renderer)
     const existing = commentReplyPaginationStates.get(renderer)
-    if (existing && existing.identity === identity)
-      return existing
-    if (existing)
-      clearCommentReplyPaginationState(renderer, false)
+    if (existing && existing.identity === identity) return existing
+    if (existing) clearCommentReplyPaginationState(renderer, false)
     const state: CommentReplyPaginationState = {
       identity,
       pages: new Map(),
@@ -1584,9 +1617,7 @@ else if (shouldInitializePageScript) {
 
   function mergeCommentReplyPaginationPages(state: CommentReplyPaginationState): any[] {
     return mergeCommentReplyLists(
-      ...[...state.pages.entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([, page]) => page),
+      ...[...state.pages.entries()].sort(([a], [b]) => a - b).map(([, page]) => page),
     )
   }
 
@@ -1597,8 +1628,7 @@ else if (shouldInitializePageScript) {
       list.forEach((reply) => {
         const rpid = getReplyRpid(reply)
         if (rpid) {
-          if (seen.has(rpid))
-            return
+          if (seen.has(rpid)) return
           seen.add(rpid)
         }
         merged.push(reply)
@@ -1615,19 +1645,15 @@ else if (shouldInitializePageScript) {
     lists.forEach((list) => {
       list.forEach((reply) => {
         const rpid = getReplyRpid(reply)
-        const existingIndex = rpid
-          ? indexByRpid.get(rpid)
-          : indexByReply.get(reply)
+        const existingIndex = rpid ? indexByRpid.get(rpid) : indexByReply.get(reply)
         if (existingIndex !== undefined) {
           merged[existingIndex] = reply
           return
         }
         const index = merged.length
         merged.push(reply)
-        if (rpid)
-          indexByRpid.set(rpid, index)
-        else
-          indexByReply.set(reply, index)
+        if (rpid) indexByRpid.set(rpid, index)
+        else indexByReply.set(reply, index)
       })
     })
     return merged
@@ -1635,22 +1661,18 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyInteractionState(component: any): CommentReplyInteractionState | null {
     const reply = getCommentReplyData(component)
-    const actionRenderer = component?.localName === 'bili-comment-action-buttons-renderer'
-      ? component
-      : component?.shadowRoot?.querySelector('bili-comment-action-buttons-renderer')
+    const actionRenderer =
+      component?.localName === 'bili-comment-action-buttons-renderer'
+        ? component
+        : component?.shadowRoot?.querySelector('bili-comment-action-buttons-renderer')
     if (!actionRenderer) {
-      if (!reply)
-        return null
+      if (!reply) return null
       const interaction: CommentReplyInteractionState = {}
       const action = Number(reply.action)
       const like = Number(reply.like)
-      if (Number.isFinite(action))
-        interaction.action = action
-      if (Number.isFinite(like))
-        interaction.like = like
-      return interaction.action !== undefined || interaction.like !== undefined
-        ? interaction
-        : null
+      if (Number.isFinite(action)) interaction.action = action
+      if (Number.isFinite(like)) interaction.like = like
+      return interaction.action !== undefined || interaction.like !== undefined ? interaction : null
     }
 
     const interaction: CommentReplyInteractionState = {}
@@ -1658,12 +1680,9 @@ else if (shouldInitializePageScript) {
       interaction.action = actionRenderer.isLike ? 1 : actionRenderer.isDislike ? 2 : 0
 
     const likeCount = Number(actionRenderer.likeCount)
-    if (Number.isFinite(likeCount))
-      interaction.like = likeCount
+    if (Number.isFinite(likeCount)) interaction.like = likeCount
 
-    return interaction.action !== undefined || interaction.like !== undefined
-      ? interaction
-      : null
+    return interaction.action !== undefined || interaction.like !== undefined ? interaction : null
   }
 
   function applyCommentReplyInteraction(
@@ -1671,12 +1690,11 @@ else if (shouldInitializePageScript) {
     rpid: string,
     interaction: CommentReplyInteractionState,
   ): any {
-    if (getReplyRpid(reply) !== rpid)
-      return reply
-    const actionMatches = interaction.action === undefined || Number(reply?.action) === interaction.action
+    if (getReplyRpid(reply) !== rpid) return reply
+    const actionMatches =
+      interaction.action === undefined || Number(reply?.action) === interaction.action
     const likeMatches = interaction.like === undefined || Number(reply?.like) === interaction.like
-    if (actionMatches && likeMatches)
-      return reply
+    if (actionMatches && likeMatches) return reply
     return {
       ...reply,
       ...(interaction.action === undefined ? {} : { action: interaction.action }),
@@ -1689,8 +1707,7 @@ else if (shouldInitializePageScript) {
     rpid: string,
     interaction: CommentReplyInteractionState,
   ): any[] | undefined {
-    if (!Array.isArray(list))
-      return list
+    if (!Array.isArray(list)) return list
     let changed = false
     const nextList = list.map((reply) => {
       const nextReply = applyCommentReplyInteraction(reply, rpid, interaction)
@@ -1705,45 +1722,37 @@ else if (shouldInitializePageScript) {
     const rpid = getReplyRpid(reply)
     const interaction = getCommentReplyInteractionState(actionRenderer)
     const repliesRenderer = findCommentRepliesRendererHost(actionRenderer) as any
-    if (!rpid || !interaction || !repliesRenderer)
-      return
+    if (!rpid || !interaction || !repliesRenderer) return
 
     const nextList = applyCommentReplyInteractionToList(repliesRenderer.list, rpid, interaction)
-    if (nextList !== repliesRenderer.list)
-      repliesRenderer.list = nextList
+    if (nextList !== repliesRenderer.list) repliesRenderer.list = nextList
 
     getCommentReplyPageCache(repliesRenderer)?.pages.forEach((page, pageNumber, pages) => {
       const nextPage = applyCommentReplyInteractionToList(page, rpid, interaction)
-      if (nextPage && nextPage !== page)
-        pages.set(pageNumber, nextPage)
+      if (nextPage && nextPage !== page) pages.set(pageNumber, nextPage)
     })
     const state = commentReplyPaginationStates.get(repliesRenderer)
-    if (!state)
-      return
+    if (!state) return
     const interactionByRpid = state.interactionByRpid ?? new Map()
     interactionByRpid.set(rpid, interaction)
     state.interactionByRpid = interactionByRpid
     state.mergedList = applyCommentReplyInteractionToList(state.mergedList, rpid, interaction)
     state.collapsedList = applyCommentReplyInteractionToList(state.collapsedList, rpid, interaction)
     if (state.pending) {
-      state.pending.beforeList = applyCommentReplyInteractionToList(
-        state.pending.beforeList,
-        rpid,
-        interaction,
-      ) ?? state.pending.beforeList
+      state.pending.beforeList =
+        applyCommentReplyInteractionToList(state.pending.beforeList, rpid, interaction) ??
+        state.pending.beforeList
     }
     state.pages.forEach((page, pageNumber) => {
       const nextPage = applyCommentReplyInteractionToList(page, rpid, interaction)
-      if (nextPage && nextPage !== page)
-        state.pages.set(pageNumber, nextPage)
+      if (nextPage && nextPage !== page) state.pages.set(pageNumber, nextPage)
     })
   }
 
   function getRenderedCommentReplyData(renderer: any): any[] {
     const root = renderer?.shadowRoot as ShadowRoot | null | undefined
     const container = root?.querySelector<HTMLElement>('#expander-contents')
-    if (!container)
-      return []
+    if (!container) return []
     return Array.from(container.children)
       .filter(isCommentReplyRenderer)
       .map((component) => {
@@ -1757,20 +1766,14 @@ else if (shouldInitializePageScript) {
       .filter((reply): reply is object => Boolean(reply))
   }
 
-  function captureCommentReplyInteractionState(
-    state: CommentReplyPaginationState,
-    replies: any[],
-  ) {
+  function captureCommentReplyInteractionState(state: CommentReplyPaginationState, replies: any[]) {
     const interactionByRpid = state.interactionByRpid ?? new Map()
     replies.forEach((reply) => {
       const rpid = getReplyRpid(reply)
-      if (!rpid)
-        return
+      if (!rpid) return
       const interaction: CommentReplyInteractionState = {}
-      if (Number.isFinite(Number(reply?.action)))
-        interaction.action = Number(reply.action)
-      if (Number.isFinite(Number(reply?.like)))
-        interaction.like = Number(reply.like)
+      if (Number.isFinite(Number(reply?.action))) interaction.action = Number(reply.action)
+      if (Number.isFinite(Number(reply?.like))) interaction.like = Number(reply.like)
       if (interaction.action !== undefined || interaction.like !== undefined)
         interactionByRpid.set(rpid, interaction)
     })
@@ -1782,17 +1785,15 @@ else if (shouldInitializePageScript) {
     replies: any[],
   ): any[] {
     const interactionByRpid = state.interactionByRpid
-    if (!interactionByRpid?.size)
-      return replies
+    if (!interactionByRpid?.size) return replies
     return replies.map((reply) => {
       const rpid = getReplyRpid(reply)
       const interaction = rpid ? interactionByRpid.get(rpid) : undefined
-      if (!interaction)
-        return reply
-      const actionMatches = interaction.action === undefined || Number(reply?.action) === interaction.action
+      if (!interaction) return reply
+      const actionMatches =
+        interaction.action === undefined || Number(reply?.action) === interaction.action
       const likeMatches = interaction.like === undefined || Number(reply?.like) === interaction.like
-      if (actionMatches && likeMatches)
-        return reply
+      if (actionMatches && likeMatches) return reply
       return {
         ...reply,
         ...(interaction.action === undefined ? {} : { action: interaction.action }),
@@ -1810,8 +1811,7 @@ else if (shouldInitializePageScript) {
     return loadedList.filter((reply) => {
       const rpid = getReplyRpid(reply)
       if (rpid) {
-        if (existingRpids.has(rpid) || newRpids.has(rpid))
-          return false
+        if (existingRpids.has(rpid) || newRpids.has(rpid)) return false
         newRpids.add(rpid)
         return true
       }
@@ -1821,25 +1821,31 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyTotalPage(renderer: any): number {
     const totalPage = Number(renderer?.totalPage)
-    if (Number.isSafeInteger(totalPage) && totalPage > 0)
-      return totalPage
+    if (Number.isSafeInteger(totalPage) && totalPage > 0) return totalPage
     const count = Number(renderer?.count)
     const pageSize = Number(renderer?.pageSize)
     const estimatedPages = Math.ceil(count / pageSize)
-    return pageSize > 0 && Number.isSafeInteger(estimatedPages) && estimatedPages > 0 ? estimatedPages : 1
+    return pageSize > 0 && Number.isSafeInteger(estimatedPages) && estimatedPages > 0
+      ? estimatedPages
+      : 1
   }
 
   function isCommentReplyPaginationComplete(renderer: any): boolean {
     const totalPage = getCommentReplyTotalPage(renderer)
     const pages = commentReplyPaginationStates.get(renderer)?.pages
-    return Boolean(pages && pages.size === totalPage
-      && [...pages.keys()].every(page => page >= 1 && page <= totalPage))
+    return Boolean(
+      pages &&
+      pages.size === totalPage &&
+      [...pages.keys()].every((page) => page >= 1 && page <= totalPage),
+    )
   }
 
   function getCommentReplyBatchLabel(renderer: any): string {
     const totalPage = getCommentReplyTotalPage(renderer)
     const pages = commentReplyPaginationStates.get(renderer)?.pages
-    const loadedPages = pages ? [...pages.keys()].filter(page => page >= 1 && page <= totalPage).length : 0
+    const loadedPages = pages
+      ? [...pages.keys()].filter((page) => page >= 1 && page <= totalPage).length
+      : 0
     return totalPage - loadedPages > COMMENT_REPLY_BATCH_PAGE_LIMIT
       ? pageT('inject.load_reply_pages', { count: COMMENT_REPLY_BATCH_PAGE_LIMIT })
       : pageT('inject.expand_all_replies')
@@ -1865,9 +1871,8 @@ else if (shouldInitializePageScript) {
       }
       // 某些旧版组件没有公开 showSpinner 属性；只有明确回到 false
       // 时才认为请求已结束，避免在 Promise 尚未挂上 state 时提前退出。
-      if (renderer?.showSpinner === false)
-        return
-      await new Promise<void>(resolve => window.setTimeout(resolve, 50))
+      if (renderer?.showSpinner === false) return
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
     }
   }
 
@@ -1880,8 +1885,7 @@ else if (shouldInitializePageScript) {
    */
   function expandAllCommentReplies(renderer: any): Promise<void> {
     const state = getCommentReplyPaginationState(renderer)
-    if (state.expandAllLoading)
-      return state.expandAllLoading
+    if (state.expandAllLoading) return state.expandAllLoading
 
     state.allRepliesExpanded = false
     state.frozenTreeIndentStep = undefined
@@ -1890,8 +1894,7 @@ else if (shouldInitializePageScript) {
     renderer.setAttribute?.('aria-busy', 'true')
 
     const operation = (async () => {
-      if (!isCommentReplyLoadMoreEnabled() || !renderer?.user)
-        return
+      if (!isCommentReplyLoadMoreEnabled() || !renderer?.user) return
 
       let loadedPages = 0
       const pagesBeforeExpand = new Set(state.pages.keys())
@@ -1899,23 +1902,21 @@ else if (shouldInitializePageScript) {
       // 允许在原生「点击查看」尚未打开分页时直接使用本按钮。
       if (renderer.showPagination !== true) {
         const handleViewMore = renderer.handleViewMore
-        if (typeof handleViewMore !== 'function')
-          return
+        if (typeof handleViewMore !== 'function') return
         handleViewMore.call(renderer, { stopPropagation() {} })
         await waitForCommentReplyPaginationRequest(renderer, state)
-        loadedPages = [...state.pages.keys()].filter(page => !pagesBeforeExpand.has(page)).length
+        loadedPages = [...state.pages.keys()].filter((page) => !pagesBeforeExpand.has(page)).length
       }
 
       while (
-        isCommentReplyLoadMoreEnabled()
-        && renderer.showPagination === true
-        && commentReplyPaginationStates.get(renderer) === state
-        && !isCommentReplyPaginationComplete(renderer)
-        && loadedPages < COMMENT_REPLY_BATCH_PAGE_LIMIT
+        isCommentReplyLoadMoreEnabled() &&
+        renderer.showPagination === true &&
+        commentReplyPaginationStates.get(renderer) === state &&
+        !isCommentReplyPaginationComplete(renderer) &&
+        loadedPages < COMMENT_REPLY_BATCH_PAGE_LIMIT
       ) {
         const handleChangePage = renderer.handleChangePage
-        if (typeof handleChangePage !== 'function')
-          break
+        if (typeof handleChangePage !== 'function') break
 
         // 直接跳页后前面的页可能尚未加载，从最早缺失页补齐。
         let nextPage = 1
@@ -1929,48 +1930,52 @@ else if (shouldInitializePageScript) {
         loadedPages += 1
 
         // 防止某个版本的原生组件在请求失败后不推进页码而陷入循环。
-        if (!state.pages.has(nextPage) && !state.loading)
-          break
+        if (!state.pages.has(nextPage) && !state.loading) break
       }
 
       state.allRepliesExpanded = Boolean(
-        renderer.showPagination === true
-        && isCommentReplyPaginationComplete(renderer),
+        renderer.showPagination === true && isCommentReplyPaginationComplete(renderer),
       )
       // 每批完成后合并已加载页；跳页后也能重新显示之前加载的回复。
-      if (renderer.showPagination === true && commentReplyPaginationStates.get(renderer) === state) {
-        state.mergedList = restoreCommentReplyInteractionState(state, mergeCommentReplyPaginationPages(state))
+      if (
+        renderer.showPagination === true &&
+        commentReplyPaginationStates.get(renderer) === state
+      ) {
+        state.mergedList = restoreCommentReplyInteractionState(
+          state,
+          mergeCommentReplyPaginationPages(state),
+        )
         renderer.list = state.mergedList
         scheduleCommentReplyPaginationTreeUpdate(renderer)
       }
     })()
 
     state.expandAllLoading = operation
-    operation.finally(() => {
-      if (commentReplyPaginationStates.get(renderer) !== state)
-        return
-      state.expandAllLoading = undefined
-      state.frozenTreeIndentStep = undefined
-      state.expandAllLayoutKey = undefined
-      renderer.removeAttribute?.(COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE)
-      renderer.removeAttribute?.('aria-busy')
-      renderer.requestUpdate?.()
-      requestAnimationFrame(() => {
-        if (renderer.isConnected && getCommentReplyTreeMode() !== null) {
-          updateCommentReplyPaginationHead(renderer)
-          updateCommentReplyTree(renderer)
-        }
+    operation
+      .finally(() => {
+        if (commentReplyPaginationStates.get(renderer) !== state) return
+        state.expandAllLoading = undefined
+        state.frozenTreeIndentStep = undefined
+        state.expandAllLayoutKey = undefined
+        renderer.removeAttribute?.(COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE)
+        renderer.removeAttribute?.('aria-busy')
+        renderer.requestUpdate?.()
+        requestAnimationFrame(() => {
+          if (renderer.isConnected && getCommentReplyTreeMode() !== null) {
+            updateCommentReplyPaginationHead(renderer)
+            updateCommentReplyTree(renderer)
+          }
+        })
       })
-    }).catch(() => {
-      // 调用方会在控制台记录错误；finally 中的状态清理仍需执行。
-    })
+      .catch(() => {
+        // 调用方会在控制台记录错误；finally 中的状态清理仍需执行。
+      })
     return operation
   }
 
   function updateCommentReplyExpandAllControl(renderer: any) {
     const root = renderer?.shadowRoot as ShadowRoot | null | undefined
-    if (!root)
-      return
+    if (!root) return
 
     const existing = root.querySelector<HTMLButtonElement>(`#${COMMENT_REPLY_EXPAND_ALL_ID}`)
     const state = commentReplyPaginationStates.get(renderer)
@@ -1981,14 +1986,12 @@ else if (shouldInitializePageScript) {
       return
     }
     const canShow = Boolean(
-      isCommentReplyLoadMoreEnabled()
-      && renderer.user
-      && state?.allRepliesExpanded !== true
-      && (
-        renderer.showViewMore === true
-          ? Number(renderer.count) > Number(renderer.pageSize || 0)
-          : false
-      ),
+      isCommentReplyLoadMoreEnabled() &&
+      renderer.user &&
+      state?.allRepliesExpanded !== true &&
+      (renderer.showViewMore === true
+        ? Number(renderer.count) > Number(renderer.pageSize || 0)
+        : false),
     )
 
     if (!canShow) {
@@ -1997,8 +2000,7 @@ else if (shouldInitializePageScript) {
     }
 
     const target = root.querySelector<HTMLElement>('#view-more')
-    if (!target)
-      return
+    if (!target) return
 
     const button = existing ?? document.createElement('button')
     button.id = COMMENT_REPLY_EXPAND_ALL_ID
@@ -2017,8 +2019,7 @@ else if (shouldInitializePageScript) {
         console.warn('[BewlyCat] Failed to expand all comment replies.', error)
       })
     }
-    if (button.parentElement !== target)
-      target.appendChild(button)
+    if (button.parentElement !== target) target.appendChild(button)
   }
 
   interface CommentReplyLayoutReservation {
@@ -2035,7 +2036,7 @@ else if (shouldInitializePageScript) {
     windowY: number
     anchor: HTMLElement | null
     anchorTop: number
-    elements: Array<{ element: HTMLElement, left: number, top: number }>
+    elements: Array<{ element: HTMLElement; left: number; top: number }>
   }
 
   const activeCommentReplyScrollRestores = new WeakMap<HTMLElement, AbortController>()
@@ -2043,7 +2044,10 @@ else if (shouldInitializePageScript) {
   /** B 站替换回复节点时可能触发 scroll anchoring，切页后恢复原视口位置。 */
   function captureCommentReplyScrollSnapshot(renderer: any): CommentReplyScrollSnapshot {
     const elements: CommentReplyScrollSnapshot['elements'] = []
-    const anchor = (renderer?.shadowRoot?.querySelector?.(`#${COMMENT_REPLY_PAGE_HEAD_ID}, #pagination-head:not(:has(+ #${COMMENT_REPLY_PAGE_HEAD_ID}))`) as HTMLElement | null) ?? null
+    const anchor =
+      (renderer?.shadowRoot?.querySelector?.(
+        `#${COMMENT_REPLY_PAGE_HEAD_ID}, #pagination-head:not(:has(+ #${COMMENT_REPLY_PAGE_HEAD_ID}))`,
+      ) as HTMLElement | null) ?? null
     const anchorTop = anchor?.getBoundingClientRect().top ?? 0
     const controller = new AbortController()
     if (anchor) {
@@ -2064,18 +2068,21 @@ else if (shouldInitializePageScript) {
       visited.add(node)
       if (node instanceof HTMLElement) {
         const style = getComputedStyle(node)
-        const canScroll = /auto|scroll|overlay/.test(`${style.overflow} ${style.overflowY} ${style.overflowX}`)
-        if (canScroll && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
+        const canScroll = /auto|scroll|overlay/.test(
+          `${style.overflow} ${style.overflowY} ${style.overflowX}`,
+        )
+        if (
+          canScroll &&
+          (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)
+        ) {
           elements.push({ element: node, left: node.scrollLeft, top: node.scrollTop })
         }
       }
       if (node.parentNode) {
         node = node.parentNode
-      }
-      else if (node instanceof ShadowRoot) {
+      } else if (node instanceof ShadowRoot) {
         node = node.host
-      }
-      else {
+      } else {
         const root = node.getRootNode()
         node = root instanceof ShadowRoot ? root.host : null
       }
@@ -2083,25 +2090,35 @@ else if (shouldInitializePageScript) {
     // 回复容器在 renderer 的 shadow root 内部，向上遍历祖先不会包含它。
     // 必须放在最后：elements[0] 仍需是最外层滚动容器，否则恢复时的锚点校正
     // 会不断把内层容器往下推。
-    const replyContainer = renderer?.shadowRoot?.querySelector?.('#expander-contents') as HTMLElement | null
+    const replyContainer = renderer?.shadowRoot?.querySelector?.(
+      '#expander-contents',
+    ) as HTMLElement | null
     if (replyContainer && replyContainer.scrollHeight > replyContainer.clientHeight)
-      elements.push({ element: replyContainer, left: replyContainer.scrollLeft, top: replyContainer.scrollTop })
-    return { controller, anchor, anchorTop, elements, windowX: window.scrollX, windowY: window.scrollY }
+      elements.push({
+        element: replyContainer,
+        left: replyContainer.scrollLeft,
+        top: replyContainer.scrollTop,
+      })
+    return {
+      controller,
+      anchor,
+      anchorTop,
+      elements,
+      windowX: window.scrollX,
+      windowY: window.scrollY,
+    }
   }
 
   function restoreCommentReplyScrollSnapshot(snapshot: CommentReplyScrollSnapshot | undefined) {
-    if (!snapshot || snapshot.controller.signal.aborted)
-      return
+    if (!snapshot || snapshot.controller.signal.aborted) return
     const { controller } = snapshot
     const restore = () => {
-      if (controller.signal.aborted)
-        return
+      if (controller.signal.aborted) return
       // B 站页面可能全局开启 smooth scrolling；切页定位必须使用即时滚动，
       // 否则恢复动作尚未完成时下一帧又会被平滑动画推走。
       try {
         window.scrollTo({ left: snapshot.windowX, top: snapshot.windowY, behavior: 'instant' })
-      }
-      catch {
+      } catch {
         window.scrollTo(snapshot.windowX, snapshot.windowY)
       }
       snapshot.elements.forEach(({ element, left, top }) => {
@@ -2116,12 +2133,10 @@ else if (shouldInitializePageScript) {
           const container = snapshot.elements[0]?.element
           if (container?.isConnected) {
             container.scrollTop += offset
-          }
-          else {
+          } else {
             try {
               window.scrollBy({ top: offset, left: 0, behavior: 'instant' })
-            }
-            catch {
+            } catch {
               window.scrollBy(0, offset)
             }
           }
@@ -2133,29 +2148,29 @@ else if (shouldInitializePageScript) {
     // 校正锚点，覆盖异步内容到达造成的二次位移。
     let remainingFrames = 60
     const settle = () => {
-      if (controller.signal.aborted)
-        return
+      if (controller.signal.aborted) return
       restore()
       remainingFrames -= 1
-      if (remainingFrames > 0)
-        requestAnimationFrame(settle)
-      else
-        controller.abort()
+      if (remainingFrames > 0) requestAnimationFrame(settle)
+      else controller.abort()
     }
     requestAnimationFrame(settle)
   }
 
-  const activeCommentReplyLayoutReservations = new WeakMap<HTMLElement, CommentReplyLayoutReservation>()
+  const activeCommentReplyLayoutReservations = new WeakMap<
+    HTMLElement,
+    CommentReplyLayoutReservation
+  >()
 
-  function reserveCommentReplyLayoutHeight(renderer: any): CommentReplyLayoutReservation | undefined {
+  function reserveCommentReplyLayoutHeight(
+    renderer: any,
+  ): CommentReplyLayoutReservation | undefined {
     const root = renderer?.shadowRoot as ShadowRoot | null | undefined
     const container = root?.querySelector<HTMLElement>('#expander-contents')
-    if (!container)
-      return undefined
+    if (!container) return undefined
 
     const height = Math.ceil(container.getBoundingClientRect().height)
-    if (height <= 0)
-      return undefined
+    if (height <= 0) return undefined
 
     const existingReservation = activeCommentReplyLayoutReservations.get(container)
     const anchorHost = renderer instanceof HTMLElement ? renderer : container
@@ -2164,8 +2179,9 @@ else if (shouldInitializePageScript) {
       anchorHost,
       container,
       previousMinHeight: existingReservation?.previousMinHeight ?? container.style.minHeight,
-      previousOverflowAnchor: existingReservation?.previousOverflowAnchor
-        ?? anchorHost.style.getPropertyValue('overflow-anchor'),
+      previousOverflowAnchor:
+        existingReservation?.previousOverflowAnchor ??
+        anchorHost.style.getPropertyValue('overflow-anchor'),
     }
     container.style.minHeight = reservation.appliedMinHeight
     anchorHost.style.setProperty('overflow-anchor', 'none')
@@ -2176,25 +2192,17 @@ else if (shouldInitializePageScript) {
   function releaseCommentReplyLayoutReservation(
     reservation: CommentReplyLayoutReservation | undefined,
   ) {
-    if (!reservation)
-      return
-    const {
-      anchorHost,
-      appliedMinHeight,
-      container,
-      previousMinHeight,
-      previousOverflowAnchor,
-    } = reservation
-    if (activeCommentReplyLayoutReservations.get(container) !== reservation)
-      return
+    if (!reservation) return
+    const { anchorHost, appliedMinHeight, container, previousMinHeight, previousOverflowAnchor } =
+      reservation
+    if (activeCommentReplyLayoutReservations.get(container) !== reservation) return
     activeCommentReplyLayoutReservations.delete(container)
     if (container.style.minHeight === appliedMinHeight)
       container.style.minHeight = previousMinHeight
     if (anchorHost.style.getPropertyValue('overflow-anchor') === 'none') {
       if (previousOverflowAnchor)
         anchorHost.style.setProperty('overflow-anchor', previousOverflowAnchor)
-      else
-        anchorHost.style.removeProperty('overflow-anchor')
+      else anchorHost.style.removeProperty('overflow-anchor')
     }
   }
 
@@ -2205,31 +2213,30 @@ else if (shouldInitializePageScript) {
     const treeEpoch = commentReplyTreeEpochs.get(renderer) ?? 0
     try {
       renderer.requestUpdate?.()
-    }
-    catch (error) {
+    } catch (error) {
       releaseCommentReplyLayoutReservation(layoutReservation)
       throw error
     }
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      try {
-        if (
-          renderer.isConnected
-          && getCommentReplyTreeMode() !== null
-          && (commentReplyTreeEpochs.get(renderer) ?? 0) === treeEpoch
-        ) {
-          updateCommentReplyTree(renderer)
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        try {
+          if (
+            renderer.isConnected &&
+            getCommentReplyTreeMode() !== null &&
+            (commentReplyTreeEpochs.get(renderer) ?? 0) === treeEpoch
+          ) {
+            updateCommentReplyTree(renderer)
+          }
+        } finally {
+          releaseCommentReplyLayoutReservation(layoutReservation)
         }
-      }
-      finally {
-        releaseCommentReplyLayoutReservation(layoutReservation)
-      }
-    }))
+      }),
+    )
   }
 
   function patchCommentReplyPaginationPrototype(classConstructor: any) {
     const prototype = classConstructor?.prototype as object | undefined
-    if (!prototype || (prototype as any)[COMMENT_REPLY_PAGINATION_PATCHED])
-      return
+    if (!prototype || (prototype as any)[COMMENT_REPLY_PAGINATION_PATCHED]) return
     const getListDescriptor = findCommentPropertyDescriptor(prototype, 'getList')
     const originalGetList = getListDescriptor?.value
     if (typeof originalGetList === 'function') {
@@ -2242,8 +2249,7 @@ else if (shouldInitializePageScript) {
             return Reflect.apply(originalGetList, this, args)
           }
           const state = getCommentReplyPaginationState(this)
-          if (state.loading)
-            return state.loading
+          if (state.loading) return state.loading
           const pageJump = state.pageJump
           state.pageJump = undefined
           // 重新展开后进入了新的加载会话，不再受上次原生收起限制。
@@ -2257,11 +2263,15 @@ else if (shouldInitializePageScript) {
           const invisibleIds = getCommentReplyInvisibleIds(this)
           if (invisibleIds.size) {
             state.pages.forEach((page, pageNumber) => {
-              state.pages.set(pageNumber, page.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+              state.pages.set(
+                pageNumber,
+                page.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? '')),
+              )
             })
             if (state.mergedList) {
-              state.mergedList = state.mergedList
-                .filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+              state.mergedList = state.mergedList.filter(
+                (reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''),
+              )
             }
           }
           // 原生组件可能替换 list，也可能原地改写。请求前先保存独立的
@@ -2269,8 +2279,9 @@ else if (shouldInitializePageScript) {
           const currentList = Array.isArray(this.list)
             ? this.list.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
             : []
-          const renderedList = getRenderedCommentReplyData(this)
-            .filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+          const renderedList = getRenderedCommentReplyData(this).filter(
+            (reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''),
+          )
           // 回复组件会先更新本地点赞/发表评论结果，但 renderer.list 与分页
           // 缓存不一定同步。保留原顺序，同时让当前 list 和实际 DOM 数据
           // 覆盖旧缓存，避免下一页返回的旧数据把交互状态回滚。
@@ -2290,8 +2301,7 @@ else if (shouldInitializePageScript) {
             layoutReservation: reserveCommentReplyLayoutHeight(this),
           }
           const restoreFailedPageJump = () => {
-            if (!pageJump || state.pending !== pending)
-              return
+            if (!pageJump || state.pending !== pending) return
             this.currentPage = pageJump.previousPage
             this.list = beforeList
             state.mergedList = beforeList
@@ -2302,8 +2312,7 @@ else if (shouldInitializePageScript) {
           let result: any
           try {
             result = Reflect.apply(originalGetList, this, args)
-          }
-          catch (error) {
+          } catch (error) {
             restoreFailedPageJump()
             if (state.pending === pending) {
               releaseCommentReplyLayoutReservation(pending.layoutReservation)
@@ -2312,76 +2321,81 @@ else if (shouldInitializePageScript) {
             }
             throw error
           }
-          const promise = Promise.resolve(result).then((value) => {
-            if (state.pending === pending) {
-              state.pending = undefined
-              state.loading = undefined
-              if (isCommentReplyLoadMoreEnabled()
-                && state.identity === getCommentReplyPaginationIdentity(this)
-                && Array.isArray(this.list)) {
-                const latestInvisibleIds = getCommentReplyInvisibleIds(this)
-                const retainedBeforeList = (pageJump ? [] : pending.beforeList)
-                  .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
-                const loadedList = restoreCommentReplyInteractionState(
-                  state,
-                  this.list.filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? '')),
-                )
-                const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
-                state.pages.forEach((cachedPage, pageNumber) => {
-                  state.pages.set(
-                    pageNumber,
-                    cachedPage.filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? '')),
+          const promise = Promise.resolve(result).then(
+            (value) => {
+              if (state.pending === pending) {
+                state.pending = undefined
+                state.loading = undefined
+                if (
+                  isCommentReplyLoadMoreEnabled() &&
+                  state.identity === getCommentReplyPaginationIdentity(this) &&
+                  Array.isArray(this.list)
+                ) {
+                  const latestInvisibleIds = getCommentReplyInvisibleIds(this)
+                  const retainedBeforeList = (pageJump ? [] : pending.beforeList).filter(
+                    (reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''),
                   )
-                })
-                // pages 始终保存原生完整单页，供切回「分页」模式时恢复。
-                state.pages.set(pending.page, loadedList)
-                state.pages.forEach((cachedPage, pageNumber) => {
-                  state.pages.set(
-                    pageNumber,
-                    restoreCommentReplyInteractionState(state, cachedPage),
+                  const loadedList = restoreCommentReplyInteractionState(
+                    state,
+                    this.list.filter(
+                      (reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''),
+                    ),
                   )
-                })
-                state.currentPage = pending.page
-                const merged = mergeCommentReplyLists(retainedBeforeList, page)
-                state.allRepliesExpanded = !pageJump && isCommentReplyPaginationComplete(this)
-                  && merged.length === mergeCommentReplyPaginationPages(state).length
-                state.mergedList = merged
-                this.list = merged
-                scheduleCommentReplyPaginationTreeUpdate(this, pending.layoutReservation)
-              }
-              else {
-                releaseCommentReplyLayoutReservation(pending.layoutReservation)
-              }
-            }
-            else if (
-              commentReplyPaginationStates.get(this) === state
-              && state.identity === getCommentReplyPaginationIdentity(this)
-            ) {
-              if (state.suppressInvalidatedResultRestore && state.collapsedList) {
-                // 原生收起后迟到的请求会先将 list 改成单页，立即恢复收起态缓存。
-                this.list = state.collapsedList
-                this.requestUpdate?.()
-              }
-              else if (
-                !state.pending
-                && !state.loading
-                && state.mergedList
+                  const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
+                  state.pages.forEach((cachedPage, pageNumber) => {
+                    state.pages.set(
+                      pageNumber,
+                      cachedPage.filter(
+                        (reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''),
+                      ),
+                    )
+                  })
+                  // pages 始终保存原生完整单页，供切回「分页」模式时恢复。
+                  state.pages.set(pending.page, loadedList)
+                  state.pages.forEach((cachedPage, pageNumber) => {
+                    state.pages.set(
+                      pageNumber,
+                      restoreCommentReplyInteractionState(state, cachedPage),
+                    )
+                  })
+                  state.currentPage = pending.page
+                  const merged = mergeCommentReplyLists(retainedBeforeList, page)
+                  state.allRepliesExpanded =
+                    !pageJump &&
+                    isCommentReplyPaginationComplete(this) &&
+                    merged.length === mergeCommentReplyPaginationPages(state).length
+                  state.mergedList = merged
+                  this.list = merged
+                  scheduleCommentReplyPaginationTreeUpdate(this, pending.layoutReservation)
+                } else {
+                  releaseCommentReplyLayoutReservation(pending.layoutReservation)
+                }
+              } else if (
+                commentReplyPaginationStates.get(this) === state &&
+                state.identity === getCommentReplyPaginationIdentity(this)
               ) {
-                // 树分支折叠后的迟到请求恢复折叠前累计列表。
-                this.list = state.mergedList
-                scheduleCommentReplyPaginationTreeUpdate(this)
+                if (state.suppressInvalidatedResultRestore && state.collapsedList) {
+                  // 原生收起后迟到的请求会先将 list 改成单页，立即恢复收起态缓存。
+                  this.list = state.collapsedList
+                  this.requestUpdate?.()
+                } else if (!state.pending && !state.loading && state.mergedList) {
+                  // 树分支折叠后的迟到请求恢复折叠前累计列表。
+                  this.list = state.mergedList
+                  scheduleCommentReplyPaginationTreeUpdate(this)
+                }
               }
-            }
-            return value
-          }, (error) => {
-            restoreFailedPageJump()
-            if (state.pending === pending) {
-              releaseCommentReplyLayoutReservation(pending.layoutReservation)
-              state.pending = undefined
-              state.loading = undefined
-            }
-            throw error
-          })
+              return value
+            },
+            (error) => {
+              restoreFailedPageJump()
+              if (state.pending === pending) {
+                releaseCommentReplyLayoutReservation(pending.layoutReservation)
+                state.pending = undefined
+                state.loading = undefined
+              }
+              throw error
+            },
+          )
           state.loading = promise
           this.requestUpdate?.()
           return promise
@@ -2396,8 +2410,7 @@ else if (shouldInitializePageScript) {
         configurable: true,
         writable: true,
         value(this: any, ...args: any[]) {
-          if (!isCommentReplyLoadMoreEnabled())
-            return Reflect.apply(originalChangePage, this, args)
+          if (!isCommentReplyLoadMoreEnabled()) return Reflect.apply(originalChangePage, this, args)
           const pageItem = args[0]
           if (pageItem?.idx === COMMENT_REPLY_EXPAND_ALL_IDX) {
             return expandAllCommentReplies(this).catch((error) => {
@@ -2405,18 +2418,18 @@ else if (shouldInitializePageScript) {
             })
           }
           const state = getCommentReplyPaginationState(this)
-          if (state.loading)
-            return state.loading
+          if (state.loading) return state.loading
           const currentPage = Number(this.currentPage) || 1
-          if (!state.pages.has(currentPage)
-            && Array.isArray(this.list)
-            && this.list !== state.mergedList) {
+          if (
+            !state.pages.has(currentPage) &&
+            Array.isArray(this.list) &&
+            this.list !== state.mergedList
+          ) {
             state.pages.set(currentPage, this.list.slice())
             state.currentPage = currentPage
           }
           // 有些原生版本会忽略相同页码；累计多页后仍应允许只查看当前页。
-          if (state.pageJump && pageItem?.idx === currentPage - 1)
-            return this.getList()
+          if (state.pageJump && pageItem?.idx === currentPage - 1) return this.getList()
           return Reflect.apply(originalChangePage, this, args)
         },
       })
@@ -2430,7 +2443,11 @@ else if (shouldInitializePageScript) {
         get(this: any) {
           const items = Reflect.apply(originalPaginationItems, this, [])
           queueMicrotask(() => updateCommentReplyPaginationHead(this))
-          if (!isCommentReplyLoadMoreEnabled() || this.showPagination !== true || !Array.isArray(items))
+          if (
+            !isCommentReplyLoadMoreEnabled() ||
+            this.showPagination !== true ||
+            !Array.isArray(items)
+          )
             return items
           // 该 getter 在 Lit 渲染中调用，增强失败时退回原生分页，不能中断渲染。
           try {
@@ -2445,15 +2462,16 @@ else if (shouldInitializePageScript) {
             const totalPage = Number(this.totalPage) || 0
             const hasNext = currentPage < totalPage
             return [
-              ...(hasNext ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }] : []),
+              ...(hasNext
+                ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }]
+                : []),
               {
                 text: getCommentReplyBatchLabel(this),
                 idx: COMMENT_REPLY_EXPAND_ALL_IDX,
                 clickable: true,
               },
             ]
-          }
-          catch (error) {
+          } catch (error) {
             console.warn('[BewlyCat] Failed to build reply pagination items.', error)
             return items
           }
@@ -2473,8 +2491,7 @@ else if (shouldInitializePageScript) {
               // 原生收起只结束未完成请求；已加载页必须留给下次展开继续追加。
               suspendCommentReplyPaginationForNativeCollapse(this, captureCollapsedList)
               clearCommentReplyTreeState(this)
-            }
-            catch (error) {
+            } catch (error) {
               console.warn('[BewlyCat] Failed to reset reply pagination state.', error)
             }
           }
@@ -2482,8 +2499,7 @@ else if (shouldInitializePageScript) {
           let result: any
           try {
             result = Reflect.apply(originalRevert, this, args)
-          }
-          catch (error) {
+          } catch (error) {
             cleanup(true)
             throw error
           }
@@ -2500,7 +2516,9 @@ else if (shouldInitializePageScript) {
   }
 
   /** 从评论子组件向上找到所属的 bili-comment-replies-renderer */
-  function findCommentRepliesRendererHost(component: HTMLElement | null | undefined): HTMLElement | null {
+  function findCommentRepliesRendererHost(
+    component: HTMLElement | null | undefined,
+  ): HTMLElement | null {
     let node: Node | null = component ?? null
     for (let depth = 0; depth < 10 && node; depth++) {
       if (node instanceof ShadowRoot) {
@@ -2515,7 +2533,9 @@ else if (shouldInitializePageScript) {
   }
 
   /** 从主评论内的图片等子组件向上找到同一楼层的回复容器 */
-  function findCommentThreadRepliesRenderer(component: HTMLElement | null | undefined): HTMLElement | null {
+  function findCommentThreadRepliesRenderer(
+    component: HTMLElement | null | undefined,
+  ): HTMLElement | null {
     let node: Node | null = component ?? null
     for (let depth = 0; depth < 12 && node; depth++) {
       if (node instanceof ShadowRoot) {
@@ -2543,23 +2563,21 @@ else if (shouldInitializePageScript) {
         originalOrderByRenderer: new WeakMap(),
       }
       commentReplyTreeStates.set(component, state)
-    }
-    else {
-      if (!state.collapsedTailKeys)
-        state.collapsedTailKeys = new Set()
-      if (!state.replyMetaByRpid)
-        state.replyMetaByRpid = new Map()
+    } else {
+      if (!state.collapsedTailKeys) state.collapsedTailKeys = new Set()
+      if (!state.replyMetaByRpid) state.replyMetaByRpid = new Map()
     }
     return state
   }
 
-  function isCommentReplyTreeRootParent(parentRpid: string | null, rootRpid: string | null, selfRpid: string | null): boolean {
-    if (!parentRpid || parentRpid === '0')
-      return true
-    if (selfRpid && parentRpid === selfRpid)
-      return true
-    if (rootRpid && parentRpid === rootRpid)
-      return true
+  function isCommentReplyTreeRootParent(
+    parentRpid: string | null,
+    rootRpid: string | null,
+    selfRpid: string | null,
+  ): boolean {
+    if (!parentRpid || parentRpid === '0') return true
+    if (selfRpid && parentRpid === selfRpid) return true
+    if (rootRpid && parentRpid === rootRpid) return true
     return false
   }
 
@@ -2570,8 +2588,7 @@ else if (shouldInitializePageScript) {
     extras?: { messageText?: string | null },
   ): CommentReplyTreeCachedMeta | null {
     const rpid = getReplyRpid(replyItem)
-    if (!rpid)
-      return null
+    if (!rpid) return null
 
     const previous = state.replyMetaByRpid.get(rpid)
     const fromData = getReplyMessageText(replyItem)
@@ -2592,35 +2609,25 @@ else if (shouldInitializePageScript) {
   }
 
   /** 把已访问页的回复关系同步到树缓存；切到另一页时父评仍可被解析。 */
-  function cacheCommentReplyTreeMetaList(
-    state: CommentReplyTreeState,
-    replies: any[] | undefined,
-  ) {
-    if (!Array.isArray(replies))
-      return
-    replies.forEach(reply => cacheCommentReplyTreeMeta(state, reply))
+  function cacheCommentReplyTreeMetaList(state: CommentReplyTreeState, replies: any[] | undefined) {
+    if (!Array.isArray(replies)) return
+    replies.forEach((reply) => cacheCommentReplyTreeMeta(state, reply))
   }
 
-  function syncCommentReplyCrossPageMeta(
-    identity: string,
-    state: CommentReplyTreeState,
-  ) {
-    if (!identity.split('|').every(Boolean))
-      return
+  function syncCommentReplyCrossPageMeta(identity: string, state: CommentReplyTreeState) {
+    if (!identity.split('|').every(Boolean)) return
     let cached = commentReplyCrossPageMetaCaches.get(identity)
     if (!cached) {
       cached = new Map()
       commentReplyCrossPageMetaCaches.set(identity, cached)
       while (commentReplyCrossPageMetaCaches.size > MAX_COMMENT_REPLY_CROSS_PAGE_CACHE_THREADS) {
         const oldest = commentReplyCrossPageMetaCaches.keys().next().value
-        if (oldest === undefined)
-          break
+        if (oldest === undefined) break
         commentReplyCrossPageMetaCaches.delete(oldest)
       }
     }
     cached.forEach((meta, rpid) => {
-      if (!state.replyMetaByRpid.has(rpid))
-        state.replyMetaByRpid.set(rpid, meta)
+      if (!state.replyMetaByRpid.has(rpid)) state.replyMetaByRpid.set(rpid, meta)
     })
     state.replyMetaByRpid.forEach((meta, rpid) => cached!.set(rpid, meta))
   }
@@ -2647,7 +2654,10 @@ else if (shouldInitializePageScript) {
     metaByRpid: Map<string, CommentReplyTreeCachedMeta>,
   ): CommentReplyTreeParentResolve {
     const directParentRpid = node.parentRpid
-    if (!directParentRpid || isCommentReplyTreeRootParent(directParentRpid, node.rootRpid, node.rpid)) {
+    if (
+      !directParentRpid ||
+      isCommentReplyTreeRootParent(directParentRpid, node.rootRpid, node.rpid)
+    ) {
       return {
         visualParent: undefined,
         directParentVisible: true,
@@ -2658,15 +2668,8 @@ else if (shouldInitializePageScript) {
 
     const directInDom = nodeByRpid.get(directParentRpid)
     const directMeta = metaByRpid.get(directParentRpid)
-    const directParentAuthorName = (
-      directInDom?.authorName
-      ?? directMeta?.authorName
-      ?? null
-    )
-    const directParentMessageText = (
-      directMeta?.messageText
-      ?? null
-    )
+    const directParentAuthorName = directInDom?.authorName ?? directMeta?.authorName ?? null
+    const directParentMessageText = directMeta?.messageText ?? null
 
     if (directInDom && directInDom !== node) {
       return {
@@ -2679,16 +2682,13 @@ else if (shouldInitializePageScript) {
 
     // 直接父不在本页：沿缓存向上找最近可见祖先
     let parentRpid: string | null = directMeta?.parentRpid ?? null
-    if (!node.rootRpid && directMeta?.rootRpid)
-      node.rootRpid = directMeta.rootRpid
+    if (!node.rootRpid && directMeta?.rootRpid) node.rootRpid = directMeta.rootRpid
 
     const seen = new Set<string>([directParentRpid])
-    if (node.rpid)
-      seen.add(node.rpid)
+    if (node.rpid) seen.add(node.rpid)
 
     while (parentRpid) {
-      if (seen.has(parentRpid))
-        break
+      if (seen.has(parentRpid)) break
       seen.add(parentRpid)
 
       if (isCommentReplyTreeRootParent(parentRpid, node.rootRpid, node.rpid)) {
@@ -2720,8 +2720,7 @@ else if (shouldInitializePageScript) {
         }
       }
 
-      if (!node.rootRpid && cachedParent.rootRpid)
-        node.rootRpid = cachedParent.rootRpid
+      if (!node.rootRpid && cachedParent.rootRpid) node.rootRpid = cachedParent.rootRpid
 
       parentRpid = cachedParent.parentRpid
     }
@@ -2759,39 +2758,39 @@ else if (shouldInitializePageScript) {
   function clearCommentReplyTreeState(component: any) {
     commentReplyTreeEpochs.set(component, (commentReplyTreeEpochs.get(component) ?? 0) + 1)
     const state = commentReplyTreeStates.get(component)
-    if (state)
-      disconnectCommentReplyTreeResizeObserver(state)
+    if (state) disconnectCommentReplyTreeResizeObserver(state)
 
     if (component instanceof HTMLElement) {
       const root = component.shadowRoot
       const replyContainer = root?.querySelector<HTMLElement>('#expander-contents')
       if (replyContainer) {
         removeCommentReplyTreeGuides(component, replyContainer)
-        replyContainer.querySelectorAll('.bewly-comment-missing-parent').forEach(node => node.remove())
+        replyContainer
+          .querySelectorAll('.bewly-comment-missing-parent')
+          .forEach((node) => node.remove())
         const replyRenderers = Array.from(replyContainer.children).filter(isCommentReplyRenderer)
         // 树序已写入 DOM；原生收起/重新展开前按首次出现顺序还原，与列表数据一致。
         if (state?.enabled) {
-          const getOrder = (renderer: HTMLElement) => (
+          const getOrder = (renderer: HTMLElement) =>
             state.originalOrderByRenderer.get(renderer) ?? Number.MAX_SAFE_INTEGER
-          )
           moveCommentReplyRendererNodes(
             replyContainer,
             [...replyRenderers].sort((a, b) => getOrder(a) - getOrder(b)),
           )
         }
-        replyRenderers
-          .forEach((renderer) => {
-            delete renderer.dataset.bewlyCommentReplyDepth
-            delete renderer.dataset.bewlyCommentReplyHidden
-            delete renderer.dataset.bewlyCommentReplyCollapsed
-            renderer.style.removeProperty('--bew-comment-reply-indent')
-            renderer.style.removeProperty('--bew-comment-reply-order')
-            setCommentReplyAtPrefixHidden(renderer, false)
-            clearCommentReplyOffpageParentLabel(renderer)
-          })
+        replyRenderers.forEach((renderer) => {
+          delete renderer.dataset.bewlyCommentReplyDepth
+          delete renderer.dataset.bewlyCommentReplyHidden
+          delete renderer.dataset.bewlyCommentReplyCollapsed
+          renderer.style.removeProperty('--bew-comment-reply-indent')
+          renderer.style.removeProperty('--bew-comment-reply-order')
+          setCommentReplyAtPrefixHidden(renderer, false)
+          clearCommentReplyOffpageParentLabel(renderer)
+        })
       }
-      getCommentReplyTreeRootRenderer(component)
-        ?.removeAttribute('data-bewly-comment-reply-collapsed')
+      getCommentReplyTreeRootRenderer(component)?.removeAttribute(
+        'data-bewly-comment-reply-collapsed',
+      )
       root?.querySelector(`#${COMMENT_REPLY_EXPAND_ALL_ID}`)?.remove()
       restoreCommentReplyPaginationHead(component)
       component.removeAttribute('data-bewly-comment-reply-tree')
@@ -2811,29 +2810,28 @@ else if (shouldInitializePageScript) {
    */
   function patchCommentRepliesRendererDisconnect(classConstructor: any) {
     const prototype = classConstructor?.prototype as object | undefined
-    if (!prototype || (prototype as any)[COMMENT_REPLIES_DISCONNECT_PATCHED])
-      return
+    if (!prototype || (prototype as any)[COMMENT_REPLIES_DISCONNECT_PATCHED]) return
 
-    const originalDisconnected = findCommentComponentLifecycleMethod(prototype, 'disconnectedCallback')
+    const originalDisconnected = findCommentComponentLifecycleMethod(
+      prototype,
+      'disconnectedCallback',
+    )
     Object.defineProperty(prototype, 'disconnectedCallback', {
       configurable: true,
       writable: true,
       value(this: any, ...args: any[]) {
         let result: any
         try {
-          if (originalDisconnected)
-            result = Reflect.apply(originalDisconnected, this, args)
+          if (originalDisconnected) result = Reflect.apply(originalDisconnected, this, args)
           return result
-        }
-        finally {
+        } finally {
           // 分页状态保存在 WeakMap 中；临时折叠后若复用同一实例仍可恢复，
           // 这里只释放会形成强引用的树布局与全局可迭代集合。
           try {
             suspendCommentReplyPaginationForNativeCollapse(this, true)
             getCommentReplyPageCache(this)?.stop()
             clearCommentReplyTreeState(this)
-          }
-          catch (error) {
+          } catch (error) {
             console.warn('[BewlyCat] Failed to clean up reply renderer state.', error)
           }
         }
@@ -2851,17 +2849,13 @@ else if (shouldInitializePageScript) {
    * 同时监听楼层 host、主评论与回复容器，并在图片 load 后重算。
    */
   function scheduleCommentReplyTreeLayoutUpdate(component: any) {
-    if (!component || pendingCommentReplyTreeLayoutUpdates.has(component))
-      return
+    if (!component || pendingCommentReplyTreeLayoutUpdates.has(component)) return
 
     const treeEpoch = commentReplyTreeEpochs.get(component) ?? 0
     pendingCommentReplyTreeLayoutUpdates.add(component)
     requestAnimationFrame(() => {
       pendingCommentReplyTreeLayoutUpdates.delete(component)
-      if (
-        !component?.isConnected
-        || (commentReplyTreeEpochs.get(component) ?? 0) !== treeEpoch
-      ) {
+      if (!component?.isConnected || (commentReplyTreeEpochs.get(component) ?? 0) !== treeEpoch) {
         return
       }
       updateCommentReplyTree(component)
@@ -2878,8 +2872,7 @@ else if (shouldInitializePageScript) {
     const mainRenderer = getCommentReplyTreeRootRenderer(component)
     const targets = new Set<HTMLElement>()
     const addTarget = (target: Element | null | undefined) => {
-      if (target instanceof HTMLElement)
-        targets.add(target)
+      if (target instanceof HTMLElement) targets.add(target)
     }
     addTarget(replyContainer)
     addTarget(threadHost)
@@ -2888,21 +2881,20 @@ else if (shouldInitializePageScript) {
 
     // 主评论图片和正文可能分别位于多层 shadow root；只观察外层 renderer
     // 在某些布局下无法捕获内部图片高度变化，导致回复坐标仍停留在旧位置。
-    const layoutTargetSelector = '#body, #main, #header, #content, #pictures, #footer, #user-avatar, bili-comment-pictures-renderer, bili-rich-text, img'
+    const layoutTargetSelector =
+      '#body, #main, #header, #content, #pictures, #footer, #user-avatar, bili-comment-pictures-renderer, bili-rich-text, img'
     const collectNestedLayoutTargets = (root: ParentNode) => {
       root.querySelectorAll<HTMLElement>(layoutTargetSelector).forEach(addTarget)
       root.querySelectorAll<HTMLElement>('*').forEach((element) => {
-        if (element.shadowRoot)
-          collectNestedLayoutTargets(element.shadowRoot)
+        if (element.shadowRoot) collectNestedLayoutTargets(element.shadowRoot)
       })
     }
-    if (threadRoot)
-      collectNestedLayoutTargets(threadRoot)
+    if (threadRoot) collectNestedLayoutTargets(threadRoot)
     else if (component instanceof HTMLElement && component.shadowRoot)
       collectNestedLayoutTargets(component.shadowRoot)
 
     const targetList = [...targets]
-    const targetsKey = targetList.map(el => `${el.localName}#${el.id || ''}`).join('|')
+    const targetsKey = targetList.map((el) => `${el.localName}#${el.id || ''}`).join('|')
 
     if (state.observedTargetsKey !== targetsKey || !state.resizeObserver) {
       disconnectCommentReplyTreeResizeObserver(state)
@@ -2914,7 +2906,7 @@ else if (shouldInitializePageScript) {
         }
         scheduleCommentReplyTreeLayoutUpdate(component)
       })
-      targetList.forEach(target => state.resizeObserver?.observe(target))
+      targetList.forEach((target) => state.resizeObserver?.observe(target))
     }
 
     // 删除/屏蔽回复时，B 站有时直接从列表移除 renderer，不触发回复组件自身的
@@ -2928,24 +2920,28 @@ else if (shouldInitializePageScript) {
           return
         }
 
-        const isTreeGuideNode = (node: Node) => (
-          node instanceof Element
-          && (node.id === COMMENT_REPLY_TREE_GUIDES_ID
-            || Boolean(node.closest('.bewly-comment-missing-parent'))
-            || Boolean(node.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)))
-        )
-        const hasExternalChildListMutation = mutations.some(({ target, addedNodes, removedNodes }) => {
-          if (target instanceof Element && (target.id === COMMENT_REPLY_TREE_GUIDES_ID
-            || target.closest('.bewly-comment-missing-parent')
-            || target.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`))) {
-            return false
-          }
+        const isTreeGuideNode = (node: Node) =>
+          node instanceof Element &&
+          (node.id === COMMENT_REPLY_TREE_GUIDES_ID ||
+            Boolean(node.closest('.bewly-comment-missing-parent')) ||
+            Boolean(node.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)))
+        const hasExternalChildListMutation = mutations.some(
+          ({ target, addedNodes, removedNodes }) => {
+            if (
+              target instanceof Element &&
+              (target.id === COMMENT_REPLY_TREE_GUIDES_ID ||
+                target.closest('.bewly-comment-missing-parent') ||
+                target.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`))
+            ) {
+              return false
+            }
 
-          return [...Array.from(addedNodes), ...Array.from(removedNodes)]
-            .some(node => !isTreeGuideNode(node))
-        })
-        if (hasExternalChildListMutation)
-          scheduleCommentReplyTreeLayoutUpdate(component)
+            return [...Array.from(addedNodes), ...Array.from(removedNodes)].some(
+              (node) => !isTreeGuideNode(node),
+            )
+          },
+        )
+        if (hasExternalChildListMutation) scheduleCommentReplyTreeLayoutUpdate(component)
       })
       observer.observe(replyContainer, { childList: true })
       state.replyContainerScrollAbort?.abort()
@@ -2971,24 +2967,24 @@ else if (shouldInitializePageScript) {
       const onImageLayout = () => scheduleCommentReplyTreeLayoutUpdate(component)
       const listenImages = (root: ParentNode) => {
         root.querySelectorAll('img').forEach((img) => {
-          if (img.complete || imageLoadListeners.has(img))
-            return
+          if (img.complete || imageLoadListeners.has(img)) return
           imageLoadListeners.add(img)
           img.addEventListener('load', onImageLayout, { once: true, signal: abort.signal })
           img.addEventListener('error', onImageLayout, { once: true, signal: abort.signal })
         })
         root.querySelectorAll<HTMLElement>('*').forEach((element) => {
-          if (element.shadowRoot)
-            listenImages(element.shadowRoot)
+          if (element.shadowRoot) listenImages(element.shadowRoot)
         })
       }
       listenImages(imageRoot)
-      if (imageRoot.shadowRoot)
-        listenImages(imageRoot.shadowRoot)
+      if (imageRoot.shadowRoot) listenImages(imageRoot.shadowRoot)
     }
   }
 
-  function getCommentReplyOriginalOrder(state: CommentReplyTreeState, renderer: HTMLElement): number {
+  function getCommentReplyOriginalOrder(
+    state: CommentReplyTreeState,
+    renderer: HTMLElement,
+  ): number {
     let originalOrder = state.originalOrderByRenderer.get(renderer)
     if (originalOrder === undefined) {
       originalOrder = state.nextOriginalOrder
@@ -3000,44 +2996,41 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyCtime(replyItem: any): number | null {
     const ctime = replyItem?.ctime
-    if (ctime === null || ctime === undefined || ctime === '')
-      return null
+    if (ctime === null || ctime === undefined || ctime === '') return null
 
     const numericCtime = Number(ctime)
     return Number.isFinite(numericCtime) ? numericCtime : null
   }
 
   function compareCommentReplyTreeNodes(a: CommentReplyTreeNode, b: CommentReplyTreeNode): number {
-    if (a.ctime !== null && b.ctime !== null && a.ctime !== b.ctime)
-      return a.ctime - b.ctime
-    if (a.ctime !== null && b.ctime === null)
-      return -1
-    if (a.ctime === null && b.ctime !== null)
-      return 1
+    if (a.ctime !== null && b.ctime !== null && a.ctime !== b.ctime) return a.ctime - b.ctime
+    if (a.ctime !== null && b.ctime === null) return -1
+    if (a.ctime === null && b.ctime !== null) return 1
     return a.originalOrder - b.originalOrder
   }
 
   function getCommentReplyIndent(depth: number): string {
-    if (depth <= 0)
-      return '0px'
-    if (depth === 1)
-      return COMMENT_REPLY_TREE_INDENT_STEP
+    if (depth <= 0) return '0px'
+    if (depth === 1) return COMMENT_REPLY_TREE_INDENT_STEP
 
     return `calc(${Array.from({ length: depth }, () => COMMENT_REPLY_TREE_INDENT_STEP).join(' + ')})`
   }
 
   function getCommentReplyTreeIndentStep(
     replyContainer: HTMLElement,
-    orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
+    orderedNodes: Array<{ depth: number; node: CommentReplyTreeNode }>,
     maxDepthOverride?: number,
   ): number {
-    const preferredIndentStep = replyContainer.clientWidth <= COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH
-      ? COMPACT_COMMENT_REPLY_TREE_INDENT_STEP
-      : DEFAULT_COMMENT_REPLY_TREE_INDENT_STEP
-    const observedMaxDepth = orderedNodes.reduce((maximum, { depth }) => Math.max(maximum, depth), 0)
+    const preferredIndentStep =
+      replyContainer.clientWidth <= COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH
+        ? COMPACT_COMMENT_REPLY_TREE_INDENT_STEP
+        : DEFAULT_COMMENT_REPLY_TREE_INDENT_STEP
+    const observedMaxDepth = orderedNodes.reduce(
+      (maximum, { depth }) => Math.max(maximum, depth),
+      0,
+    )
     const maxDepth = Math.max(observedMaxDepth, maxDepthOverride ?? 0)
-    if (maxDepth <= 0)
-      return preferredIndentStep
+    if (maxDepth <= 0) return preferredIndentStep
 
     const availableIndentWidth = Math.max(
       0,
@@ -3045,12 +3038,12 @@ else if (shouldInitializePageScript) {
     )
     const fittedIndentStep = availableIndentWidth / maxDepth
     const minimumGuideIndentStep = orderedNodes.reduce((minimum, { node }) => {
-      const avatar = node.renderer.shadowRoot?.querySelector<HTMLElement>('#user-avatar')
-        ?? node.renderer.shadowRoot?.querySelector<HTMLElement>('bili-avatar')
+      const avatar =
+        node.renderer.shadowRoot?.querySelector<HTMLElement>('#user-avatar') ??
+        node.renderer.shadowRoot?.querySelector<HTMLElement>('bili-avatar')
       const avatarWidth = avatar?.getBoundingClientRect().width ?? 0
-      const avatarRadius = avatarWidth > 0
-        ? avatarWidth / 2
-        : COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS
+      const avatarRadius =
+        avatarWidth > 0 ? avatarWidth / 2 : COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS
       return Math.max(minimum, avatarRadius + COMMENT_REPLY_TREE_MIN_GUIDE_GAP)
     }, COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS + COMMENT_REPLY_TREE_MIN_GUIDE_GAP)
 
@@ -3071,15 +3064,12 @@ else if (shouldInitializePageScript) {
   type CommentReplyTreeMode = 'lineCollapseMain' | 'lineKeepMain' | 'indentOnly'
 
   function getCommentReplyTreeMode(): CommentReplyTreeMode | null {
-    if (!currentSettings)
-      return null
+    if (!currentSettings) return null
 
-    if (currentSettings.enableCommentReplyTreeDisplay === false)
-      return null
+    if (currentSettings.enableCommentReplyTreeDisplay === false) return null
 
     const mode = currentSettings.commentReplyTreeMode
-    if (mode === 'lineCollapseMain' || mode === 'lineKeepMain' || mode === 'indentOnly')
-      return mode
+    if (mode === 'lineCollapseMain' || mode === 'lineKeepMain' || mode === 'indentOnly') return mode
 
     // 兼容尚未迁移的旧设置载荷
     if ((currentSettings as { enableCommentReplyTree?: boolean }).enableCommentReplyTree === true)
@@ -3089,14 +3079,15 @@ else if (shouldInitializePageScript) {
   }
 
   function isCommentReplyContainerEnabled(): boolean {
-    return getCommentReplyTreeMode() !== null
-      && currentSettings?.enableCommentReplyTreeContainer === true
+    return (
+      getCommentReplyTreeMode() !== null &&
+      currentSettings?.enableCommentReplyTreeContainer === true
+    )
   }
 
   function getCommentReplyContainerHeight(): number {
     const height = Number(currentSettings?.commentReplyTreeContainerHeight)
-    if (!Number.isFinite(height))
-      return COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT
+    if (!Number.isFinite(height)) return COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT
 
     return Math.min(
       COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT,
@@ -3106,8 +3097,7 @@ else if (shouldInitializePageScript) {
 
   /** 仅在回复容器产生纵向溢出且尚未滚到底部时，才将吸底栏标为遮挡态以显示底衬 */
   function syncCommentReplyFooterStuckState(component: any, replyContainer: HTMLElement | null) {
-    if (!(component instanceof HTMLElement))
-      return
+    if (!(component instanceof HTMLElement)) return
 
     if (!component.hasAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE) || !replyContainer) {
       component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
@@ -3115,20 +3105,22 @@ else if (shouldInitializePageScript) {
     }
 
     const isOverflowing = replyContainer.scrollHeight > replyContainer.clientHeight + 1
-    const isAtBottom = replyContainer.scrollTop + replyContainer.clientHeight >= replyContainer.scrollHeight - 1
+    const isAtBottom =
+      replyContainer.scrollTop + replyContainer.clientHeight >= replyContainer.scrollHeight - 1
     component.toggleAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE, isOverflowing && !isAtBottom)
   }
 
   /** 回复容器由 CSS 驱动：属性切换生效范围，变量承载用户配置的高度 */
   function applyCommentReplyContainer(component: any, enabled: boolean) {
-    if (!(component instanceof HTMLElement))
-      return
+    if (!(component instanceof HTMLElement)) return
 
     component.toggleAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE, enabled)
     if (enabled) {
-      component.style.setProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR, `${getCommentReplyContainerHeight()}px`)
-    }
-    else {
+      component.style.setProperty(
+        COMMENT_REPLY_CONTAINER_HEIGHT_VAR,
+        `${getCommentReplyContainerHeight()}px`,
+      )
+    } else {
       component.style.removeProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR)
       component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
     }
@@ -3149,29 +3141,26 @@ else if (shouldInitializePageScript) {
     renderer: HTMLElement,
     containerRect: CommentReplyGuideOrigin,
   ): CommentReplyAvatarAnchor | null {
-    const avatar = renderer.shadowRoot?.querySelector<HTMLElement>('#user-avatar')
-      ?? renderer.shadowRoot?.querySelector<HTMLElement>('bili-avatar')
-      ?? renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__avatar')
+    const avatar =
+      renderer.shadowRoot?.querySelector<HTMLElement>('#user-avatar') ??
+      renderer.shadowRoot?.querySelector<HTMLElement>('bili-avatar') ??
+      renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__avatar')
     const avatarRect = avatar?.getBoundingClientRect()
     const hasValidAvatar = Boolean(avatarRect && avatarRect.width > 0 && avatarRect.height > 0)
 
     // 折叠后主体 visibility:hidden + overflow:hidden，头像尺寸可能不可用，回退到渲染器自身矩形
     if (renderer.hasAttribute('data-bewly-comment-reply-collapsed')) {
       const rendererRect = renderer.getBoundingClientRect()
-      const fallbackHeight = Number.parseFloat(
-        getComputedStyle(renderer).getPropertyValue('--bew-space-6'),
-      ) || 24
+      const fallbackHeight =
+        Number.parseFloat(getComputedStyle(renderer).getPropertyValue('--bew-space-6')) || 24
       const height = rendererRect.height > 0 ? rendererRect.height : fallbackHeight
-      if (rendererRect.width <= 0 && height <= 0)
-        return null
+      if (rendererRect.width <= 0 && height <= 0) return null
 
       const centerY = rendererRect.top + height / 2 - containerRect.top
       const centerX = hasValidAvatar
         ? avatarRect!.left + avatarRect!.width / 2 - containerRect.left
         : rendererRect.left + 20 - containerRect.left
-      const left = hasValidAvatar
-        ? avatarRect!.left - containerRect.left
-        : centerX - 12
+      const left = hasValidAvatar ? avatarRect!.left - containerRect.left : centerX - 12
 
       return {
         bottom: centerY,
@@ -3182,15 +3171,15 @@ else if (shouldInitializePageScript) {
       }
     }
 
-    if (!hasValidAvatar || !avatarRect)
-      return null
+    if (!hasValidAvatar || !avatarRect) return null
 
     const footer = renderer.shadowRoot?.querySelector<HTMLElement>('#footer')
     const footerRect = footer?.getBoundingClientRect()
     const avatarBottom = avatarRect.bottom - containerRect.top
-    const footerCenterY = footerRect && footerRect.height > 0
-      ? footerRect.top + footerRect.height / 2 - containerRect.top
-      : avatarBottom
+    const footerCenterY =
+      footerRect && footerRect.height > 0
+        ? footerRect.top + footerRect.height / 2 - containerRect.top
+        : avatarBottom
 
     return {
       bottom: avatarBottom,
@@ -3203,7 +3192,10 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyTreeThreadRoot(component: HTMLElement): ShadowRoot | null {
     const rootNode = component.getRootNode()
-    if (!(rootNode instanceof ShadowRoot) || rootNode.host.localName !== 'bili-comment-thread-renderer')
+    if (
+      !(rootNode instanceof ShadowRoot) ||
+      rootNode.host.localName !== 'bili-comment-thread-renderer'
+    )
       return null
 
     return rootNode
@@ -3211,11 +3203,12 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyTreeRootRenderer(component: HTMLElement): HTMLElement | null {
     const threadRoot = getCommentReplyTreeThreadRoot(component)
-    if (!threadRoot)
-      return null
+    if (!threadRoot) return null
 
-    return threadRoot.querySelector<HTMLElement>('#comment')
-      ?? threadRoot.querySelector<HTMLElement>('bili-comment-renderer')
+    return (
+      threadRoot.querySelector<HTMLElement>('#comment') ??
+      threadRoot.querySelector<HTMLElement>('bili-comment-renderer')
+    )
   }
 
   function getCommentReplyTreeNodeKey(node: CommentReplyTreeNode): string {
@@ -3227,10 +3220,7 @@ else if (shouldInitializePageScript) {
     return `tail:${parentKey}:after:${afterSiblingKey}`
   }
 
-  function removeCommentReplyTreeGuides(
-    component: HTMLElement,
-    replyContainer: HTMLElement,
-  ) {
+  function removeCommentReplyTreeGuides(component: HTMLElement, replyContainer: HTMLElement) {
     replyContainer.querySelector(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)?.remove()
     getCommentReplyTreeThreadRoot(component)
       ?.querySelector(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)
@@ -3254,39 +3244,48 @@ else if (shouldInitializePageScript) {
         return
       }
 
-      if (index >= siblings.length - 1)
-        return
+      if (index >= siblings.length - 1) return
 
       const tailKey = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(sibling))
-      if (state.collapsedTailKeys.has(tailKey))
-        hideRemaining = true
+      if (state.collapsedTailKeys.has(tailKey)) hideRemaining = true
     })
   }
 
   function updateCommentReplyTreeVisibility(
     component: HTMLElement,
     state: CommentReplyTreeState,
-    orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
+    orderedNodes: Array<{ depth: number; node: CommentReplyTreeNode }>,
     rootNodes: CommentReplyTreeNode[],
     collapseParentBody: boolean,
   ) {
     const hideDescendantsAtDepth: boolean[] = []
     const rootBranchCollapsed = state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY)
     // 仅「收起主评论」模式才折叠父节点本体；「不收起主评论」只隐藏子回复
-    getCommentReplyTreeRootRenderer(component)
-      ?.toggleAttribute('data-bewly-comment-reply-collapsed', collapseParentBody && rootBranchCollapsed)
+    getCommentReplyTreeRootRenderer(component)?.toggleAttribute(
+      'data-bewly-comment-reply-collapsed',
+      collapseParentBody && rootBranchCollapsed,
+    )
 
     const hiddenByTail = new Set<HTMLElement>()
-    collectCommentReplyTailHiddenRenderers(state, COMMENT_REPLY_TREE_ROOT_KEY, rootNodes, hiddenByTail)
+    collectCommentReplyTailHiddenRenderers(
+      state,
+      COMMENT_REPLY_TREE_ROOT_KEY,
+      rootNodes,
+      hiddenByTail,
+    )
     orderedNodes.forEach(({ node }) => {
       if (node.children.length > 1)
-        collectCommentReplyTailHiddenRenderers(state, getCommentReplyTreeNodeKey(node), node.children, hiddenByTail)
+        collectCommentReplyTailHiddenRenderers(
+          state,
+          getCommentReplyTreeNodeKey(node),
+          node.children,
+          hiddenByTail,
+        )
     })
 
     orderedNodes.forEach(({ depth, node }) => {
-      const hiddenByAncestor = depth === 0
-        ? rootBranchCollapsed
-        : hideDescendantsAtDepth[depth - 1] === true
+      const hiddenByAncestor =
+        depth === 0 ? rootBranchCollapsed : hideDescendantsAtDepth[depth - 1] === true
       const hiddenByAi = node.renderer.hasAttribute('data-bewly-ai-hidden')
       const hidden = hiddenByAncestor || hiddenByTail.has(node.renderer)
       const branchCollapsed = state.collapsedNodeKeys.has(getCommentReplyTreeNodeKey(node))
@@ -3306,8 +3305,7 @@ else if (shouldInitializePageScript) {
   ) {
     if (state.collapsedNodeKeys.has(branchKey)) {
       state.collapsedNodeKeys.delete(branchKey)
-    }
-    else {
+    } else {
       invalidateCommentReplyPaginationLoading(component)
       state.collapsedNodeKeys.add(branchKey)
     }
@@ -3321,8 +3319,7 @@ else if (shouldInitializePageScript) {
   ) {
     if (state.collapsedTailKeys.has(tailKey)) {
       state.collapsedTailKeys.delete(tailKey)
-    }
-    else {
+    } else {
       invalidateCommentReplyPaginationLoading(component)
       state.collapsedTailKeys.add(tailKey)
     }
@@ -3370,7 +3367,10 @@ else if (shouldInitializePageScript) {
     toggleSymbol.classList.add('bewly-comment-reply-tail__symbol')
     const horizontalSymbol = `M ${coordinate(tail.x - symbolHalfSize)} ${coordinate(tail.y)} H ${coordinate(tail.x + symbolHalfSize)}`
     const verticalSymbol = `M ${coordinate(tail.x)} ${coordinate(tail.y - symbolHalfSize)} V ${coordinate(tail.y + symbolHalfSize)}`
-    toggleSymbol.setAttribute('d', tail.collapsed ? `${horizontalSymbol} ${verticalSymbol}` : horizontalSymbol)
+    toggleSymbol.setAttribute(
+      'd',
+      tail.collapsed ? `${horizontalSymbol} ${verticalSymbol}` : horizontalSymbol,
+    )
     tailGroup.appendChild(toggleSymbol)
 
     const toggleTail = () => toggleCommentReplyTreeTail(component, state, tail.key)
@@ -3380,8 +3380,7 @@ else if (shouldInitializePageScript) {
       toggleTail()
     })
     tailGroup.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ')
-        return
+      if (event.key !== 'Enter' && event.key !== ' ') return
       event.preventDefault()
       event.stopPropagation()
       toggleTail()
@@ -3398,12 +3397,14 @@ else if (shouldInitializePageScript) {
     avatarAnchorByNode: Map<CommentReplyTreeNode, CommentReplyAvatarAnchor>,
     toggleHitRadius: number,
   ): CommentReplyTreeTailCollapse[] {
-    if (siblings.length < 2)
-      return []
+    if (siblings.length < 2) return []
 
     let firstHiddenIndex = siblings.length
     for (let index = 0; index < siblings.length - 1; index += 1) {
-      const tailKey = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(siblings[index]))
+      const tailKey = getCommentReplyTailCollapseKey(
+        parentKey,
+        getCommentReplyTreeNodeKey(siblings[index]),
+      )
       if (state.collapsedTailKeys.has(tailKey)) {
         firstHiddenIndex = index + 1
         break
@@ -3417,7 +3418,10 @@ else if (shouldInitializePageScript) {
       const afterSibling = siblings[firstHiddenIndex - 1]
       const afterAnchor = avatarAnchorByNode.get(afterSibling)
       if (afterAnchor) {
-        const key = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(afterSibling))
+        const key = getCommentReplyTailCollapseKey(
+          parentKey,
+          getCommentReplyTreeNodeKey(afterSibling),
+        )
         const y = Math.max(afterAnchor.bottom + toggleHitRadius, afterAnchor.toggleY)
         tails.push({
           collapsed: true,
@@ -3436,12 +3440,10 @@ else if (shouldInitializePageScript) {
       const next = siblings[index + 1]
       const currentAnchor = avatarAnchorByNode.get(current)
       const nextAnchor = avatarAnchorByNode.get(next)
-      if (!currentAnchor || !nextAnchor)
-        continue
+      if (!currentAnchor || !nextAnchor) continue
 
       const gap = nextAnchor.centerY - currentAnchor.centerY
-      if (gap < toggleHitRadius * 2)
-        continue
+      if (gap < toggleHitRadius * 2) continue
 
       const key = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(current))
       const y = currentAnchor.centerY + gap / 2
@@ -3510,7 +3512,10 @@ else if (shouldInitializePageScript) {
     toggleSymbol.classList.add('bewly-comment-reply-branch__symbol')
     const horizontalSymbol = `M ${coordinate(branch.parentAnchor.centerX - symbolHalfSize)} ${coordinate(toggleY)} H ${coordinate(branch.parentAnchor.centerX + symbolHalfSize)}`
     const verticalSymbol = `M ${coordinate(branch.parentAnchor.centerX)} ${coordinate(toggleY - symbolHalfSize)} V ${coordinate(toggleY + symbolHalfSize)}`
-    toggleSymbol.setAttribute('d', branch.collapsed ? `${horizontalSymbol} ${verticalSymbol}` : horizontalSymbol)
+    toggleSymbol.setAttribute(
+      'd',
+      branch.collapsed ? `${horizontalSymbol} ${verticalSymbol}` : horizontalSymbol,
+    )
     branchGroup.appendChild(toggleSymbol)
 
     // 仅「收起主评论」且父节点本体被折叠时显示昵称；「不收起主评论」父正文仍在，无需昵称
@@ -3531,8 +3536,7 @@ else if (shouldInitializePageScript) {
       toggleBranch()
     })
     branchGroup.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ')
-        return
+      if (event.key !== 'Enter' && event.key !== ' ') return
       event.preventDefault()
       event.stopPropagation()
       toggleBranch()
@@ -3542,20 +3546,25 @@ else if (shouldInitializePageScript) {
   }
 
   function isCommentReplyTreeNodeVisible(node: CommentReplyTreeNode): boolean {
-    return !node.renderer.hasAttribute('data-bewly-comment-reply-hidden')
-      && !node.renderer.hasAttribute('data-bewly-ai-hidden')
+    return (
+      !node.renderer.hasAttribute('data-bewly-comment-reply-hidden') &&
+      !node.renderer.hasAttribute('data-bewly-ai-hidden')
+    )
   }
 
   function renderCommentReplyTreeGuides(
     component: HTMLElement,
     state: CommentReplyTreeState,
     replyContainer: HTMLElement,
-    orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
+    orderedNodes: Array<{ depth: number; node: CommentReplyTreeNode }>,
     rootNodes: CommentReplyTreeNode[],
     collapseParentBody: boolean,
   ) {
     const threadRoot = getCommentReplyTreeThreadRoot(component)
-    if (threadRoot?.host instanceof HTMLElement && threadRoot.host.hasAttribute('data-bewly-ai-hidden')) {
+    if (
+      threadRoot?.host instanceof HTMLElement &&
+      threadRoot.host.hasAttribute('data-bewly-ai-hidden')
+    ) {
       removeCommentReplyTreeGuides(component, replyContainer)
       return
     }
@@ -3580,8 +3589,7 @@ else if (shouldInitializePageScript) {
       ? replyContainer
       : (threadRoot ?? replyContainer)
     // 布局未就绪（宽度为 0 或高度异常小）时不画线，避免未展开/图片未加载时的错位
-    if (origin.width <= 0 || origin.height <= 0)
-      return
+    if (origin.width <= 0 || origin.height <= 0) return
 
     if (threadRoot) {
       const threadStylePatch = COMMENT_SHADOW_STYLE_PATCHES['bili-comment-thread-renderer']
@@ -3592,8 +3600,7 @@ else if (shouldInitializePageScript) {
     const avatarAnchorByNode = new Map<CommentReplyTreeNode, CommentReplyAvatarAnchor>()
     let missingVisibleAvatar = false
     nodes.forEach((node) => {
-      if (!isCommentReplyTreeNodeVisible(node))
-        return
+      if (!isCommentReplyTreeNodeVisible(node)) return
       const anchor = getCommentReplyAvatarAnchor(node.renderer, origin)
       if (anchor) {
         avatarAnchorByNode.set(node, anchor)
@@ -3605,8 +3612,7 @@ else if (shouldInitializePageScript) {
     })
     const retryLayout = () => {
       const retries = state.layoutRetryCount ?? 0
-      if (retries >= 12)
-        return
+      if (retries >= 12) return
       state.layoutRetryCount = retries + 1
       scheduleCommentReplyTreeLayoutUpdate(component)
     }
@@ -3620,15 +3626,15 @@ else if (shouldInitializePageScript) {
       }
     }
 
-    if (!missingVisibleAvatar)
-      state.layoutRetryCount = 0
+    if (!missingVisibleAvatar) state.layoutRetryCount = 0
 
     const componentStyle = getComputedStyle(component)
-    const branchRadius = Number.parseFloat(
-      componentStyle.getPropertyValue('--bew-comment-reply-branch-radius'),
-    ) || 12
-    const toggleHitRadius = Number.parseFloat(componentStyle.getPropertyValue('--bew-space-3')) || 12
-    const toggleNodeRadius = Number.parseFloat(componentStyle.getPropertyValue('--bew-radius-half')) || 6
+    const branchRadius =
+      Number.parseFloat(componentStyle.getPropertyValue('--bew-comment-reply-branch-radius')) || 12
+    const toggleHitRadius =
+      Number.parseFloat(componentStyle.getPropertyValue('--bew-space-3')) || 12
+    const toggleNodeRadius =
+      Number.parseFloat(componentStyle.getPropertyValue('--bew-radius-half')) || 6
     const branches: CommentReplyTreeBranch[] = []
     const tails: CommentReplyTreeTailCollapse[] = []
 
@@ -3642,7 +3648,9 @@ else if (shouldInitializePageScript) {
      */
     const threadRootAnchor = containerEnabled
       ? null
-      : (threadRootRenderer ? getCommentReplyAvatarAnchor(threadRootRenderer, origin) : null)
+      : threadRootRenderer
+        ? getCommentReplyAvatarAnchor(threadRootRenderer, origin)
+        : null
     // 分支收起后即使子回复全隐藏，也保留控件以便展开；若所有子回复均被 AI 隐藏则不再画空线
     if (threadRootAnchor && (visibleRootNodes.length > 0 || rootBranchCollapsed)) {
       let rootTrunkExtendY: number | undefined
@@ -3657,14 +3665,14 @@ else if (shouldInitializePageScript) {
           toggleHitRadius,
         )
         tails.push(...rootTails)
-        rootTrunkExtendY = rootTails.find(tail => tail.collapsed)?.y
+        rootTrunkExtendY = rootTails.find((tail) => tail.collapsed)?.y
       }
 
       branches.push({
         childAnchors: visibleRootNodes
-          .map(node => avatarAnchorByNode.get(node))
+          .map((node) => avatarAnchorByNode.get(node))
           .filter((anchor): anchor is CommentReplyAvatarAnchor => Boolean(anchor))
-          .filter(anchor => anchor.left > threadRootAnchor.centerX),
+          .filter((anchor) => anchor.left > threadRootAnchor.centerX),
         collapsed: rootBranchCollapsed,
         collapseParentBody,
         key: COMMENT_REPLY_TREE_ROOT_KEY,
@@ -3675,8 +3683,7 @@ else if (shouldInitializePageScript) {
     }
 
     nodes.forEach((node) => {
-      if (!isCommentReplyTreeNodeVisible(node))
-        return
+      if (!isCommentReplyTreeNodeVisible(node)) return
 
       let parentAnchor = avatarAnchorByNode.get(node)
       if (!parentAnchor) {
@@ -3687,13 +3694,11 @@ else if (shouldInitializePageScript) {
           avatarAnchorByNode.set(node, resolvedAnchor)
         }
       }
-      if (!parentAnchor || node.children.length === 0)
-        return
+      if (!parentAnchor || node.children.length === 0) return
 
       const nodeBranchCollapsed = state.collapsedNodeKeys.has(getCommentReplyTreeNodeKey(node))
       const visibleChildren = node.children.filter(isCommentReplyTreeNodeVisible)
-      if (visibleChildren.length === 0 && !nodeBranchCollapsed)
-        return
+      if (visibleChildren.length === 0 && !nodeBranchCollapsed) return
 
       let nodeTrunkExtendY: number | undefined
       if (!nodeBranchCollapsed && visibleChildren.length > 1) {
@@ -3706,14 +3711,14 @@ else if (shouldInitializePageScript) {
           toggleHitRadius,
         )
         tails.push(...nodeTails)
-        nodeTrunkExtendY = nodeTails.find(tail => tail.collapsed)?.y
+        nodeTrunkExtendY = nodeTails.find((tail) => tail.collapsed)?.y
       }
 
       branches.push({
         childAnchors: visibleChildren
-          .map(child => avatarAnchorByNode.get(child))
+          .map((child) => avatarAnchorByNode.get(child))
           .filter((anchor): anchor is CommentReplyAvatarAnchor => Boolean(anchor))
-          .filter(anchor => anchor.left > parentAnchor.centerX),
+          .filter((anchor) => anchor.left > parentAnchor.centerX),
         collapsed: nodeBranchCollapsed,
         collapseParentBody,
         key: getCommentReplyTreeNodeKey(node),
@@ -3725,22 +3730,21 @@ else if (shouldInitializePageScript) {
 
     const renderedBranches = branches
       .map((branch) => {
-        const pathData = getCommentReplyBranchPath(
-          branch,
-          branchRadius,
-          toggleHitRadius,
-        )
-        if (!pathData)
-          return null
+        const pathData = getCommentReplyBranchPath(branch, branchRadius, toggleHitRadius)
+        if (!pathData) return null
 
         const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius)
         return { branch, pathData, toggleY }
       })
-      .filter((entry): entry is {
-        branch: CommentReplyTreeBranch
-        pathData: string
-        toggleY: number
-      } => Boolean(entry))
+      .filter(
+        (
+          entry,
+        ): entry is {
+          branch: CommentReplyTreeBranch
+          pathData: string
+          toggleY: number
+        } => Boolean(entry),
+      )
     if (renderedBranches.length === 0 && tails.length === 0) {
       if (missingVisibleAvatar) {
         // 新布局尚未具备足够锚点时保留上一帧，避免先清空线条再等待重试。
@@ -3755,15 +3759,14 @@ else if (shouldInitializePageScript) {
     const minimumX = Math.min(
       0,
       ...renderedBranches.map(({ branch }) => branch.parentAnchor.centerX - toggleHitRadius),
-      ...tails.map(tail => tail.x - toggleHitRadius),
+      ...tails.map((tail) => tail.x - toggleHitRadius),
     )
     const minimumY = Math.min(
       0,
-      ...renderedBranches.map(({ branch, toggleY }) => Math.min(
-        branch.parentAnchor.bottom,
-        toggleY - toggleHitRadius,
-      )),
-      ...tails.map(tail => tail.y - toggleHitRadius),
+      ...renderedBranches.map(({ branch, toggleY }) =>
+        Math.min(branch.parentAnchor.bottom, toggleY - toggleHitRadius),
+      ),
+      ...tails.map((tail) => tail.y - toggleHitRadius),
     )
     const maximumY = Math.max(
       // 容器内只覆盖实际线条和控件。旧 SVG 会参与 scrollHeight 计算，
@@ -3773,9 +3776,9 @@ else if (shouldInitializePageScript) {
         branch.parentAnchor.centerY,
         branch.parentAnchor.bottom + toggleHitRadius * 2,
         toggleY + toggleHitRadius,
-        ...branch.childAnchors.map(anchor => anchor.centerY),
+        ...branch.childAnchors.map((anchor) => anchor.centerY),
       ]),
-      ...tails.map(tail => tail.y + toggleHitRadius),
+      ...tails.map((tail) => tail.y + toggleHitRadius),
     )
     const layerWidth = Math.max(1, origin.width - minimumX)
     const layerHeight = Math.max(1, maximumY - minimumY)
@@ -3793,35 +3796,40 @@ else if (shouldInitializePageScript) {
     guideLayer.style.height = `${layerHeight}px`
 
     renderedBranches.forEach(({ branch, pathData, toggleY }) => {
-      guideLayer.appendChild(createCommentReplyTreeBranchElement(
-        component,
-        state,
-        branch,
-        pathData,
-        toggleHitRadius,
-        toggleNodeRadius,
-        toggleY,
-      ))
+      guideLayer.appendChild(
+        createCommentReplyTreeBranchElement(
+          component,
+          state,
+          branch,
+          pathData,
+          toggleHitRadius,
+          toggleNodeRadius,
+          toggleY,
+        ),
+      )
     })
     tails.forEach((tail) => {
-      guideLayer.appendChild(createCommentReplyTreeTailElement(
-        component,
-        state,
-        tail,
-        toggleHitRadius,
-        toggleNodeRadius,
-      ))
+      guideLayer.appendChild(
+        createCommentReplyTreeTailElement(
+          component,
+          state,
+          tail,
+          toggleHitRadius,
+          toggleNodeRadius,
+        ),
+      )
     })
     // 只有新图层已完整创建后才替换旧图层；中途布局失败时旧线条仍可保留。
     removeCommentReplyTreeGuides(component, replyContainer)
     guideContainer.appendChild(guideLayer)
-    if (missingVisibleAvatar)
-      retryLayout()
+    if (missingVisibleAvatar) retryLayout()
   }
 
   function isCommentReplyRenderer(element: Element): element is HTMLElement {
-    return element.localName === 'bili-comment-reply-renderer'
-      || element.localName === 'bili-comment-renderer'
+    return (
+      element.localName === 'bili-comment-reply-renderer' ||
+      element.localName === 'bili-comment-renderer'
+    )
   }
 
   /**
@@ -3841,62 +3849,52 @@ else if (shouldInitializePageScript) {
     // 还原被改写的正文 span（: 前缀拆分）
     contents.querySelectorAll<HTMLElement>('[data-bewly-reply-at-rest]').forEach((el) => {
       const original = el.dataset.bewlyReplyAtOriginal
-      if (original !== undefined)
-        el.textContent = original
+      if (original !== undefined) el.textContent = original
       delete el.dataset.bewlyReplyAtRest
       delete el.dataset.bewlyReplyAtOriginal
     })
 
     contents.querySelectorAll('[data-bewly-hide-reply-at]').forEach((el) => {
       const parent = el.parentNode
-      if (!parent)
-        return
-      while (el.firstChild)
-        parent.insertBefore(el.firstChild, el)
+      if (!parent) return
+      while (el.firstChild) parent.insertBefore(el.firstChild, el)
       parent.removeChild(el)
     })
   }
 
   function wrapNodesAndHideReplyAtPrefix(nodes: Node[]) {
-    if (nodes.length === 0)
-      return
+    if (nodes.length === 0) return
 
     const first = nodes[0]
     const parent = first.parentNode
-    if (!parent)
-      return
+    if (!parent) return
 
     const wrapper = document.createElement('span')
     wrapper.dataset.bewlyHideReplyAt = 'true'
     wrapper.style.display = 'none'
     parent.insertBefore(wrapper, first)
-    nodes.forEach(node => wrapper.appendChild(node))
+    nodes.forEach((node) => wrapper.appendChild(node))
   }
 
   function findFirstReplyAtTextNode(root: Node): Text | null {
     for (const node of Array.from(root.childNodes)) {
       if (node.nodeType === Node.TEXT_NODE) {
-        if ((node.textContent || '').trim())
-          return node as Text
+        if ((node.textContent || '').trim()) return node as Text
         continue
       }
-      if (node.nodeType !== Node.ELEMENT_NODE)
-        continue
+      if (node.nodeType !== Node.ELEMENT_NODE) continue
       const textNode = findFirstReplyAtTextNode(node)
-      if (textNode)
-        return textNode
+      if (textNode) return textNode
     }
     return null
   }
 
   function hideSingleTextReplyAtPrefix(textNode: Text): boolean {
     const match = textNode.data.match(REPLY_AT_PREFIX_SINGLE)
-    if (!match)
-      return false
+    if (!match) return false
 
     const parent = textNode.parentNode
-    if (!parent)
-      return false
+    if (!parent) return false
 
     const prefix = match[0]
     const rest = textNode.data.slice(prefix.length)
@@ -3909,20 +3907,16 @@ else if (shouldInitializePageScript) {
       const restNode = document.createTextNode(rest)
       parent.replaceChild(restNode, textNode)
       parent.insertBefore(wrapper, restNode)
-    }
-    else {
+    } else {
       parent.replaceChild(wrapper, textNode)
     }
     return true
   }
 
   function isReplyAtMentionElement(node: Node): node is HTMLElement {
-    if (!(node instanceof HTMLElement))
-      return false
-    if (node.getAttribute('data-type') === 'mention')
-      return true
-    if (node.localName === 'a' && (node.textContent || '').trim().startsWith('@'))
-      return true
+    if (!(node instanceof HTMLElement)) return false
+    if (node.getAttribute('data-type') === 'mention') return true
+    if (node.localName === 'a' && (node.textContent || '').trim().startsWith('@')) return true
     return Boolean(node.querySelector?.('a[data-type="mention"], a[href*="space.bilibili.com"]'))
   }
 
@@ -3935,24 +3929,20 @@ else if (shouldInitializePageScript) {
     }
 
     const nodes = Array.from(contents.childNodes).filter((node) => {
-      if (node.nodeType === Node.TEXT_NODE)
-        return Boolean((node.textContent || '').trim())
+      if (node.nodeType === Node.TEXT_NODE) return Boolean((node.textContent || '').trim())
       return node.nodeType === Node.ELEMENT_NODE
     })
     if (nodes.length === 1) {
       const [onlyNode] = nodes
       if (onlyNode?.nodeType === Node.TEXT_NODE) {
         hideSingleTextReplyAtPrefix(onlyNode as Text)
-      }
-      else if (onlyNode instanceof HTMLElement) {
+      } else if (onlyNode instanceof HTMLElement) {
         const firstTextNode = findFirstReplyAtTextNode(onlyNode)
-        if (firstTextNode)
-          hideSingleTextReplyAtPrefix(firstTextNode)
+        if (firstTextNode) hideSingleTextReplyAtPrefix(firstTextNode)
       }
       return
     }
-    if (nodes.length < 2)
-      return
+    if (nodes.length < 2) return
 
     const first = nodes[0]
     const second = nodes[1]
@@ -3977,8 +3967,7 @@ else if (shouldInitializePageScript) {
             colonHost.dataset.bewlyReplyAtRest = 'true'
             colonHost.dataset.bewlyReplyAtOriginal = colonText
             colonHost.textContent = rest
-          }
-          else if (colonHost.nodeType === Node.TEXT_NODE) {
+          } else if (colonHost.nodeType === Node.TEXT_NODE) {
             if (rest) {
               const hideColon = document.createTextNode(prefix)
               const restAfterColon = document.createTextNode(rest)
@@ -3988,8 +3977,7 @@ else if (shouldInitializePageScript) {
                 parent.insertBefore(hideColon, restAfterColon)
                 toHide.push(hideColon)
               }
-            }
-            else {
+            } else {
               toHide.push(colonHost)
             }
           }
@@ -4008,21 +3996,18 @@ else if (shouldInitializePageScript) {
 
   function findCommentRichTextContents(renderer: HTMLElement): HTMLElement[] {
     const root = renderer.shadowRoot
-    if (!root)
-      return []
+    if (!root) return []
 
     const richTexts = Array.from(root.querySelectorAll('bili-rich-text'))
     const contentsList: HTMLElement[] = []
     richTexts.forEach((richText) => {
       const contents = richText.shadowRoot?.querySelector<HTMLElement>('#contents')
-      if (contents)
-        contentsList.push(contents)
+      if (contents) contentsList.push(contents)
     })
 
     // 兼容未再套一层 shadow 的正文容器
     const directContents = root.querySelector<HTMLElement>('#content #contents, #contents')
-    if (directContents && !contentsList.includes(directContents))
-      contentsList.push(directContents)
+    if (directContents && !contentsList.includes(directContents)) contentsList.push(directContents)
 
     return contentsList
   }
@@ -4031,8 +4016,7 @@ else if (shouldInitializePageScript) {
 
   function disconnectCommentReplyAtPrefixObserver(renderer: HTMLElement) {
     const observer = commentReplyAtPrefixObservers.get(renderer)
-    if (!observer)
-      return
+    if (!observer) return
     observer.disconnect()
     commentReplyAtPrefixObservers.delete(renderer)
   }
@@ -4051,17 +4035,14 @@ else if (shouldInitializePageScript) {
     })
 
     const observeTargets = new Set<Node>()
-    if (renderer.shadowRoot)
-      observeTargets.add(renderer.shadowRoot)
+    if (renderer.shadowRoot) observeTargets.add(renderer.shadowRoot)
     findCommentRichTextContents(renderer).forEach((contents) => {
       observeTargets.add(contents)
       const root = contents.getRootNode()
-      if (root instanceof ShadowRoot)
-        observeTargets.add(root)
+      if (root instanceof ShadowRoot) observeTargets.add(root)
     })
     renderer.shadowRoot?.querySelectorAll('bili-rich-text').forEach((richText) => {
-      if (richText.shadowRoot)
-        observeTargets.add(richText.shadowRoot)
+      if (richText.shadowRoot) observeTargets.add(richText.shadowRoot)
     })
 
     observeTargets.forEach((target) => {
@@ -4084,10 +4065,8 @@ else if (shouldInitializePageScript) {
     renderer.toggleAttribute('data-bewly-hide-reply-at', hidden)
     applyCommentReplyAtPrefixHidden(renderer, hidden)
 
-    if (hidden)
-      ensureCommentReplyAtPrefixObserver(renderer)
-    else
-      disconnectCommentReplyAtPrefixObserver(renderer)
+    if (hidden) ensureCommentReplyAtPrefixObserver(renderer)
+    else disconnectCommentReplyAtPrefixObserver(renderer)
   }
 
   const COMMENT_REPLY_OFFPAGE_PARENT_ID = 'bewly-reply-offpage-parent'
@@ -4211,16 +4190,16 @@ else if (shouldInitializePageScript) {
     }
 
     renderer.dataset.bewlyParentOffpage = mode
-    if (authorName)
-      renderer.dataset.bewlyParentAuthor = authorName
-    else
-      delete renderer.dataset.bewlyParentAuthor
-    if (parentRpid)
-      renderer.dataset.bewlyParentRpid = parentRpid
-    else
-      delete renderer.dataset.bewlyParentRpid
+    if (authorName) renderer.dataset.bewlyParentAuthor = authorName
+    else delete renderer.dataset.bewlyParentAuthor
+    if (parentRpid) renderer.dataset.bewlyParentRpid = parentRpid
+    else delete renderer.dataset.bewlyParentRpid
 
-    ensureCommentShadowStyle(root, COMMENT_REPLY_OFFPAGE_PARENT_STYLE_ID, COMMENT_REPLY_OFFPAGE_PARENT_CSS)
+    ensureCommentShadowStyle(
+      root,
+      COMMENT_REPLY_OFFPAGE_PARENT_STYLE_ID,
+      COMMENT_REPLY_OFFPAGE_PARENT_CSS,
+    )
 
     if (!label) {
       label = document.createElement('div')
@@ -4235,29 +4214,28 @@ else if (shouldInitializePageScript) {
       ].join('')
       const richText = root.querySelector('bili-rich-text')
       const body = root.querySelector('#body') ?? root.querySelector('#main')
-      if (richText?.parentElement)
-        richText.parentElement.insertBefore(label, richText)
-      else if (body)
-        body.insertAdjacentElement('afterbegin', label)
-      else
-        root.appendChild(label)
+      if (richText?.parentElement) richText.parentElement.insertBefore(label, richText)
+      else if (body) body.insertAdjacentElement('afterbegin', label)
+      else root.appendChild(label)
     }
 
     label.dataset.mode = mode
 
     const language = currentSettings?.language || 'cmn-CN'
-    const replyWord = language === 'en'
-      ? 'Reply to'
-      : (language === 'cmn-TW' || language === 'jyut')
+    const replyWord =
+      language === 'en'
+        ? 'Reply to'
+        : language === 'cmn-TW' || language === 'jyut'
           ? '回覆'
           : '回复'
-    const badgeText = language === 'en'
-      ? 'off-page'
-      : language === 'cmn-TW'
-        ? '不在本頁'
-        : language === 'jyut'
-          ? '唔喺呢頁'
-          : '不在本页'
+    const badgeText =
+      language === 'en'
+        ? 'off-page'
+        : language === 'cmn-TW'
+          ? '不在本頁'
+          : language === 'jyut'
+            ? '唔喺呢頁'
+            : '不在本页'
     // compact 无昵称时仍展示 @ 占位，避免只剩「回复 / 不在本页」语义不清
     const atText = authorName ? `@${authorName}` : '@…'
 
@@ -4266,19 +4244,15 @@ else if (shouldInitializePageScript) {
     const badgeEl = label.querySelector<HTMLElement>('.bewly-reply-offpage-parent__badge')
     const quoteEl = label.querySelector<HTMLElement>('.bewly-reply-offpage-parent__quote')
 
-    if (replyWordEl)
-      replyWordEl.textContent = replyWord
-    if (atEl)
-      atEl.textContent = atText
-    if (badgeEl)
-      badgeEl.textContent = badgeText
+    if (replyWordEl) replyWordEl.textContent = replyWord
+    if (atEl) atEl.textContent = atText
+    if (badgeEl) badgeEl.textContent = badgeText
 
     if (quoteEl) {
       if (mode === 'quote') {
         quoteEl.textContent = truncateReplyMessageSnippet(fullQuote)
         quoteEl.hidden = false
-      }
-      else {
+      } else {
         quoteEl.textContent = ''
         quoteEl.hidden = true
       }
@@ -4323,14 +4297,10 @@ else if (shouldInitializePageScript) {
     )
     currentRenderers.forEach((renderer) => {
       const order = orderByRenderer.get(renderer)
-      if (order === undefined)
-        renderer.style.removeProperty('--bew-comment-reply-order')
-      else
-        renderer.style.setProperty('--bew-comment-reply-order', String(order))
+      if (order === undefined) renderer.style.removeProperty('--bew-comment-reply-order')
+      else renderer.style.setProperty('--bew-comment-reply-order', String(order))
     })
-    return replyContainer
-      ? moveCommentReplyRendererNodes(replyContainer, orderedRenderers)
-      : false
+    return replyContainer ? moveCommentReplyRendererNodes(replyContainer, orderedRenderers) : false
   }
 
   function isLitRepeatItemMarker(node: Node | null): node is Comment {
@@ -4339,8 +4309,7 @@ else if (shouldInitializePageScript) {
 
   /** repeat 的每一项是 `<!----> host <!---->`；缺失父评占位不属于任何 part。 */
   function getCommentReplyRendererNodeGroup(renderer: HTMLElement): Node[] | null {
-    if (!isCommentReplyRenderer(renderer))
-      return [renderer]
+    if (!isCommentReplyRenderer(renderer)) return [renderer]
 
     const start = renderer.previousSibling
     const end = renderer.nextSibling
@@ -4356,37 +4325,36 @@ else if (shouldInitializePageScript) {
   ): boolean {
     const groups: Node[][] = []
     for (const renderer of orderedRenderers) {
-      if (renderer.parentNode !== replyContainer)
-        return false
+      if (renderer.parentNode !== replyContainer) return false
       const group = getCommentReplyRendererNodeGroup(renderer)
-      if (!group)
-        return false
+      if (!group) return false
       groups.push(group)
     }
-    if (groups.length < 2)
-      return false
+    if (groups.length < 2) return false
 
     // 以 DOM 中最后一个 repeat 项之后的节点为插入终点，它属于 repeat 的结束
     // 边界；占位节点可能停在其前后，跳过它们以免落到 #expander-footer 之后。
-    const groupStarts = new Set(groups.map(group => group[0]))
+    const groupStarts = new Set(groups.map((group) => group[0]))
     let lastLitGroupEnd: Node | null = null
     for (const node of Array.from(replyContainer.childNodes)) {
-      if (isLitRepeatItemMarker(node) && node.nextSibling instanceof HTMLElement
-        && isCommentReplyRenderer(node.nextSibling) && groupStarts.has(node)) {
+      if (
+        isLitRepeatItemMarker(node) &&
+        node.nextSibling instanceof HTMLElement &&
+        isCommentReplyRenderer(node.nextSibling) &&
+        groupStarts.has(node)
+      ) {
         lastLitGroupEnd = node.nextSibling.nextSibling
       }
     }
-    if (!lastLitGroupEnd)
-      return false
+    if (!lastLitGroupEnd) return false
     let reference: Node | null = lastLitGroupEnd.nextSibling
-    while (reference && groupStarts.has(reference))
-      reference = reference.nextSibling
+    while (reference && groupStarts.has(reference)) reference = reference.nextSibling
 
     let moved = false
     for (let index = groups.length - 1; index >= 0; index--) {
       const group = groups[index]
       if (group[group.length - 1].nextSibling !== reference) {
-        group.forEach(node => replyContainer.insertBefore(node, reference))
+        group.forEach((node) => replyContainer.insertBefore(node, reference))
         moved = true
       }
       reference = group[0]
@@ -4395,10 +4363,12 @@ else if (shouldInitializePageScript) {
   }
 
   function getCommentReplyTreeLayoutKey(replyRenderers: HTMLElement[]): string {
-    return replyRenderers.map((renderer, index) => {
-      const rpid = getReplyRpid(getCommentReplyData(renderer))
-      return rpid ? `r:${rpid}` : `i:${index}`
-    }).join('|')
+    return replyRenderers
+      .map((renderer, index) => {
+        const rpid = getReplyRpid(getCommentReplyData(renderer))
+        return rpid ? `r:${rpid}` : `i:${index}`
+      })
+      .join('|')
   }
 
   /** 缺失父评也占据真实树节点；相同父 ID 共用占位，加载到原评论后移除。 */
@@ -4407,10 +4377,12 @@ else if (shouldInitializePageScript) {
     metaByRpid: Map<string, CommentReplyTreeCachedMeta>,
     replyContainer: HTMLElement,
   ) {
-    const nodeByRpid = new Map(nodes.filter(node => node.rpid).map(node => [node.rpid!, node]))
-    const existing = new Map(Array.from(
-      replyContainer.querySelectorAll<HTMLElement>('.bewly-comment-missing-parent'),
-    ).map(renderer => [renderer.dataset.parentRpid!, renderer]))
+    const nodeByRpid = new Map(nodes.filter((node) => node.rpid).map((node) => [node.rpid!, node]))
+    const existing = new Map(
+      Array.from(replyContainer.querySelectorAll<HTMLElement>('.bewly-comment-missing-parent')).map(
+        (renderer) => [renderer.dataset.parentRpid!, renderer],
+      ),
+    )
     const retained = new Set<string>()
     const language = currentSettings?.language || 'cmn-CN'
     const labels: Record<string, string> = {
@@ -4423,11 +4395,16 @@ else if (shouldInitializePageScript) {
     for (let index = 0; index < nodes.length; index++) {
       const child = nodes[index]
       const rpid = child.parentRpid
-      if (isCommentReplyTreeRootParent(rpid, child.rootRpid, child.rpid) || !rpid || nodeByRpid.has(rpid))
+      if (
+        isCommentReplyTreeRootParent(rpid, child.rootRpid, child.rpid) ||
+        !rpid ||
+        nodeByRpid.has(rpid)
+      )
         continue
 
       const meta = metaByRpid.get(rpid)
-      const authorName = meta?.authorName ?? getReplyAtAuthorFromMessage(getCommentReplyData(child.renderer))
+      const authorName =
+        meta?.authorName ?? getReplyAtAuthorFromMessage(getCommentReplyData(child.renderer))
       let renderer = existing.get(rpid)
       if (!renderer) {
         renderer = document.createElement('div')
@@ -4448,13 +4425,13 @@ else if (shouldInitializePageScript) {
       const text = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__text')!
       // 缓存已提供原正文时直接载入父评论，不能仍标记为「不在本页」。
       const content = `${authorName ? `@${authorName} · ` : ''}${meta?.messageText || label}`
-      if (text.textContent !== content)
-        text.textContent = content
+      if (text.textContent !== content) text.textContent = content
       renderer.toggleAttribute('data-cached', Boolean(meta?.messageText))
       const avatar = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__avatar')!
-      const avatarUrl = typeof meta?.avatarUrl === 'string' && /^(?:https?:)?\/\//.test(meta.avatarUrl)
-        ? meta.avatarUrl
-        : null
+      const avatarUrl =
+        typeof meta?.avatarUrl === 'string' && /^(?:https?:)?\/\//.test(meta.avatarUrl)
+          ? meta.avatarUrl
+          : null
       if (meta?.messageText && avatarUrl) {
         let image = avatar.querySelector('img')
         if (!image) {
@@ -4462,16 +4439,12 @@ else if (shouldInitializePageScript) {
           image.alt = ''
           avatar.replaceChildren(image)
         }
-        if (image.getAttribute('src') !== avatarUrl)
-          image.setAttribute('src', avatarUrl)
-      }
-      else {
+        if (image.getAttribute('src') !== avatarUrl) image.setAttribute('src', avatarUrl)
+      } else {
         const avatarText = meta?.messageText ? authorName?.slice(0, 1) || '·' : '?'
-        if (avatar.textContent !== avatarText)
-          avatar.textContent = avatarText
+        if (avatar.textContent !== avatarText) avatar.textContent = avatarText
       }
-      if (renderer.parentElement !== replyContainer)
-        replyContainer.append(renderer)
+      if (renderer.parentElement !== replyContainer) replyContainer.append(renderer)
       retained.add(rpid)
       const parent: CommentReplyTreeNode = {
         authorName,
@@ -4490,8 +4463,7 @@ else if (shouldInitializePageScript) {
       nodes.push(parent)
     }
     existing.forEach((renderer, rpid) => {
-      if (!retained.has(rpid))
-        renderer.remove()
+      if (!retained.has(rpid)) renderer.remove()
     })
   }
 
@@ -4504,8 +4476,7 @@ else if (shouldInitializePageScript) {
   }> {
     const nodeByRpid = new Map<string, CommentReplyTreeNode>()
     nodes.forEach((node) => {
-      if (node.rpid && !nodeByRpid.has(node.rpid))
-        nodeByRpid.set(node.rpid, node)
+      if (node.rpid && !nodeByRpid.has(node.rpid)) nodeByRpid.set(node.rpid, node)
     })
 
     const rootNodes: CommentReplyTreeNode[] = []
@@ -4520,40 +4491,36 @@ else if (shouldInitializePageScript) {
         const replyItem = getCommentReplyData(node.renderer)
         node.directParentAuthorName = getReplyAtAuthorFromMessage(replyItem)
       }
-      if (resolved.visualParent)
-        resolved.visualParent.children.push(node)
-      else
-        rootNodes.push(node)
+      if (resolved.visualParent) resolved.visualParent.children.push(node)
+      else rootNodes.push(node)
     })
 
     rootNodes.sort(compareCommentReplyTreeNodes)
-    nodes.forEach(node => node.children.sort(compareCommentReplyTreeNodes))
+    nodes.forEach((node) => node.children.sort(compareCommentReplyTreeNodes))
 
     // Keep every branch contiguous: parent first, then its time-ordered children.
-    const orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }> = []
+    const orderedNodes: Array<{ depth: number; node: CommentReplyTreeNode }> = []
     const visitedRenderers = new Set<HTMLElement>()
     const visitNode = (node: CommentReplyTreeNode, depth: number) => {
-      if (visitedRenderers.has(node.renderer))
-        return
+      if (visitedRenderers.has(node.renderer)) return
 
       visitedRenderers.add(node.renderer)
       orderedNodes.push({ node, depth: Math.min(depth, MAX_COMMENT_REPLY_TREE_DEPTH) })
-      node.children.forEach(child => visitNode(child, depth + 1))
+      node.children.forEach((child) => visitNode(child, depth + 1))
     }
 
-    rootNodes.forEach(node => visitNode(node, 0))
+    rootNodes.forEach((node) => visitNode(node, 0))
     nodes
-      .filter(node => !visitedRenderers.has(node.renderer))
+      .filter((node) => !visitedRenderers.has(node.renderer))
       .sort(compareCommentReplyTreeNodes)
-      .forEach(node => visitNode(node, 0))
+      .forEach((node) => visitNode(node, 0))
 
     return orderedNodes
   }
 
   function updateCommentReplyTree(component: any) {
     const root = component?.shadowRoot as ShadowRoot | null | undefined
-    if (!root)
-      return
+    if (!root) return
 
     commentRepliesRenderers.add(component)
     const treeMode = getCommentReplyTreeMode()
@@ -4569,8 +4536,7 @@ else if (shouldInitializePageScript) {
     const existingState = commentReplyTreeStates.get(component)
     const paginationState = commentReplyPaginationStates.get(component)
     const pageCache = getCommentReplyPageCache(component)
-    if (pageCache)
-      rememberCommentReplyPages(component, pageCache)
+    if (pageCache) rememberCommentReplyPages(component, pageCache)
     if (treeMode === null && !existingState?.enabled) {
       component.removeAttribute('data-bewly-comment-reply-tree')
       applyCommentReplyContainer(component, false)
@@ -4578,35 +4544,33 @@ else if (shouldInitializePageScript) {
     }
 
     const replyContainer = root.querySelector<HTMLElement>('#expander-contents')
-    if (!replyContainer)
-      return
+    if (!replyContainer) return
 
     // 在原生「点击查看」旁补充快捷入口；进入分页后改由 paginationItems
     // 提供同一个动作项。控件只在登录且「更多」模式下显示。
     updateCommentReplyExpandAllControl(component)
 
-    const replyRenderers = Array.from(replyContainer.children)
-      .filter(isCommentReplyRenderer)
+    const replyRenderers = Array.from(replyContainer.children).filter(isCommentReplyRenderer)
     const state = existingState ?? getCommentReplyTreeState(component)
     syncCommentReplyCrossPageMeta(getCommentReplyPaginationIdentity(component), state)
     // 分页缓存中的其他页不会出现在当前 DOM，但其中的 parent/root 关系
     // 仍应参与树解析，避免切页后出现「评论不在本页或已丢失」的空占位。
-    paginationState?.pages.forEach(page => cacheCommentReplyTreeMetaList(state, page))
-    pageCache?.pages.forEach(page => cacheCommentReplyTreeMetaList(state, page))
-    getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
-    replyRenderers.forEach(renderer => getCommentReplyOriginalOrder(state, renderer))
+    paginationState?.pages.forEach((page) => cacheCommentReplyTreeMetaList(state, page))
+    pageCache?.pages.forEach((page) => cacheCommentReplyTreeMetaList(state, page))
+    getCommentReplyInvisibleIds(component).forEach((rpid) => state.replyMetaByRpid.delete(rpid))
+    replyRenderers.forEach((renderer) => getCommentReplyOriginalOrder(state, renderer))
 
     // 批量加载时，回复节点本身会先后经历 data、用户信息、IP 标签等多次
     // 更新。节点集合没有变化时无需反复重画整棵树；等新页挂载或批量结束
     // 后再统一计算，避免现有评论随每个 IP 标签的到达而来回缩进。
     const expandAllLoading = Boolean(paginationState?.expandAllLoading)
-    const layoutKey = expandAllLoading
-      ? getCommentReplyTreeLayoutKey(replyRenderers)
-      : ''
-    if (treeMode !== null
-      && expandAllLoading
-      && state.enabled
-      && paginationState?.expandAllLayoutKey === layoutKey) {
+    const layoutKey = expandAllLoading ? getCommentReplyTreeLayoutKey(replyRenderers) : ''
+    if (
+      treeMode !== null &&
+      expandAllLoading &&
+      state.enabled &&
+      paginationState?.expandAllLayoutKey === layoutKey
+    ) {
       updateCommentReplyExpandAllControl(component)
       return
     }
@@ -4639,13 +4603,15 @@ else if (shouldInitializePageScript) {
       disconnectCommentReplyTreeResizeObserver(state)
       component.style.removeProperty('--bew-comment-reply-indent-step')
       removeCommentReplyTreeGuides(component, replyContainer)
-      replyContainer.querySelectorAll('.bewly-comment-missing-parent').forEach(node => node.remove())
+      replyContainer
+        .querySelectorAll('.bewly-comment-missing-parent')
+        .forEach((node) => node.remove())
       state.collapsedNodeKeys.clear()
       state.collapsedTailKeys.clear()
       if (state.enabled) {
-        const originalOrder = [...replyRenderers].sort((a, b) => (
-          getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
-        ))
+        const originalOrder = [...replyRenderers].sort(
+          (a, b) => getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b),
+        )
         setCommentReplyRendererOrder(replyRenderers, originalOrder, replyContainer)
       }
 
@@ -4675,7 +4641,9 @@ else if (shouldInitializePageScript) {
       const replyItem = getCommentReplyData(replyRenderer)
       // 同步 data + DOM 正文进缓存，翻页后仍可引用父评摘要
       const fromDomMessage = getCommentRendererMessageText(replyRenderer)
-      const cachedMeta = cacheCommentReplyTreeMeta(state, replyItem, { messageText: fromDomMessage })
+      const cachedMeta = cacheCommentReplyTreeMeta(state, replyItem, {
+        messageText: fromDomMessage,
+      })
       const rpid = getReplyRpid(replyItem) ?? null
       // 当前页 data 偶发缺字段时回退到跨页缓存
       const parentRpid = getReplyParentRpid(replyItem) ?? cachedMeta?.parentRpid ?? null
@@ -4698,12 +4666,10 @@ else if (shouldInitializePageScript) {
     syncCommentReplyCrossPageMeta(getCommentReplyPaginationIdentity(component), state)
 
     // 第二次同步会合并其他 renderer 的缓存，再移除本地已删除/隐藏的回复。
-    getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
+    getCommentReplyInvisibleIds(component).forEach((rpid) => state.replyMetaByRpid.delete(rpid))
     addMissingCommentReplyTreeParents(nodes, state.replyMetaByRpid, replyContainer)
     const orderedNodes = buildCommentReplyTreeOrder(nodes, state.replyMetaByRpid)
-    const rootNodes = orderedNodes
-      .filter(({ depth }) => depth === 0)
-      .map(({ node }) => node)
+    const rootNodes = orderedNodes.filter(({ depth }) => depth === 0).map(({ node }) => node)
     if (expandAllLoading && paginationState && paginationState.frozenTreeIndentStep === undefined) {
       // 按最大支持深度预留空间，保证后续页出现更深层回复时也不需要
       // 重新缩放已有节点；批量结束后再恢复正常的自适应计算。
@@ -4713,9 +4679,10 @@ else if (shouldInitializePageScript) {
         MAX_COMMENT_REPLY_TREE_DEPTH,
       )
     }
-    const indentStep = expandAllLoading && paginationState?.frozenTreeIndentStep !== undefined
-      ? paginationState.frozenTreeIndentStep
-      : getCommentReplyTreeIndentStep(replyContainer, orderedNodes)
+    const indentStep =
+      expandAllLoading && paginationState?.frozenTreeIndentStep !== undefined
+        ? paginationState.frozenTreeIndentStep
+        : getCommentReplyTreeIndentStep(replyContainer, orderedNodes)
     component.style.setProperty('--bew-comment-reply-indent-step', `${indentStep}px`)
     orderedNodes.forEach(({ depth, node }) => {
       node.renderer.dataset.bewlyCommentReplyDepth = String(depth)
@@ -4723,13 +4690,12 @@ else if (shouldInitializePageScript) {
     })
     updateCommentReplyTreeVisibility(component, state, orderedNodes, rootNodes, collapseParentBody)
     const movedReplyNodes = setCommentReplyRendererOrder(
-      nodes.map(node => node.renderer),
+      nodes.map((node) => node.renderer),
       orderedNodes.map(({ node }) => node.renderer),
       replyContainer,
     )
     // 本次重排已基于当前 DOM 完成，丢弃自身移动产生的记录，避免多排一帧。
-    if (movedReplyNodes)
-      state.replyContainerMutationObserver?.takeRecords()
+    if (movedReplyNodes) state.replyContainerMutationObserver?.takeRecords()
     // 父节点展示：
     // - 直接父在本页：引导线/缩进表达层级；线条模式隐藏正文「回复 @xxx」
     // - 直接父不在本页且有正文缓存：引用卡展示原正文
@@ -4740,9 +4706,7 @@ else if (shouldInitializePageScript) {
       // 有正文缓存 或 仅有离页父 ID 都展示我们的标注
       const showOffpageLabel = Boolean(parentOffpage && (hasCachedBody || node.parentRpid))
       // 展示自有标注时隐藏原生前缀，避免「回复 @」重复
-      const hideNativePrefix = showOffpageLabel
-        ? true
-        : (showGuides && !parentOffpage)
+      const hideNativePrefix = showOffpageLabel ? true : showGuides && !parentOffpage
       setCommentReplyAtPrefixHidden(node.renderer, hideNativePrefix)
       updateCommentReplyOffpageParentLabel(node.renderer, {
         authorName: node.directParentAuthorName,
@@ -4767,8 +4731,7 @@ else if (shouldInitializePageScript) {
         rootNodes,
         collapseParentBody,
       )
-    }
-    else {
+    } else {
       removeCommentReplyTreeGuides(component, replyContainer)
     }
     syncCommentReplyFooterStuckState(component, replyContainer)
@@ -4806,15 +4769,13 @@ else if (shouldInitializePageScript) {
   function clearCommentReplyDeepLinkSettlement() {
     while (commentReplyDeepLinkSettleTimers.length > 0) {
       const timer = commentReplyDeepLinkSettleTimers.pop()
-      if (timer !== undefined)
-        window.clearTimeout(timer)
+      if (timer !== undefined) window.clearTimeout(timer)
     }
     commentReplyDeepLinkScrollUntil = 0
   }
 
   function scheduleCommentReplyDeepLinkSettlement(reason: 'immediate' | 'hash' = 'hash') {
-    if (!getCommentReplyDeepLinkId() || getCommentReplyTreeMode() === null)
-      return
+    if (!getCommentReplyDeepLinkId() || getCommentReplyTreeMode() === null) return
 
     // 已在结算窗口：只做轻量刷新，避免每条回复 update 重置长定时器
     if (commentReplyDeepLinkSettleTimers.length > 0 && reason !== 'immediate') {
@@ -4824,9 +4785,10 @@ else if (shouldInitializePageScript) {
 
     clearCommentReplyDeepLinkSettlement()
     // 覆盖：首屏渲染、展开楼中楼、滚动动画、高亮样式、图片解码
-    const delays = reason === 'immediate'
-      ? [0, 50, 120, 280, 500, 900, 1500, 2500, 4000]
-      : [0, 100, 300, 600, 1000, 1800, 3000, 5000]
+    const delays =
+      reason === 'immediate'
+        ? [0, 50, 120, 280, 500, 900, 1500, 2500, 4000]
+        : [0, 100, 300, 600, 1000, 1800, 3000, 5000]
     commentReplyDeepLinkScrollUntil = Date.now() + Math.max(...delays) + 500
 
     delays.forEach((delay) => {
@@ -4834,8 +4796,7 @@ else if (shouldInitializePageScript) {
         // 深链结算时允许更多锚点重试
         commentRepliesRenderers.forEach((component) => {
           const state = commentReplyTreeStates.get(component)
-          if (state)
-            state.layoutRetryCount = 0
+          if (state) state.layoutRetryCount = 0
         })
         refreshCommentReplyTrees()
       }, delay)
@@ -4845,14 +4806,13 @@ else if (shouldInitializePageScript) {
 
   function onCommentReplyDeepLinkScrollOrResize() {
     if (
-      Date.now() > commentReplyDeepLinkScrollUntil
-      || !getCommentReplyDeepLinkId()
-      || getCommentReplyTreeMode() === null
+      Date.now() > commentReplyDeepLinkScrollUntil ||
+      !getCommentReplyDeepLinkId() ||
+      getCommentReplyTreeMode() === null
     ) {
       return
     }
-    if (commentReplyDeepLinkScrollScheduled)
-      return
+    if (commentReplyDeepLinkScrollScheduled) return
     commentReplyDeepLinkScrollScheduled = true
     requestAnimationFrame(() => {
       commentReplyDeepLinkScrollScheduled = false
@@ -4861,29 +4821,30 @@ else if (shouldInitializePageScript) {
   }
 
   window.addEventListener('hashchange', () => {
-    if (getCommentReplyDeepLinkId())
-      scheduleCommentReplyDeepLinkSettlement('hash')
-    else
-      clearCommentReplyDeepLinkSettlement()
+    if (getCommentReplyDeepLinkId()) scheduleCommentReplyDeepLinkSettlement('hash')
+    else clearCommentReplyDeepLinkSettlement()
   })
-  window.addEventListener('scroll', onCommentReplyDeepLinkScrollOrResize, { passive: true, capture: true })
+  window.addEventListener('scroll', onCommentReplyDeepLinkScrollOrResize, {
+    passive: true,
+    capture: true,
+  })
   window.addEventListener('resize', onCommentReplyDeepLinkScrollOrResize, { passive: true })
   // 部分浏览器滚动结束事件
-  window.addEventListener('scrollend', onCommentReplyDeepLinkScrollOrResize, { passive: true, capture: true } as AddEventListenerOptions)
+  window.addEventListener('scrollend', onCommentReplyDeepLinkScrollOrResize, {
+    passive: true,
+    capture: true,
+  } as AddEventListenerOptions)
 
-  if (getCommentReplyDeepLinkId())
-    scheduleCommentReplyDeepLinkSettlement('immediate')
+  if (getCommentReplyDeepLinkId()) scheduleCommentReplyDeepLinkSettlement('immediate')
 
   function cacheRootReplyAuthor(replyItem: any) {
     const replyRpid = getReplyRpid(replyItem)
     const rootRpid = getReplyRootRpid(replyItem)
     const authorMid = getReplyMemberMid(replyItem)
-    if (!replyRpid || !authorMid)
-      return
+    if (!replyRpid || !authorMid) return
 
     const isRootReply = !rootRpid || rootRpid === '0' || rootRpid === replyRpid
-    if (!isRootReply)
-      return
+    if (!isRootReply) return
 
     const threadRootKey = getThreadRootKey(replyItem, replyRpid)
     rootReplyAuthorByThread.set(threadRootKey, authorMid)
@@ -4894,16 +4855,13 @@ else if (shouldInitializePageScript) {
     for (let i = 0; i < rootReplyElements.length; i += 1) {
       const component = rootReplyElements[i] as any
       const data = component?.data
-      if (!data)
-        continue
+      if (!data) continue
 
       const dataRpid = getReplyRpid(data)
-      if (dataRpid !== rootRpid)
-        continue
+      if (dataRpid !== rootRpid) continue
 
       const rootAuthorMid = getReplyMemberMid(data)
-      if (rootAuthorMid)
-        return rootAuthorMid
+      if (rootAuthorMid) return rootAuthorMid
     }
 
     return null
@@ -4911,19 +4869,16 @@ else if (shouldInitializePageScript) {
 
   function isSubReplyByRootAuthor(replyItem: any): boolean {
     const rootRpid = getReplyRootRpid(replyItem)
-    if (!rootRpid || rootRpid === '0')
-      return false
+    if (!rootRpid || rootRpid === '0') return false
 
     const authorMid = getReplyMemberMid(replyItem)
-    if (!authorMid)
-      return false
+    if (!authorMid) return false
 
     const threadRootKey = getThreadRootKey(replyItem, rootRpid)
     let rootAuthorMid = rootReplyAuthorByThread.get(threadRootKey)
     if (!rootAuthorMid) {
       rootAuthorMid = tryResolveRootAuthorFromDom(replyItem, rootRpid) ?? undefined
-      if (rootAuthorMid)
-        rootReplyAuthorByThread.set(threadRootKey, rootAuthorMid)
+      if (rootAuthorMid) rootReplyAuthorByThread.set(threadRootKey, rootAuthorMid)
     }
 
     return rootAuthorMid === authorMid
@@ -4936,14 +4891,12 @@ else if (shouldInitializePageScript) {
     text: any,
     anchor: Element | null | undefined,
   ): HTMLElement | null {
-    if (!root)
-      return null
+    if (!root) return null
 
     let element = root.querySelector<HTMLElement>(`#${id}`)
 
     if (!shouldShow || !anchor) {
-      if (element)
-        element.remove()
+      if (element) element.remove()
       return null
     }
 
@@ -4960,7 +4913,8 @@ else if (shouldInitializePageScript) {
         element.remove()
         return null
       }
-      element.style.cssText = 'display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle;'
+      element.style.cssText =
+        'display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle;'
       element.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="${icon.color}" style="display: block;"><path d="${icon.path}"/></svg>`
     }
     // 如果是IP地理位置元素，使用Tag样式显示
@@ -4968,19 +4922,18 @@ else if (shouldInitializePageScript) {
       // 批量加载楼中楼时 user-info 会多次异步更新；固定标签的最小宽度，
       // 并避免每次更新都重写 style/text，减少 IP 标签造成的横向抖动。
       if (element.dataset.bewlyLocationStyled !== 'true') {
-        element.style.cssText = 'display: inline-block; min-width: 3em; box-sizing: border-box; margin-left: 4px; padding: 1px 4px; font-size: 11px; color: var(--bew-ip-tag-text); background-color: var(--bew-ip-tag-bg); border-radius: 3px; text-align: center; vertical-align: middle; line-height: 1.4;'
+        element.style.cssText =
+          'display: inline-block; min-width: 3em; box-sizing: border-box; margin-left: 4px; padding: 1px 4px; font-size: 11px; color: var(--bew-ip-tag-text); background-color: var(--bew-ip-tag-bg); border-radius: 3px; text-align: center; vertical-align: middle; line-height: 1.4;'
         element.dataset.bewlyLocationStyled = 'true'
       }
       const locationText = String(text)
-      if (element.textContent !== locationText)
-        element.textContent = locationText
+      if (element.textContent !== locationText) element.textContent = locationText
     }
     // 楼主标签使用主题色，明暗模式由主题变量自动适配
     else if (id === 'host-tag') {
       element.style.cssText = `display: inline-block; margin-left: 4px; padding: 1px 4px; font-size: 11px; font-weight: 500; color: var(--bew-theme-color); background-color: var(--bew-theme-color-10); border-radius: 3px; vertical-align: middle; line-height: 1.4;`
       element.textContent = String(text)
-    }
-    else {
+    } else {
       element.textContent = String(text)
     }
 
@@ -4990,26 +4943,24 @@ else if (shouldInitializePageScript) {
   const commentAiFilter = createNativeCommentAiFilterController({
     pageT,
     onLayoutChanged: (renderer) => {
-      const repliesRenderer = findCommentRepliesRendererHost(renderer) ?? findCommentThreadRepliesRenderer(renderer)
-      if (repliesRenderer)
-        scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
+      const repliesRenderer =
+        findCommentRepliesRendererHost(renderer) ?? findCommentThreadRepliesRenderer(renderer)
+      if (repliesRenderer) scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
     },
   })
 
   function extractNativeCommentMeta(component: HTMLElement, isReplyHint: boolean) {
     const data = getCommentReplyData(component)
     const rpid = getReplyRpid(data)
-    if (!rpid)
-      return null
+    if (!rpid) return null
 
     const text = getReplyMessageText(data) ?? getCommentRendererMessageText(component) ?? ''
-    if (!text.trim())
-      return null
+    if (!text.trim()) return null
 
     const isReply = isReplyHint || Boolean(findCommentRepliesRendererHost(component))
     const hasPictures = Boolean(
-      (Array.isArray(data?.content?.pictures) && data.content.pictures.length > 0)
-      || component.shadowRoot?.querySelector('bili-comment-pictures-renderer'),
+      (Array.isArray(data?.content?.pictures) && data.content.pictures.length > 0) ||
+      component.shadowRoot?.querySelector('bili-comment-pictures-renderer'),
     )
     return {
       rpid,
@@ -5035,8 +4986,7 @@ else if (shouldInitializePageScript) {
 
   if (window.customElements) {
     const patchCommentCustomElement = (name: string, classConstructor: unknown) => {
-      if (typeof classConstructor !== 'function')
-        return
+      if (typeof classConstructor !== 'function') return
 
       if (name === 'bili-comment-replies-renderer') {
         patchCommentReplyPaginationPrototype(classConstructor)
@@ -5048,12 +4998,10 @@ else if (shouldInitializePageScript) {
           patchCommentComponentUpdate(name, classConstructor, (component) => {
             const root = component.shadowRoot
             const stylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
-            if (root && stylePatch)
-              ensureCommentShadowStyle(root, stylePatch.id, stylePatch.css)
+            if (root && stylePatch) ensureCommentShadowStyle(root, stylePatch.id, stylePatch.css)
             syncRenderedCommentReplyInteraction(component)
           })
-        }
-        catch (error) {
+        } catch (error) {
           console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
         }
         return
@@ -5064,8 +5012,7 @@ else if (shouldInitializePageScript) {
         try {
           patchCommentComponentUpdate(name, classConstructor, (component) => {
             const root = component.shadowRoot
-            if (!root)
-              return
+            if (!root) return
 
             ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
             if (name === 'bili-comments-header-renderer') {
@@ -5076,7 +5023,11 @@ else if (shouldInitializePageScript) {
               if (checkboxPatch) {
                 root.querySelectorAll('bili-checkbox').forEach((checkbox: Element) => {
                   if (checkbox.shadowRoot)
-                    ensureCommentShadowStyle(checkbox.shadowRoot, checkboxPatch.id, checkboxPatch.css)
+                    ensureCommentShadowStyle(
+                      checkbox.shadowRoot,
+                      checkboxPatch.id,
+                      checkboxPatch.css,
+                    )
                 })
               }
             }
@@ -5084,40 +5035,40 @@ else if (shouldInitializePageScript) {
               commentAiFilter.observeRenderer(component, extractNativeCommentMeta(component, false))
             }
             if (name === 'bili-comment-thread-renderer') {
-              const rootComment = root.querySelector('#comment, bili-comment-renderer') as HTMLElement | null
+              const rootComment = root.querySelector(
+                '#comment, bili-comment-renderer',
+              ) as HTMLElement | null
               if (rootComment)
-                commentAiFilter.observeRenderer(rootComment, extractNativeCommentMeta(rootComment, false))
+                commentAiFilter.observeRenderer(
+                  rootComment,
+                  extractNativeCommentMeta(rootComment, false),
+                )
               // 删除/屏蔽回复可能让楼层组件整体重绘，之前挂在其 shadow root
               // 内的 SVG 线条会随渲染结果一并被移除；重绘完成后从当前回复容器恢复。
-              const repliesRenderer = root.querySelector('bili-comment-replies-renderer') as HTMLElement | null
+              const repliesRenderer = root.querySelector(
+                'bili-comment-replies-renderer',
+              ) as HTMLElement | null
               if (repliesRenderer) {
                 updateCommentReplyTree(repliesRenderer)
-                if (getCommentReplyDeepLinkId())
-                  scheduleCommentReplyDeepLinkSettlement('hash')
+                if (getCommentReplyDeepLinkId()) scheduleCommentReplyDeepLinkSettlement('hash')
               }
-            }
-            else if (name === 'bili-comment-replies-renderer') {
+            } else if (name === 'bili-comment-replies-renderer') {
               updateCommentReplyTree(component)
               // 深链目标楼中楼刚挂载/更新时再结算一次
-              if (getCommentReplyDeepLinkId())
-                scheduleCommentReplyDeepLinkSettlement('hash')
-            }
-            else if (name === 'bili-comment-box') {
+              if (getCommentReplyDeepLinkId()) scheduleCommentReplyDeepLinkSettlement('hash')
+            } else if (name === 'bili-comment-box') {
               updateWidescreenCommentEmojiOverflow(component, root)
-            }
-            else if (name === 'bili-comment-reply-renderer') {
+            } else if (name === 'bili-comment-reply-renderer') {
               commentAiFilter.observeRenderer(component, extractNativeCommentMeta(component, true))
               const rootNode = component.getRootNode?.()
               const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
               if (repliesRenderer?.localName === 'bili-comment-replies-renderer') {
                 updateCommentReplyTree(repliesRenderer)
-                if (getCommentReplyDeepLinkId())
-                  scheduleCommentReplyDeepLinkSettlement('hash')
+                if (getCommentReplyDeepLinkId()) scheduleCommentReplyDeepLinkSettlement('hash')
               }
             }
           })
-        }
-        catch (error) {
+        } catch (error) {
           console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
         }
         return
@@ -5128,8 +5079,7 @@ else if (shouldInitializePageScript) {
         try {
           patchCommentComponentUpdate(name, classConstructor, (component) => {
             const root = component.shadowRoot
-            if (!root)
-              return
+            if (!root) return
 
             // 根据设置决定是否修复图片长宽比问题
             if (currentSettings?.adjustCommentImageHeight) {
@@ -5148,11 +5098,9 @@ else if (shouldInitializePageScript) {
             // 图片组件位于主评论的嵌套 shadow DOM 中，图片尺寸变化不一定能
             // 通过回复容器的 ResizeObserver 传递出来；样式调整后主动重算树线。
             const repliesRenderer = findCommentThreadRepliesRenderer(component)
-            if (repliesRenderer)
-              scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
+            if (repliesRenderer) scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
           })
-        }
-        catch (error) {
+        } catch (error) {
           console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
         }
         return
@@ -5163,13 +5111,11 @@ else if (shouldInitializePageScript) {
         try {
           patchCommentComponentUpdate(name, classConstructor, (component) => {
             const root = component.shadowRoot
-            if (!root)
-              return
+            if (!root) return
 
             // 找到用户名元素
             const userNameEl = root.querySelector('#user-name')
-            if (!userNameEl)
-              return
+            if (!userNameEl) return
 
             cacheRootReplyAuthor(component.data)
 
@@ -5185,11 +5131,16 @@ else if (shouldInitializePageScript) {
 
             // 在楼中楼里给最外层楼主的回复添加标识
             const shouldShowHostTag = Boolean(
-              currentSettings?.showCommentHostTag
-              && isSubReplyByRootAuthor(component.data),
+              currentSettings?.showCommentHostTag && isSubReplyByRootAuthor(component.data),
             )
             const hostAnchor = sexEl ?? userNameEl
-            const hostEl = updateInfoElement(root, 'host-tag', shouldShowHostTag, getHostTagText(), hostAnchor)
+            const hostEl = updateInfoElement(
+              root,
+              'host-tag',
+              shouldShowHostTag,
+              getHostTagText(),
+              hostAnchor,
+            )
 
             // 显示IP地理位置
             const locationString = getLocationString(component.data)
@@ -5200,16 +5151,21 @@ else if (shouldInitializePageScript) {
             // user-info 晚于父级 comment-renderer 拿到 data 时补触发一次 AI 评论注册。
             const hostRoot = component.getRootNode?.()
             const hostRenderer = hostRoot instanceof ShadowRoot ? hostRoot.host : null
-            if (hostRenderer instanceof HTMLElement
-              && (hostRenderer.localName === 'bili-comment-renderer' || hostRenderer.localName === 'bili-comment-reply-renderer')) {
+            if (
+              hostRenderer instanceof HTMLElement &&
+              (hostRenderer.localName === 'bili-comment-renderer' ||
+                hostRenderer.localName === 'bili-comment-reply-renderer')
+            ) {
               commentAiFilter.observeRenderer(
                 hostRenderer,
-                extractNativeCommentMeta(hostRenderer, hostRenderer.localName === 'bili-comment-reply-renderer'),
+                extractNativeCommentMeta(
+                  hostRenderer,
+                  hostRenderer.localName === 'bili-comment-reply-renderer',
+                ),
               )
             }
           })
-        }
-        catch (error) {
+        } catch (error) {
           console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
         }
       }
@@ -5220,8 +5176,7 @@ else if (shouldInitializePageScript) {
     const safePatchCommentCustomElement = (name: string, classConstructor: unknown) => {
       try {
         patchCommentCustomElement(name, classConstructor)
-      }
-      catch (error) {
+      } catch (error) {
         console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
       }
     }
@@ -5231,13 +5186,11 @@ else if (shouldInitializePageScript) {
       window.customElements.define = new Proxy(originalDefine, {
         apply: (target, thisArg, args) => {
           const [name, classConstructor] = args
-          if (typeof name === 'string')
-            safePatchCommentCustomElement(name, classConstructor)
+          if (typeof name === 'string') safePatchCommentCustomElement(name, classConstructor)
           return Reflect.apply(target, thisArg, args)
         },
       })
-    }
-    catch (error) {
+    } catch (error) {
       console.warn('[BewlyCat] Failed to hook customElements.define.', error)
     }
 
@@ -5255,28 +5208,28 @@ else if (shouldInitializePageScript) {
 
   // 添加消息监听器
   window.addEventListener('message', (event) => {
-  // 确保消息来源是插件环境
-    if (event.source !== window)
-      return
+    // 确保消息来源是插件环境
+    if (event.source !== window) return
 
-    if (!event.data || typeof event.data !== 'object' || Array.isArray(event.data))
-      return
+    if (!event.data || typeof event.data !== 'object' || Array.isArray(event.data)) return
 
     const { type, data } = event.data
 
     // 处理来自插件环境的消息
     if (type === 'BEWLY_SETTINGS_UPDATE') {
       const pageSettings = createPageSettingsPayload(data)
-      if (!pageSettings)
-        return
+      if (!pageSettings) return
 
       const isFirstTime = !settingsReady
       currentSettings = pageSettings
-      localLoudness?.update({ enabled: pageSettings.localLoudnessEnabled, target: pageSettings.localLoudnessTarget, strength: pageSettings.localLoudnessStrength / 100 })
+      localLoudness?.update({
+        enabled: pageSettings.localLoudnessEnabled,
+        target: pageSettings.localLoudnessTarget,
+        strength: pageSettings.localLoudnessStrength / 100,
+      })
       localLoudness?.setAudioDelayEnabled(pageSettings.audioDelayEnabled)
       preventMobileRedirectEnabled = pageSettings.preventMobileRedirect
-      if (pageSettings.observeTripleRequests)
-        installTripleRequestHooks()
+      if (pageSettings.observeTripleRequests) installTripleRequestHooks()
       settingsReady = true
       commentAiFilter.updateSettings({
         enabled: pageSettings.enableCommentAiFilter,
@@ -5286,8 +5239,7 @@ else if (shouldInitializePageScript) {
         batchSize: pageSettings.commentAiFilterBatchSize,
       })
       refreshCommentReplyTrees()
-      if (getCommentReplyTreeMode() === null)
-        clearCommentReplyDeepLinkSettlement()
+      if (getCommentReplyTreeMode() === null) clearCommentReplyDeepLinkSettlement()
       // 设置就绪后 B 站可能才开始 #reply 定位/展开
       if (getCommentReplyDeepLinkId())
         scheduleCommentReplyDeepLinkSettlement(isFirstTime ? 'immediate' : 'hash')
@@ -5297,28 +5249,28 @@ else if (shouldInitializePageScript) {
   })
 
   // 请求初始设置
-  window.postMessage({
-    type: 'BEWLY_REQUEST_SETTINGS',
-  }, window.location.origin)
+  window.postMessage(
+    {
+      type: 'BEWLY_REQUEST_SETTINGS',
+    },
+    window.location.origin,
+  )
 
   function getFetchInputUrl(input: RequestInfo | URL): string {
-    if (typeof input === 'string')
-      return input
-    if (input instanceof URL)
-      return input.href
+    if (typeof input === 'string') return input
+    if (input instanceof URL) return input.href
     return input.url
   }
 
   function isSearchResultFetch(input: RequestInfo | URL): boolean {
-    if (window.location.hostname !== 'search.bilibili.com')
-      return false
+    if (window.location.hostname !== 'search.bilibili.com') return false
 
     try {
       const requestUrl = new URL(getFetchInputUrl(input), window.location.href)
-      return requestUrl.hostname === 'api.bilibili.com'
-        && isSearchResultApiPath(requestUrl.pathname)
-    }
-    catch {
+      return (
+        requestUrl.hostname === 'api.bilibili.com' && isSearchResultApiPath(requestUrl.pathname)
+      )
+    } catch {
       return false
     }
   }
@@ -5335,8 +5287,7 @@ else if (shouldInitializePageScript) {
       credentials: 'omit',
     }
 
-    if (input instanceof Request)
-      return originalFetch!.call(thisArg, new Request(input, newInit))
+    if (input instanceof Request) return originalFetch!.call(thisArg, new Request(input, newInit))
 
     return originalFetch!.call(thisArg, input, newInit)
   }
@@ -5348,25 +5299,21 @@ else if (shouldInitializePageScript) {
     try {
       const requestUrl = new URL(url, window.location.href)
       return requestUrl.hostname === 'api.bilibili.com' && requestUrl.pathname === TRIPLE_API_PATH
-    }
-    catch {
+    } catch {
       return false
     }
   }
 
-  function readTripleTarget(body: unknown): { aid?: number, bvid?: string } {
+  function readTripleTarget(body: unknown): { aid?: number; bvid?: string } {
     let params: URLSearchParams | null = null
     if (typeof body === 'string') {
       params = new URLSearchParams(body)
-    }
-    else if (body instanceof URLSearchParams) {
+    } else if (body instanceof URLSearchParams) {
       params = body
-    }
-    else if (body instanceof FormData) {
+    } else if (body instanceof FormData) {
       const formParams = new URLSearchParams()
       body.forEach((value, key) => {
-        if (typeof value === 'string')
-          formParams.append(key, value)
+        if (typeof value === 'string') formParams.append(key, value)
       })
       params = formParams
     }
@@ -5380,16 +5327,18 @@ else if (shouldInitializePageScript) {
   }
 
   function notifyTripleResult(response: unknown, body: unknown) {
-    const result = response as { code?: number, data?: { fav?: boolean } } | null
-    if (result?.code !== 0 || !result.data?.fav)
-      return
-    window.postMessage({ type: 'BEWLY_VIDEO_TRIPLE', ...readTripleTarget(body) }, window.location.origin)
+    const result = response as { code?: number; data?: { fav?: boolean } } | null
+    if (result?.code !== 0 || !result.data?.fav) return
+    window.postMessage(
+      { type: 'BEWLY_VIDEO_TRIPLE', ...readTripleTarget(body) },
+      window.location.origin,
+    )
   }
 
   function observeTripleFetch(response: Promise<Response>, init?: RequestInit) {
     void response
-      .then(res => res.clone().json())
-      .then(data => notifyTripleResult(data, init?.body))
+      .then((res) => res.clone().json())
+      .then((data) => notifyTripleResult(data, init?.body))
       .catch(() => {})
     return response
   }
@@ -5397,8 +5346,7 @@ else if (shouldInitializePageScript) {
   function isTripleFetch(input: RequestInfo | URL): boolean {
     try {
       return tripleRequestHooksInstalled && isTripleRequestUrl(getFetchInputUrl(input))
-    }
-    catch {
+    } catch {
       return false
     }
   }
@@ -5406,8 +5354,7 @@ else if (shouldInitializePageScript) {
   // 只在确有需要的页面或设置下改写 fetch/XHR，减少与 B 站及其他插件的
   // 请求拦截叠加；包装层自身的判断失败时直接走原始请求。
   function installFetchHook() {
-    if (originalFetch)
-      return
+    if (originalFetch) return
     originalFetch = window.fetch
     window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
       if (isTripleFetch(input))
@@ -5417,15 +5364,13 @@ else if (shouldInitializePageScript) {
           return fetchWithSearchSettings(this, input, init)
         })
       }
-      if (isSearchResultFetch(input))
-        return fetchWithSearchSettings(this, input, init)
+      if (isSearchResultFetch(input)) return fetchWithSearchSettings(this, input, init)
       return originalFetch!.call(this, input, init)
     }
   }
 
   function installTripleRequestHooks() {
-    if (tripleRequestHooksInstalled)
-      return
+    if (tripleRequestHooksInstalled) return
     tripleRequestHooksInstalled = true
     installFetchHook()
 
@@ -5433,38 +5378,47 @@ else if (shouldInitializePageScript) {
     const originalXhrSend = XMLHttpRequest.prototype.send
     const tripleXhrs = new WeakSet<XMLHttpRequest>()
 
-    XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: Parameters<XMLHttpRequest['open']>) {
+    XMLHttpRequest.prototype.open = function (
+      this: XMLHttpRequest,
+      ...args: Parameters<XMLHttpRequest['open']>
+    ) {
       try {
-        if (isTripleRequestUrl(String(args[1])))
-          tripleXhrs.add(this)
-        else
-          tripleXhrs.delete(this)
-      }
-      catch {}
-      return (originalXhrOpen as (...openArgs: Parameters<XMLHttpRequest['open']>) => void).apply(this, args)
+        if (isTripleRequestUrl(String(args[1]))) tripleXhrs.add(this)
+        else tripleXhrs.delete(this)
+      } catch {}
+      return (originalXhrOpen as (...openArgs: Parameters<XMLHttpRequest['open']>) => void).apply(
+        this,
+        args,
+      )
     } as XMLHttpRequest['open']
 
-    XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
+    XMLHttpRequest.prototype.send = function (
+      this: XMLHttpRequest,
+      body?: Document | XMLHttpRequestBodyInit | null,
+    ) {
       if (tripleXhrs.has(this)) {
-        this.addEventListener('load', () => {
-          try {
-            const response = this.responseType === 'json'
-              ? this.response
-              : this.responseType === '' || this.responseType === 'text'
-                ? JSON.parse(this.responseText)
-                : null
-            notifyTripleResult(response, body)
-          }
-          catch {}
-        }, { once: true })
+        this.addEventListener(
+          'load',
+          () => {
+            try {
+              const response =
+                this.responseType === 'json'
+                  ? this.response
+                  : this.responseType === '' || this.responseType === 'text'
+                    ? JSON.parse(this.responseText)
+                    : null
+              notifyTripleResult(response, body)
+            } catch {}
+          },
+          { once: true },
+        )
       }
       return originalXhrSend.call(this, body)
     }
   }
 
   // 搜索请求在页面启动时发出，需在 document_start 安装；三连监听等设置送达后再按需安装。
-  if (window.location.hostname === 'search.bilibili.com')
-    installFetchHook()
+  if (window.location.hostname === 'search.bilibili.com') installFetchHook()
 
   // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）
 
@@ -5500,35 +5454,30 @@ else if (shouldInitializePageScript) {
     try {
       const urlObj = new URL(url)
       const hostname = urlObj.hostname.toLowerCase()
-      const isBilibiliHost = hostname === 'bilibili.com'
-        || hostname === 'b23.tv'
-        || hostname.endsWith('.bilibili.com')
-        || hostname.endsWith('.b23.tv')
-      if (!isBilibiliHost)
-        return url
-      for (const param of BILIBILI_TRACKING_PARAMS)
-        urlObj.searchParams.delete(param)
+      const isBilibiliHost =
+        hostname === 'bilibili.com' ||
+        hostname === 'b23.tv' ||
+        hostname.endsWith('.bilibili.com') ||
+        hostname.endsWith('.b23.tv')
+      if (!isBilibiliHost) return url
+      for (const param of BILIBILI_TRACKING_PARAMS) urlObj.searchParams.delete(param)
       let cleaned = urlObj.toString()
-      if (urlObj.searchParams.toString() === '')
-        cleaned = cleaned.replace(/\?$/, '')
+      if (urlObj.searchParams.toString() === '') cleaned = cleaned.replace(/\?$/, '')
       return cleaned
+    } catch {
+      return url
     }
-    catch { return url }
   }
 
   // 提取文本中第一个成对的「【...】」内容，支持嵌套
   function extractFirstBracketContent(text: string): string | null {
     const start = text.indexOf('【')
-    if (start === -1)
-      return null
+    if (start === -1) return null
     let depth = 0
     for (let i = start; i < text.length; i++) {
-      if (text[i] === '【')
-        depth++
-      else if (text[i] === '】')
-        depth--
-      if (depth === 0 && i > start)
-        return text.slice(start + 1, i)
+      if (text[i] === '【') depth++
+      else if (text[i] === '】') depth--
+      if (depth === 0 && i > start) return text.slice(start + 1, i)
     }
     return null
   }
@@ -5541,13 +5490,11 @@ else if (shouldInitializePageScript) {
 
     if (url) {
       const cleanedUrl = removeTracking ? cleanUrl(url) : url
-      if (title)
-        return includeTitle ? `${title} ${cleanedUrl}` : cleanedUrl
+      if (title) return includeTitle ? `${title} ${cleanedUrl}` : cleanedUrl
       return cleanedUrl
     }
 
-    if (removeTracking)
-      return text.replace(/(https?:\/\/\S+)/g, u => cleanUrl(u))
+    if (removeTracking) return text.replace(/(https?:\/\/\S+)/g, (u) => cleanUrl(u))
     return text
   }
 
@@ -5557,22 +5504,23 @@ else if (shouldInitializePageScript) {
   const WIDESCREEN_REACT_EVENT_BRIDGE_ATTRIBUTE = 'data-bewly-react-bridge'
 
   function getPageReactProps(element: Element) {
-    const key = Object.keys(element).find(name => name.startsWith('__reactProps$') || name.startsWith('__reactEventHandlers$'))
-    if (!key)
-      return null
+    const key = Object.keys(element).find(
+      (name) => name.startsWith('__reactProps$') || name.startsWith('__reactEventHandlers$'),
+    )
+    if (!key) return null
 
     const props = (element as unknown as Record<string, unknown>)[key]
-    return props && typeof props === 'object' ? props as Record<string, unknown> : null
+    return props && typeof props === 'object' ? (props as Record<string, unknown>) : null
   }
 
   function invokeMovedReactEvent(event: Event, propName: string, enterLeave = false) {
     const target = event.target
-    if (!(target instanceof Element))
-      return
+    if (!(target instanceof Element)) return
 
-    const boundary = target.closest<HTMLElement>(`[${WIDESCREEN_REACT_EVENT_BRIDGE_ATTRIBUTE}="true"]`)
-    if (!boundary)
-      return
+    const boundary = target.closest<HTMLElement>(
+      `[${WIDESCREEN_REACT_EVENT_BRIDGE_ATTRIBUTE}="true"]`,
+    )
+    if (!boundary) return
 
     const path: Element[] = []
     const relatedTarget = enterLeave ? (event as MouseEvent).relatedTarget : null
@@ -5581,34 +5529,26 @@ else if (shouldInitializePageScript) {
       // 在按钮的图标、文字和菜单之间移动不算离开整个按钮。
       if (!enterLeave || !(relatedTarget instanceof Node) || !node.contains(relatedTarget))
         path.push(node)
-      if (node === boundary)
-        break
+      if (node === boundary) break
       node = node.parentElement
     }
 
     // React 的 enter 从外向内触发，leave 与普通冒泡事件从内向外触发。
-    if (propName === 'onMouseEnter')
-      path.reverse()
+    if (propName === 'onMouseEnter') path.reverse()
 
     for (const currentTarget of path) {
       const handler = getPageReactProps(currentTarget)?.[propName]
-      if (typeof handler !== 'function')
-        continue
+      if (typeof handler !== 'function') continue
 
       // 长按库会调用 persist() 并保存事件。不要修改原生事件；通过代理保留
       // 坐标、触摸点与原生方法，同时提供 React handler 所需的事件接口。
       const forwardedEvent = new Proxy(event, {
         get(nativeEvent, key) {
-          if (key === 'nativeEvent')
-            return nativeEvent
-          if (key === 'currentTarget')
-            return currentTarget
-          if (key === 'persist')
-            return () => {}
-          if (key === 'isDefaultPrevented')
-            return () => nativeEvent.defaultPrevented
-          if (key === 'isPropagationStopped')
-            return () => nativeEvent.cancelBubble
+          if (key === 'nativeEvent') return nativeEvent
+          if (key === 'currentTarget') return currentTarget
+          if (key === 'persist') return () => {}
+          if (key === 'isDefaultPrevented') return () => nativeEvent.defaultPrevented
+          if (key === 'isPropagationStopped') return () => nativeEvent.cancelBubble
           if (key === 'type' && enterLeave)
             return propName === 'onMouseEnter' ? 'mouseenter' : 'mouseleave'
           const value = Reflect.get(nativeEvent, key, nativeEvent)
@@ -5616,8 +5556,7 @@ else if (shouldInitializePageScript) {
         },
       })
       ;(handler as (event: Event) => void)(forwardedEvent)
-      if (event.cancelBubble)
-        break
+      if (event.cancelBubble) break
     }
   }
 
@@ -5634,11 +5573,16 @@ else if (shouldInitializePageScript) {
     mouseout: 'onMouseLeave',
   }
   for (const [eventName, propName] of Object.entries(movedReactEvents)) {
-    document.addEventListener(eventName, event => invokeMovedReactEvent(
-      event,
-      propName,
-      eventName === 'mouseover' || eventName === 'mouseout',
-    ), { capture: true, passive: false })
+    document.addEventListener(
+      eventName,
+      (event) =>
+        invokeMovedReactEvent(
+          event,
+          propName,
+          eventName === 'mouseover' || eventName === 'mouseout',
+        ),
+      { capture: true, passive: false },
+    )
   }
 
   // 拦截 navigator.clipboard.writeText，启用净化分享链接功能
@@ -5646,13 +5590,12 @@ else if (shouldInitializePageScript) {
   if (clipboard?.writeText) {
     const originalWriteText = clipboard.writeText.bind(clipboard)
     const getCleanShareText = (text: string) => {
-      if (!currentSettings?.enableCleanShareLink || typeof text !== 'string')
-        return text
+      if (!currentSettings?.enableCleanShareLink || typeof text !== 'string') return text
 
       const isBilibiliShare = /【.+?】\s*https?:\/\//.test(text)
-      const hasBilibiliUrl = /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
-      if (!isBilibiliShare && !hasBilibiliUrl)
-        return text
+      const hasBilibiliUrl =
+        /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
+      if (!isBilibiliShare && !hasBilibiliUrl) return text
 
       const includeTitle = currentSettings?.cleanShareLinkIncludeTitle ?? false
       const removeTracking = currentSettings?.cleanShareLinkRemoveTrackingParams !== false
@@ -5663,12 +5606,10 @@ else if (shouldInitializePageScript) {
         let finalText = text
         try {
           finalText = getCleanShareText(text)
-        }
-        catch {}
+        } catch {}
         return originalWriteText(finalText)
       }
-    }
-    catch {
+    } catch {
       // writeText 不可改写时保留原生复制
     }
   }

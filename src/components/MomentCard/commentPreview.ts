@@ -18,23 +18,23 @@ interface RawComment {
   action?: number
   count?: number
   rcount?: number
-  member?: { mid?: string, uname?: string, avatar?: string, sex?: string }
+  member?: { mid?: string; uname?: string; avatar?: string; sex?: string }
   reply_control?: { location?: string }
   content?: {
     message?: string
     emote?: Record<string, { url?: string }>
     pictures?: Array<{ img_src?: string }>
     at_name_to_mid?: Record<string, number | string>
-    members?: Array<{ mid?: string, uname?: string }>
-    jump_url?: Record<string, { title?: string, pc_url?: string, app_url_schema?: string }>
+    members?: Array<{ mid?: string; uname?: string }>
+    jump_url?: Record<string, { title?: string; pc_url?: string; app_url_schema?: string }>
   }
   replies?: RawComment[] | null
 }
 
 export interface CommentPageData {
   replies?: RawComment[] | null
-  page?: { count?: number, size?: number }
-  control?: { input_disable?: boolean, root_input_text?: string, child_input_text?: string }
+  page?: { count?: number; size?: number }
+  control?: { input_disable?: boolean; root_input_text?: string; child_input_text?: string }
 }
 
 export type RawCommentData = RawComment
@@ -119,16 +119,13 @@ export function toggleCommentPreview(state: CommentPreviewState) {
 }
 
 function safeImageUrl(value?: string) {
-  if (!value)
-    return ''
+  if (!value) return ''
   try {
     const url = new URL(value, 'https://www.bilibili.com')
-    if (!['http:', 'https:'].includes(url.protocol))
-      return ''
+    if (!['http:', 'https:'].includes(url.protocol)) return ''
     url.protocol = 'https:'
     return url.href
-  }
-  catch {
+  } catch {
     return ''
   }
 }
@@ -138,12 +135,10 @@ function safeLinkUrl(value?: string) {
   return url && /^https:\/\/(?:[\w-]+\.)*(?:bilibili\.com|b23\.tv)\//.test(url) ? url : ''
 }
 
-function getJumpUrl(keyword: string, jump: { pc_url?: string, app_url_schema?: string }) {
+function getJumpUrl(keyword: string, jump: { pc_url?: string; app_url_schema?: string }) {
   const pcUrl = safeLinkUrl(jump.pc_url)
-  if (pcUrl)
-    return pcUrl
-  if (/^(?:av\d+|BV[\dA-Z]{10})$/i.test(keyword))
-    return `https://www.bilibili.com/video/${keyword}`
+  if (pcUrl) return pcUrl
+  if (/^(?:av\d+|BV[\dA-Z]{10})$/i.test(keyword)) return `https://www.bilibili.com/video/${keyword}`
   if (jump.app_url_schema?.startsWith('bilibili://search'))
     return `https://search.bilibili.com/all?keyword=${encodeURIComponent(keyword)}`
   return ''
@@ -155,32 +150,39 @@ function normalizeContent(content: RawComment['content']): CommentContentPart[] 
   const emotes = content?.emote || {}
   const mentions = new Map<string, string>()
   for (const member of content?.members || []) {
-    if (member.uname && member.mid)
-      mentions.set(`@${member.uname}`, String(member.mid))
+    if (member.uname && member.mid) mentions.set(`@${member.uname}`, String(member.mid))
   }
   for (const [name, mid] of Object.entries(content?.at_name_to_mid || {})) {
-    if (name && mid)
-      mentions.set(`@${name}`, String(mid))
+    if (name && mid) mentions.set(`@${name}`, String(mid))
   }
   const jumps = new Map<string, CommentContentPart>()
   for (const [keyword, jump] of Object.entries(content?.jump_url || {})) {
     const url = keyword && jump ? getJumpUrl(keyword, jump) : ''
     if (url)
-      jumps.set(keyword, { text: keyword, url, title: jump.title && jump.title !== keyword ? jump.title : undefined })
+      jumps.set(keyword, {
+        text: keyword,
+        url,
+        title: jump.title && jump.title !== keyword ? jump.title : undefined,
+      })
   }
-  const tokens = [...new Set([...Object.keys(emotes), ...mentions.keys(), ...jumps.keys()])].filter(Boolean).sort((a, b) => b.length - a.length)
-  if (!tokens.length)
-    return message ? [{ text: message }] : []
-  const pattern = new RegExp(`(${tokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g')
-  return message.split(pattern).filter(Boolean).map((text) => {
-    const image = safeImageUrl(emotes[text]?.url)
-    if (image)
-      return { text, image }
-    const mid = mentions.get(text)
-    if (mid && /^\d+$/.test(mid))
-      return { text, url: `https://space.bilibili.com/${mid}` }
-    return jumps.get(text) || { text }
-  })
+  const tokens = [...new Set([...Object.keys(emotes), ...mentions.keys(), ...jumps.keys()])]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+  if (!tokens.length) return message ? [{ text: message }] : []
+  const pattern = new RegExp(
+    `(${tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+    'g',
+  )
+  return message
+    .split(pattern)
+    .filter(Boolean)
+    .map((text) => {
+      const image = safeImageUrl(emotes[text]?.url)
+      if (image) return { text, image }
+      const mid = mentions.get(text)
+      if (mid && /^\d+$/.test(mid)) return { text, url: `https://space.bilibili.com/${mid}` }
+      return jumps.get(text) || { text }
+    })
 }
 
 export function normalizeComment(raw: RawComment): PreviewComment {
@@ -197,7 +199,9 @@ export function normalizeComment(raw: RawComment): PreviewComment {
     location: normalizeCommentLocation(raw.reply_control?.location),
     time: Number(raw.ctime) || 0,
     content: normalizeContent(raw.content),
-    pictures: (raw.content?.pictures || []).map(picture => safeImageUrl(picture.img_src)).filter(Boolean),
+    pictures: (raw.content?.pictures || [])
+      .map((picture) => safeImageUrl(picture.img_src))
+      .filter(Boolean),
     likeCount: Math.max(0, Number(raw.like) || 0),
     liked: Number(raw.action) === 1,
     liking: false,
@@ -218,18 +222,21 @@ export function normalizeComment(raw: RawComment): PreviewComment {
 export function normalizeComments(raw?: RawComment[] | null): PreviewComment[] {
   const seen = new Set<string>()
   return (Array.isArray(raw) ? raw : []).map(normalizeComment).filter((comment) => {
-    if (!comment.id || seen.has(comment.id))
-      return false
+    if (!comment.id || seen.has(comment.id)) return false
     seen.add(comment.id)
     return true
   })
 }
 
-export function mergeComments(existing: PreviewComment[], incoming: PreviewComment[], replace = false) {
-  const byId = new Map(existing.map(comment => [comment.id, comment]))
+export function mergeComments(
+  existing: PreviewComment[],
+  incoming: PreviewComment[],
+  replace = false,
+) {
+  const byId = new Map(existing.map((comment) => [comment.id, comment]))
   // 复用已显示对象，避免翻页覆盖刚完成的点赞及树折叠状态。
   const result = replace ? [] : [...existing]
-  const seen = new Set(result.map(comment => comment.id))
+  const seen = new Set(result.map((comment) => comment.id))
   for (const comment of incoming) {
     if (!seen.has(comment.id)) {
       const cached = byId.get(comment.id)
@@ -255,8 +262,7 @@ export function mergeComments(existing: PreviewComment[], incoming: PreviewComme
 }
 
 export function isCommentPageDone(data: CommentPageData, page: number) {
-  if (!data.replies?.length)
-    return true
+  if (!data.replies?.length) return true
   const pageSize = Number(data.page?.size) || 20
   return data.page?.count !== undefined
     ? page * pageSize >= data.page.count
@@ -286,15 +292,28 @@ export type CommentTreeComment = PreviewComment | MissingComment
 // 按主评论保留占位节点，分页和重新计算树时仍可复用其折叠状态。
 const missingParentsByRoot = new WeakMap<PreviewComment, Map<string, MissingComment>>()
 
-export function getCommentRows(root: PreviewComment, tree: boolean, mode: CommentReplyTreeMode): CommentRow[] {
+export function getCommentRows(
+  root: PreviewComment,
+  tree: boolean,
+  mode: CommentReplyTreeMode,
+): CommentRow[] {
   const replies = root.repliesExpanded && root.replyPage > 0 ? root.replies : root.hotReplies
-  const all = [root, ...replies.filter(reply => reply.id !== root.id)]
+  const all = [root, ...replies.filter((reply) => reply.id !== root.id)]
   if (!tree)
-    return all.map(comment => ({ comment, parentId: null, depth: 0, hasChildren: false, collapsed: false, hideBody: false }))
+    return all.map((comment) => ({
+      comment,
+      parentId: null,
+      depth: 0,
+      hasChildren: false,
+      collapsed: false,
+      hideBody: false,
+    }))
 
-  const byId = new Map<string, CommentTreeComment>(all.map(comment => [comment.id, comment]))
+  const byId = new Map<string, CommentTreeComment>(all.map((comment) => [comment.id, comment]))
   const orderById = new Map(all.map((comment, index) => [comment.id, index]))
-  const knownComments = new Map([...root.hotReplies, ...root.replies].map(comment => [comment.id, comment]))
+  const knownComments = new Map(
+    [...root.hotReplies, ...root.replies].map((comment) => [comment.id, comment]),
+  )
   let missingParents = missingParentsByRoot.get(root)
   if (!missingParents) {
     missingParents = new Map()
@@ -304,35 +323,38 @@ export function getCommentRows(root: PreviewComment, tree: boolean, mode: Commen
   // 遍历新增占位以补齐已知父链；按 ID 去重，多个回复共享同一个父节点。
   for (const comment of byId.values()) {
     const parentId = comment.parentId
-    if (comment === root || !parentId || parentId === '0' || parentId === comment.id)
-      continue
-    if (byId.has(parentId) && !byId.get(parentId)!.missing)
-      continue
+    if (comment === root || !parentId || parentId === '0' || parentId === comment.id) continue
+    if (byId.has(parentId) && !byId.get(parentId)!.missing) continue
     const known = knownComments.get(parentId)
-    const message = comment.missing ? '' : comment.content.map(part => part.text).join('')
-    const author = known?.author || message.match(/^(?:回复|回覆|Reply(?:\s+to)?)\s+@?([^\s:：]+)/iu)?.[1] || ''
+    const message = comment.missing ? '' : comment.content.map((part) => part.text).join('')
+    const author =
+      known?.author || message.match(/^(?:回复|回覆|Reply(?:\s+to)?)\s+@?([^\s:：]+)/iu)?.[1] || ''
     let parent = missingParents.get(parentId)
     if (!parent) {
-      parent = reactive<MissingComment>({ missing: true, id: parentId, parentId: root.id, author: '', message: '', collapsed: false })
+      parent = reactive<MissingComment>({
+        missing: true,
+        id: parentId,
+        parentId: root.id,
+        author: '',
+        message: '',
+        collapsed: false,
+      })
       missingParents.set(parentId, parent)
     }
     parent.parentId = known?.parentId || root.id
     parent.author = author || parent.author
-    parent.message = known?.content.map(part => part.text).join('') || ''
+    parent.message = known?.content.map((part) => part.text).join('') || ''
     byId.set(parentId, parent)
-    if (!orderById.has(parentId))
-      orderById.set(parentId, orderById.get(comment.id)!)
+    if (!orderById.has(parentId)) orderById.set(parentId, orderById.get(comment.id)!)
     retained.add(parentId)
   }
   for (const id of missingParents.keys()) {
-    if (!retained.has(id))
-      missingParents.delete(id)
+    if (!retained.has(id)) missingParents.delete(id)
   }
 
   const children = new Map<string, CommentTreeComment[]>()
   for (const comment of byId.values()) {
-    if (comment.id === root.id)
-      continue
+    if (comment.id === root.id) continue
     let parentId = byId.has(comment.parentId) ? comment.parentId : root.id
     const visited = new Set([comment.id])
     let ancestor = byId.get(parentId)
@@ -349,16 +371,27 @@ export function getCommentRows(root: PreviewComment, tree: boolean, mode: Commen
     children.set(parentId, siblings)
   }
   // 占位分支保留首条子回复的位置，避免统一被追加到楼层末尾。
-  children.forEach(siblings => siblings.sort((a, b) => orderById.get(a.id)! - orderById.get(b.id)!))
+  children.forEach((siblings) =>
+    siblings.sort((a, b) => orderById.get(a.id)! - orderById.get(b.id)!),
+  )
 
   const rows: CommentRow[] = []
-  const queue: Array<{ comment: CommentTreeComment, depth: number, parentId: string | null }> = [{ comment: root, depth: 0, parentId: null }]
+  const queue: Array<{ comment: CommentTreeComment; depth: number; parentId: string | null }> = [
+    { comment: root, depth: 0, parentId: null },
+  ]
   while (queue.length) {
     const { comment, depth, parentId } = queue.pop()!
     const descendants = children.get(comment.id) || []
     const hasChildren = descendants.length > 0 || (comment === root && !root.repliesDone)
     const collapsed = mode !== 'indentOnly' && hasChildren && comment.collapsed
-    rows.push({ comment, parentId, depth, hasChildren, collapsed, hideBody: collapsed && mode === 'lineCollapseMain' })
+    rows.push({
+      comment,
+      parentId,
+      depth,
+      hasChildren,
+      collapsed,
+      hideBody: collapsed && mode === 'lineCollapseMain',
+    })
     if (!collapsed) {
       for (let index = descendants.length - 1; index >= 0; index--)
         queue.push({ comment: descendants[index], depth: depth + 1, parentId: comment.id })

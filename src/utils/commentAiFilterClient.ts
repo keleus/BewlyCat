@@ -23,13 +23,12 @@ const MAX_CONCURRENT_SINGLE = 4
 const TRANSIENT_RETRY_DELAY_MS = 500
 
 function isTransientError(message: string | undefined): boolean {
-  if (!message)
-    return false
+  if (!message) return false
   return /HTTP (?:429|5\d\d)\b|timed out/iu.test(message)
 }
 
 function delay(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
+  return new Promise<void>((resolve) => setTimeout(resolve, ms))
 }
 
 interface CachedVerdict {
@@ -57,13 +56,11 @@ function buildCacheKey(
 }
 
 function setCacheEntry(key: string, value: CachedVerdict) {
-  if (verdictCache.has(key))
-    verdictCache.delete(key)
+  if (verdictCache.has(key)) verdictCache.delete(key)
   verdictCache.set(key, value)
   if (verdictCache.size > MAX_CACHE_ENTRIES) {
     const oldestKey = verdictCache.keys().next().value
-    if (oldestKey !== undefined)
-      verdictCache.delete(oldestKey)
+    if (oldestKey !== undefined) verdictCache.delete(oldestKey)
   }
 }
 
@@ -81,14 +78,16 @@ export function clearCommentAiFilterCache(comments?: CommentAiFilterInputItem[])
   }
 }
 
-export function getCachedCommentVerdict(text: string, author?: string, isReply?: boolean): CachedVerdict | undefined {
+export function getCachedCommentVerdict(
+  text: string,
+  author?: string,
+  isReply?: boolean,
+): CachedVerdict | undefined {
   const normalized = normalizeCommentTextForAiFilter(text)
-  if (!normalized)
-    return undefined
+  if (!normalized) return undefined
   const key = buildCacheKey(getCommentAiFilterConfigFingerprint(), normalized, author, isReply)
   const hit = verdictCache.get(key)
-  if (!hit)
-    return undefined
+  if (!hit) return undefined
   // Refresh LRU order
   verdictCache.delete(key)
   verdictCache.set(key, hit)
@@ -109,8 +108,7 @@ export async function classifyCommentsBatch(
     onChunkResult?: (verdicts: CommentAiFilterVerdict[]) => void
   },
 ): Promise<ClassifyBatchResult> {
-  if (!comments.length)
-    return { ok: true, results: [] }
+  if (!comments.length) return { ok: true, results: [] }
 
   const fingerprint = getCommentAiFilterConfigFingerprint()
   const resultsById = new Map<string, CommentAiFilterVerdict>()
@@ -156,8 +154,7 @@ export async function classifyCommentsBatch(
     const bucket = uncachedByText.get(cacheKey)
     if (bucket) {
       bucket.push(comment)
-    }
-    else {
+    } else {
       uncachedByText.set(cacheKey, [comment])
       uniqueUncachedItems.push({
         ...comment,
@@ -166,14 +163,13 @@ export async function classifyCommentsBatch(
     }
   }
 
-  if (initialHits.length > 0)
-    options?.onChunkResult?.(initialHits)
+  if (initialHits.length > 0) options?.onChunkResult?.(initialHits)
 
   if (!uniqueUncachedItems.length) {
     return {
       ok: true,
       results: comments
-        .map(c => resultsById.get(c.id))
+        .map((c) => resultsById.get(c.id))
         .filter((v): v is CommentAiFilterVerdict => Boolean(v)),
     }
   }
@@ -186,14 +182,16 @@ export async function classifyCommentsBatch(
   let lastError: string | undefined
   let cursor = 0
 
-  async function requestChunk(chunk: CommentAiFilterInputItem[]): Promise<CommentAiFilterClassifyResponse> {
-    let response = await sendMessage<CommentAiFilterClassifyRequest, CommentAiFilterClassifyResponse>(
-      COMMENT_AI_FILTER_CLASSIFY_MESSAGE,
-      {
-        comments: chunk,
-        context: options?.context,
-      },
-    )
+  async function requestChunk(
+    chunk: CommentAiFilterInputItem[],
+  ): Promise<CommentAiFilterClassifyResponse> {
+    let response = await sendMessage<
+      CommentAiFilterClassifyRequest,
+      CommentAiFilterClassifyResponse
+    >(COMMENT_AI_FILTER_CLASSIFY_MESSAGE, {
+      comments: chunk,
+      context: options?.context,
+    })
     if (response && !response.ok && isTransientError(response.error)) {
       await delay(TRANSIENT_RETRY_DELAY_MS)
       response = await sendMessage<CommentAiFilterClassifyRequest, CommentAiFilterClassifyResponse>(
@@ -212,8 +210,7 @@ export async function classifyCommentsBatch(
       const chunkIndex = cursor
       cursor += 1
       const chunk = chunks[chunkIndex]
-      if (!chunk?.length)
-        continue
+      if (!chunk?.length) continue
 
       try {
         const response = await requestChunk(chunk)
@@ -223,7 +220,7 @@ export async function classifyCommentsBatch(
           continue
         }
 
-        const verdictByRepresentativeId = new Map(response.results.map(item => [item.id, item]))
+        const verdictByRepresentativeId = new Map(response.results.map((item) => [item.id, item]))
         const chunkVerdicts: CommentAiFilterVerdict[] = []
         for (const representative of chunk) {
           const verdict = verdictByRepresentativeId.get(representative.id) ?? {
@@ -235,7 +232,12 @@ export async function classifyCommentsBatch(
             category: verdict.category,
             reason: verdict.reason,
           }
-          const repCacheKey = buildCacheKey(fingerprint, representative.text, representative.author, representative.isReply)
+          const repCacheKey = buildCacheKey(
+            fingerprint,
+            representative.text,
+            representative.author,
+            representative.isReply,
+          )
           setCacheEntry(repCacheKey, cacheValue)
 
           const group = uncachedByText.get(repCacheKey) ?? [representative]
@@ -251,10 +253,8 @@ export async function classifyCommentsBatch(
           }
         }
 
-        if (chunkVerdicts.length > 0)
-          options?.onChunkResult?.(chunkVerdicts)
-      }
-      catch (error) {
+        if (chunkVerdicts.length > 0) options?.onChunkResult?.(chunkVerdicts)
+      } catch (error) {
         lastError = error instanceof Error ? error.message : String(error)
       }
     }
@@ -265,7 +265,7 @@ export async function classifyCommentsBatch(
   await Promise.all(Array.from({ length: workerCount }, () => runWorker()))
 
   const orderedResults = comments
-    .map(c => resultsById.get(c.id))
+    .map((c) => resultsById.get(c.id))
     .filter((v): v is CommentAiFilterVerdict => Boolean(v))
 
   return {

@@ -16,8 +16,7 @@ import {
 let bridgeInstalled = false
 
 export function setupCommentAiFilterBridge() {
-  if (bridgeInstalled)
-    return
+  if (bridgeInstalled) return
   bridgeInstalled = true
 
   watch(getCommentAiFilterConfigFingerprint, () => {
@@ -25,7 +24,12 @@ export function setupCommentAiFilterBridge() {
   })
 
   window.addEventListener('message', (event) => {
-    if (event.source !== window || !event.data || typeof event.data !== 'object' || Array.isArray(event.data))
+    if (
+      event.source !== window ||
+      !event.data ||
+      typeof event.data !== 'object' ||
+      Array.isArray(event.data)
+    )
       return
 
     const { type } = event.data as { type?: unknown }
@@ -34,28 +38,28 @@ export function setupCommentAiFilterBridge() {
       return
     }
 
-    if (type !== COMMENT_AI_FILTER_PAGE_REQUEST)
-      return
+    if (type !== COMMENT_AI_FILTER_PAGE_REQUEST) return
 
     const payload = event.data as {
       requestId?: unknown
       comments?: unknown
-      context?: { title?: unknown, source?: unknown }
+      context?: { title?: unknown; source?: unknown }
       bypassCache?: unknown
     }
     const requestId = typeof payload.requestId === 'string' ? payload.requestId : ''
-    if (!requestId)
-      return
+    if (!requestId) return
 
     const reply = (body: Record<string, unknown>) => {
       try {
-        window.postMessage({
-          type: COMMENT_AI_FILTER_PAGE_RESPONSE,
-          requestId,
-          ...body,
-        }, window.location.origin)
-      }
-      catch {
+        window.postMessage(
+          {
+            type: COMMENT_AI_FILTER_PAGE_RESPONSE,
+            requestId,
+            ...body,
+          },
+          window.location.origin,
+        )
+      } catch {
         // 忽略不透明来源或已卸载窗口的 postMessage 异常
       }
     }
@@ -68,8 +72,7 @@ export function setupCommentAiFilterBridge() {
     const rawComments = Array.isArray(payload.comments) ? payload.comments : []
     const comments: CommentAiFilterInputItem[] = []
     for (const item of rawComments) {
-      if (!item || typeof item !== 'object')
-        continue
+      if (!item || typeof item !== 'object') continue
       const record = item as Record<string, unknown>
       if (typeof record.id !== 'string' || !record.id.trim() || typeof record.text !== 'string')
         continue
@@ -83,7 +86,8 @@ export function setupCommentAiFilterBridge() {
       })
     }
 
-    const title = typeof payload.context?.title === 'string' ? payload.context.title : document.title
+    const title =
+      typeof payload.context?.title === 'string' ? payload.context.title : document.title
     void classifyCommentsBatch(comments, {
       context: { title, source: 'native' },
       bypassCache: payload.bypassCache === true,
@@ -94,20 +98,22 @@ export function setupCommentAiFilterBridge() {
           results: chunkResults,
         })
       },
-    }).then((result) => {
-      reply({
-        partial: false,
-        ok: result.ok,
-        results: result.results,
-        error: result.error,
-      })
-    }).catch((error) => {
-      reply({
-        partial: false,
-        ok: false,
-        results: [],
-        error: error instanceof Error ? error.message : String(error),
-      })
     })
+      .then((result) => {
+        reply({
+          partial: false,
+          ok: result.ok,
+          results: result.results,
+          error: result.error,
+        })
+      })
+      .catch((error) => {
+        reply({
+          partial: false,
+          ok: false,
+          results: [],
+          error: error instanceof Error ? error.message : String(error),
+        })
+      })
   })
 }
