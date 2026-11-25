@@ -46,6 +46,21 @@ html[data-bewly-ambilight] {
 
   // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
   --bew-comment-tree-node-bg: var(--bew-bg);
+  // 环境光模式下回复加载遮罩与吸底展开栏改用轻度半透明模糊，避免在光晕上露出近实色黑/白块
+  --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bew-bg) 52%, transparent);
+  --bew-comment-replies-mask-filter: var(--bew-filter-glass-blur-1);
+  --bew-comment-replies-mask-radius: var(--bew-radius-md);
+  --bew-comment-replies-mask-shadow: inset 0 0 0 1px var(--bew-border-color);
+  --bew-comment-sticky-footer-bg: color-mix(in oklab, var(--bew-bg) 62%, transparent);
+  --bew-comment-sticky-footer-filter: var(--bew-filter-glass-blur-1);
+  --bew-comment-sticky-footer-radius: var(--bew-radius-md);
+  --bew-comment-sticky-footer-shadow: inset 0 0 0 1px var(--bew-border-color);
+  --bew-comment-sticky-footer-padding-x: var(--bew-space-2);
+
+  &.disable-frosted-glass {
+    --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bew-bg) 85%, transparent);
+    --bew-comment-sticky-footer-bg: color-mix(in oklab, var(--bew-bg) 88%, transparent);
+  }
 
   // 文字灰阶按光晕实时亮度重算（见 ambilightControl / textContrast），四级文字同步变化。
   // --bew-ambilight-text-* 由 ambilightControl 写在 html（综合灰阶）与各文字区域元素（按区域背景取色）上，

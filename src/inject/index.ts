@@ -502,10 +502,23 @@ if (isElectronEnv) {
       id: 'bewly-comment-replies-style',
       css: `
         #spinner {
+          z-index: 10;
           background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85)) !important;
+          -webkit-backdrop-filter: var(--bew-comment-replies-mask-filter, none);
+          backdrop-filter: var(--bew-comment-replies-mask-filter, none);
+          border-radius: var(--bew-comment-replies-mask-radius, 0);
+          box-shadow: var(--bew-comment-replies-mask-shadow, none);
+        }
+
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #spinner {
+          top: var(--bew-comment-reply-scroll-top, 0px);
+          bottom: auto;
+          height: 100%;
         }
 
         #pagination {
+          flex-wrap: wrap;
+          row-gap: var(--bew-space-1, 4px);
           color: var(--bew-text-3) !important;
         }
 
@@ -528,8 +541,9 @@ if (isElectronEnv) {
 
         #view-more:has(> #${COMMENT_REPLY_EXPAND_ALL_ID}) {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
-          column-gap: var(--bew-space-2, 8px);
+          row-gap: var(--bew-space-1, 4px);
           width: 100%;
           box-sizing: border-box;
         }
@@ -558,7 +572,7 @@ if (isElectronEnv) {
         #${COMMENT_REPLY_EXPAND_ALL_ID} {
           flex-shrink: 0;
           min-height: var(--bew-space-6, 24px);
-          margin-inline-start: var(--bew-space-4, 16px);
+          margin-inline-start: var(--bew-space-6, 24px);
           padding: 0;
           border: 0;
           background: transparent;
@@ -567,6 +581,11 @@ if (isElectronEnv) {
           line-height: inherit;
           cursor: pointer;
           white-space: nowrap;
+          transition: color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+        }
+
+        #${COMMENT_REPLY_EXPAND_ALL_ID}:hover:not(:disabled) {
+          color: var(--bew-theme-color, #00aeec);
         }
 
         #${COMMENT_REPLY_EXPAND_ALL_ID}:active:not(:disabled) {
@@ -588,10 +607,14 @@ if (isElectronEnv) {
           cursor: wait;
         }
 
+        /* 批量加载时统一使用单层遮罩与旋转指示器，避免与原生 #spinner 叠加两层遮罩 */
         :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #spinner {
-          display: flex !important;
-          opacity: 1 !important;
-          visibility: visible !important;
+          display: none !important;
+        }
+
+        :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents {
+          position: relative;
+          min-height: var(--bew-space-10, 40px);
         }
 
         :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents::before {
@@ -600,23 +623,44 @@ if (isElectronEnv) {
           inset: 0;
           z-index: 2147483646;
           background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85));
+          -webkit-backdrop-filter: var(--bew-comment-replies-mask-filter, none);
+          backdrop-filter: var(--bew-comment-replies-mask-filter, none);
+          border-radius: var(--bew-comment-replies-mask-radius, 0);
+          box-shadow: var(--bew-comment-replies-mask-shadow, none);
           pointer-events: auto;
+        }
+
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}][${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents::before {
+          top: var(--bew-comment-reply-scroll-top, 0px);
+          bottom: auto;
+          height: 100%;
         }
 
         :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents::after {
           content: '';
           position: sticky;
-          bottom: var(--bew-space-4, 16px);
+          bottom: var(--bew-space-6, 24px);
           z-index: 2147483647;
+          order: 2147483647;
+          flex-shrink: 0;
           align-self: center;
           width: var(--bew-space-6, 24px);
           height: var(--bew-space-6, 24px);
+          margin-top: calc(var(--bew-space-6, 24px) * -1);
           box-sizing: border-box;
           border: 2px solid color-mix(in srgb, var(--bew-theme-color, #00aeec) 25%, transparent);
           border-top-color: var(--bew-theme-color, #00aeec);
           border-radius: 50%;
           animation: bewly-comment-expand-all-spin 0.8s linear infinite;
           pointer-events: none;
+        }
+
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}][${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents::after {
+          position: absolute;
+          top: calc(var(--bew-comment-reply-scroll-top, 0px) + 50%);
+          left: 50%;
+          bottom: auto;
+          margin: calc(var(--bew-space-6, 24px) / -2) 0 0 calc(var(--bew-space-6, 24px) / -2);
         }
 
         @keyframes bewly-comment-expand-all-spin {
@@ -692,13 +736,24 @@ if (isElectronEnv) {
           position: sticky;
           bottom: 0;
           z-index: 1;
-          transition: background-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+          box-sizing: border-box;
+          padding-block: var(--bew-space-1, 4px);
+          border-radius: var(--bew-comment-sticky-footer-radius, 0);
+          transition:
+            background-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
+            box-shadow var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+        }
+
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #expander-contents > #expander-footer:has(#pagination) {
+          padding-inline: var(--bew-comment-sticky-footer-padding-x, 0);
         }
 
         /* 仅在容器溢出且未滚到底部（底栏压在下方回复上）时铺底防叠字，避免未展开的「共 x 条回复」出现实色横条 */
         :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}][${COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE}]) #expander-contents > #expander-footer {
           /* 宽屏侧栏和原生评论区可有独立底色，不能优先取全局页面背景。 */
-          background: var(--bew-comment-sticky-footer-bg, var(--bewly-widescreen-sidebar-bg, var(--bg1, var(--bew-bg, #fff))));
+          padding-inline: var(--bew-comment-sticky-footer-padding-x, 0);
+          background-color: var(--bew-comment-sticky-footer-bg, var(--bewly-widescreen-sidebar-bg, var(--bg1, var(--bew-bg, #fff))));
+          box-shadow: var(--bew-comment-sticky-footer-shadow, none);
           -webkit-backdrop-filter: var(--bew-comment-sticky-footer-filter, none);
           backdrop-filter: var(--bew-comment-sticky-footer-filter, none);
         }
@@ -2220,6 +2275,8 @@ if (isElectronEnv) {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         try {
+          // 先释放加载期占位高度，再重算树状线条与吸底栏状态，避免沿用旧高度误判溢出。
+          releaseCommentReplyLayoutReservation(layoutReservation)
           if (
             renderer.isConnected &&
             getCommentReplyTreeMode() !== null &&
@@ -3101,6 +3158,7 @@ if (isElectronEnv) {
 
     if (!component.hasAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE) || !replyContainer) {
       component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
+      replyContainer?.style.removeProperty('--bew-comment-reply-scroll-top')
       return
     }
 
@@ -3108,6 +3166,9 @@ if (isElectronEnv) {
     const isAtBottom =
       replyContainer.scrollTop + replyContainer.clientHeight >= replyContainer.scrollHeight - 1
     component.toggleAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE, isOverflowing && !isAtBottom)
+    const nextScrollTop = `${isOverflowing ? Math.max(0, Math.round(replyContainer.scrollTop)) : 0}px`
+    if (replyContainer.style.getPropertyValue('--bew-comment-reply-scroll-top') !== nextScrollTop)
+      replyContainer.style.setProperty('--bew-comment-reply-scroll-top', nextScrollTop)
   }
 
   /** 回复容器由 CSS 驱动：属性切换生效范围，变量承载用户配置的高度 */
@@ -3123,6 +3184,9 @@ if (isElectronEnv) {
     } else {
       component.style.removeProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR)
       component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
+      component.shadowRoot
+        ?.querySelector<HTMLElement>('#expander-contents')
+        ?.style.removeProperty('--bew-comment-reply-scroll-top')
     }
   }
 

@@ -17,6 +17,13 @@ html.bewly-video-glass.bewly-design {
   // 叠加全页底衬后局部模糊仅保留纯模糊，避免二次叠乘饱和度。
   --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 72%, transparent);
   --bew-video-glass-sticky-filter: var(--bew-filter-glass-1);
+  // 评论回复加载遮罩与吸底展开栏位于页面内容流内，使用轻量半透明毛玻璃替代近实色暗块，避免玻璃页出现突兀黑框
+  --bew-video-glass-replies-mask-bg: color-mix(in oklab, var(--bew-content-solid) 38%, transparent);
+  --bew-video-glass-sticky-footer-bg: color-mix(
+    in oklab,
+    var(--bew-content-solid) 48%,
+    transparent
+  );
   // 宽屏自适应抽屉滑入盖在视频画面（含 HDR 视频）上时提高底色不透明度，在保留毛玻璃质感的同时避免画面高亮穿透变透明
   --bew-video-glass-drawer-bg: color-mix(in oklab, var(--bew-content-solid) 82%, transparent);
   --bew-video-glass-drawer-filter: var(--bew-filter-glass-2);
@@ -73,6 +80,16 @@ html.bewly-video-glass.bewly-design {
 
   &.dark {
     --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 76%, transparent);
+    --bew-video-glass-replies-mask-bg: color-mix(
+      in oklab,
+      var(--bew-content-solid) 30%,
+      transparent
+    );
+    --bew-video-glass-sticky-footer-bg: color-mix(
+      in oklab,
+      var(--bew-content-solid) 44%,
+      transparent
+    );
     --bew-video-glass-drawer-bg: color-mix(in oklab, var(--bew-content-solid) 80%, transparent);
   }
 
@@ -84,6 +101,12 @@ html.bewly-video-glass.bewly-design {
   &.disable-frosted-glass {
     --bew-video-glass-sticky-bg: var(--bew-content-solid);
     --bew-video-glass-sticky-filter: none;
+    --bew-video-glass-replies-mask-bg: color-mix(
+      in oklab,
+      var(--bew-content-solid) 88%,
+      transparent
+    );
+    --bew-video-glass-sticky-footer-bg: var(--bew-content-solid);
     --bew-video-glass-drawer-bg: var(--bew-content-solid);
     --bew-video-glass-drawer-filter: none;
   }
@@ -138,8 +161,16 @@ html.bewly-video-glass.bewly-design {
     --bew-comment-bottom-fixed-active-shadow:
       inset 1px 0 0 var(--bew-border-color), inset -1px 0 0 var(--bew-border-color),
       var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-    --bew-comment-sticky-footer-bg: var(--bew-video-glass-sticky-bg);
+    --bew-comment-replies-mask-bg: var(--bew-video-glass-replies-mask-bg);
+    --bew-comment-replies-mask-filter: var(--bew-video-glass-sticky-filter);
+    --bew-comment-replies-mask-radius: var(--bew-radius-md);
+    --bew-comment-replies-mask-shadow: inset 0 0 0 1px var(--bew-border-color);
+    --bew-comment-sticky-footer-bg: var(--bew-video-glass-sticky-footer-bg);
     --bew-comment-sticky-footer-filter: var(--bew-video-glass-sticky-filter);
+    --bew-comment-sticky-footer-radius: var(--bew-radius-md);
+    --bew-comment-sticky-footer-shadow:
+      inset 0 0 0 1px var(--bew-border-color), var(--bew-shadow-edge-glow-1);
+    --bew-comment-sticky-footer-padding-x: var(--bew-space-2);
     --bew-comment-tag-color: var(--bew-text-2);
     --bew-comment-tag-bg: var(--bew-fill-1);
     --bew-ip-tag-bg: var(--bew-fill-1);
@@ -374,11 +405,13 @@ html.bewly-video-glass.bewly-design {
       }
     }
 
+    .bewly-widescreen-panel-comment {
+      --bew-comment-replies-mask-bg: var(--bew-video-glass-replies-mask-bg);
+    }
+
     &[data-sidebar-mode='fit']:not([data-sidebar-full='true']):not(
         [data-sidebar-custom-width='true']
       ):not([data-wide-video-priority='true']) {
-      --bew-comment-sticky-footer-bg: var(--bewly-widescreen-sidebar-bg);
-
       .bewly-widescreen-stage::before,
       .bewly-widescreen-stage::after {
         position: absolute;
