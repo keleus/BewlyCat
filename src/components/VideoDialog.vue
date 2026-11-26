@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Dialog from '~/components/Dialog.vue'
 import {
+  BEWLY_DRAWER_CLOSE_REQUEST,
   DRAWER_VIDEO_ENTER_PAGE_FULL,
   DRAWER_VIDEO_EXIT_PAGE_FULL,
   VIDEO_DIALOG_IFRAME_NAME,
@@ -145,7 +146,7 @@ function handleFrameMessage(event: MessageEvent) {
     return
   }
   // iframe 内未被播放器消费的 ESC 会请求关闭弹窗
-  if (messageType === 'BEWLY_DRAWER_CLOSE_REQUEST') close()
+  if (messageType === BEWLY_DRAWER_CLOSE_REQUEST) close()
 }
 
 useEventListener(window, 'message', handleFrameMessage)

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import browser from 'webextension-polyfill'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { BEWLY_DRAWER_CLOSE_REQUEST } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { localizeBilibiliUrl } from '~/utils/bilibiliLocale'
 import { numFormatter } from '~/utils/dataFormatter'
@@ -35,8 +36,6 @@ const emit = defineEmits<{
 
 // 剩余不足该数量时提前加载下一页推荐
 const PRELOAD_REMAINING_COUNT = 4
-// iframe 内的视频页在 Esc 未被页面自身消费时发出的关闭请求（与抽屉共用）
-const FRAME_CLOSE_REQUEST = 'BEWLY_DRAWER_CLOSE_REQUEST'
 // 视频无法开播（充电专享、地区限制等）时不再等待，按时撤下遮罩露出原生页面提示
 const FRAME_SHOW_TIMEOUT_MS = 12_000
 // 当前视频开播后稍等再预加载下一条，避免与当前视频争抢带宽
@@ -260,7 +259,8 @@ useEventListener(window, 'message', (event: MessageEvent) => {
   if (!frameKey) return
   const fromCurrent = frameKey === currentKey.value
 
-  if (event.data?.type === FRAME_CLOSE_REQUEST) {
+  // iframe 内的视频页在 Esc 未被页面自身消费时发出的关闭请求（与抽屉共用）
+  if (event.data?.type === BEWLY_DRAWER_CLOSE_REQUEST) {
     if (fromCurrent) emit('close')
     return
   }

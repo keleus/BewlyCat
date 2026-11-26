@@ -28,6 +28,7 @@ import {
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import {
+  BEWLY_DRAWER_CLOSE_REQUEST,
   DRAWER_VIDEO_ENTER_PAGE_FULL,
   DRAWER_VIDEO_EXIT_PAGE_FULL,
   OVERLAY_SCROLL_BAR_REBASE,
@@ -3392,7 +3393,7 @@ function handleDetailFrameMessage(event: MessageEvent) {
     return
   }
   // iframe 内 ESC 会 post 该消息；Dialog 场景下同步关闭详情
-  if (type === 'BEWLY_DRAWER_CLOSE_REQUEST' && selectedMoment.value) closeMomentDetail()
+  if (type === BEWLY_DRAWER_CLOSE_REQUEST && selectedMoment.value) closeMomentDetail()
 }
 
 onMounted(() => {

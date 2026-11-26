@@ -27,6 +27,7 @@ import {
   DRAWER_VIDEO_EXIT_PAGE_FULL,
   IFRAME_PAGE_SWITCH_BEWLY,
   IFRAME_PAGE_SWITCH_BILI,
+  IFRAME_PHOTO_VIEWER_STATE,
   IFRAME_SEARCH_NAVIGATION,
   OVERLAY_SCROLL_BAR_SCROLL,
   OVERLAY_SCROLL_STATE_CHANGE,
@@ -1237,7 +1238,7 @@ useEventListener(window, 'message', ({ data, source }) => {
 // 监听来自iframe的图片预览器状态
 useEventListener(window, 'message', ({ data, source }) => {
   // 确保消息来自iframe
-  if (!data || data.type !== 'IFRAME_PHOTO_VIEWER_STATE') return
+  if (!data || data.type !== IFRAME_PHOTO_VIEWER_STATE) return
 
   // 检查消息来源是否是iframe
   const iframe = iframePageRef.value?.$el?.querySelector('iframe')
