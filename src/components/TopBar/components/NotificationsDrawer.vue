@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
+import { BEWLY_DRAWER_CLOSE_REQUEST, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { lockPageScroll, unlockPageScroll } from '~/utils/pageScrollLock'
 
@@ -106,7 +106,7 @@ function handleDrawerCloseRequestMessage(event: MessageEvent) {
     return
   }
 
-  if (event.data?.type !== 'BEWLY_DRAWER_CLOSE_REQUEST' || event.data?.source !== 'iframe') return
+  if (event.data?.type !== BEWLY_DRAWER_CLOSE_REQUEST || event.data?.source !== 'iframe') return
 
   requestClose()
 }

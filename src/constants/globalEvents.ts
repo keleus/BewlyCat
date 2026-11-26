@@ -8,6 +8,12 @@ export const BEWLY_MOUNTED = 'bewlyMounted'
 export const BEWLY_IFRAME_DRAWER_HOST_CLASS = 'bewly-iframe-drawer-host'
 export const DRAWER_VIDEO_ENTER_PAGE_FULL = 'drawerVideoEnterPageFull'
 export const DRAWER_VIDEO_EXIT_PAGE_FULL = 'drawerVideoExitPageFull'
+/** iframe 内视频页在 ESC 未被页面自身消费时发出的关闭请求（抽屉与沉浸流共用） */
+export const BEWLY_DRAWER_CLOSE_REQUEST = 'BEWLY_DRAWER_CLOSE_REQUEST'
+/** iframe 内 Dialog、图片预览或播放器层已消费 ESC，通知父页面不要关闭抽屉 */
+export const BEWLY_DRAWER_ESCAPE_HANDLED = 'BEWLY_DRAWER_ESCAPE_HANDLED'
+/** iframe 内 PhotoSwipe 图片预览开关状态变化，通知父页面 */
+export const IFRAME_PHOTO_VIEWER_STATE = 'IFRAME_PHOTO_VIEWER_STATE'
 /** 动态页与视频卡片视频弹窗内 iframe 的 window.name，播放器据此应用弹窗显示模式覆盖。 */
 export const VIDEO_DIALOG_IFRAME_NAME = 'bewly-video-dialog'
 export const IFRAME_PAGE_SWITCH_BEWLY = 'iframePageSwitchBewly'

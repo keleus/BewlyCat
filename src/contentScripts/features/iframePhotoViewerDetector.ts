@@ -1,3 +1,4 @@
+import { IFRAME_PHOTO_VIEWER_STATE } from '~/constants/globalEvents'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { findOpenPhotoViewer, PHOTO_VIEWER_OPEN_SELECTOR } from '~/utils/photoViewer'
 
@@ -137,7 +138,7 @@ function checkPhotoViewerState() {
     // 通知父页面 PhotoSwipe 的状态
     window.parent.postMessage(
       {
-        type: 'IFRAME_PHOTO_VIEWER_STATE',
+        type: IFRAME_PHOTO_VIEWER_STATE,
         isOpen,
       },
       '*',

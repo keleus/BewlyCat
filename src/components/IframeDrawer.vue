@@ -4,10 +4,13 @@ import { useEventListener } from '@vueuse/core'
 import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import {
+  BEWLY_DRAWER_CLOSE_REQUEST,
+  BEWLY_DRAWER_ESCAPE_HANDLED,
   BEWLY_IFRAME_DRAWER_HOST_CLASS,
   DRAWER_VIDEO_ENTER_PAGE_FULL,
   DRAWER_VIDEO_EXIT_PAGE_FULL,
   IFRAME_DARK_MODE_CHANGE,
+  IFRAME_PHOTO_VIEWER_STATE,
 } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { releaseIframeMedia } from '~/utils/iframe'
@@ -477,13 +480,13 @@ function handleWindowMessage({ data, source }: MessageEvent) {
       disableEscPress.value = false
       isPageFullscreen.value = false
       break
-    case 'BEWLY_DRAWER_ESCAPE_HANDLED':
+    case BEWLY_DRAWER_ESCAPE_HANDLED:
       resetEscPressedState()
       break
-    case 'IFRAME_PHOTO_VIEWER_STATE':
+    case IFRAME_PHOTO_VIEWER_STATE:
       isIframePhotoViewerOpen.value = data.isOpen === true
       break
-    case 'BEWLY_DRAWER_CLOSE_REQUEST':
+    case BEWLY_DRAWER_CLOSE_REQUEST:
       // 来自 iframe 的关闭请求
       if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
         if (settings.value.closeDrawerWithoutPressingEscAgain) {

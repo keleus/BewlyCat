@@ -10,6 +10,8 @@ import {
   CONTENT_SCRIPT_PONG,
 } from '~/constants/contentScript'
 import {
+  BEWLY_DRAWER_CLOSE_REQUEST,
+  BEWLY_DRAWER_ESCAPE_HANDLED,
   BEWLY_IFRAME_DRAWER_HOST_CLASS,
   BEWLY_MOUNTED,
   IFRAME_DARK_MODE_CHANGE,
@@ -2189,7 +2191,7 @@ if (isElectronEnv) {
           if (wasHandledInternally) {
             window.parent.postMessage(
               {
-                type: 'BEWLY_DRAWER_ESCAPE_HANDLED',
+                type: BEWLY_DRAWER_ESCAPE_HANDLED,
                 source: 'iframe',
               },
               '*',
@@ -2202,7 +2204,7 @@ if (isElectronEnv) {
           // alone therefore cannot block the drawer close request.
           window.parent.postMessage(
             {
-              type: 'BEWLY_DRAWER_CLOSE_REQUEST',
+              type: BEWLY_DRAWER_CLOSE_REQUEST,
               source: 'iframe',
             },
             '*',
