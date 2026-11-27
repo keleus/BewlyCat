@@ -13,6 +13,17 @@ html.bewly-video-glass.bewly-design {
     display: none !important;
   }
 
+  // Bilibili 的合集模块展开菜单是浮动 Pop，不能继承页面流的轻量 graph 背景色。
+  // 复用 Bewly 的 Pop surface tokens 与视频页局部滤镜，兼容 Overlay、明暗主题及关闭毛玻璃设置。
+  body .video-pod .pod-slide-more-panel {
+    background-color: var(--bew-elevated);
+    border: 1px solid var(--bew-popover-border-color);
+    border-radius: var(--bew-popover-surface-radius);
+    box-shadow: var(--bew-shadow-2);
+    -webkit-backdrop-filter: var(--bew-video-glass-sticky-filter);
+    backdrop-filter: var(--bew-video-glass-sticky-filter);
+  }
+
   // 吸顶/吸底与悬浮控件统一复用外观毛玻璃与深色基准色 token，随全局毛玻璃开关和模糊强度联动；
   // 叠加全页底衬后局部模糊仅保留纯模糊，避免二次叠乘饱和度。
   --bew-video-glass-sticky-bg: color-mix(in oklab, var(--bew-bg) 72%, transparent);
