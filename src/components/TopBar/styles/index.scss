@@ -21,6 +21,12 @@ $top-bar-retract: calc(-1 * (var(--bew-top-bar-height) + var(--bew-space-4)));
     opacity 250ms var(--bew-ease-standard, ease),
     transform 250ms var(--bew-ease-standard, ease),
     margin-top 250ms var(--bew-ease-standard, ease);
+}
+
+// 入场阶段必须保持可命中：用户常在动画结束前把鼠标移入弹窗。
+// 若此处也用 pointer-events:none，弹窗无法收到 mouseenter，顶栏 hover
+// 的离开计时器会继续执行并把刚打开的弹窗收起。
+.slide-in-leave-active {
   pointer-events: none;
 }
 
