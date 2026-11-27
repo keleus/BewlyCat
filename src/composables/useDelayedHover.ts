@@ -102,7 +102,10 @@ export function useDelayedHover({
     scheduleEnter()
   }
 
-  function handleMouseLeave() {
+  function handleMouseLeave(event: MouseEvent) {
+    const nextTarget = event.relatedTarget as Node | null
+    if (nextTarget && el.value?.contains(nextTarget)) return
+
     mouseWithin = false
     scheduleLeave()
   }
