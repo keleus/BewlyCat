@@ -56,6 +56,10 @@ const openModeOptions = computed(() => [
     value: 'dialog',
   },
   {
+    label: t('settings.moments_card_open_mode_opt.non_video_dialog'),
+    value: 'nonVideoDialog',
+  },
+  {
     label: t('settings.moments_card_open_mode_opt.new_tab'),
     value: 'newTab',
   },

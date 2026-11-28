@@ -508,9 +508,10 @@ settings:
   moments_hide_charge_exclusive: 隱藏充電專屬動態
   moments_hide_charge_exclusive_desc: 喺插件動態流入面過濾所有充電專屬動態。
   moments_card_open_mode: 動態卡片點擊行為
-  moments_card_open_mode_desc: 選擇撳動態卡片嗰陣用彈窗、新分頁定後台分頁。直播動態只可以喺新分頁或者後台分頁開啟。
+  moments_card_open_mode_desc: 選擇撳動態卡片嗰陣用彈窗、非影片內容彈窗、新分頁定後台分頁。揀「非影片內容彈窗」時，影片內容會喺新分頁打開，其餘動態用彈窗。直播動態只可以喺新分頁或者後台分頁開啟。
   moments_card_open_mode_opt:
     dialog: 彈窗
+    non_video_dialog: 非影片內容彈窗
     new_tab: 新分頁
     background: 後台分頁
   moments_video_card_open_mode: 影片投稿動態卡片點擊行為

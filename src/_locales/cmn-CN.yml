@@ -480,9 +480,10 @@ settings:
   moments_hide_charge_exclusive: 隐藏充电专属动态
   moments_hide_charge_exclusive_desc: 从插件动态流中过滤所有充电专属动态。
   moments_card_open_mode: 动态卡片点击行为
-  moments_card_open_mode_desc: 选择点击动态卡片时使用弹窗、新建标签页或后台标签。直播动态只能在新建标签页或后台标签打开。
+  moments_card_open_mode_desc: 选择点击动态卡片时使用弹窗、非视频内容弹窗、新建标签页或后台标签。选择“非视频内容弹窗”时，视频内容将在新建标签页打开，其余动态使用弹窗。直播动态只能在新建标签页或后台标签打开。
   moments_card_open_mode_opt:
     dialog: 弹窗
+    non_video_dialog: 非视频内容弹窗
     new_tab: 新建标签页
     background: 后台标签
   moments_video_card_open_mode: 视频投稿动态卡片点击行为
