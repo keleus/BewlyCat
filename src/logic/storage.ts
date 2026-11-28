@@ -207,8 +207,8 @@ export const MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS = 2
  */
 export type CommentReplyTreeMode = 'lineCollapseMain' | 'lineKeepMain' | 'indentOnly'
 export type CommentReplyPaginationMode = 'loadMore' | 'pagination'
-export type MomentsCardOpenMode = 'dialog' | 'newTab' | 'background'
-export type MomentsVideoCardOpenMode = MomentsCardOpenMode | 'inherit' | 'currentTab'
+export type MomentsCardOpenMode = 'dialog' | 'nonVideoDialog' | 'newTab' | 'background'
+export type MomentsVideoCardOpenMode = 'inherit' | 'dialog' | 'currentTab' | 'newTab' | 'background'
 
 // 本地存储配置接口（不同步到云端的配置）
 export interface LocalSettings {
@@ -1793,6 +1793,25 @@ export const settings = useSettingsStorage(originalSettings, {
     Reflect.deleteProperty(record, 'videoPageDarkMode')
 
     if (!['1', '2', '3', '4'].includes(record.momentsGridColumns)) record.momentsGridColumns = '2'
+
+    const validMomentsCardOpenModes: MomentsCardOpenMode[] = [
+      'dialog',
+      'nonVideoDialog',
+      'newTab',
+      'background',
+    ]
+    if (!validMomentsCardOpenModes.includes(record.momentsCardOpenMode))
+      record.momentsCardOpenMode = originalSettings.momentsCardOpenMode
+
+    const validMomentsVideoCardOpenModes: MomentsVideoCardOpenMode[] = [
+      'inherit',
+      'dialog',
+      'currentTab',
+      'newTab',
+      'background',
+    ]
+    if (!validMomentsVideoCardOpenModes.includes(record.momentsVideoCardOpenMode))
+      record.momentsVideoCardOpenMode = originalSettings.momentsVideoCardOpenMode
 
     record.commentAiFilterDisplayMode = normalizeCommentAiFilterDisplayMode(
       record.commentAiFilterDisplayMode,

@@ -35,6 +35,7 @@ import {
 } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { parseDedeUserID } from '~/logic/loginStatus'
+import type { MomentsCardOpenMode } from '~/logic/storage'
 import { momentsPinnedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
 import { ensureWatchLaterState } from '~/logic/watchLaterState'
@@ -1060,21 +1061,31 @@ function handleDetailImageViewerKeydown(event: KeyboardEvent) {
 
 type ResolvedMomentOpenMode = 'dialog' | 'currentTab' | 'newTab' | 'background'
 
+function resolveCardOpenMode(
+  mode: MomentsCardOpenMode,
+  isVideo: boolean,
+): Exclude<ResolvedMomentOpenMode, 'currentTab'> {
+  if (mode === 'nonVideoDialog') return isVideo ? 'newTab' : 'dialog'
+  return mode
+}
+
 function resolveMomentOpenMode(moment: DisplayMoment): ResolvedMomentOpenMode {
   const videoCardOpenMode = settings.value.momentsVideoCardOpenMode
   if (moment.isVideo && !moment.isPgc && videoCardOpenMode !== 'inherit') return videoCardOpenMode
 
-  return settings.value.momentsCardOpenMode
+  return resolveCardOpenMode(settings.value.momentsCardOpenMode, moment.isVideo)
 }
 
 function resolveLinkOpenMode(kind: MomentLinkKind): ResolvedMomentOpenMode {
   if (kind === 'video') {
     const videoMode = settings.value.momentsVideoCardOpenMode
-    return videoMode === 'inherit' ? settings.value.momentsCardOpenMode : videoMode
+    return videoMode === 'inherit'
+      ? resolveCardOpenMode(settings.value.momentsCardOpenMode, true)
+      : videoMode
   }
-  if (kind === 'moment') return settings.value.momentsCardOpenMode
+  if (kind === 'moment') return resolveCardOpenMode(settings.value.momentsCardOpenMode, false)
 
-  const mode = settings.value.momentsCardOpenMode
+  const mode = resolveCardOpenMode(settings.value.momentsCardOpenMode, false)
   return mode === 'dialog' ? 'newTab' : mode
 }
 
@@ -1145,7 +1156,9 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
         }
       : moment
 
-  const openMode = forceDialog ? 'dialog' : settings.value.momentsCardOpenMode
+  const openMode = forceDialog
+    ? 'dialog'
+    : resolveCardOpenMode(settings.value.momentsCardOpenMode, false)
   if (
     openMode !== 'dialog' ||
     (!forceDialog && window.innerWidth <= VIDEO_DIALOG_MIN_VIEWPORT_WIDTH)

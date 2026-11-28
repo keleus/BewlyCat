@@ -483,9 +483,10 @@ settings:
   moments_hide_charge_exclusive: Hide charge-exclusive dynamics
   moments_hide_charge_exclusive_desc: Filter all charge-exclusive dynamics out of the extension feed.
   moments_card_open_mode: Dynamic card click behavior
-  moments_card_open_mode_desc: Choose whether dynamic cards open in a dialog, a new tab, or a background tab. Live dynamics can only open in a new or background tab.
+  moments_card_open_mode_desc: Choose whether dynamic cards open in a dialog, dialog for non-video content (videos open in a new tab), a new tab, or a background tab. Live dynamics can only open in a new or background tab.
   moments_card_open_mode_opt:
     dialog: Dialog
+    non_video_dialog: Non-video dialog
     new_tab: New tab
     background: Background tab
   moments_video_card_open_mode: Video post dynamic card click behavior
